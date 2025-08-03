@@ -8,7 +8,7 @@ use Flux\Flux;
 
 
 new class extends Component {
-    public $sortBy = 'date';
+    public $sortBy = 'name';
     public $sortDirection = 'desc';
     public $perPage = 10;
     public $editUserId = null;
