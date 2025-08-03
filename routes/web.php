@@ -19,4 +19,9 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('settings/appearance', 'settings.appearance')->name('settings.appearance');
 });
 
+Route::middleware(['auth'])->group(function () {
+    Route::get('acp', [App\Http\Controllers\AdminControlPanelController::class, 'index'])
+        ->name('acp.index');
+});
+
 require __DIR__.'/auth.php';
