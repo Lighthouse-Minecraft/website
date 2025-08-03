@@ -49,7 +49,6 @@ new class extends Component {
         $user = User::findOrFail($userId);
         $this->editUserId = $userId;
         $this->editUserData = $user->only(['name', 'email']);
-        $this->dispatch('open-modal', 'edit-user-modal');
     }
 
     public function saveUser()
@@ -60,7 +59,6 @@ new class extends Component {
         ])->validate();
 
         User::findOrFail($this->editUserId)->update($this->editUserData);
-        $this->dispatch('close-modal', 'edit-user-modal');
         $this->editUserId = null;
         Flux::modal('edit-user-modal')->close();
         Flux::toast('User updated successfully!', 'Success', variant: 'success');
