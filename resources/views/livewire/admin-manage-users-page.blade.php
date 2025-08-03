@@ -110,13 +110,9 @@ new class extends Component {
 
                     <flux:table.cell>
                         <flux:dropdown>
-                            <flux:button variant="ghost" size="sm" icon="ellipsis-horizontal" inset="top bottom"></flux:button>
-
-                            <flux:menu>
                                 <flux:modal.trigger name="edit-user-modal" wire:click="openEditModal({{ $user->id }})">
-                                    <flux:menu.item>Edit User</flux:menu.item>
+                                    <flux:button size="xs" icon="pencil-square"></flux:button>
                                 </flux:modal.trigger>
-                            </flux:menu>
                         </flux:dropdown>
                     </flux:table.cell>
                 </flux:table.row>
