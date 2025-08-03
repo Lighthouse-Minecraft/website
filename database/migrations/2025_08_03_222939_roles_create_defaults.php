@@ -29,55 +29,55 @@ return new class extends Migration
                 'name' => 'Command',
                 'description' => 'Officer of the Command department.',
                 'color' => 'orange',
-                'icon' => 'star'
+                'icon' => 'finger-print'
             ],
             [
                 'name' => 'Chaplain',
                 'description' => 'Officer of the Chaplain department.',
                 'color' => 'orange',
-                'icon' => 'star'
+                'icon' => 'fire'
             ],
             [
                 'name' => 'Engineer',
                 'description' => 'Officer of the Engineer department.',
                 'color' => 'orange',
-                'icon' => 'star'
+                'icon' => 'code-bracket'
             ],
             [
                 'name' => 'Quartermaster',
                 'description' => 'Officer of the Quartermaster department.',
                 'color' => 'orange',
-                'icon' => 'star'
+                'icon' => 'check-badge'
             ],
             [
                 'name' => 'Steward',
                 'description' => 'Officer of the Steward department.',
                 'color' => 'orange',
-                'icon' => 'star'
+                'icon' => 'chat-bubble-bottom-center-text'
             ],
             [
                 'name' => 'Citizen',
                 'description' => 'Users that have gone above and beyond in the community and have special recognition.',
                 'color' => 'cyan',
-                'icon' => 'battery-100'
+                'icon' => 'home'
             ],
             [
                 'name' => 'Resident',
                 'description' => 'Permanent member with standard privileges.',
                 'color' => 'sky',
-                'icon' => 'battery-50'
+                'icon' => 'identification'
             ],
             [
                 'name' => 'Traveler',
                 'description' => 'New users that are just starting out with limited access.',
                 'color' => 'blue',
-                'icon' => 'battery-0'
+                'icon' => 'ticket'
             ],
             [
                 'name' => 'Guest',
                 'description' => 'Unregistered user with minimal access.',
                 'color' => 'zinc',
-                'icon' => 'globe-alt'
+                'icon' => 'information-circle'
             ],
         ]);
     }

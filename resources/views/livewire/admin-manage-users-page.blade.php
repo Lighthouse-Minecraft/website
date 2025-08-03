@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use App\Models\Role;
 use Livewire\Volt\Component;
 use Illuminate\Support\Facades\Validator;
 use \Livewire\WithPagination;
@@ -16,6 +17,13 @@ new class extends Component {
         'name' => '',
         'email' => '',
     ];
+    public array $editUserRoles = [];
+    public $allRoles;
+
+    public function mount()
+    {
+        $this->allRoles = Role::all();
+    }
 
     public function openEditModal($userId)
     {
@@ -25,6 +33,7 @@ new class extends Component {
             'name' => $user->name,
             'email' => $user->email,
         ];
+        $this->editUserRoles = $user->roles->pluck('id')->toArray();
     }
 
     public function sort($column) {
@@ -44,6 +53,11 @@ new class extends Component {
             ->paginate(5);
     }
 
+    public function roles()
+    {
+        return \App\Models\Role::all();
+    }
+
     public function editUser($userId)
     {
         $user = User::findOrFail($userId);
@@ -53,12 +67,20 @@ new class extends Component {
 
     public function saveUser()
     {
-        Validator::make($this->editUserData, [
+        Validator::make([
+            'name' => $this->editUserData['name'],
+            'email' => $this->editUserData['email'],
+            'editUserRoles' => $this->editUserRoles,
+        ], [
             'name' => 'required|string|max:255',
             'email' => 'required|email',
+            'editUserRoles.*' => 'exists:roles,id',
         ])->validate();
 
-        User::findOrFail($this->editUserId)->update($this->editUserData);
+        $user = User::with('roles')->findOrFail($this->editUserId);
+        $user->update($this->editUserData);
+        $user->roles()->sync($this->editUserRoles);
+
         $this->editUserId = null;
         Flux::modal('edit-user-modal')->close();
         Flux::toast('User updated successfully!', 'Success', variant: 'success');
@@ -103,6 +125,7 @@ new class extends Component {
         </flux:table.rows>
     </flux:table>
 
+    <!-- Edit User Modal -->
     <flux:modal name="edit-user-modal" title="Edit User" variant="flyout">
         <div class="space-y-6">
             <flux:heading size="xl">Edit User</flux:heading>
@@ -110,6 +133,13 @@ new class extends Component {
                     <div class="space-y-6">
                         <flux:input label="Name" wire:model.defer="editUserData.name" required />
                         <flux:input label="Email" type="email" wire:model.defer="editUserData.email" required />
+
+
+                                <flux:checkbox.group wire:model.defer="editUserRoles">
+                                    @foreach($allRoles as $role)
+                                        <flux:checkbox value="{{ $role->id }}" label="{{ $role->name }}" />
+                                    @endforeach
+                                </flux:checkbox.group>
 
                         <div class="flex">
                             <flux:spacer />
