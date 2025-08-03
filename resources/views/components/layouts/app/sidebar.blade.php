@@ -14,6 +14,7 @@
             <flux:navlist variant="outline">
                 <flux:navlist.group heading="Platform" class="grid">
                     <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>Dashboard</flux:navlist.item>
+                    <flux:navlist.item icon="home" :href="route('acp.index')" :current="request()->routeIs('acp.index')" wire:navigate>Admin Control Panel</flux:navlist.item>
                 </flux:navlist.group>
             </flux:navlist>
 
@@ -128,5 +129,8 @@
         {{ $slot }}
 
         @fluxScripts
+        @persist('toast')
+            <flux:toast position="top right" />
+        @endpersist
     </body>
 </html>
