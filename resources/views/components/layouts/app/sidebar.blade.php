@@ -129,5 +129,8 @@
         {{ $slot }}
 
         @fluxScripts
+        @persist('toast')
+            <flux:toast position="top right" />
+        @endpersist
     </body>
 </html>

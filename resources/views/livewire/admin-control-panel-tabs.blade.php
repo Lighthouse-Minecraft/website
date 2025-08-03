@@ -14,10 +14,7 @@ new class extends Component {
         </flux:tabs>
 
         <flux:tab.panel name="user-manager">
-            <div class="p-4">
-                <h2 class="text-lg font-semibold">User Management</h2>
-                <p>Manage users, roles, and permissions.</p>
-            </div>
+            <livewire:admin-manage-users-page />
         </flux:tab.panel>
         <flux:tab.panel name="page-manager">
             <div class="p-4">
