@@ -93,6 +93,7 @@ new class extends Component {
         <flux:table.columns>
             <flux:table.column sortable :sorted="$sortBy === 'name'" :direction="$sortDirection" wire:click="sort('name')">Name</flux:table.column>
             <flux:table.column sortable :sorted="$sortBy === 'email'" :direction="$sortDirection" wire:click="sort('email')">Email</flux:table.column>
+            <flux:table.column>Roles</flux:table.column>
             {{-- <flux:table.column sortable :sorted="$sortBy === 'date'" :direction="$sortDirection" wire:click="sort('date')">Date</flux:table.column> --}}
             <flux:table.column>Actions</flux:table.column>
         </flux:table.columns>
@@ -106,13 +107,17 @@ new class extends Component {
                     </flux:table.cell>
 
                     <flux:table.cell class="whitespace-nowrap">{{ $user->email }}</flux:table.cell>
-
+                    <flux:table.cell class="whitespace-nowrap">
+                        @foreach ($user->roles as $role)
+                            <flux:badge size="xs" color="{{ $role->color }}" icon="{{  $role->icon }}" variant="pill">{{ $role->name }}</flux:badge>
+                        @endforeach
+                    </flux:table.cell>
 
                     <flux:table.cell>
                         <flux:dropdown>
-                                <flux:modal.trigger name="edit-user-modal" wire:click="openEditModal({{ $user->id }})">
-                                    <flux:button size="xs" icon="pencil-square"></flux:button>
-                                </flux:modal.trigger>
+                            <flux:modal.trigger name="edit-user-modal" wire:click="openEditModal({{ $user->id }})">
+                                <flux:button size="xs" icon="pencil-square"></flux:button>
+                            </flux:modal.trigger>
                         </flux:dropdown>
                     </flux:table.cell>
                 </flux:table.row>
@@ -130,12 +135,13 @@ new class extends Component {
                         <flux:input label="Name" wire:model.defer="editUserData.name" required />
                         <flux:input label="Email" type="email" wire:model.defer="editUserData.email" required />
 
-
-                                <flux:checkbox.group wire:model.defer="editUserRoles">
-                                    @foreach($allRoles as $role)
-                                        <flux:checkbox value="{{ $role->id }}" label="{{ $role->name }}" />
-                                    @endforeach
-                                </flux:checkbox.group>
+                        <flux:checkbox.group wire:model.defer="editUserRoles">
+                            @foreach($allRoles as $role)
+                                @if ($role->name != 'Guest')
+                                    <flux:checkbox value="{{ $role->id }}" label="{{ $role->name }}" />
+                                @endif
+                            @endforeach
+                        </flux:checkbox.group>
 
                         <div class="flex">
                             <flux:spacer />
