@@ -24,4 +24,8 @@ Route::middleware(['auth'])->group(function () {
         ->name('acp.index');
 });
 
+Route::get('/acp/pages/create', [App\Http\Controllers\PagesController::class, 'create'])
+    ->name('admin.pages.create')
+    ->middleware('can:create,App\Models\Page');
+
 require __DIR__.'/auth.php';
