@@ -10,10 +10,7 @@ class PagePolicy
 {
     public function before(User $user, string $ability): bool|null
     {
-        if (
-            $user->isAdmin() ||
-            ($user->roles()->get()->contains('name', 'Command') && $user->isOfficer())
-        ) {
+        if ($user->isAdmin() || ($user->isInCommandDepartment() && $user->isOfficer())) {
             return true;
         }
 
@@ -25,7 +22,7 @@ class PagePolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        return ($user->isOfficer() || $user->hasRole('Page Editor'));
     }
 
     /**
@@ -33,7 +30,7 @@ class PagePolicy
      */
     public function view(User $user, Page $page): bool
     {
-        return false;
+        return ($page->is_published || $user->hasRole('Page Editor') || $user->isOfficer() || $user->isCrewMember());
     }
 
     /**
@@ -41,7 +38,7 @@ class PagePolicy
      */
     public function create(User $user): bool
     {
-        return false;
+        return ($user->isOfficer() && ($user->isInStewardDepartment() || $user->isInEngineeringDepartment()));
     }
 
     /**
@@ -49,7 +46,7 @@ class PagePolicy
      */
     public function update(User $user, Page $page): bool
     {
-        return false;
+        return ($user->hasRole('Page Editor') || ($user->isOfficer() && ($user->isInStewardDepartment() || $user->isInEngineeringDepartment())));
     }
 
     /**
@@ -57,7 +54,8 @@ class PagePolicy
      */
     public function delete(User $user, Page $page): bool
     {
-        return false;
+        // Only those who can create pages can delete them
+        return $this->create($user);
     }
 
     /**

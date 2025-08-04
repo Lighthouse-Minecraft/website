@@ -77,37 +77,37 @@ class User extends Authenticatable // implements MustVerifyEmail
      */
     public function isOfficer(): bool
     {
-        return $this->roles()->get()->contains('name', 'Officer');
+        return $this->hasRole( 'Officer');
     }
 
     public function isCrewMember(): bool
     {
-        return $this->roles()->get()->contains('name', 'Crew Member');
+        return $this->hasRole( 'Crew Member');
     }
 
     public function isInCommandDepartment(): bool
     {
-        return $this->roles()->get()->contains('name', 'Command');
+        return $this->hasRole( 'Command');
     }
 
     public function isInChaplainDepartment(): bool
     {
-        return $this->roles()->get()->contains('name', 'Chaplain');
+        return $this->hasRole( 'Chaplain');
     }
 
     public function isInEngineeringDepartment(): bool
     {
-        return $this->roles()->get()->contains('name', 'Engineering');
+        return $this->hasRole( 'Engineering');
     }
 
     public function isInQuartermasterDepartment(): bool
     {
-        return $this->roles()->get()->contains('name', 'Quartermaster');
+        return $this->hasRole( 'Quartermaster');
     }
 
     public function isInStewardDepartment(): bool
     {
-        return $this->roles()->get()->contains('name', 'Steward');
+        return $this->hasRole( 'Steward');
     }
 
     /**
@@ -118,5 +118,10 @@ class User extends Authenticatable // implements MustVerifyEmail
         return $this->roles->contains(function ($role) {
             return in_array($role->name, ['Traveler', 'Resident', 'Citizen']);
         });
+    }
+
+    public function hasRole(string $roleName): bool
+    {
+        return $this->roles()->get()->contains('name', $roleName);
     }
 }
