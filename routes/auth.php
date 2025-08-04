@@ -3,6 +3,12 @@
 use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
+use Illuminate\Support\Facades\Gate;
+use App\Models\User;
+
+Gate::define('viewACP', function (?User $user) {
+    return $user->isAdmin() || $user->isOfficer();
+});
 
 Route::middleware('guest')->group(function () {
     Volt::route('login', 'auth.login')
