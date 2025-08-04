@@ -7,6 +7,10 @@ use Illuminate\Support\Facades\Gate;
 use App\Models\User;
 
 Gate::define('viewACP', function (?User $user) {
+    if (!$user) {
+        return false;
+    }
+
     return $user->isAdmin() || $user->isOfficer();
 });
 

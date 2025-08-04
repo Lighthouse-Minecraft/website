@@ -6,7 +6,7 @@ use App\Models\Page;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
-class PagesController extends Controller
+class PageController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -37,9 +37,11 @@ class PagesController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Page $page)
+    public function show($slug)
     {
-        //
+        $page = Page::where('slug', $slug)->where('is_published', true)->firstOrFail();
+
+        return view('pages.show', ['page' => $page]);
     }
 
     /**

@@ -54,9 +54,14 @@ new class extends Component {
                 wire:model="pageContent"
             />
 
-            <flux:switch wire:model="isPublished" label="Published" />
+            @if($isPublished)
+                <flux:checkbox label="Published" wire:model="isPublished" checked />
+            @else
+                <flux:checkbox label="Published" wire:model="isPublished" />
+            @endif
 
             <div class="w-full text-right">
+                <flux:button wire:navigate href="{{ route('acp.index', ['tab' => 'page-manager']) }}" class="mx-4" >Cancel</flux:button>
                 <flux:button wire:click="updatePage" variant="primary">Update Page</flux:button>
             </div>
         </div>

@@ -2,9 +2,12 @@
 
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
+use App\Http\Controllers\PageController;
+
+Route::get('/pages/{slug}', [PageController::class, 'show'])->name('pages.show');
 
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->route('pages.show', ['slug' => 'home']);
 })->name('home');
 
 Route::view('dashboard', 'dashboard')
@@ -24,11 +27,11 @@ Route::middleware(['auth'])->group(function () {
         ->name('acp.index');
 });
 
-Route::get('/acp/pages/create', [App\Http\Controllers\PagesController::class, 'create'])
+Route::get('/acp/pages/create', [PageController::class, 'create'])
     ->name('admin.pages.create')
     ->middleware('can:create,App\Models\Page');
 
-Route::get('/acp/pages/{page}/edit', [App\Http\Controllers\PagesController::class, 'edit'])
+Route::get('/acp/pages/{page}/edit', [PageController::class, 'edit'])
     ->name('admin.pages.edit')
     ->middleware('can:update,page');
 
