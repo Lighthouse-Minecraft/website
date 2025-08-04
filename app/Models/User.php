@@ -77,9 +77,37 @@ class User extends Authenticatable // implements MustVerifyEmail
      */
     public function isOfficer(): bool
     {
-        return $this->roles()->get()->contains(function ($role) {
-            return in_array($role->name, ['Officer', 'Command', 'Chaplain', 'Engineer', 'Quartermaster']);
-        });
+        return $this->roles()->get()->contains('name', 'Officer');
+    }
+
+    public function isCrewMember(): bool
+    {
+        return $this->roles()->get()->contains('name', 'Crew Member');
+    }
+
+    public function isInCommandDepartment(): bool
+    {
+        return $this->roles()->get()->contains('name', 'Command');
+    }
+
+    public function isInChaplainDepartment(): bool
+    {
+        return $this->roles()->get()->contains('name', 'Chaplain');
+    }
+
+    public function isInEngineeringDepartment(): bool
+    {
+        return $this->roles()->get()->contains('name', 'Engineering');
+    }
+
+    public function isInQuartermasterDepartment(): bool
+    {
+        return $this->roles()->get()->contains('name', 'Quartermaster');
+    }
+
+    public function isInStewardDepartment(): bool
+    {
+        return $this->roles()->get()->contains('name', 'Steward');
     }
 
     /**

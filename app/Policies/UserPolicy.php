@@ -10,7 +10,9 @@ class UserPolicy
 
     public function before(User $user, string $ability): bool|null
     {
-        if ($user->isAdmin() || $user->roles()->get()->contains('name', 'Command')) {
+        if (
+            $user->isAdmin() || ($user->isInCommandDepartment() && $user->isOfficer())
+        ) {
             return true;
         }
 
@@ -22,7 +24,7 @@ class UserPolicy
      */
     public function viewAny(User $user): bool
     {
-        return ($user->isAdmin() || $user->roles()->get()->contains('name', 'Quartermaster'));
+        return ($user->isAdmin() || ($user->isInQuartermasterDepartment() && $user->isOfficer()));
     }
 
     /**
@@ -46,7 +48,7 @@ class UserPolicy
      */
     public function update(User $user, User $model): bool
     {
-        return ($user->isAdmin() || $user->roles()->get()->contains('name', 'Quartermaster') || $user->id == $model->id);
+        return ($user->isAdmin() || ($user->isInQuartermasterDepartment() && $user->isOfficer()) || $user->id == $model->id);
     }
 
     /**

@@ -2,32 +2,36 @@
 
 namespace App\Policies;
 
-use App\Models\Role;
+use App\Models\Page;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
 
-class RolePolicy
+class PagePolicy
 {
     public function before(User $user, string $ability): bool|null
     {
-        if ($user->isAdmin() || ($user->isInCommandDepartment() && $user->isOfficer() )) {
+        if (
+            $user->isAdmin() ||
+            ($user->roles()->get()->contains('name', 'Command') && $user->isOfficer())
+        ) {
             return true;
         }
 
         return null;
     }
+
     /**
      * Determine whether the user can view any models.
      */
     public function viewAny(User $user): bool
     {
-        return ($user->isAdmin());
+        return false;
     }
 
     /**
      * Determine whether the user can view the model.
      */
-    public function view(User $user, Role $role): bool
+    public function view(User $user, Page $page): bool
     {
         return false;
     }
@@ -37,21 +41,21 @@ class RolePolicy
      */
     public function create(User $user): bool
     {
-        return ($user->isAdmin());
+        return false;
     }
 
     /**
      * Determine whether the user can update the model.
      */
-    public function update(User $user, Role $role): bool
+    public function update(User $user, Page $page): bool
     {
-        return ($user->isAdmin());
+        return false;
     }
 
     /**
      * Determine whether the user can delete the model.
      */
-    public function delete(User $user, Role $role): bool
+    public function delete(User $user, Page $page): bool
     {
         return false;
     }
@@ -59,7 +63,7 @@ class RolePolicy
     /**
      * Determine whether the user can restore the model.
      */
-    public function restore(User $user, Role $role): bool
+    public function restore(User $user, Page $page): bool
     {
         return false;
     }
@@ -67,7 +71,7 @@ class RolePolicy
     /**
      * Determine whether the user can permanently delete the model.
      */
-    public function forceDelete(User $user, Role $role): bool
+    public function forceDelete(User $user, Page $page): bool
     {
         return false;
     }
