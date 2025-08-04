@@ -28,4 +28,8 @@ Route::get('/acp/pages/create', [App\Http\Controllers\PagesController::class, 'c
     ->name('admin.pages.create')
     ->middleware('can:create,App\Models\Page');
 
+Route::get('/acp/pages/{page}/edit', [App\Http\Controllers\PagesController::class, 'edit'])
+    ->name('admin.pages.edit')
+    ->middleware('can:update,page');
+
 require __DIR__.'/auth.php';

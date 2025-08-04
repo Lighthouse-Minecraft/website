@@ -31,7 +31,7 @@ new class extends Component {
                     <flux:table.cell>{{ $page->slug }}</flux:table.cell>
                     <flux:table.cell>{{ $page->is_published ? 'Yes' : 'No' }}</flux:table.cell>
                     <flux:table.cell>
-                        <flux:button>Edit</flux:button>
+                        <flux:button wire:navigate href="{{ route('admin.pages.edit', $page) }}">Edit</flux:button>
                     </flux:table.cell>
                 </flux:table.row>
             @endforeach

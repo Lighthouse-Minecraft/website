@@ -47,7 +47,9 @@ class PagesController extends Controller
      */
     public function edit(Page $page)
     {
-        //
+        Gate::authorize('update', $page);
+
+        return view('pages.edit', compact('page'));
     }
 
     /**
