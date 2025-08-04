@@ -63,4 +63,32 @@ class User extends Authenticatable // implements MustVerifyEmail
     {
         return $this->belongsToMany(Role::class);
     }
+
+    /**
+     * Check if the user has the Admin role.
+     */
+    public function isAdmin(): bool
+    {
+        return $this->roles()->get()->contains('name', 'Admin');
+    }
+
+    /**
+     * Check if the user has the Officer role.
+     */
+    public function isOfficer(): bool
+    {
+        return $this->roles()->get()->contains(function ($role) {
+            return in_array($role->name, ['Officer', 'Command', 'Chaplain', 'Engineer', 'Quartermaster']);
+        });
+    }
+
+    /**
+     * Check if the user is a Traveler, Resident, or Citizen.
+     */
+    public function isMember(): bool
+    {
+        return $this->roles->contains(function ($role) {
+            return in_array($role->name, ['Traveler', 'Resident', 'Citizen']);
+        });
+    }
 }

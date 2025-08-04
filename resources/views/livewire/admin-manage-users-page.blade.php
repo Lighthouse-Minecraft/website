@@ -61,6 +61,8 @@ new class extends Component {
     public function editUser($userId)
     {
         $user = User::findOrFail($userId);
+        $this->authorize('update', $user);
+
         $this->editUserId = $userId;
         $this->editUserData = $user->only(['name', 'email']);
     }
@@ -78,6 +80,26 @@ new class extends Component {
         ])->validate();
 
         $user = User::with('roles')->findOrFail($this->editUserId);
+
+        // Prevent non-admins from adding/removing the Admin role
+        $adminRoleId = \App\Models\Role::where('name', 'Admin')->value('id');
+        $currentUser = auth()->user();
+
+        if (!$currentUser->isAdmin()) {
+            // Ensure the Admin role cannot be added or removed
+            $hasAdminRole = $user->roles->contains('id', $adminRoleId);
+
+            // If the user currently has the Admin role, keep it
+            if ($hasAdminRole && !in_array($adminRoleId, $this->editUserRoles)) {
+                $this->editUserRoles[] = $adminRoleId;
+            }
+
+            // If the user does not have the Admin role, prevent it from being added
+            if (!$hasAdminRole && in_array($adminRoleId, $this->editUserRoles)) {
+                $this->editUserRoles = array_diff($this->editUserRoles, [$adminRoleId]);
+            }
+        }
+
         $user->update($this->editUserData);
         $user->roles()->sync($this->editUserRoles);
 
@@ -116,11 +138,11 @@ new class extends Component {
                     </flux:table.cell>
 
                     <flux:table.cell>
-                        <flux:dropdown>
+                        @can('update', $user)
                             <flux:modal.trigger name="edit-user-modal" wire:click="openEditModal({{ $user->id }})">
                                 <flux:button size="xs" icon="pencil-square"></flux:button>
                             </flux:modal.trigger>
-                        </flux:dropdown>
+                        @endcan
                     </flux:table.cell>
                 </flux:table.row>
 
