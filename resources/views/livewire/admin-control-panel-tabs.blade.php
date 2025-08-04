@@ -18,13 +18,17 @@ new class extends Component {
 <div class="w-full flex">
     <flux:tab.group>
         <flux:tabs wire:model="tab" variant="pills">
-            <flux:tab name="user-manager">User Manager</flux:tab>
+            @can('viewAny', \App\Models\User::class)
+                <flux:tab name="user-manager">User Manager</flux:tab>
+            @endcan
             <flux:tab name="role-manager">Role Manager</flux:tab>
             <flux:tab name="page-manager">Page Manager</flux:tab>
         </flux:tabs>
 
         <flux:tab.panel name="user-manager">
-            <livewire:admin-manage-users-page />
+            @can('viewAny', \App\Models\User::class)
+                <livewire:admin-manage-users-page />
+            @endcan
         </flux:tab.panel>
 
         <flux:tab.panel name="role-manager">
