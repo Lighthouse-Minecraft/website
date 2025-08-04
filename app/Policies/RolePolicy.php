@@ -10,13 +10,12 @@ class RolePolicy
 {
     public function before(User $user, string $ability): bool|null
     {
-        if ($user->isAdmin() || $user->roles()->get()->contains('name', 'Command')) {
+        if ($user->isAdmin() || ($user->isInCommandDepartment() && $user->isOfficer() )) {
             return true;
         }
 
         return null;
     }
-
     /**
      * Determine whether the user can view any models.
      */

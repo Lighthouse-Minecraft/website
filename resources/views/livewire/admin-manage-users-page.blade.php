@@ -110,7 +110,7 @@ new class extends Component {
 };
 ?>
 
-<div class="p-4 max-w-5xl mx-auto w-full space-y-6">
+<div class="space-y-6">
     <flux:heading size="xl">Manage Users</flux:heading>
 
     <flux:table :paginate="$this->users">
