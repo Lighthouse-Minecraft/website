@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use App\Models\Role;
 use Livewire\Volt\Component;
 use Illuminate\Support\Facades\Validator;
 use \Livewire\WithPagination;
@@ -16,6 +17,13 @@ new class extends Component {
         'name' => '',
         'email' => '',
     ];
+    public array $editUserRoles = [];
+    public $allRoles;
+
+    public function mount()
+    {
+        $this->allRoles = Role::all();
+    }
 
     public function openEditModal($userId)
     {
@@ -25,6 +33,7 @@ new class extends Component {
             'name' => $user->name,
             'email' => $user->email,
         ];
+        $this->editUserRoles = $user->roles->pluck('id')->toArray();
     }
 
     public function sort($column) {
@@ -44,23 +53,34 @@ new class extends Component {
             ->paginate(5);
     }
 
+    public function roles()
+    {
+        return \App\Models\Role::all();
+    }
+
     public function editUser($userId)
     {
         $user = User::findOrFail($userId);
         $this->editUserId = $userId;
         $this->editUserData = $user->only(['name', 'email']);
-        $this->dispatch('open-modal', 'edit-user-modal');
     }
 
     public function saveUser()
     {
-        Validator::make($this->editUserData, [
+        Validator::make([
+            'name' => $this->editUserData['name'],
+            'email' => $this->editUserData['email'],
+            'editUserRoles' => $this->editUserRoles,
+        ], [
             'name' => 'required|string|max:255',
             'email' => 'required|email',
+            'editUserRoles.*' => 'exists:roles,id',
         ])->validate();
 
-        User::findOrFail($this->editUserId)->update($this->editUserData);
-        $this->dispatch('close-modal', 'edit-user-modal');
+        $user = User::with('roles')->findOrFail($this->editUserId);
+        $user->update($this->editUserData);
+        $user->roles()->sync($this->editUserRoles);
+
         $this->editUserId = null;
         Flux::modal('edit-user-modal')->close();
         Flux::toast('User updated successfully!', 'Success', variant: 'success');
@@ -68,11 +88,14 @@ new class extends Component {
 };
 ?>
 
-<div class="p-4 max-w-5xl mx-auto w-full">
+<div class="p-4 max-w-5xl mx-auto w-full space-y-6">
+    <flux:heading size="xl">Manage Users</flux:heading>
+
     <flux:table :paginate="$this->users">
         <flux:table.columns>
             <flux:table.column sortable :sorted="$sortBy === 'name'" :direction="$sortDirection" wire:click="sort('name')">Name</flux:table.column>
             <flux:table.column sortable :sorted="$sortBy === 'email'" :direction="$sortDirection" wire:click="sort('email')">Email</flux:table.column>
+            <flux:table.column>Roles</flux:table.column>
             {{-- <flux:table.column sortable :sorted="$sortBy === 'date'" :direction="$sortDirection" wire:click="sort('date')">Date</flux:table.column> --}}
             <flux:table.column>Actions</flux:table.column>
         </flux:table.columns>
@@ -86,17 +109,17 @@ new class extends Component {
                     </flux:table.cell>
 
                     <flux:table.cell class="whitespace-nowrap">{{ $user->email }}</flux:table.cell>
-
+                    <flux:table.cell class="whitespace-nowrap">
+                        @foreach ($user->roles as $role)
+                            <flux:badge size="xs" color="{{ $role->color }}" icon="{{  $role->icon }}" variant="pill">{{ $role->name }}</flux:badge>
+                        @endforeach
+                    </flux:table.cell>
 
                     <flux:table.cell>
                         <flux:dropdown>
-                            <flux:button variant="ghost" size="sm" icon="ellipsis-horizontal" inset="top bottom"></flux:button>
-
-                            <flux:menu>
-                                <flux:modal.trigger name="edit-user-modal" wire:click="openEditModal({{ $user->id }})">
-                                    <flux:menu.item>Edit User</flux:menu.item>
-                                </flux:modal.trigger>
-                            </flux:menu>
+                            <flux:modal.trigger name="edit-user-modal" wire:click="openEditModal({{ $user->id }})">
+                                <flux:button size="xs" icon="pencil-square"></flux:button>
+                            </flux:modal.trigger>
                         </flux:dropdown>
                     </flux:table.cell>
                 </flux:table.row>
@@ -105,6 +128,7 @@ new class extends Component {
         </flux:table.rows>
     </flux:table>
 
+    <!-- Edit User Modal -->
     <flux:modal name="edit-user-modal" title="Edit User" variant="flyout">
         <div class="space-y-6">
             <flux:heading size="xl">Edit User</flux:heading>
@@ -112,6 +136,14 @@ new class extends Component {
                     <div class="space-y-6">
                         <flux:input label="Name" wire:model.defer="editUserData.name" required />
                         <flux:input label="Email" type="email" wire:model.defer="editUserData.email" required />
+
+                        <flux:checkbox.group wire:model.defer="editUserRoles">
+                            @foreach($allRoles as $role)
+                                @if ($role->name != 'Guest')
+                                    <flux:checkbox value="{{ $role->id }}" label="{{ $role->name }}" />
+                                @endif
+                            @endforeach
+                        </flux:checkbox.group>
 
                         <div class="flex">
                             <flux:spacer />
