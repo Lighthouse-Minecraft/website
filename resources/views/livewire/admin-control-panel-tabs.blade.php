@@ -21,7 +21,11 @@ new class extends Component {
             @can('viewAny', \App\Models\User::class)
                 <flux:tab name="user-manager">User Manager</flux:tab>
             @endcan
-            <flux:tab name="role-manager">Role Manager</flux:tab>
+
+            @can('viewAny', \App\Models\Role::class)
+                <flux:tab name="role-manager">Role Manager</flux:tab>
+            @endcan
+
             <flux:tab name="page-manager">Page Manager</flux:tab>
         </flux:tabs>
 
@@ -32,7 +36,9 @@ new class extends Component {
         </flux:tab.panel>
 
         <flux:tab.panel name="role-manager">
-            <livewire:admin-manage-roles-page />
+            @can('viewAny', \App\Models\Role::class)
+                <livewire:admin-manage-roles-page />
+            @endcan
         </flux:tab.panel>
 
         <flux:tab.panel name="page-manager">

@@ -67,6 +67,8 @@ new class extends Component {
 
     public function createRole()
     {
+        $this->authorize('create', \App\Models\Role::class);
+
         $this->validate([
             'newRoleName' => 'required|string|max:255',
             'newRoleColor' => 'required|string|max:50',
@@ -89,6 +91,8 @@ new class extends Component {
     public function openEditModal($roleId)
     {
         $role = \App\Models\Role::findOrFail($roleId);
+        $this->authorize('update', $role);
+
         $this->updateRoleName = $role->name;
         $this->updateRoleColor = $role->color;
         $this->updateRoleDescription = $role->description;
@@ -97,6 +101,9 @@ new class extends Component {
 
     public function updateRole()
     {
+        $role = \App\Models\Role::where('name', $this->updateRoleName)->firstOrFail();
+        $this->authorize('update', $role);
+
         $this->validate([
             'updateRoleName' => 'required|string|max:255',
             'updateRoleColor' => 'required|string|max:50',
@@ -104,7 +111,6 @@ new class extends Component {
             'updateRoleIcon' => ['nullable', 'string', 'max:50', 'in:' . implode(',', $this->allowedIcons)],
         ]);
 
-        $role = \App\Models\Role::where('name', $this->updateRoleName)->firstOrFail();
         $role->update([
             'color' => $this->updateRoleColor,
             'description' => $this->updateRoleDescription,
@@ -172,9 +178,11 @@ new class extends Component {
                         <flux:table.cell>{{  STR::limit($role['description'], 75, '...') }}</flux:table.cell>
                         <flux:table.cell>{{ $role['icon'] }}</flux:table.cell>
                         <flux:table.cell>
-                            <flux:modal.trigger wire:click="openEditModal({{ $role['id'] }})" name="edit-role-modal">
-                                <flux:button size="sm" icon="pencil-square">Edit</flux:button>
-                            </flux:modal.trigger>
+                            @can('update', \App\Models\Role::class)
+                                <flux:modal.trigger wire:click="openEditModal({{ $role['id'] }})" name="edit-role-modal">
+                                    <flux:button size="sm" icon="pencil-square">Edit</flux:button>
+                                </flux:modal.trigger>
+                            @endcan
                         </flux:table.cell>
                     </flux:table.row>
                 @endforeach

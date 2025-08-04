@@ -69,7 +69,7 @@ class User extends Authenticatable // implements MustVerifyEmail
      */
     public function isAdmin(): bool
     {
-        return $this->roles->contains('name', 'Admin');
+        return $this->roles()->get()->contains('name', 'Admin');
     }
 
     /**
@@ -77,10 +77,9 @@ class User extends Authenticatable // implements MustVerifyEmail
      */
     public function isOfficer(): bool
     {
-        return $this->roles->contains(function ($role) {
+        return $this->roles()->get()->contains(function ($role) {
             return in_array($role->name, ['Officer', 'Command', 'Chaplain', 'Engineer', 'Quartermaster']);
         });
-
     }
 
     /**
