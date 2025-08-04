@@ -88,7 +88,9 @@ new class extends Component {
 };
 ?>
 
-<div class="p-4 max-w-5xl mx-auto w-full">
+<div class="p-4 max-w-5xl mx-auto w-full space-y-6">
+    <flux:heading size="xl">Manage Users</flux:heading>
+
     <flux:table :paginate="$this->users">
         <flux:table.columns>
             <flux:table.column sortable :sorted="$sortBy === 'name'" :direction="$sortDirection" wire:click="sort('name')">Name</flux:table.column>

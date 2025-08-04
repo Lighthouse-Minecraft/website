@@ -121,11 +121,6 @@ new class extends Component {
 <div class="space-y-6">
     <flux:heading size="xl">Manage Roles</flux:heading>
 
-    <!-- Create Role Modal -->
-    <flux:modal.trigger name="create-role-modal" title="Create Role" variant="flyout">
-        <flux:button variant="primary">Create New Role</flux:button>
-    </flux:modal.trigger>
-
     <flux:modal name="create-role-modal" title="Create Role" variant="flyout" class="space-y-6">
 
         <flux:heading size="xl">Create New Role</flux:heading>
@@ -186,4 +181,11 @@ new class extends Component {
             </flux:table.rows>
         </flux:table>
     </div>
+
+    <!-- Create Role Modal -->
+    <flux:modal.trigger name="create-role-modal" title="Create Role" variant="flyout">
+        <div class="w-full text-right my-10">
+            <flux:button variant="primary">Create New Role</flux:button>
+        </div>
+    </flux:modal.trigger>
 </div>
