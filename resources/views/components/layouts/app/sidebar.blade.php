@@ -3,7 +3,7 @@
     <head>
         @include('partials.head')
     </head>
-    <body class="min-h-screen bg-white dark:bg-zinc-800">
+    <body class="min-h-screen bg-gray-200 dark:bg-zinc-800">
         <flux:sidebar sticky stashable class="border-r border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
             <flux:sidebar.toggle class="lg:hidden" icon="x-mark" />
 
@@ -12,13 +12,6 @@
             </a>
 
             <flux:navlist variant="outline">
-                <flux:navlist.group heading="Platform" class="grid">
-                    <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>Dashboard</flux:navlist.item>
-                    @can('viewACP')
-                        <flux:navlist.item icon="home" :href="route('acp.index')" :current="request()->routeIs('acp.index')" wire:navigate>Admin Control Panel</flux:navlist.item>
-                    @endcan
-                </flux:navlist.group>
-
                 <flux:navlist.group heading="Pages" class="grid my-4">
                     @foreach(\App\Models\Page::where('is_published', operator: true)->get() as $page)
                         <flux:navlist.item
@@ -31,6 +24,14 @@
                         </flux:navlist.item>
                     @endforeach
                 </flux:navlist.group>
+
+                <flux:navlist.group heading="Platform" class="grid">
+                    <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>Dashboard</flux:navlist.item>
+                    @can('viewACP')
+                        <flux:navlist.item icon="home" :href="route('acp.index')" :current="request()->routeIs('acp.index')" wire:navigate>Admin Control Panel</flux:navlist.item>
+                    @endcan
+                </flux:navlist.group>
+
             </flux:navlist>
 
             <flux:spacer />

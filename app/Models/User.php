@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class User extends Authenticatable // implements MustVerifyEmail
@@ -23,6 +24,7 @@ class User extends Authenticatable // implements MustVerifyEmail
         'name',
         'email',
         'password',
+        'rules_accepted_at',
     ];
 
     /**
@@ -108,6 +110,13 @@ class User extends Authenticatable // implements MustVerifyEmail
     public function isInStewardDepartment(): bool
     {
         return $this->hasRole( 'Steward');
+    }
+
+    public function isStowaway(): bool
+    {
+        return Cache::rememberForever("user:{$this->id}:is_stowaway", function () {
+            return $this->hasRole('Stowaway');
+        });
     }
 
     /**
