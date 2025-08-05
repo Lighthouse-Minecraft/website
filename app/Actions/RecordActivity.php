@@ -29,7 +29,7 @@ class RecordActivity
             'subject_id'   => $subject->getKey(),
             'action' => $action,
             'description' => $description,
-            'meta' => json_encode($meta),
+            'meta' => $meta,
         ]);
     }
 }
