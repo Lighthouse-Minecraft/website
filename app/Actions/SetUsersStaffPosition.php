@@ -25,7 +25,7 @@ class SetUsersStaffPosition
         $updateText = "Updating staff position: " ;
 
         if ($existingDepartment !== $department) {
-            $updateText .= "Department: " . $existingDepartment->label() . " => " . $department->label() . ", ";
+            $updateText .= "Department: " . $existingDepartment?->label() . " => " . $department->label() . ", ";
             $user->staff_department = $department;
         }
 
