@@ -32,7 +32,7 @@ new #[Layout('components.layouts.auth')] class extends Component {
 
         Auth::login($user);
 
-        RecordActivity::execute($user, 'user_registered', 'User registered for an account');
+        RecordActivity::run($user, 'user_registered', 'User registered for an account');
 
         $this->redirect(route('dashboard', absolute: false), navigate: true);
     }

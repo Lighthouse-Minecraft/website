@@ -106,6 +106,9 @@ select:focus[data-flux-control] {
   @apply text-amber-300 font-semibold;
 }
 
+.link {
+    @apply text-accent hover:text-accent-content hover:underline;
+}
 
 /* \[:where(&)\]:size-4 {
     @apply size-4;

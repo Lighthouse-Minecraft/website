@@ -5,13 +5,15 @@ namespace App\Actions;
 use App\Models\ActivityLog;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Lorisleiva\Actions\Concerns\AsAction;
 
 class RecordActivity
 {
+    use AsAction;
     // This class will handle the recording of user activities
     // It will use the ActivityLog model to store records in the database
 
-    public static function execute($subject, $action, $description = null)
+    public static function handle($subject, $action, $description = null)
     {
         $causerId = Auth::check() ? Auth::id() : null;
 

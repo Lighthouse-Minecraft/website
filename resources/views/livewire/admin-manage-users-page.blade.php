@@ -127,7 +127,7 @@ new class extends Component {
                 <flux:table.row :key="$user->id">
                     <flux:table.cell class="flex items-center gap-3">
                         {{-- <flux:avatar size="xs" src="{{ $user->avatar }}" /> --}}
-                        {{ $user->name }}
+                        <flux:link href="{{ route('profile.show', $user) }}">{{ $user->name }}</flux:link>
                     </flux:table.cell>
 
                     <flux:table.cell class="whitespace-nowrap">{{ $user->email }}</flux:table.cell>

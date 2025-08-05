@@ -9,6 +9,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
+use App\Enums\MembershipLevel;
 
 class User extends Authenticatable // implements MustVerifyEmail
 {
@@ -47,6 +48,7 @@ class User extends Authenticatable // implements MustVerifyEmail
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'membership_level' => MembershipLevel::class,
         ];
     }
 
@@ -112,25 +114,14 @@ class User extends Authenticatable // implements MustVerifyEmail
         return $this->hasRole( 'Steward');
     }
 
-    public function isStowaway(): bool
-    {
-        return Cache::rememberForever("user:{$this->id}:is_stowaway", function () {
-            return $this->hasRole('Stowaway');
-        });
-    }
-
-    /**
-     * Check if the user is a Traveler, Resident, or Citizen.
-     */
-    public function isMember(): bool
-    {
-        return $this->roles->contains(function ($role) {
-            return in_array($role->name, ['Traveler', 'Resident', 'Citizen']);
-        });
-    }
-
     public function hasRole(string $roleName): bool
     {
         return $this->roles()->get()->contains('name', $roleName);
     }
+
+    public function isAtLeast(MembershipLevel $level): bool
+    {
+        return $this->membership_level->value >= $level->value;
+    }
+
 }
