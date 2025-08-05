@@ -14,10 +14,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->unsignedTinyInteger('membership_level')->default(MembershipLevel::Drifter->value)->after('email_verified_at');
+            $table->unsignedTinyInteger('membership_level')->default(MembershipLevel::Drifter)->after('email_verified_at');
             $table->string('staff_department')->nullable()->after('membership_level');
-            $table->boolean('is_officer')->default(false)->after('staff_department');
-            $table->string('staff_title')->nullable()->after('is_officer');
+            $table->unsignedTinyInteger('staff_rank')->nullable()->after('staff_department');
+            $table->string('staff_title')->nullable()->after('staff_rank');
         });
 
         DB::table('users')
@@ -34,7 +34,7 @@ return new class extends Migration
             $table->dropColumn([
                 'membership_level',
                 'staff_department',
-                'is_officer',
+                'staff_rank',
                 'staff_title',
             ]);
         });

@@ -119,7 +119,7 @@ new class extends Component {
             </ul>
         </div>
         <div class="w-full text-right">
-            @if (!auth()->user()->rules_accepted_at)
+            @if (!auth()->user()->rules_accepted_at || auth()->user()->isLevel(MembershipLevel::Drifter))
                 <flux:button color="amber" wire:click="acceptRules" variant="primary">I Have Read the Rules and Agree to Follow Them</flux:button>
             @endif
         </div>

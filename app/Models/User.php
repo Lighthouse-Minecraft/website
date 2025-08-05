@@ -127,4 +127,10 @@ class User extends Authenticatable // implements MustVerifyEmail
     {
         return $this->membership_level->value >= $level->value;
     }
+
+    public function isLevel(MembershipLevel $level): bool
+    {
+        return $this->membership_level->value == $level->value;
+    }
+
 }
