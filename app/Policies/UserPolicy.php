@@ -59,6 +59,10 @@ class UserPolicy
         return (($user->isInDepartment(StaffDepartment::Quartermaster) && $user->isAtLeastRank(StaffRank::Officer)) || $user->id == $model->id);
     }
 
+    public function updateStaffPosition(User $user, User $model): bool
+    {
+        return false;
+    }
     /**
      * Determine whether the user can delete the model.
      */

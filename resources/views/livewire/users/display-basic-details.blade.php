@@ -27,8 +27,9 @@ new class extends Component {
     }
 
     public function updateStaffPosition() {
-        if (!Auth::user()->isAdmin() && !Auth::user()->isInDepartment(\App\Enums\StaffDepartment::Command) && !Auth::user()->isAtLeastRank(\App\Enums\StaffRank::Officer)) {
-            $this->dispatch('notify', 'You do not have permission to update staff positions.');
+        // Check if the user has permission to update staff positions
+        if (!Auth::user()->can('updateStaffPosition', $this->user)) {
+            Flux::toast('You do not have permission to update staff positions.', 'Error', 'error');
             return;
         }
 
@@ -63,8 +64,8 @@ new class extends Component {
     }
 
     public function removeStaffPosition() {
-        if (!Auth::user()->isAdmin() && !Auth::user()->isInDepartment(\App\Enums\StaffDepartment::Command) && !Auth::user()->isAtLeastRank(\App\Enums\StaffRank::Officer)) {
-            $this->dispatch('notify', 'You do not have permission to remove staff positions.');
+        if (!Auth::user()->can('removeStaffPosition', $this->user)) {
+            Flux::toast('You do not have permission to remove staff positions.', 'Error', 'error');
             return;
         }
 
