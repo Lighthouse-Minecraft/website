@@ -14,7 +14,7 @@ class SetUsersStaffPosition
     public function handle(User $user, $title, StaffDepartment $department, StaffRank $rank)
     {
         // Update the user's staff position
-        if ($user == null || $department == null || $rank == null || $title == null) {
+        if ($title == null) {
             return false;
         }
 
@@ -25,12 +25,12 @@ class SetUsersStaffPosition
         $updateText = "Updating staff position: " ;
 
         if ($existingDepartment !== $department) {
-            $updateText .= "Department: " . $existingDepartment->label() . " => " . $department->label() . ", ";
+            $updateText .= "Department: " . $existingDepartment?->label() . " => " . $department->label() . ", ";
             $user->staff_department = $department;
         }
 
         if ($existingRank !== $rank) {
-            $updateText .= "Rank: " . $existingRank->label() . " => " . $rank->label() . ", ";
+            $updateText .= "Rank: " . ($existingRank ? $existingRank->label() : 'None') . " => " . $rank->label() . ", ";
             $user->staff_rank = $rank;
         }
 
