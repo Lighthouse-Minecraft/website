@@ -80,44 +80,6 @@ class User extends Authenticatable // implements MustVerifyEmail
         return $this->roles()->get()->contains('name', 'Admin');
     }
 
-    /**
-     * Check if the user has the Officer role.
-     */
-    public function isOfficer(): bool
-    {
-        return $this->hasRole( 'Officer');
-    }
-
-    public function isCrewMember(): bool
-    {
-        return $this->hasRole( 'Crew Member');
-    }
-
-    public function isInCommandDepartment(): bool
-    {
-        return $this->hasRole( 'Command');
-    }
-
-    public function isInChaplainDepartment(): bool
-    {
-        return $this->hasRole( 'Chaplain');
-    }
-
-    public function isInEngineeringDepartment(): bool
-    {
-        return $this->hasRole( 'Engineering');
-    }
-
-    public function isInQuartermasterDepartment(): bool
-    {
-        return $this->hasRole( 'Quartermaster');
-    }
-
-    public function isInStewardDepartment(): bool
-    {
-        return $this->hasRole( 'Steward');
-    }
-
     public function hasRole(string $roleName): bool
     {
         return $this->roles()->get()->contains('name', $roleName);
@@ -130,7 +92,21 @@ class User extends Authenticatable // implements MustVerifyEmail
 
     public function isLevel(MembershipLevel $level): bool
     {
-        return $this->membership_level->value == $level->value;
+        return $this->membership_level == $level;
     }
 
+    public function isAtLeastRank(StaffRank $rank): bool
+    {
+        return ($this->staff_rank?->value ?? 0) >= $rank->value;
+    }
+
+    public function isRank(StaffRank $rank): bool
+    {
+        return ($this->staff_rank == $rank);
+    }
+
+    public function isInDepartment(StaffDepartment $department): bool
+    {
+        return $this->staff_department === $department;
+    }
 }

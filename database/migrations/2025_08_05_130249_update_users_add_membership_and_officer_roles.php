@@ -4,6 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use App\Enums\MembershipLevel;
+use App\Enums\StaffRank;
 use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
@@ -15,9 +16,9 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             $table->unsignedTinyInteger('membership_level')->default(MembershipLevel::Drifter)->after('email_verified_at');
-            $table->string('staff_department')->nullable()->after('membership_level');
-            $table->unsignedTinyInteger('staff_rank')->nullable()->after('staff_department');
-            $table->string('staff_title')->nullable()->after('staff_rank');
+            $table->unsignedTinyInteger('staff_rank')->default(StaffRank::None)->after('membership_level');
+            $table->string('staff_department')->nullable()->after('staff_rank');
+            $table->string('staff_title')->nullable()->after('staff_department');
         });
 
         DB::table('users')
