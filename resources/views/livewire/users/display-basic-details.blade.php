@@ -26,46 +26,58 @@ new class extends Component {
         $this->ranks = \App\Enums\StaffRank::cases();
     }
 
-public function updateStaffPosition() {
-    if (!Auth::user()->isAdmin() && !Auth::user()->isInDepartment(\App\Enums\StaffDepartment::Command) && !Auth::user()->isAtLeastRank(\App\Enums\StaffRank::Officer)) {
-        $this->dispatch('notify', 'You do not have permission to update staff positions.');
-        return;
+    public function updateStaffPosition() {
+        if (!Auth::user()->isAdmin() && !Auth::user()->isInDepartment(\App\Enums\StaffDepartment::Command) && !Auth::user()->isAtLeastRank(\App\Enums\StaffRank::Officer)) {
+            $this->dispatch('notify', 'You do not have permission to update staff positions.');
+            return;
+        }
+
+        $department = $this->currentDepartmentValue
+            ? \App\Enums\StaffDepartment::tryFrom($this->currentDepartmentValue)
+            : null;
+
+        $rank = $this->currentRank !== null
+            ? \App\Enums\StaffRank::tryFrom((int) $this->currentRank)
+            : null;
+
+        $this->validate([
+            'currentTitle' => [Rule::requiredIf($this->currentDepartmentValue !== null), 'string', 'max:255'],
+            'currentDepartmentValue' => ['nullable', Rule::enum((\App\Enums\StaffDepartment::class))],
+            'currentRank' => ['nullable', Rule::enum((\App\Enums\StaffRank::class))],
+        ]);
+
+        $success = \App\Actions\SetUsersStaffPosition::run(
+            $this->user,
+            $this->currentTitle,
+            $department,
+            $rank
+        );
+
+        if ($success) {
+            Flux::toast('Staff position updated successfully.', 'Success', 'success');
+        } else {
+            Flux::toast('Failed to update staff position. Please try again.', 'Error', 'error');
+        }
+
+        Flux::modal('manage-users-staff-position')->close();
     }
 
+    public function removeStaffPosition() {
+        if (!Auth::user()->isAdmin() && !Auth::user()->isInDepartment(\App\Enums\StaffDepartment::Command) && !Auth::user()->isAtLeastRank(\App\Enums\StaffRank::Officer)) {
+            $this->dispatch('notify', 'You do not have permission to remove staff positions.');
+            return;
+        }
 
-    if ($this->currentDepartmentValue === 'None') {
-        $this->currentDepartmentValue = null;
+        $success = \App\Actions\RemoveUsersStaffPosition::run($this->user);
+
+        if ($success) {
+            Flux::toast('Staff position removed successfully.', 'Success', 'success');
+        } else {
+            Flux::toast('Failed to remove staff position. Please try again.', 'Error', 'error');
+        }
+
+        Flux::modal('manage-users-staff-position')->close();
     }
-
-    $department = $this->currentDepartmentValue
-        ? \App\Enums\StaffDepartment::tryFrom($this->currentDepartmentValue)
-        : null;
-
-    $rank = $this->currentRank !== null
-        ? \App\Enums\StaffRank::tryFrom((int) $this->currentRank)
-        : null;
-
-    $this->validate([
-        'currentTitle' => [Rule::requiredIf($this->currentDepartmentValue !== null), 'string', 'max:255'],
-        'currentDepartmentValue' => ['nullable', Rule::enum((\App\Enums\StaffDepartment::class))],
-        'currentRank' => ['nullable', Rule::enum((\App\Enums\StaffRank::class))],
-    ]);
-
-    $success = \App\Actions\SetUsersStaffPosition::run(
-        $this->user,
-        $this->currentTitle,
-        $department,
-        $rank
-    );
-
-    if ($success) {
-        Flux::toast('Staff position updated successfully.', 'Success', 'success');
-    } else {
-        Flux::toast('Failed to update staff position. Please try again.', 'Error', 'error');
-    }
-
-    Flux::modal('manage-users-staff-position')->close();
-}
 
 }; ?>
 
@@ -108,8 +120,6 @@ public function updateStaffPosition() {
             <flux:input wire:model="currentTitle" label="Title" />
 
             <flux:radio.group wire:model="currentDepartmentValue" variant="pills" label="Department">
-                <flux:radio value="none" :label="'None'" />
-
                 @foreach ($departments as $department)
                     @if ($currentDepartmentValue == $department->name)
                         <flux:radio value="{{ $department->value }}" :label="$department->label()" checked />
@@ -129,7 +139,9 @@ public function updateStaffPosition() {
                 @endforeach
             </flux:radio.group>
 
-            <div class="w-full text-right">
+            <div class="w-full flex">
+                <flux:button wire:click="removeStaffPosition" variant="danger" class="opacity-80">Remove Staff Position</flux:button>
+                <flux:spacer />
                 <flux:button wire:click="updateStaffPosition" variant="primary">Save Changes</flux:button>
             </div>
         </div>
