@@ -10,6 +10,8 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use App\Enums\MembershipLevel;
+use App\Enums\StaffDepartment;
+use App\Enums\StaffRank;
 
 class User extends Authenticatable // implements MustVerifyEmail
 {
@@ -49,6 +51,8 @@ class User extends Authenticatable // implements MustVerifyEmail
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'membership_level' => MembershipLevel::class,
+            'staff_rank' => StaffRank::class,
+            'staff_department' => StaffDepartment::class,
         ];
     }
 
