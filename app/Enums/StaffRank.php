@@ -6,7 +6,7 @@ enum StaffRank: int
 {
     case None = 0;
     case JrCrew = 1;
-    case Crew = 2;
+    case CrewMember = 2;
     case Officer = 3;
 
     public function label(): string
@@ -14,7 +14,7 @@ enum StaffRank: int
         return match($this) {
             self::None => 'None',
             self::JrCrew => 'Junior Crew Member',
-            self::Crew => 'Crew Member',
+            self::CrewMember => 'Crew Member',
             self::Officer => 'Officer',
         };
     }
