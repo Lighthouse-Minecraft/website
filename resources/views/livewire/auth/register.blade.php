@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
+use App\Actions\RecordActivity;
 
 new #[Layout('components.layouts.auth')] class extends Component {
     public string $name = '';
@@ -30,6 +31,8 @@ new #[Layout('components.layouts.auth')] class extends Component {
         event(new Registered(($user = User::create($validated))));
 
         Auth::login($user);
+
+        RecordActivity::execute($user, 'user_registered', 'User registered for an account');
 
         $this->redirect(route('dashboard', absolute: false), navigate: true);
     }

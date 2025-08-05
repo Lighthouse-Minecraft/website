@@ -4,6 +4,7 @@ use Livewire\Volt\Component;
 use Flux\Flux;
 use App\Models\Role;
 use App\Models\User;
+use App\Actions\RecordActivity;
 
 new class extends Component {
 
@@ -16,9 +17,11 @@ new class extends Component {
         $stowawayRole = Role::where('name', 'Stowaway')->first();
         auth()->user()->roles()->attach(ids: $stowawayRole);
         Cache::forget('user:' . auth()->user()->id . ':is_stowaway');
+
+        RecordActivity::execute(auth()->user(), 'rules_accepted', 'User accepted community rules and was promoted to Stowaway');
+
         Flux::modal('view-rules-modal')->close();
         Flux::toast('Rules accepted successfully! Promoted to Stowaway.', 'Success', variant: 'success');
-
     }
 }; ?>
 
