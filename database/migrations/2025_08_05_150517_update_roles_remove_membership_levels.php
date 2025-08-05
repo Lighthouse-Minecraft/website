@@ -18,7 +18,7 @@ return new class extends Migration
             ->pluck('id');
 
         // Step 2: Remove the pivot relationships first
-        DB::table('model_has_roles')
+        DB::table('role_user')
             ->whereIn('role_id', $roleIds)
             ->delete();
 

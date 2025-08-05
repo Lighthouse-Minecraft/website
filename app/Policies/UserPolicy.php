@@ -36,6 +36,11 @@ class UserPolicy
         return ($user->id == $model->id || $user->isAtLeastLevel(MembershipLevel::Traveler));
     }
 
+    public function viewActivityLog(User $user, User $model): bool
+    {
+        return ($user->id == $model->id || $user->isInQuartermasterDepartment() || $user->isOfficer());
+    }
+
     /**
      * Determine whether the user can create models.
      */
