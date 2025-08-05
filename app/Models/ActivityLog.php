@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 
 class ActivityLog extends Model
 {
@@ -33,5 +34,14 @@ class ActivityLog extends Model
     public function subject()
     {
         return $this->morphTo();
+    }
+
+    public function scopeRelevantTo(Builder $query, User $user): Builder
+    {
+        return $query->where('causer_id', $user->id)
+            ->orWhere(function ($query) use ($user) {
+                $query->where('subject_type', User::class)
+                    ->where('subject_id', $user->id);
+            });
     }
 }
