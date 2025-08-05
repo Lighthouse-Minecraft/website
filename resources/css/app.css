@@ -62,6 +62,51 @@ select:focus[data-flux-control] {
     @apply outline-hidden ring-2 ring-accent ring-offset-2 ring-offset-accent-foreground;
 }
 
+/* Add styling to the page content from the FluxUI editor */
+
+#editor_content {
+  @apply space-y-8 leading-relaxed text-base;
+  font-family: 'Roboto Condensed', sans-serif;
+}
+
+#editor_content h1 {
+  @apply text-3xl font-bold mt-8 mb-7 text-sky-400;
+}
+
+#editor_content h2 {
+  @apply text-2xl font-semibold mt-6 mb-3 text-sky-300;
+}
+
+#editor_content h3 {
+  @apply text-xl font-semibold mt-6 mb-2 text-sky-200;
+}
+
+#editor_content p {
+  @apply mb-6 text-gray-700 dark:text-gray-300;
+}
+
+#editor_content a {
+  @apply text-blue-600 underline hover:text-blue-800;
+}
+
+#editor_content ul,
+#editor_content ol {
+  @apply list-disc list-inside mb-4 dark:text-gray-300 text-gray-500;
+}
+
+#editor_content blockquote p{
+  @apply border-l-4 border-cyan-400 bg-gray-800/50 pl-4 italic text-cyan-400 my-6;
+}
+
+#editor_content hr {
+  @apply border-gray-700 my-8;
+}
+
+#editor_content strong {
+  @apply text-amber-300 font-semibold;
+}
+
+
 /* \[:where(&)\]:size-4 {
     @apply size-4;
 } */
