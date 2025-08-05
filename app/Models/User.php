@@ -119,9 +119,8 @@ class User extends Authenticatable // implements MustVerifyEmail
         return $this->roles()->get()->contains('name', $roleName);
     }
 
-    public function isAtLeast(MembershipLevel $level): bool
+    public function isAtLeastLevel(MembershipLevel $level): bool
     {
         return $this->membership_level->value >= $level->value;
     }
-
 }

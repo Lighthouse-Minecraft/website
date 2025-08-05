@@ -6,7 +6,6 @@ use App\Models\User;
 use Illuminate\Auth\Access\Response;
 use App\Enums\MembershipLevel;
 
-
 class UserPolicy
 {
 
@@ -34,7 +33,7 @@ class UserPolicy
      */
     public function view(User $user, User $model): bool
     {
-        return ($user->id == $model->id || $user->membership_level >= MembershipLevel::Traveler->value);
+        return ($user->id == $model->id || $user->isAtLeastLevel(MembershipLevel::Traveler));
     }
 
     /**
