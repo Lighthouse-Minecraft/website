@@ -30,7 +30,7 @@ class SetUsersStaffPosition
         }
 
         if ($existingRank !== $rank) {
-            $updateText .= "Rank: " . $existingRank->label() . " => " . $rank->label() . ", ";
+            $updateText .= "Rank: " . ($existingRank ? $existingRank->label() : 'None') . " => " . $rank->label() . ", ";
             $user->staff_rank = $rank;
         }
 
