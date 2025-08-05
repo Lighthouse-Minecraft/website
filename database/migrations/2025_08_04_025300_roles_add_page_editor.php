@@ -16,7 +16,7 @@ return new class extends Migration
             [
                 'name' => 'Page Editor',
                 'description' => 'Can edit and manage content on the website.',
-                'color' => 'Purple',
+                'color' => 'purple',
                 'icon' => 'newspaper'
             ],
             [

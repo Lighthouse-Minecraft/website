@@ -15,6 +15,7 @@ new class extends Component {
     public $updateRoleColor = '';
     public $updateRoleDescription = '';
     public $updateRoleIcon = '';
+    public $updateRoleId = null;
 
     public $allowedIcons = [
         'academic-cap', 'adjustments-horizontal', 'adjustments-vertical', 'archive-box', 'archive-box-arrow-down',
@@ -93,6 +94,7 @@ new class extends Component {
         $role = \App\Models\Role::findOrFail($roleId);
         $this->authorize('update', $role);
 
+        $this->updateRoleId = $roleId;
         $this->updateRoleName = $role->name;
         $this->updateRoleColor = $role->color;
         $this->updateRoleDescription = $role->description;
@@ -101,7 +103,7 @@ new class extends Component {
 
     public function updateRole()
     {
-        $role = \App\Models\Role::where('name', $this->updateRoleName)->firstOrFail();
+        $role = \App\Models\Role::find($this->updateRoleId);
         $this->authorize('update', $role);
 
         $this->validate([
@@ -112,6 +114,7 @@ new class extends Component {
         ]);
 
         $role->update([
+            'name' => $this->updateRoleName,
             'color' => $this->updateRoleColor,
             'description' => $this->updateRoleDescription,
             'icon' => $this->updateRoleIcon,
