@@ -43,8 +43,8 @@ new class extends Component {
 
         $this->validate([
             'currentTitle' => [Rule::requiredIf($this->currentDepartmentValue !== null), 'string', 'max:255'],
-            'currentDepartmentValue' => ['nullable', Rule::enum((\App\Enums\StaffDepartment::class))],
-            'currentRank' => ['nullable', Rule::enum((\App\Enums\StaffRank::class))],
+            'currentDepartmentValue' => ['required', Rule::enum((\App\Enums\StaffDepartment::class))],
+            'currentRank' => ['required', Rule::enum((\App\Enums\StaffRank::class))],
         ]);
 
         $success = \App\Actions\SetUsersStaffPosition::run(
@@ -141,7 +141,9 @@ new class extends Component {
             </flux:radio.group>
 
             <div class="w-full flex">
-                <flux:button wire:click="removeStaffPosition" variant="danger" class="opacity-80">Remove Staff Position</flux:button>
+                @if ($user->staff_department)
+                    <flux:button wire:click="removeStaffPosition" variant="danger" class="opacity-80">Remove Staff Position</flux:button>
+                @endif
                 <flux:spacer />
                 <flux:button wire:click="updateStaffPosition" variant="primary">Save Changes</flux:button>
             </div>
