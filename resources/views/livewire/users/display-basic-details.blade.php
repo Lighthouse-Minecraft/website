@@ -42,7 +42,7 @@ new class extends Component {
             : null;
 
         $this->validate([
-            'currentTitle' => [Rule::requiredIf($this->currentDepartmentValue !== null), 'string', 'max:255'],
+            'currentTitle' => ['required', 'string', 'max:255'],
             'currentDepartmentValue' => ['required', Rule::enum((\App\Enums\StaffDepartment::class))],
             'currentRank' => ['required', Rule::enum((\App\Enums\StaffRank::class))],
         ]);
