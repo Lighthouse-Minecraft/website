@@ -26,8 +26,9 @@ describe('PromoteUser Action', function () {
     it('records activity when user is promoted', function () {
         $user = User::factory()->create([
             'membership_level' => MembershipLevel::Drifter,
-        ]);        PromoteUser::run($user);
-
+        ]);
+        
+        PromoteUser::run($user);
         expect(ActivityLog::count())->toBe(1);
 
         $activityLog = ActivityLog::first();
@@ -40,7 +41,9 @@ describe('PromoteUser Action', function () {
     it('promotes user through multiple levels sequentially', function () {
         $user = User::factory()->create([
             'membership_level' => MembershipLevel::Drifter,
-        ]);        // Promote from Drifter to Stowaway
+        ]);
+        
+        // Promote from Drifter to Stowaway
         PromoteUser::run($user);
         expect($user->fresh()->membership_level)->toBe(MembershipLevel::Stowaway);
 
@@ -60,8 +63,9 @@ describe('PromoteUser Action', function () {
     it('respects the maximum level limit', function () {
         $user = User::factory()->create([
             'membership_level' => MembershipLevel::Drifter,
-        ]);        PromoteUser::run($user, MembershipLevel::Traveler);
-
+        ]);        
+        
+        PromoteUser::run($user, MembershipLevel::Traveler);
         expect($user->fresh()->membership_level)->toBe(MembershipLevel::Stowaway);
 
         // Promote again, should go to Traveler
@@ -76,8 +80,9 @@ describe('PromoteUser Action', function () {
     it('does not promote user if already at or above maximum level', function () {
         $user = User::factory()->create([
             'membership_level' => MembershipLevel::Citizen,
-        ]);        $originalLevel = $user->membership_level;
-
+        ]);
+        
+        $originalLevel = $user->membership_level;
         PromoteUser::run($user, MembershipLevel::Resident);
 
         expect($user->fresh()->membership_level)->toBe($originalLevel);
@@ -87,8 +92,9 @@ describe('PromoteUser Action', function () {
     it('does not promote user if already at the highest level', function () {
         $user = User::factory()->create([
             'membership_level' => MembershipLevel::Citizen,
-        ]);        $originalLevel = $user->membership_level;
-
+        ]);
+        
+        $originalLevel = $user->membership_level;
         PromoteUser::run($user);
 
         expect($user->fresh()->membership_level)->toBe($originalLevel);
@@ -98,15 +104,18 @@ describe('PromoteUser Action', function () {
     it('uses default maximum level of Citizen when not specified', function () {
         $user = User::factory()->create([
             'membership_level' => MembershipLevel::Resident,
-        ]);        PromoteUser::run($user);
-
+        ]);
+        
+        PromoteUser::run($user);
         expect($user->fresh()->membership_level)->toBe(MembershipLevel::Citizen);
     });
 
     it('handles edge case where user is already at maximum allowed level', function () {
         $user = User::factory()->create([
             'membership_level' => MembershipLevel::Traveler,
-        ]);        PromoteUser::run($user, MembershipLevel::Traveler);
+        ]);
+        
+        PromoteUser::run($user, MembershipLevel::Traveler);
 
         // Should not change since already at max allowed level
         expect($user->fresh()->membership_level)->toBe(MembershipLevel::Traveler);
@@ -116,7 +125,9 @@ describe('PromoteUser Action', function () {
     it('does not promote if next level would exceed maximum level', function () {
         $user = User::factory()->create([
             'membership_level' => MembershipLevel::Resident,
-        ]);        PromoteUser::run($user, MembershipLevel::Resident);
+        ]);
+        
+        PromoteUser::run($user, MembershipLevel::Resident);
 
         // Should not promote because next level (Citizen) would exceed max (Resident)
         expect($user->fresh()->membership_level)->toBe(MembershipLevel::Resident);
@@ -137,7 +148,9 @@ describe('PromoteUser Action', function () {
     it('maintains database consistency after promotion', function () {
         $user = User::factory()->create([
             'membership_level' => MembershipLevel::Drifter,
-        ]);        $originalUserId = $user->id;
+        ]);
+        
+        $originalUserId = $user->id;
         $originalUserName = $user->name;
         $originalUserEmail = $user->email;
 
