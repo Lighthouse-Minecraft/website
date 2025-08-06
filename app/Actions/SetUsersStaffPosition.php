@@ -14,7 +14,7 @@ class SetUsersStaffPosition
     public function handle(User $user, $title, StaffDepartment $department, StaffRank $rank)
     {
         // Update the user's staff position
-        if ($title == null) {
+        if ($title == null || $title === '') {
             return false;
         }
 
