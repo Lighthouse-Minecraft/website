@@ -2,6 +2,9 @@
 
 namespace App\Policies;
 
+use App\Enums\StaffDepartment;
+use App\Enums\StaffRank;
+use App\Enums\MembershipLevel;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
@@ -10,7 +13,7 @@ class RolePolicy
 {
     public function before(User $user, string $ability): bool|null
     {
-        if ($user->isAdmin() || ($user->isInCommandDepartment() && $user->isOfficer() )) {
+        if ($user->isAdmin() || ($user->isInDepartment(StaffDepartment::Command) && $user->isAtLeastRank(StaffRank::Officer) )) {
             return true;
         }
 

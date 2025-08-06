@@ -4,6 +4,7 @@ use Livewire\Volt\Component;
 use Flux\Flux;
 use App\Models\Role;
 use App\Models\User;
+use App\Enums\MembershipLevel;
 
 new class extends Component {
 
@@ -12,19 +13,19 @@ new class extends Component {
         auth()->user()->update([
             'rules_accepted_at' => now(),
         ]);
+        \App\Actions\RecordActivity::run(auth()->user(), 'rules_accepted', 'User accepted community rules and was promoted to Stowaway');
 
-        $stowawayRole = Role::where('name', 'Stowaway')->first();
-        auth()->user()->roles()->attach(ids: $stowawayRole);
+        \App\Actions\PromoteUser::run(auth()->user(), MembershipLevel::Stowaway);
         Cache::forget('user:' . auth()->user()->id . ':is_stowaway');
+
         Flux::modal('view-rules-modal')->close();
         Flux::toast('Rules accepted successfully! Promoted to Stowaway.', 'Success', variant: 'success');
-
     }
 }; ?>
 
 <div>
     <flux:modal.trigger name="view-rules-modal">
-        @if (auth()->user()?->isMember() || auth()->user()?->isStowaway())
+        @if (auth()->user()->rules_accepted_at)
             <flux:button class="mb-4">View Rules</flux:button>
         @else
             <flux:button variant="primary">Read & Accept Rules</flux:button>
@@ -118,7 +119,7 @@ new class extends Component {
             </ul>
         </div>
         <div class="w-full text-right">
-            @if (!auth()->user()->rules_accepted_at)
+            @if (!auth()->user()->rules_accepted_at || auth()->user()->isLevel(MembershipLevel::Drifter))
                 <flux:button color="amber" wire:click="acceptRules" variant="primary">I Have Read the Rules and Agree to Follow Them</flux:button>
             @endif
         </div>

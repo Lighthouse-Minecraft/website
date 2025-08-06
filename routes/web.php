@@ -22,6 +22,10 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('settings/appearance', 'settings.appearance')->name('settings.appearance');
 });
 
+Route::get('/profile/{user}', [App\Http\Controllers\UserController::class, 'show'])
+    ->name('profile.show')
+    ->middleware('can:view,user');
+
 Route::middleware(['auth'])->group(function () {
     Route::get('acp', [App\Http\Controllers\AdminControlPanelController::class, 'index'])
         ->name('acp.index');

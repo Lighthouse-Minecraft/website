@@ -9,6 +9,9 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
+use App\Enums\MembershipLevel;
+use App\Enums\StaffDepartment;
+use App\Enums\StaffRank;
 
 class User extends Authenticatable // implements MustVerifyEmail
 {
@@ -25,6 +28,9 @@ class User extends Authenticatable // implements MustVerifyEmail
         'email',
         'password',
         'rules_accepted_at',
+        'staff_rank',
+        'staff_department',
+        'staff_title',
     ];
 
     /**
@@ -47,6 +53,9 @@ class User extends Authenticatable // implements MustVerifyEmail
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'membership_level' => MembershipLevel::class,
+            'staff_rank' => StaffRank::class,
+            'staff_department' => StaffDepartment::class,
         ];
     }
 
@@ -74,63 +83,33 @@ class User extends Authenticatable // implements MustVerifyEmail
         return $this->roles()->get()->contains('name', 'Admin');
     }
 
-    /**
-     * Check if the user has the Officer role.
-     */
-    public function isOfficer(): bool
-    {
-        return $this->hasRole( 'Officer');
-    }
-
-    public function isCrewMember(): bool
-    {
-        return $this->hasRole( 'Crew Member');
-    }
-
-    public function isInCommandDepartment(): bool
-    {
-        return $this->hasRole( 'Command');
-    }
-
-    public function isInChaplainDepartment(): bool
-    {
-        return $this->hasRole( 'Chaplain');
-    }
-
-    public function isInEngineeringDepartment(): bool
-    {
-        return $this->hasRole( 'Engineering');
-    }
-
-    public function isInQuartermasterDepartment(): bool
-    {
-        return $this->hasRole( 'Quartermaster');
-    }
-
-    public function isInStewardDepartment(): bool
-    {
-        return $this->hasRole( 'Steward');
-    }
-
-    public function isStowaway(): bool
-    {
-        return Cache::rememberForever("user:{$this->id}:is_stowaway", function () {
-            return $this->hasRole('Stowaway');
-        });
-    }
-
-    /**
-     * Check if the user is a Traveler, Resident, or Citizen.
-     */
-    public function isMember(): bool
-    {
-        return $this->roles->contains(function ($role) {
-            return in_array($role->name, ['Traveler', 'Resident', 'Citizen']);
-        });
-    }
-
     public function hasRole(string $roleName): bool
     {
         return $this->roles()->get()->contains('name', $roleName);
+    }
+
+    public function isAtLeastLevel(MembershipLevel $level): bool
+    {
+        return $this->membership_level->value >= $level->value;
+    }
+
+    public function isLevel(MembershipLevel $level): bool
+    {
+        return $this->membership_level == $level;
+    }
+
+    public function isAtLeastRank(StaffRank $rank): bool
+    {
+        return ($this->staff_rank?->value ?? 0) >= $rank->value;
+    }
+
+    public function isRank(StaffRank $rank): bool
+    {
+        return ($this->staff_rank == $rank);
+    }
+
+    public function isInDepartment(StaffDepartment $department): bool
+    {
+        return $this->staff_department === $department;
     }
 }
