@@ -4,6 +4,9 @@ namespace App\Policies;
 
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
+use App\Enums\MembershipLevel;
+use App\Enums\StaffDepartment;
+use App\Enums\StaffRank;
 
 class UserPolicy
 {
@@ -11,7 +14,7 @@ class UserPolicy
     public function before(User $user, string $ability): bool|null
     {
         if (
-            $user->isAdmin() || ($user->isInCommandDepartment() && $user->isOfficer())
+            $user->isAdmin() || ($user->isInDepartment(StaffDepartment::Command) && $user->isAtLeastRank(StaffRank::Officer))
         ) {
             return true;
         }
@@ -24,7 +27,7 @@ class UserPolicy
      */
     public function viewAny(User $user): bool
     {
-        return ($user->isAdmin() || ($user->isInQuartermasterDepartment() && $user->isOfficer()));
+        return ($user->isAdmin() || ($user->isInDepartment(StaffDepartment::Quartermaster) && $user->isAtLeastRank(StaffRank::Officer)));
     }
 
     /**
@@ -32,7 +35,12 @@ class UserPolicy
      */
     public function view(User $user, User $model): bool
     {
-        return false;
+        return ($user->id == $model->id || $user->isAtLeastLevel(MembershipLevel::Traveler));
+    }
+
+    public function viewActivityLog(User $user, User $model): bool
+    {
+        return ($user->id == $model->id || $user->isInDepartment(StaffDepartment::Quartermaster) || $user->isAtLeastRank(StaffRank::Officer));
     }
 
     /**
@@ -48,9 +56,13 @@ class UserPolicy
      */
     public function update(User $user, User $model): bool
     {
-        return ($user->isAdmin() || ($user->isInQuartermasterDepartment() && $user->isOfficer()) || $user->id == $model->id);
+        return (($user->isInDepartment(StaffDepartment::Quartermaster) && $user->isAtLeastRank(StaffRank::Officer)) || $user->id == $model->id);
     }
 
+    public function updateStaffPosition(User $user, User $model): bool
+    {
+        return false;
+    }
     /**
      * Determine whether the user can delete the model.
      */

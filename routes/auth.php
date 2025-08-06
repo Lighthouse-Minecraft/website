@@ -5,13 +5,14 @@ use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
 use Illuminate\Support\Facades\Gate;
 use App\Models\User;
+use App\Enums\StaffRank;
 
 Gate::define('viewACP', function (?User $user) {
     if (!$user) {
         return false;
     }
 
-    return $user->isAdmin() || $user->isOfficer();
+    return $user->isAdmin() || $user->isAtLeastRank(StaffRank::Officer);
 });
 
 Route::middleware('guest')->group(function () {

@@ -5,12 +5,15 @@ namespace App\Policies;
 use App\Models\Page;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
+use App\Enums\StaffDepartment;
+use App\Enums\MembershipLevel;
+use App\Enums\StaffRank;
 
 class PagePolicy
 {
     public function before(User $user, string $ability): bool|null
     {
-        if ($user->isAdmin() || ($user->isInCommandDepartment() && $user->isOfficer())) {
+        if ($user->isAdmin() || ($user->isInDepartment(StaffDepartment::Command) && $user->isAtLeastRank(StaffRank::Officer))) {
             return true;
         }
 
@@ -22,7 +25,7 @@ class PagePolicy
      */
 public function viewAny(User $user): bool
     {
-        return ($user->isOfficer() || $user->hasRole('Page Editor'));
+        return ($user->isAtLeastRank(StaffRank::Officer) || $user->hasRole('Page Editor'));
     }
 
     /**
@@ -30,7 +33,7 @@ public function viewAny(User $user): bool
      */
     public function view(User $user, Page $page): bool
     {
-        return ($page->is_published || $user->hasRole('Page Editor') || $user->isOfficer() || $user->isCrewMember());
+        return ($page->is_published || $user->hasRole('Page Editor') || $user->isAtLeastRank(StaffRank::CrewMember));
     }
 
     /**
@@ -38,7 +41,7 @@ public function viewAny(User $user): bool
      */
     public function create(User $user): bool
     {
-        return ($user->isOfficer() && ($user->isInStewardDepartment() || $user->isInEngineeringDepartment()));
+        return ($user->isAtLeastRank(StaffRank::Officer) && ($user->isInDepartment(StaffDepartment::Steward) || $user->isInDepartment(StaffDepartment::Engineer)));
     }
 
     /**
@@ -46,7 +49,7 @@ public function viewAny(User $user): bool
      */
     public function update(User $user, Page $page): bool
     {
-        return ($user->hasRole('Page Editor') || ($user->isOfficer() && ($user->isInStewardDepartment() || $user->isInEngineeringDepartment())));
+        return ($user->hasRole('Page Editor') || ($user->isAtLeastRank(StaffRank::Officer) && ($user->isInDepartment(StaffDepartment::Steward) || $user->isInDepartment(StaffDepartment::Engineer))));
     }
 
     /**

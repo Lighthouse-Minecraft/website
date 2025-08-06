@@ -106,7 +106,6 @@ select:focus[data-flux-control] {
   @apply text-amber-300 font-semibold;
 }
 
-
 /* \[:where(&)\]:size-4 {
     @apply size-4;
 } */
