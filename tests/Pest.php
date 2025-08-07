@@ -1,5 +1,8 @@
 <?php
 
+use App\Models\User;
+use function Pest\Laravel\actingAs;
+
 /*
 |--------------------------------------------------------------------------
 | Test Case
@@ -44,7 +47,8 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
-{
-    // ..
+function loginAsAdmin(): User {
+    $admin = User::factory()->admin()->create();
+    actingAs($admin);
+    return $admin;
 }
