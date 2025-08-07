@@ -8,6 +8,7 @@
 - ``cp .env.example``
 - ``php artisan key:generate``
 - ``npm install``
+- ``php artisan migrate``
 
 ## Run Web Server
 I recommend running this in a background terminal so you can keep your main terminal available for artisan commmands
