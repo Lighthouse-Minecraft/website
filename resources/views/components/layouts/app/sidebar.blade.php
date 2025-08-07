@@ -64,7 +64,7 @@
                                     </span>
 
                                     <div class="grid flex-1 text-left text-sm leading-tight">
-                                        <span class="truncate font-semibold">{{ auth()->user()->name }}</span>
+                                        <span class="truncate font-semibold"><flux:link href="{{ route('profile.show', auth()->user()) }}">{{ auth()->user()->name }}</flux:link></span>
                                         <span class="truncate text-xs">{{ auth()->user()->email }}</span>
                                     </div>
                                 </div>
