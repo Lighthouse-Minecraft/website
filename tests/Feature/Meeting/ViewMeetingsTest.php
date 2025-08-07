@@ -10,8 +10,12 @@ beforeEach(function () {
 
 describe('Meetings List Page - Load', function () {
     it('loads the Meetings List page', function () {
+        $admin = \App\Models\User::factory()->admin()->create();
+        $this->actingAs($admin);
+
         get(route('meeting.index'))
-            ->assertOk();
+            ->assertOk()
+            ->assertViewIs('meeting.index');
     });
 
     it('displays a list of meetings', function () {
@@ -21,13 +25,14 @@ describe('Meetings List Page - Load', function () {
 
 describe('Meetings List Page - Permissions', function() {
     it('shows a 404 if an unauthorized person views the page', function () {
-
-    })->todo();
+        get(route('meeting.index'))
+            ->assertStatus(404);
+    });
 
     it('allows members to view the page', function () {
 
     })->todo();
-})->todo();
+});
 
 describe('Meetings List Page - Functionality', function () {
     it('links to the individual meeting pages', function () {

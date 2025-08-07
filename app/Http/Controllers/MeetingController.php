@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Meeting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class MeetingController extends Controller
 {
@@ -12,7 +13,11 @@ class MeetingController extends Controller
      */
     public function index()
     {
-        //
+        if (Gate::denies('viewAny', Meeting::class)) {
+            abort(404);
+        }
+
+        return view('meeting.index');
     }
 
     /**
