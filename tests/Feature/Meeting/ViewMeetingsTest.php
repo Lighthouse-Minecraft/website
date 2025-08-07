@@ -9,7 +9,7 @@ beforeEach(function () {
 });
 
 describe('Meetings List Page - Load', function () {
-    it('loads the Meetings List page', function () {
+    it('loads the Meetings List page for admins', function () {
         $admin = \App\Models\User::factory()->admin()->create();
         $this->actingAs($admin);
 
