@@ -39,4 +39,8 @@ Route::get('/acp/pages/{page}/edit', [PageController::class, 'edit'])
     ->name('admin.pages.edit')
     ->middleware('can:update,page');
 
+Route::prefix('meetings')->name('meeting.')->controller(App\Http\Controllers\MeetingController::class)->group(function () {
+    Route::get('/', 'index')->name('index');
+});
+
 require __DIR__.'/auth.php';
