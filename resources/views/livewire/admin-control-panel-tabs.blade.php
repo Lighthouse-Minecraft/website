@@ -1,10 +1,9 @@
 <?php
 
-use Livewire\Volt\Component;
-use Livewire\Attributes\Url;
+use Livewire\Attributes\{Url};
+use Livewire\Volt\{Component};
 
 new class extends Component {
-    #[Url]
     public $tab = 'user-manager';
 
     public function reactive()
@@ -29,6 +28,9 @@ new class extends Component {
             @can('viewAny', \App\Models\Page::class)
                 <flux:tab name="page-manager">Page Manager</flux:tab>
             @endcan
+            @can('viewAny', \App\Models\Announcement::class)
+                <flux:tab name="announcement-manager">Announcement Manager</flux:tab>
+            @endcan
         </flux:tabs>
 
 
@@ -47,6 +49,12 @@ new class extends Component {
         <flux:tab.panel name="page-manager">
             @can('viewAny', \App\Models\Page::class)
                 <livewire:admin-manage-pages-page />
+            @endcan
+        </flux:tab.panel>
+
+        <flux:tab.panel name="announcement-manager">
+            @can('viewAny', \App\Models\Announcement::class)
+                <livewire:admin-manage-announcements-page :wire:key="'announcements-page-' . $tab" />
             @endcan
         </flux:tab.panel>
     </flux:tab.group>

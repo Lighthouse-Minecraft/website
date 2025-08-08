@@ -1,8 +1,8 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Livewire\Volt\Volt;
-use App\Http\Controllers\PageController;
+use Illuminate\Support\Facades\{Route};
+use Livewire\Volt\{Volt};
+use App\Http\Controllers\{AnnouncementController, PageController};
 
 Route::get('/pages/{slug}', [PageController::class, 'show'])->name('pages.show');
 
@@ -38,5 +38,25 @@ Route::get('/acp/pages/create', [PageController::class, 'create'])
 Route::get('/acp/pages/{page}/edit', [PageController::class, 'edit'])
     ->name('admin.pages.edit')
     ->middleware('can:update,page');
+
+Route::middleware(['auth'])->prefix('admin/announcements')->group(function () {
+    Route::get('create', [AnnouncementController::class, 'create'])
+        ->name('admin.announcements.create')
+        ->middleware('can:create,App\\Models\\Announcement');
+    Route::post('/', [AnnouncementController::class, 'store'])
+        ->name('admin.announcements.store')
+        ->middleware('can:create,App\\Models\\Announcement');
+    Route::get('{id}', [AnnouncementController::class, 'show'])
+        ->name('admin.announcements.show');
+    Route::get('{id}/edit', [AnnouncementController::class, 'edit'])
+        ->name('admin.announcements.edit')
+        ->middleware('can:update,App\\Models\\Announcement');
+    Route::put('{id}', [AnnouncementController::class, 'update'])
+        ->name('admin.announcements.update')
+        ->middleware('can:update,App\\Models\\Announcement');
+    Route::delete('{id}', [AnnouncementController::class, 'destroy'])
+        ->name('admin.announcements.delete')
+        ->middleware('can:delete,App\\Models\\Announcement');
+});
 
 require __DIR__.'/auth.php';
