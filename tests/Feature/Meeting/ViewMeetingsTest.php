@@ -175,4 +175,12 @@ describe('Meetings List Page - Functionality', function () {
             ->assertOk()
             ->assertSee('No meetings found');
     });
+
+    it('shows a Create Meeting button for admins', function () {
+        loginAsAdmin();
+
+        get(route('meeting.index'))
+            ->assertSee('Create Meeting')
+            ->assertSee(route('meeting.create'));
+    })->todo('implement create functionality');
 });
