@@ -2,12 +2,13 @@
 
 use function Pest\Laravel\get;
 use function Pest\Livewire\livewire;
+use App\Models\Meeting;
 // use function Pest\Laravel\actingAs;
 
 uses()->group('feature');
 
 beforeEach(function () {
-    // $this->meetings = Meeting::factory()->count(3)->create();
+    $this->meetings = Meeting::factory()->count(3)->create();
 });
 
 describe('Meetings List Page - Load', function () {
@@ -37,8 +38,15 @@ describe('Meeting List Page - Livewire Component', function () {
     });
 
     it('displays a list of meetings', function () {
+        $meetings = Meeting::factory()->count(3)->create();
+        loginAsAdmin();
 
-    })->todo();
+        $component = livewire('meetings.list');
+
+        foreach ($meetings as $meeting) {
+            $component->assertSee($meeting->day);
+        }
+    });
 });
 
 describe('Meetings List Page - Permissions', function() {
