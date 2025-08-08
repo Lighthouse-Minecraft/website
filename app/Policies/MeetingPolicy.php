@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\MembershipLevel;
 use App\Enums\StaffDepartment;
 use App\Enums\StaffRank;
 use App\Models\Meeting;
@@ -27,7 +28,7 @@ class MeetingPolicy
      */
     public function viewAny(User $user): bool
     {
-        return abort(404);
+        return ($user->isAtLeastLevel(MembershipLevel::Resident));
     }
 
     /**
@@ -35,7 +36,11 @@ class MeetingPolicy
      */
     public function view(User $user, Meeting $meeting): bool
     {
-        return false;
+        if ($meeting->is_public) {
+            return ($user->isAtLeastLevel(MembershipLevel::Resident));
+        } else {
+            return ($user->isAtLeastRank(StaffRank::Officer));
+        }
     }
 
     /**

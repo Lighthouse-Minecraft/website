@@ -1,3 +1,3 @@
-<div>
+<x-layouts.app>
     <livewire:meetings.list />
-</div>
+</x-layouts.app>

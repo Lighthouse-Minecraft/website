@@ -18,7 +18,7 @@ class MeetingFactory extends Factory
     {
         return [
             'day' => $this->faker->dateTimeBetween('-1 month', '+1 month')->format('Y-m-d'),
-            'is_public' => true,
+            'is_public' => $this->faker->dateTimeBetween('-1 month', '+1 month'),
         ];
     }
 
@@ -31,7 +31,7 @@ class MeetingFactory extends Factory
     {
         return $this->state(function (array $attributes) {
             return [
-                'is_public' => false,
+                'is_public' => null,
             ];
         });
     }

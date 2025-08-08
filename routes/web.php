@@ -41,6 +41,7 @@ Route::get('/acp/pages/{page}/edit', [PageController::class, 'edit'])
 
 Route::prefix('meetings')->name('meeting.')->controller(App\Http\Controllers\MeetingController::class)->group(function () {
     Route::get('/', 'index')->name('index');
+    Route::get('/{meeting}', 'show')->name('show')->middleware('can:view,meeting');
 });
 
 require __DIR__.'/auth.php';

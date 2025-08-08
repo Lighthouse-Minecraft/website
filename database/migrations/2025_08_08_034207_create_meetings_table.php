@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('day');
             $table->timestamp('is_public')->nullable();
+            $table->string('summary')->nullable();
             $table->timestamps();
         });
     }
