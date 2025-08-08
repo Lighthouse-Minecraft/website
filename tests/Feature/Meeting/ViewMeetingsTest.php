@@ -1,6 +1,8 @@
 <?php
 
 use function Pest\Laravel\get;
+use function Pest\Livewire\livewire;
+// use function Pest\Laravel\actingAs;
 
 uses()->group('feature');
 
@@ -15,6 +17,23 @@ describe('Meetings List Page - Load', function () {
         get(route('meeting.index'))
             ->assertOk()
             ->assertViewIs('meeting.index');
+    });
+
+    it('mounts the meetings list livewire component', function () {
+        loginAsAdmin();
+
+        get(route('meeting.index'))
+            ->assertOk()
+            ->assertSeeLivewire('meetings.list');
+    });
+});
+
+describe('Meeting List Page - Livewire Component', function () {
+    it('loads okay', function () {
+        loginAsAdmin();
+
+        livewire('meetings.list')
+            ->assertOk();
     });
 
     it('displays a list of meetings', function () {

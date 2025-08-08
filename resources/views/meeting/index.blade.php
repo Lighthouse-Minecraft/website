@@ -1,3 +1,3 @@
 <div>
-    <!-- Smile, breathe, and go slowly. - Thich Nhat Hanh -->
+    <livewire:meetings.list />
 </div>
