@@ -49,7 +49,7 @@ class PromoteUserToAdmin extends Command
 
             return 1;
         }
-        dd('this is a test');
+
         $user->roles()->attach($adminRole->id);
 
         $this->info("User {$user->email} has been promoted to Admin.");
