@@ -2,9 +2,9 @@
 
 namespace App\Actions;
 
-use Lorisleiva\Actions\Concerns\AsAction;
 use App\Enums\MembershipLevel;
 use App\Models\User;
+use Lorisleiva\Actions\Concerns\AsAction;
 
 class PromoteUser
 {
@@ -22,7 +22,7 @@ class PromoteUser
         $currentIndex = array_search($current, $levels, strict: true);
         $nextLevel = $levels[$currentIndex + 1] ?? null;
 
-        if (!$nextLevel) {
+        if (! $nextLevel) {
             return;
         }
 
