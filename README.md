@@ -18,7 +18,7 @@
 - ``chmod +x .dev-hooks/pre-push``
 
 ## Run Web Server
-I recommend running this in a background terminal so you can keep your main terminal available for artisan commmands
+I recommend running this in a background terminal so you can keep your main terminal available for artisan commands
 - ``composer run dev``
 
 To run each component manually instead of the above bundled command:
