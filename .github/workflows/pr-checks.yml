@@ -238,3 +238,11 @@ jobs:
             -d "$(jq -n --arg t "❌ PR checks failed on #${{ github.event.pull_request.number }} (${{ github.event.pull_request.base.ref }})" \
                            --arg u "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
                            '{content: ($t + "\n" + $u)}')"
+
+      - name: Discord notify (success)
+        if: success() && github.event.pull_request.draft == false
+        run: |
+          curl -H "Content-Type: application/json" -X POST "$DISCORD_WEBHOOK" \
+            -d "$(jq -n --arg t "✅ PR checks passed on #${{ github.event.pull_request.number }} (${{ github.event.pull_request.base.ref }})" \
+                           --arg u "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+                           '{content: ($t + "\n" + $u)}')"
