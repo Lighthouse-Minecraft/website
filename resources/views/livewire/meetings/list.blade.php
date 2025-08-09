@@ -12,7 +12,7 @@ new class extends Component {
         if (auth()->user()->isAtLeastRank(StaffRank::Officer)) {
             $this->meetings = Meeting::all();
         } else {
-            $this->meetings = Meeting::where('is_public', '!=', null)->get();
+            $this->meetings = Meeting::where('is_public', true)->get();
         }
     }
 }; ?>
