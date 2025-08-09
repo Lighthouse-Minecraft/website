@@ -15,6 +15,7 @@ new class extends Component {
 
     public function mount() {
         abort_unless(auth()->user()?->can('create', Meeting::class), 403, 'You do not have permission to create meetings.');
+        $this->time = '07:00 PM';
     }
 
     public function CreateMeeting()
@@ -70,13 +71,13 @@ new class extends Component {
 
             <flux:input wire:model="title" name="title" label="Meeting Title" required />
             <flux:date-picker wire:model="day" name="day" label="Meeting Date" required />
-            <flux:input type="time" wire:model="time" name="time" label="Meeting Time (Eastern Time - ET)" required />
+            <flux:input wire:model="time" name="time" label="Meeting Time (Eastern Time - ET)" required />
             <flux:link href="https://time.is/ET" target="_blank" color="secondary">
                 Need help converting time zones?
             </flux:link>
 
             <div class="text-right w-full mt-6">
-                <flux:button data-testid="meeting-create.store" variant="primary" wire:click="createMeeting">
+                <flux:button data-testid="meeting-create.store" variant="primary" wire:click="CreateMeeting">
                     Create Meeting
                 </flux:button>
             </div>

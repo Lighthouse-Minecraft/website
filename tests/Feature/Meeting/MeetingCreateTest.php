@@ -168,7 +168,6 @@ describe('Meeting Create - Permissions and Security', function () {
         ])
         ->done();
 
-
     it('denies access to non-staff members', function ($membershipLevel) {
         $user = User::factory()->withMembershipLevel($membershipLevel)->create();
         loginAs($user);

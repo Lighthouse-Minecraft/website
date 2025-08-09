@@ -7,16 +7,12 @@ use App\Enums\StaffDepartment;
 use App\Enums\StaffRank;
 use App\Models\Meeting;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class MeetingPolicy
 {
-    public function before(User $user, string $ability): bool|null
+    public function before(User $user, string $ability): ?bool
     {
-        // if ($user->isAdmin() || ($user->isInDepartment(StaffDepartment::Command) && $user->isAtLeastRank(StaffRank::Officer))) {
-        //     return true;
-        // }
-        if ($user->isAdmin()) {
+        if ($user->isAdmin() || ($user->isInDepartment(StaffDepartment::Command) && $user->isAtLeastRank(StaffRank::Officer))) {
             return true;
         }
 
@@ -28,7 +24,7 @@ class MeetingPolicy
      */
     public function viewAny(User $user): bool
     {
-        return ($user->isAtLeastLevel(MembershipLevel::Resident));
+        return $user->isAtLeastLevel(MembershipLevel::Resident);
     }
 
     /**
@@ -37,9 +33,9 @@ class MeetingPolicy
     public function view(User $user, Meeting $meeting): bool
     {
         if ($meeting->is_public) {
-            return ($user->isAtLeastLevel(MembershipLevel::Resident));
+            return $user->isAtLeastLevel(MembershipLevel::Resident);
         } else {
-            return ($user->isAtLeastRank(StaffRank::Officer));
+            return $user->isAtLeastRank(StaffRank::Officer);
         }
     }
 
