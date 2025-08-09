@@ -21,6 +21,11 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
+
+      - name: Authenticate to FluxUI Composer repo
+        run: |
+          composer config --global --auth http-basic.composer.fluxui.dev "${{ secrets.FLUX_USERNAME }}" "${{ secrets.FLUX_LICENSE_KEY }}"
+
       - name: Cache Composer
         uses: actions/cache@v4
         with:
@@ -52,7 +57,7 @@ jobs:
           --health-retries=5
     env:
       DB_CONNECTION: pgsql
-      DB_HOST: postgres
+      DB_HOST: 127.0.0.1
       DB_PORT: 5432
       DB_DATABASE: testing
       DB_USERNAME: postgres
@@ -75,15 +80,16 @@ jobs:
           coverage: pcov
           ini-values: memory_limit=512M
 
+      - name: Authenticate to FluxUI Composer repo
+        run: |
+          composer config --global --auth http-basic.composer.fluxui.dev "${{ secrets.FLUX_USERNAME }}" "${{ secrets.FLUX_LICENSE_KEY }}"
+
       - name: Cache Composer
         uses: actions/cache@v4
         with:
           path: vendor
           key: composer-${{ hashFiles('**/composer.lock') }}
           restore-keys: composer-
-
-      - name: Add Flux license
-        run: composer config http-basic.composer.fluxui.dev "${{ secrets.FLUX_USERNAME }}" "${{ secrets.FLUX_LICENSE_KEY }}"
 
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist
