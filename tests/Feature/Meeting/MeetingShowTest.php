@@ -1,7 +1,11 @@
 <?php
 
-test('example', function () {
-    $response = $this->get('/');
+describe('Meeting Show - Loading', function () {
+    // Load page and views
+    it('loads the page and relevant views')->todo();
 
-    $response->assertStatus(200);
+    // Loads page data
+
+    // Handles invalid meeting
+
 });
