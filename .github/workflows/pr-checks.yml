@@ -240,9 +240,16 @@ jobs:
                            '{content: ($t + "\n" + $u)}')"
 
       - name: Discord notify (success)
-        if: success() && github.event.pull_request.draft == false
+        if: ${{ success() && github.event.pull_request.draft == false && env.DISCORD_WEBHOOK != '' }}
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
+          pr_number=${{ github.event.pull_request.number }}
+          pr_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/pull/${{ github.event.pull_request.number }}"
+          branch="${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}"
+          base="${{ github.event.pull_request.base.ref }}"
+          msg="✅ PR #${pr_number} checks passed (${branch} → ${base})"
+
           curl -H "Content-Type: application/json" -X POST "$DISCORD_WEBHOOK" \
-            -d "$(jq -n --arg t "✅ PR checks passed on #${{ github.event.pull_request.number }} (${{ github.event.pull_request.base.ref }})" \
-                           --arg u "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
-                           '{content: ($t + "\n" + $u)}')"
+            -d "$(jq -n --arg t "$msg" --arg u "$pr_url" '{content: ($t + "\n" + $u)}')"
+
