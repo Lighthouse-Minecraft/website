@@ -46,7 +46,9 @@ new class extends Component {
     </flux:table>
 
     <div class="w-full text-right">
-        <livewire:meeting.create-modal />
+        @can('create', Meeting::class)
+            <livewire:meeting.create-modal />
+        @endcan
     </div>
 </div>
 

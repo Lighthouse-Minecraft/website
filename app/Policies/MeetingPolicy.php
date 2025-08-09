@@ -48,6 +48,14 @@ class MeetingPolicy
      */
     public function create(User $user): bool
     {
+        if ($user->isAtLeastRank(StaffRank::Officer)) {
+            return true;
+        }
+
+        if ($user->hasRole('Meeting Secretary')) {
+            return true;
+        }
+
         return false;
     }
 

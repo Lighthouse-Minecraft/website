@@ -13,6 +13,10 @@ new class extends Component {
     public $time;
     public $scheduled_time;
 
+    public function mount() {
+        abort_unless(auth()->user()?->can('create', Meeting::class), 403, 'You do not have permission to create meetings.');
+    }
+
     public function CreateMeeting()
     {
         $this->validate([

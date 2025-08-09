@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\MembershipLevel;
 use App\Enums\StaffDepartment;
 use App\Enums\StaffRank;
 use App\Models\Meeting;
@@ -143,7 +144,8 @@ describe('Meeting Create - Functionality', function () {
 })->done(assignee: 'jonzenor', issue: 13);
 
 describe('Meeting Create - Permissions and Security', function () {
-    it('allows staff members to access the create meeting page', function ($department) {
+
+    it('allows Officers to access the create meeting page', function ($department) {
         $user = User::factory()->withStaffPosition($department, StaffRank::Officer, 'Officer')->create();
         loginAs($user);
 
@@ -166,9 +168,58 @@ describe('Meeting Create - Permissions and Security', function () {
         ])
         ->done();
 
-    // Handle page permissions
-    // - Members cannot view the page
-    // - All officers can view the page
-    // - Crew Members cannot view the page
-    // - Jr Crew and above with the 'Meeting Secretary' role can view the page
-})->wip(assignee: 'jonzenor', issue: 13);
+
+    it('denies access to non-staff members', function ($membershipLevel) {
+        $user = User::factory()->withMembershipLevel($membershipLevel)->create();
+        loginAs($user);
+        livewire('meeting.create-modal')
+            ->assertForbidden();
+    })
+        ->with([
+            MembershipLevel::Drifter,
+            MembershipLevel::Stowaway,
+            MembershipLevel::Traveler,
+            MembershipLevel::Resident,
+            MembershipLevel::Citizen,
+        ])
+        ->done();
+
+    it('denies access to guests', function () {
+        get(route('meeting.index'))
+            ->assertDontSeeLivewire('meeting.create-modal');
+
+        livewire('meeting.create-modal')
+            ->assertForbidden();
+    })->done();
+
+    it('denies access to crew members', function ($staffRank) {
+        $user = User::factory()->withStaffPosition(StaffDepartment::Engineer, $staffRank, 'Crew')->create();
+        loginAs($user);
+
+        get(route('meeting.index'))
+            ->assertDontSeeLivewire('meeting.create-modal');
+
+        livewire('meeting.create-modal')
+            ->assertForbidden();
+    })
+        ->with([
+            StaffRank::None,
+            StaffRank::JrCrew,
+            StaffRank::CrewMember,
+        ])
+        ->done();
+
+    it('allows users with the Meeting Secretary role to access the create meeting page', function () {
+        $user = User::factory()
+            ->withRole('Meeting Secretary')
+            ->create();
+        loginAs($user);
+
+        get(route('meeting.index'))
+            ->assertSeeLivewire('meeting.create-modal');
+
+        livewire('meeting.create-modal')
+            ->assertSee('Create Meeting');
+    })->done();
+
+})->done(assignee: 'jonzenor', issue: 13);
