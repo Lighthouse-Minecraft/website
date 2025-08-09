@@ -13,8 +13,12 @@ return new class extends Migration
     {
         Schema::create('meetings', function (Blueprint $table) {
             $table->id();
+            $table->string('title');
             $table->string('day');
-            $table->timestamp('is_public')->nullable();
+            $table->timestamp('scheduled_time');
+            $table->timestamp('start_time')->nullable();
+            $table->timestamp('end_time')->nullable();
+            $table->boolean('is_public')->default(false);
             $table->string('summary')->nullable();
             $table->timestamps();
         });

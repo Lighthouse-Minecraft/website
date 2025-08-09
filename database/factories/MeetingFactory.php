@@ -17,15 +17,18 @@ class MeetingFactory extends Factory
     public function definition(): array
     {
         return [
+            'title' => $this->faker->sentence(3),
+            'scheduled_time' => $this->faker->dateTimeBetween('-1 month', '+1 month'),
+            'start_time' => $this->faker->dateTimeBetween('-1 month', '+1 month'),
+            'end_time' => $this->faker->dateTimeBetween('-1 month', '+1 month'),
+            'summary' => $this->faker->paragraph(),
             'day' => $this->faker->dateTimeBetween('-1 month', '+1 month')->format('Y-m-d'),
-            'is_public' => $this->faker->dateTimeBetween('-1 month', '+1 month'),
+            'is_public' => $this->faker->boolean(),
         ];
     }
 
     /**
      * Indicate that the meeting is private.
-     *
-     * @return \Illuminate\Database\Eloquent\Factories\Factory
      */
     public function private(): Factory
     {

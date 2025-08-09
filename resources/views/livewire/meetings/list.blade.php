@@ -44,5 +44,9 @@ new class extends Component {
             @endforelse
         </flux:table.rows>
     </flux:table>
+
+    <div class="w-full text-right">
+        <livewire:meeting.create-modal />
+    </div>
 </div>
 
