@@ -2,11 +2,9 @@
 
 namespace App\Policies;
 
-use App\Models\User;
-use Illuminate\Auth\Access\Response;
-use App\Enums\MembershipLevel;
-use App\Enums\StaffDepartment;
-use App\Enums\StaffRank;
+use App\Enums\{MembershipLevel, StaffDepartment, StaffRank};
+use App\Models\{User};
+use Illuminate\Auth\Access\{Response};
 
 class UserPolicy
 {
