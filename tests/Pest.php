@@ -3,6 +3,8 @@
 use App\Models\User;
 use function Pest\Laravel\actingAs;
 
+pest()->project()->github('Lighthouse-Minecraft/website');
+
 /*
 |--------------------------------------------------------------------------
 | Test Case
