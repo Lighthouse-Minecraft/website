@@ -168,7 +168,7 @@ jobs:
               echo "FAIL_COUNT={$count}\n";
               echo "FAIL_SECTION<<EOF\n";
               if ($count > 0) {
-                echo "**Failed tests ({$count}):**\n";
+                echo "**❌ Failed tests ({$count}):**\n";
                 echo implode("\n", $out) . "\n";
               }
               echo "EOF\n";
