@@ -30,7 +30,7 @@ To run each component manually instead of the above bundled command:
 - ``php artisan test`` // Run all tests
 - ``php artisan test --filter MyFileTest`` // Run all tests in a single Test file
 
-- ``./vendor/bin/pint --test`` // See what fiels have lint issues (code guidelines violations)
+- ``./vendor/bin/pint --test`` // See what files have lint issues (code guidelines violations)
 - ``./vendor/bin/pint --test --dirty`` // See lint issues but only for files you modified
 
 Yes, running ``./vendor/bin/pint`` alone will attempt to fix all issues. Please do not do that. We need to surgically fix files as we go to avoid merge conflicts all over the place. Only modify files you made or you know are not being actively worked by others. This issue should be totally resolved within the next few weeks of development work.
