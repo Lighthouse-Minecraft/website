@@ -24,7 +24,7 @@ I recommend running this in a background terminal so you can keep your main term
 To run each component manually instead of the above bundled command:
 - ``php artisan serve``
 - ``npm run dev`` // This creates a long running process that monitors for changes and refreshes the browser
-- ``npm run prod`` // This does a one time build of all css/js assets and will need to be run again if those are updated
+- ``npm run build`` // This does a one time build of all css/js assets and will need to be run again if those are updated
 
 ## Automated Testing
 - ``php artisan test`` // Run all tests

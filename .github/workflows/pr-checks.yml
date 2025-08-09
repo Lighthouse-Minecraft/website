@@ -38,6 +38,12 @@ jobs:
           key: composer-${{ hashFiles('**/composer.lock') }}
           restore-keys: composer-
       - run: composer install --no-interaction --prefer-dist
+
+      - name: Compile assets
+        run: |
+          npm ci
+          npm run build
+
       - name: Pint check
         run: vendor/bin/pint --test --dirty
         # Using --dirty only until we get all of the files cleaned up
@@ -109,6 +115,11 @@ jobs:
           cp .env.example .env || true
           php -r "file_put_contents('.env', preg_replace('/^APP_KEY=.*/m', 'APP_KEY=${{ env.APP_KEY }}', file_get_contents('.env')));"
           php artisan config:clear
+
+      - name: Compile assets
+        run: |
+          npm ci
+          npm run build
 
       - name: Run migrations
         run: php artisan migrate --force
