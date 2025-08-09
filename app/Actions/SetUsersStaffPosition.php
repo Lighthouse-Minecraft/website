@@ -22,20 +22,20 @@ class SetUsersStaffPosition
         $existingRank = $user->staff_rank;
         $existingTitle = $user->staff_title;
 
-        $updateText = "Updating staff position: " ;
+        $updateText = 'Updating staff position: ';
 
         if ($existingDepartment !== $department) {
-            $updateText .= "Department: " . $existingDepartment?->label() . " => " . $department->label() . ", ";
+            $updateText .= 'Department: '.$existingDepartment?->label().' => '.$department->label().', ';
             $user->staff_department = $department;
         }
 
         if ($existingRank !== $rank) {
-            $updateText .= "Rank: " . ($existingRank ? $existingRank->label() : 'None') . " => " . $rank->label() . ", ";
+            $updateText .= 'Rank: '.($existingRank ? $existingRank->label() : 'None').' => '.$rank->label().', ';
             $user->staff_rank = $rank;
         }
 
         if ($existingTitle !== $title) {
-            $updateText .= "Title: " . $existingTitle . " => " . $title;
+            $updateText .= 'Title: '.$existingTitle.' => '.$title;
             $user->staff_title = $title;
         }
 

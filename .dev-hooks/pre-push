@@ -1,0 +1,42 @@
+#!/bin/sh
+# dev-hooks/pre-push
+
+echo "🧪 Running Pest test suite before push..."
+
+if [ ! -f ./vendor/bin/pest ]; then
+  echo "⚠️  Pest not found (./vendor/bin/pest). Skipping tests."
+  echo "    Run 'composer install' to enable pre-push testing."
+  exit 0
+fi
+
+# Ensure TEST env is used; most Laravel projects default to 'testing' for Pest/PhpUnit.
+# If your tests depend on .env.testing, create a minimal one once and commit it to the repo (without secrets).
+if [ ! -f .env.testing ]; then
+  echo "⚠️  .env.testing not found. Creating a minimal test env using SQLite..."
+  cat > .env.testing <<'EOF'
+APP_ENV=testing
+APP_KEY=base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+CACHE_DRIVER=array
+SESSION_DRIVER=array
+QUEUE_CONNECTION=sync
+LOG_CHANNEL=stack
+DB_CONNECTION=sqlite
+DB_DATABASE=:memory:
+EOF
+fi
+
+# Clear config cache to ensure .env.testing is respected
+php artisan config:clear >/dev/null 2>&1 || true
+
+# Run the tests (no coverage for speed)
+./vendor/bin/pest
+STATUS=$?
+
+if [ $STATUS -ne 0 ]; then
+  echo "❌ Tests failed. Push blocked."
+  echo "   Fix failures, or bypass temporarily with: git push --no-verify"
+  exit $STATUS
+fi
+
+echo "✅ Tests passed. Proceeding with push."
+exit 0
