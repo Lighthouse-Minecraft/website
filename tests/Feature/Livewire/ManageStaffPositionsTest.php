@@ -1,10 +1,9 @@
 <?php
 
-use App\Models\User;
 use App\Enums\StaffDepartment;
 use App\Enums\StaffRank;
-use Illuminate\Support\Facades\Gate;
-use function Pest\Laravel\actingAs;
+use App\Models\User;
+
 use function Pest\Livewire\livewire;
 
 it('mounts the component and sets initial state', function () {
