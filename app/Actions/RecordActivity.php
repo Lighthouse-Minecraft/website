@@ -26,7 +26,7 @@ class RecordActivity
         ActivityLog::create([
             'causer_id' => $causerId,
             'subject_type' => get_class($subject),
-            'subject_id'   => $subject->getKey(),
+            'subject_id' => $subject->getKey(),
             'action' => $action,
             'description' => $description,
             'meta' => $meta,
