@@ -1,6 +1,9 @@
 <?php
 
+use App\Enums\StaffDepartment;
+use App\Enums\StaffRank;
 use App\Models\Meeting;
+use App\Models\User;
 
 use function Pest\Laravel\get;
 use function Pest\Livewire\livewire;
@@ -135,15 +138,37 @@ describe('Meeting Create - Functionality', function () {
             ->set('time', '7:00 PM')
             ->call('CreateMeeting')
             ->assertRedirect(route('meeting.show', ['meeting' => Meeting::latest()->first()]));
-    })->wip();
+    })->done();
 
-})->wip(assignee: 'jonzenor', issue: 13);
+})->done(assignee: 'jonzenor', issue: 13);
 
 describe('Meeting Create - Permissions and Security', function () {
+    it('allows staff members to access the create meeting page', function ($department) {
+        $user = User::factory()->withStaffPosition($department, StaffRank::Officer, 'Officer')->create();
+        loginAs($user);
+
+        livewire('meeting.create-modal')
+            ->assertSee('Create Meeting');
+
+        livewire('meeting.create-modal')
+            ->set('title', 'Test Meeting')
+            ->set('day', '2025-04-04')
+            ->set('time', '7:00 PM')
+            ->call('CreateMeeting')
+            ->assertOk();
+    })
+        ->with([
+            StaffDepartment::Command,
+            StaffDepartment::Engineer,
+            StaffDepartment::Chaplain,
+            StaffDepartment::Steward,
+            StaffDepartment::Quartermaster,
+        ])
+        ->done();
+
     // Handle page permissions
-    // - Display a 404 instead of permission denied
     // - Members cannot view the page
     // - All officers can view the page
     // - Crew Members cannot view the page
     // - Jr Crew and above with the 'Meeting Secretary' role can view the page
-})->todo(assignee: 'jonzenor', issue: 13);
+})->wip(assignee: 'jonzenor', issue: 13);
