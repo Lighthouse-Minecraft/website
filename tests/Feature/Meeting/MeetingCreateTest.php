@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Meeting;
+
 use function Pest\Laravel\get;
 
 describe('Meeting Create - Loading', function () {
@@ -10,7 +11,7 @@ describe('Meeting Create - Loading', function () {
         $meeting = Meeting::factory()->create();
 
         get(route('meeting.index'))
-            ->assertSee(route('meeting.show', $meeting));
+            ->assertSeeLivewire('meeting-create-modal');
     })->wip();
 
     it('loads successfully with its view', function () {
