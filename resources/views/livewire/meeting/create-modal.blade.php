@@ -5,6 +5,7 @@ use App\Models\Meeting;
 use Flux\Flux;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonTimeZone;
+use Illuminate\Validation\Rule;
 
 new class extends Component {
     public $title;
@@ -14,31 +15,37 @@ new class extends Component {
 
     public function CreateMeeting()
     {
-        // $this->validate([
-        //     'title' => 'required|string|max:255',
-        //     'day' => 'required|date',
-        //     'time' => 'required|date_format:H:i',
-        // ]);
-
-        // Meeting::create([
-        //     'title' => $this->title,
-        //     'day' => $this->day,
-        //     'time' => $this->time,
-        // ]);
+        $this->validate([
+            'title' => 'required|string|max:255',
+            'day' => 'required|date',
+            'time' => ['required', Rule::date()->format('g:i A')],
+        ]);
 
         $this->scheduled_time = $this->scheduledAtUtc();
 
+        $meeting = Meeting::create([
+            'title' => $this->title,
+            'day' => $this->day,
+            'scheduled_time' => $this->scheduled_time,
+        ]);
+
+        Flux::toast('Meeting created successfully!', 'Success', variant: 'success');
+        // Reset form fields after successful creation
         $this->reset(['title', 'day', 'time']);
+
+        return redirect()->route('meeting.show', ['meeting' => $meeting]);
     }
 
     protected function scheduledAtUtc(string $tz = 'America/New_York'): CarbonImmutable
     {
         // Validate/assume ISO date + 24h time (HH:mm)
-        return CarbonImmutable::createFromFormat(
-            'Y-m-d h:i A',
+        $utcTime = CarbonImmutable::createFromFormat(
+            'Y-m-d g:i A',
             "{$this->day} {$this->time}",
             new CarbonTimeZone($tz)
         )->utc();
+
+        return $utcTime;
     }
 }; ?>
 

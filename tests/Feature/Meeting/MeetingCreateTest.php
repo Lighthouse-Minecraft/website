@@ -61,7 +61,7 @@ describe('Meeting Create - Functionality', function () {
             ->set('time', '7:00 PM')
             ->call('CreateMeeting')
             ->assertSet('scheduled_time', '2025-04-04 23:00:00');
-    })->wip();
+    })->done();
 
     it('submits form data without error and saves to the database', function () {
         loginAsAdmin();
@@ -69,20 +69,73 @@ describe('Meeting Create - Functionality', function () {
         livewire('meeting.create-modal')
             ->set('title', 'Test Meeting')
             ->set('day', '2025-04-04')
-            ->set('time', '7:00 PM')
-            ->call('createMeeting')
-            ->assertEmitted('meeting.created');
+            ->set('time', value: '7:00 PM')
+            ->call('CreateMeeting')
+            ->assertOk();
 
         $this->assertDatabaseHas('meetings', [
             'title' => 'Test Meeting',
             'day' => '2025-04-04',
-            'time' => '7:00 PM',
+            'scheduled_time' => '2025-04-04 23:00:00',
         ]);
-    })->todo();
+    })->done();
 
-    it('validates user input')->todo();
+    it('validates user input with valid data', function (string $title, string $day, string $time) {
+        loginAsAdmin();
 
-    it('redirects to meeting.show after saving')->todo();
+        livewire('meeting.create-modal')
+            ->set('title', $title)
+            ->set('day', $day)
+            ->set('time', $time)
+            ->call('CreateMeeting')
+            ->assertOk();
+    })->done()
+        ->with([
+            ['title' => 'Test Meeting', 'day' => '2025-04-04', 'time' => '7:00 PM'],
+            ['title' => 'Test - Meeting', 'day' => '2025-01-01', 'time' => '7:00 AM'],
+            ['title' => 'Test\'s Meeting', 'day' => '2025-12-31', 'time' => '12:00 PM'],
+            ['title' => '0123857987 Test Meeting', 'day' => '2024-02-29', 'time' => '5:30 PM'],
+        ]);
+
+    it('validates user input with invalid data', function ($data, $expectedError) {
+        loginAsAdmin();
+
+        livewire('meeting.create-modal')
+            ->set('title', $data['title'])
+            ->set('day', $data['day'])
+            ->set('time', $data['time'])
+            ->call('CreateMeeting')
+            ->assertHasErrors($expectedError);
+    })
+        ->done()
+        ->with([
+            // Requires each field to be set
+            [['title' => '', 'day' => '2025-04-04', 'time' => '7:00 PM'], 'title'],
+            [['title' => 'Test Meeting', 'day' => '', 'time' => '7:00 PM'], 'day'],
+            [['title' => 'Test Meeting', 'day' => '2025-04-04', 'time' => ''], 'time'],
+
+            // Requires each field to be valid type
+            [['title' => 'Test Meeting', 'day' => '2025-04-04', 'time' => 'invalid time'], 'time'],
+            [['title' => 'Test Meeting', 'day' => 'invalid date', 'time' => '7:00 PM'], 'day'],
+
+            // Requires date and time to be valid
+            [['title' => 'Test Meeting', 'day' => 'invalid date', 'time' => '7:00 PM'], 'day'],
+            [['title' => 'Test Meeting', 'day' => '2025-04-04', 'time' => '25:00 PM'], 'time'],
+            [['title' => 'Test Meeting', 'day' => '2025-04-04', 'time' => '12:00 XM'], 'time'],
+            [['title' => 'Test Meeting', 'day' => '2025-04-04', 'time' => '12:00 pm'], 'time'],
+            [['title' => 'Test Meeting', 'day' => '2025-04-04', 'time' => '12:00 am'], 'time'],
+        ]);
+
+    it('redirects to meeting.show after saving', function () {
+        loginAsAdmin();
+
+        livewire('meeting.create-modal')
+            ->set('title', 'Test Meeting')
+            ->set('day', '2025-04-04')
+            ->set('time', '7:00 PM')
+            ->call('CreateMeeting')
+            ->assertRedirect(route('meeting.show', ['meeting' => Meeting::latest()->first()]));
+    })->wip();
 
 })->wip(assignee: 'jonzenor', issue: 13);
 
