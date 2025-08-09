@@ -3,11 +3,43 @@
 use Livewire\Volt\Component;
 use App\Models\Meeting;
 use Flux\Flux;
+use Carbon\CarbonImmutable;
+use Carbon\CarbonTimeZone;
 
 new class extends Component {
     public $title;
     public $day;
     public $time;
+    public $scheduled_time;
+
+    public function CreateMeeting()
+    {
+        // $this->validate([
+        //     'title' => 'required|string|max:255',
+        //     'day' => 'required|date',
+        //     'time' => 'required|date_format:H:i',
+        // ]);
+
+        // Meeting::create([
+        //     'title' => $this->title,
+        //     'day' => $this->day,
+        //     'time' => $this->time,
+        // ]);
+
+        $this->scheduled_time = $this->scheduledAtUtc();
+
+        $this->reset(['title', 'day', 'time']);
+    }
+
+    protected function scheduledAtUtc(string $tz = 'America/New_York'): CarbonImmutable
+    {
+        // Validate/assume ISO date + 24h time (HH:mm)
+        return CarbonImmutable::createFromFormat(
+            'Y-m-d h:i A',
+            "{$this->day} {$this->time}",
+            new CarbonTimeZone($tz)
+        )->utc();
+    }
 }; ?>
 
 <div>

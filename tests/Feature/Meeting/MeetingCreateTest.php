@@ -31,7 +31,7 @@ describe('Meeting Create - Livewire Display Form Component', function () {
         livewire('meeting.create-modal')
             // Set the form fields data
             ->set('title', 'Test Meeting')
-            ->set('day', '4/4/2025')
+            ->set('day', '2025-04-04')
             ->set('time', '7:00 PM')
 
             // Make sure the form fields are displayed
@@ -41,7 +41,7 @@ describe('Meeting Create - Livewire Display Form Component', function () {
 
             // Check that the form fields were set correctly
             ->assertSet('title', 'Test Meeting')
-            ->assertSet('day', '4/4/2025')
+            ->assertSet('day', '2025-04-04')
             ->assertSet('time', '7:00 PM')
 
             // Make sure required components are present
@@ -52,15 +52,39 @@ describe('Meeting Create - Livewire Display Form Component', function () {
 
 describe('Meeting Create - Functionality', function () {
 
-    it('submits form data without error')->todo();
+    it('calculates the scheduled time based on day and time', function () {
+        loginAsAdmin();
 
-    it('saves the form data')->todo();
+        livewire('meeting.create-modal')
+            ->set('title', 'Test Meeting')
+            ->set('day', '2025-04-04')
+            ->set('time', '7:00 PM')
+            ->call('CreateMeeting')
+            ->assertSet('scheduled_time', '2025-04-04 23:00:00');
+    })->wip();
+
+    it('submits form data without error and saves to the database', function () {
+        loginAsAdmin();
+
+        livewire('meeting.create-modal')
+            ->set('title', 'Test Meeting')
+            ->set('day', '2025-04-04')
+            ->set('time', '7:00 PM')
+            ->call('createMeeting')
+            ->assertEmitted('meeting.created');
+
+        $this->assertDatabaseHas('meetings', [
+            'title' => 'Test Meeting',
+            'day' => '2025-04-04',
+            'time' => '7:00 PM',
+        ]);
+    })->todo();
 
     it('validates user input')->todo();
 
     it('redirects to meeting.show after saving')->todo();
 
-})->todo(assignee: 'jonzenor', issue: 13);
+})->wip(assignee: 'jonzenor', issue: 13);
 
 describe('Meeting Create - Permissions and Security', function () {
     // Handle page permissions
