@@ -1,0 +1,176 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches: [staging, main]
+  # Auto-cancel superseded runs on the same PR
+concurrency:
+  group: pr-${{ github.event.pull_request.number || github.ref }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  pint:
+    name: Pint (format)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache/files
+          key: composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: composer-
+      - run: composer install --no-interaction --prefer-dist
+      - name: Pint check
+        run: vendor/bin/pint --test --dirty
+        # Using --dirty only until we get all of the files cleaned up
+
+  tests:
+    name: Pest + Coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: testing
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    env:
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: testing
+      DB_USERNAME: postgres
+      DB_PASSWORD: password
+      APP_ENV: testing
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      CACHE_DRIVER: array
+      QUEUE_CONNECTION: sync
+      SESSION_DRIVER: array
+      COVERAGE_MIN: ${{ vars.COVERAGE_MIN || 80 }}
+      DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, intl, pcntl, pdo_pgsql
+          coverage: pcov
+          ini-values: memory_limit=512M
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: composer-
+
+      - name: Add Flux license
+        run: composer config http-basic.composer.fluxui.dev "${{ secrets.FLUX_USERNAME }}" "${{ secrets.FLUX_LICENSE_KEY }}"
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Prepare app
+        run: |
+          cp .env.example .env || true
+          php -r "file_put_contents('.env', preg_replace('/^APP_KEY=.*/m', 'APP_KEY=${{ env.APP_KEY }}', file_get_contents('.env')));"
+          php artisan config:clear
+
+      - name: Run migrations
+        run: php artisan migrate --force
+
+      # Run Pest with coverage + clover. We allow this step to continue so we can post a PR comment,
+      # then we re-fail the job at the end if it actually failed.
+      - name: Run Pest with coverage
+        id: pest
+        continue-on-error: true
+        run: |
+          vendor/bin/pest --coverage --coverage-clover=clover.xml --min=${{ env.COVERAGE_MIN }}
+
+      # Extract coverage percent from clover.xml and compute pass/fail vs COVERAGE_MIN
+      - name: Compute coverage stats
+        if: always()
+        env:
+          COVERAGE_MIN: ${{ env.COVERAGE_MIN }}
+        run: |
+          if [ -f clover.xml ]; then
+            php -r '
+              $xml = simplexml_load_file("clover.xml");
+              $m = $xml->project->metrics;
+              $covered = (int)$m["coveredstatements"];
+              $total   = (int)$m["statements"];
+              $pct = $total > 0 ? round($covered * 100 / $total, 2) : 0;
+              $min = (int)getenv("COVERAGE_MIN");
+              $pass = ($pct >= $min) ? "true" : "false";
+              echo "COVERAGE_PCT=$pct\nCOVERAGE_PASS=$pass\n";
+            ' >> $GITHUB_ENV
+          else
+            echo "COVERAGE_PCT=0" >> $GITHUB_ENV
+            echo "COVERAGE_PASS=false" >> $GITHUB_ENV
+          fi
+
+      # Find an existing CI status comment from the bot so we update it instead of spamming
+      - name: Find existing CI comment
+        if: always()
+        id: find-comment
+        uses: peter-evans/find-comment@v3
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: '### Lighthouse CI Status'
+
+      # Create or update the PR comment
+      - name: Create or update PR comment
+        if: always()
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          edit-mode: replace
+          body: |
+            ### Lighthouse CI Status
+
+            **Coverage:** ${{ env.COVERAGE_PCT }}%
+            **Minimum required:** ${{ env.COVERAGE_MIN }}%
+            **Result:** ${{ env.COVERAGE_PASS == 'true' && '✅ Passed' || '❌ Failed' }}
+
+            Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+      # Re-fail the job if Pest step failed (so branch protection still blocks the PR)
+      - name: Fail if tests/coverage failed
+        if: steps.pest.outcome == 'failure'
+        run: exit 1
+
+      # (Optional) Upload the clover as an artifact for debugging
+      - name: Upload coverage artifact
+        if: always() && hashFiles('clover.xml') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: clover-xml-${{ github.run_id }}
+          path: clover.xml
+
+      - name: Discord notify (failure)
+        if: failure() && env.DISCORD_WEBHOOK != ''
+        run: |
+          curl -H "Content-Type: application/json" -X POST "$DISCORD_WEBHOOK" \
+            -d "$(jq -n --arg t "❌ PR checks failed on #${{ github.event.pull_request.number }} (${{ github.event.pull_request.base.ref }})" \
+                           --arg u "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+                           '{content: ($t + "\n" + $u)}')"
