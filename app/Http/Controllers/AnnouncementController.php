@@ -85,16 +85,4 @@ class AnnouncementController extends Controller
         return redirect()->route('acp.index', ['tab' => 'announcement-manager'])
             ->with('status', 'Announcement deleted successfully!');
     }
-
-    public function restore($id)
-    {
-        $announcement = Announcement::withTrashed()->findOrFail($id);
-
-        Gate::authorize('restore', $announcement);
-
-        $announcement->restore();
-
-        return view('livewire.announcements.show', ['announcement' => $announcement])
-            ->with('status', 'Announcement restored successfully!');
-    }
 }
