@@ -10,14 +10,14 @@ class AnnouncementPolicy
 {
     public function before(User $user, string $ability): bool|null
     {
-        // if ($user->isAdmin()
-        //     || ($user->isInDepartment(StaffDepartment::Command)
-        //         && $user->isAtLeastRank(StaffRank::Officer)
-        //         )
-        //     ) {
-        //     return true;
-        // }
-        return true;
+        if ($user->isAdmin()
+            || ($user->isInDepartment(StaffDepartment::Command)
+                && $user->isAtLeastRank(StaffRank::Officer)
+                )
+            ) {
+
+            return true;
+        }
 
         return null;
     }
@@ -43,16 +43,15 @@ class AnnouncementPolicy
      */
     public function create(User $user): bool
     {
-        // return (
-        //     $user->hasRole('Announcement Editor')
-        //     || $user->isAtLeastRank(StaffRank::Officer)
-        //     || ($user->isAtLeastRank(StaffRank::CrewMember)
-        //         && ($user->isInDepartment(StaffDepartment::Engineer)
-        //             || $user->isInDepartment(StaffDepartment::Steward)
-        //         )
-        //     )
-        // );
-        return true;
+        return (
+            $user->hasRole('Announcement Editor')
+            || $user->isAtLeastRank(StaffRank::Officer)
+            || ($user->isAtLeastRank(StaffRank::CrewMember)
+                && ($user->isInDepartment(StaffDepartment::Engineer)
+                    || $user->isInDepartment(StaffDepartment::Steward)
+                )
+            )
+        );
     }
 
     /**
