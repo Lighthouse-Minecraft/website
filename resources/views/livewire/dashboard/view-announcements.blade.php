@@ -11,15 +11,23 @@ new class extends Component {
 
     public function mount()
     {
-        $this->announcements = Announcement::where('is_published', true)->get();
-        $this->announcements->load('author', 'categories', 'tags');
+        $this->announcements = Announcement::where('is_published', true)->with('author', 'categories', 'tags')->get();
     }
 };
 
 ?>
 
-<div>
-    <flux:heading size="xl">Announcements</flux:heading>
+<div class="w-full space-y-6">
+
+    @foreach($announcements as $announcement)
+        <flux:callout color="sky">
+            <flux:callout.heading>{{  $announcement->title }}</flux:callout.heading>
+            <flux:callout.text>
+                {!! nl2br(e($announcement->excerpt())) !!}
+            </flux:callout.text>
+        </flux:callout>
+    @endforeach
+
     <div class="d-flex flex-column gap-md">
         @foreach($announcements as $announcement)
             @if($announcements->isNotEmpty() && $announcement->is_published)

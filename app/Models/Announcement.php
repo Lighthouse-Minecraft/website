@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
-use App\Models\{Categories, Comments, Tags};
-use Illuminate\Database\Eloquent\{Model};
-use Illuminate\Database\Eloquent\Relations\{BelongsTo, BelongsToMany};
-use Illuminate\Support\{Str};
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
 class Announcement extends Model
 {
+    use HasFactory;
+
     /**
      * The attributes that are mass assignable.
      */
@@ -147,7 +148,7 @@ class Announcement extends Model
             // Treat common HTML line boundaries as actual newlines *before* stripping tags
             $blockTags = '(p|div|section|article|header|footer|h[1-6]|ul|ol|li|blockquote|pre|table|thead|tbody|tr|td|th)'; // Add more as needed
             $content = preg_replace('/<\s*br\s*\/?>/i', "\n", $content);                   // <br> -> \n
-            $content = preg_replace('/<\/\s*' . $blockTags . '\s*>/i', "\n", $content);    // </block> -> \n
+            $content = preg_replace('/<\/\s*'.$blockTags.'\s*>/i', "\n", $content);    // </block> -> \n
             $content = strip_tags($content);
             $content = html_entity_decode($content, ENT_QUOTES | ENT_HTML5, 'UTF-8');
         }
@@ -167,8 +168,12 @@ class Announcement extends Model
         $lines = array_map(fn ($l) => trim(preg_replace('/[ \t]+/', ' ', $l)), $lines);
 
         // Remove leading/trailing empty lines
-        while (!empty($lines) && $lines[0] === '') array_shift($lines);
-        while (!empty($lines) && end($lines) === '') array_pop($lines);
+        while (! empty($lines) && $lines[0] === '') {
+            array_shift($lines);
+        }
+        while (! empty($lines) && end($lines) === '') {
+            array_pop($lines);
+        }
 
         if (empty($lines)) {
             return '';
