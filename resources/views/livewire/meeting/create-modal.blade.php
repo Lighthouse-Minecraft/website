@@ -15,7 +15,7 @@ new class extends Component {
 
     public function mount() {
         abort_unless(auth()->user()?->can('create', Meeting::class), 403, 'You do not have permission to create meetings.');
-        $this->time = '07:00 PM';
+        $this->time = '7:00 PM';
     }
 
     public function CreateMeeting()
