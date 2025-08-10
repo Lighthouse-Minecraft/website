@@ -1,8 +1,6 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
@@ -38,25 +36,25 @@ return new class extends Migration
                 'name' => 'Citizen',
                 'description' => 'Users that have gone above and beyond in the community and have special recognition.',
                 'color' => 'cyan',
-                'icon' => 'home'
+                'icon' => 'home',
             ],
             [
                 'name' => 'Resident',
                 'description' => 'Permanent member with standard privileges.',
                 'color' => 'sky',
-                'icon' => 'identification'
+                'icon' => 'identification',
             ],
             [
                 'name' => 'Traveler',
                 'description' => 'New users that are just starting out with limited access.',
                 'color' => 'blue',
-                'icon' => 'ticket'
+                'icon' => 'ticket',
             ],
             [
                 'name' => 'Stowaway',
                 'description' => 'Has agreed to the community rules but has not been verified by a staff member.',
                 'color' => 'lime',
-                'icon' => 'lifebuoy'
+                'icon' => 'lifebuoy',
             ],
         ]);
     }

@@ -12,30 +12,30 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('activity_logs', function (Blueprint $table) {
-        $table->id();
+            $table->id();
 
-        // The user who caused the activity (nullable for system actions)
-        $table->foreignId('causer_id')->nullable()->constrained('users')->nullOnDelete();
+            // The user who caused the activity (nullable for system actions)
+            $table->foreignId('causer_id')->nullable()->constrained('users')->nullOnDelete();
 
-        // Polymorphic subject (what the action was done to)
-        $table->string('subject_type');
-        $table->unsignedBigInteger('subject_id');
+            // Polymorphic subject (what the action was done to)
+            $table->string('subject_type');
+            $table->unsignedBigInteger('subject_id');
 
-        // Action name (e.g., user_registered, rules_accepted)
-        $table->string('action');
+            // Action name (e.g., user_registered, rules_accepted)
+            $table->string('action');
 
-        // Optional human-readable description
-        $table->text('description')->nullable();
+            // Optional human-readable description
+            $table->text('description')->nullable();
 
-        // Optional structured metadata (IP, user agent, etc.)
-        $table->json('meta')->nullable();
+            // Optional structured metadata (IP, user agent, etc.)
+            $table->json('meta')->nullable();
 
-        $table->timestamps();
+            $table->timestamps();
 
-        // Indexes for performance
-        $table->index(['subject_type', 'subject_id']);
-        $table->index('causer_id');
-        $table->index('action');
+            // Indexes for performance
+            $table->index(['subject_type', 'subject_id']);
+            $table->index('causer_id');
+            $table->index('action');
         });
     }
 

@@ -12,7 +12,7 @@ class Meeting extends Model
     protected $fillable = ['title', 'day', 'scheduled_time', 'is_public'];
 
     protected $casts = [
-        'day' => 'date',
+        'day' => 'string',
         'scheduled_time' => 'datetime',
         'is_public' => 'boolean',
     ];
