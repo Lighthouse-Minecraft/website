@@ -78,7 +78,7 @@ new class extends Component {
                     <flux:table.cell>{{ $announcement->published_at ? $announcement->published_at->format('F j, Y H:i') : 'N/A' }}</flux:table.cell>
                     <flux:table.cell>
                         <flux:button wire:navigate href="{{ route('acp.announcements.edit', $announcement->id) }}" size="xs" icon="pencil-square"></flux:button>
-                        <flux:button wire:navigate href="{{ route('acp.announcements.show', $announcement->id) }}" size="xs" icon="trash" variant="danger"></flux:button>
+                        <flux:button wire:navigate href="{{ route('announcements.show', $announcement->id) }}" size="xs" icon="trash" variant="danger"></flux:button>
                     </flux:table.cell>
                 </flux:table.row>
             @empty
