@@ -1,20 +1,49 @@
 <?php
 
+use App\Models\Meeting;
+
+use function Pest\Laravel\get;
+
+beforeEach(function () {
+    $this->meeting = Meeting::factory()->create([
+        'title' => 'Test Meeting',
+        'day' => '2025-05-04',
+        'scheduled_time' => '2025-05-04 19:00:00',
+    ]);
+});
+
 describe('Meeting Show - Loading', function () {
-    // Load page and views
+
+    it('loads the page and relevant views', function () {
+        loginAsAdmin();
+
+        get(route('meeting.show', ['meeting' => $this->meeting->id]))
+            ->assertOk()
+            ->assertViewIs('meeting.show')
+            ->assertSee('Lighthouse Layout', false)
+            ->assertViewHas('meeting', $this->meeting);
+    })->done();
 
     // Loads model data
-})->todo(issue: 56);
+    it('loads model data', function () {
+        loginAsAdmin();
+
+        get(route('meeting.show', ['meeting' => $this->meeting->id]))
+            ->assertSeeText($this->meeting->title)
+            ->assertSeeText($this->meeting->day);
+    })->done();
+
+})->wip(assignee: 'jonzenor', issue: 56);
 
 describe('Meeting Show - Page Data', function () {
     // Handles invalid meeting
-})->todo(issue: 56);
+})->todo(assignee: 'jonzenor', issue: 56);
 
 describe('Meeting Show - Attendance', function () {
     // Shows the modal to select users for attendance
 
     // Shows users who attended the meeting
-})->todo(issue: 55);
+})->todo(assignee: 'jonzenor', issue: 55);
 
 describe('Meeting Show - Notes', function () {
     // Show a section for each department
@@ -26,7 +55,7 @@ describe('Meeting Show - Notes', function () {
     // Locks the note section when the user starts editing
     // Unlocks the note section after the lock expires
     // Unlocks the note section when the user is done editing
-})->todo(issue: 13);
+})->todo(assignee: 'jonzenor', issue: 13);
 
 describe('Meeting Show - Action Items', function () {
     // Each department section has a todo list that can be added
@@ -36,4 +65,4 @@ describe('Meeting Show - Action Items', function () {
     // Have a button that imports outstanding tasks
 
     // Have a button that imports tasks completed since a selected meeting
-})->todo(issue: 28);
+})->todo(assignee: 'jonzenor', issue: 28);

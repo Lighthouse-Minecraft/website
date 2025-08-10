@@ -41,9 +41,7 @@ class MeetingController extends Controller
      */
     public function show(Meeting $meeting)
     {
-        if (Gate::denies('view', $meeting)) {
-            abort(404);
-        }
+        Gate::authorize('view', $meeting);
 
         return view('meeting.show', compact('meeting'));
     }

@@ -1,3 +1,3 @@
-<div>
-    <!-- Nothing in life is to be feared, it is only to be understood. Now is the time to understand more, so that we may fear less. - Marie Curie -->
-</div>
+<x-layouts.app>
+    <flux:heading size="xl">{{  $meeting->title }} - {{  $meeting->day }}</flux:heading>
+</x-layouts.app>
