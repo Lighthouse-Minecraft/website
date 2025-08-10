@@ -3,7 +3,6 @@
 namespace Tests\Unit\Actions;
 
 use App\Actions\PromoteUser;
-use App\Actions\RecordActivity;
 use App\Enums\MembershipLevel;
 use App\Models\ActivityLog;
 use App\Models\User;
@@ -27,7 +26,7 @@ describe('PromoteUser Action', function () {
         $user = User::factory()->create([
             'membership_level' => MembershipLevel::Drifter,
         ]);
-        
+
         PromoteUser::run($user);
         expect(ActivityLog::count())->toBe(1);
 
@@ -42,7 +41,7 @@ describe('PromoteUser Action', function () {
         $user = User::factory()->create([
             'membership_level' => MembershipLevel::Drifter,
         ]);
-        
+
         // Promote from Drifter to Stowaway
         PromoteUser::run($user);
         expect($user->fresh()->membership_level)->toBe(MembershipLevel::Stowaway);
@@ -63,8 +62,8 @@ describe('PromoteUser Action', function () {
     it('respects the maximum level limit', function () {
         $user = User::factory()->create([
             'membership_level' => MembershipLevel::Drifter,
-        ]);        
-        
+        ]);
+
         PromoteUser::run($user, MembershipLevel::Traveler);
         expect($user->fresh()->membership_level)->toBe(MembershipLevel::Stowaway);
 
@@ -81,7 +80,7 @@ describe('PromoteUser Action', function () {
         $user = User::factory()->create([
             'membership_level' => MembershipLevel::Citizen,
         ]);
-        
+
         $originalLevel = $user->membership_level;
         PromoteUser::run($user, MembershipLevel::Resident);
 
@@ -93,7 +92,7 @@ describe('PromoteUser Action', function () {
         $user = User::factory()->create([
             'membership_level' => MembershipLevel::Citizen,
         ]);
-        
+
         $originalLevel = $user->membership_level;
         PromoteUser::run($user);
 
@@ -105,7 +104,7 @@ describe('PromoteUser Action', function () {
         $user = User::factory()->create([
             'membership_level' => MembershipLevel::Resident,
         ]);
-        
+
         PromoteUser::run($user);
         expect($user->fresh()->membership_level)->toBe(MembershipLevel::Citizen);
     });
@@ -114,7 +113,7 @@ describe('PromoteUser Action', function () {
         $user = User::factory()->create([
             'membership_level' => MembershipLevel::Traveler,
         ]);
-        
+
         PromoteUser::run($user, MembershipLevel::Traveler);
 
         // Should not change since already at max allowed level
@@ -126,7 +125,7 @@ describe('PromoteUser Action', function () {
         $user = User::factory()->create([
             'membership_level' => MembershipLevel::Resident,
         ]);
-        
+
         PromoteUser::run($user, MembershipLevel::Resident);
 
         // Should not promote because next level (Citizen) would exceed max (Resident)
@@ -149,7 +148,7 @@ describe('PromoteUser Action', function () {
         $user = User::factory()->create([
             'membership_level' => MembershipLevel::Drifter,
         ]);
-        
+
         $originalUserId = $user->id;
         $originalUserName = $user->name;
         $originalUserEmail = $user->email;
@@ -181,5 +180,40 @@ describe('PromoteUser Action', function () {
 
             expect($user->fresh()->membership_level)->toBe($expectedNextLevel);
         }
+    });
+});
+
+describe('PromoteUser Action with Invalid data', function () {
+
+    it('does not promote user with null membership level', function () {
+        $user = User::factory()->create([
+            'membership_level' => MembershipLevel::Drifter,
+        ]);
+
+        expect(fn () => PromoteUser::run($user, null))->toThrow(\TypeError::class);
+    });
+
+    it('does not promote user who is at max level', function () {
+        $user = User::factory()->create([
+            'membership_level' => MembershipLevel::Citizen,
+        ]);
+
+        $originalLevel = $user->membership_level;
+        PromoteUser::run($user, MembershipLevel::Citizen);
+
+        expect($user->fresh()->membership_level)->toBe($originalLevel);
+        expect(ActivityLog::count())->toBe(0);
+    });
+
+    it('does not promote user if they are at the max requested level', function () {
+        $user = User::factory()->create([
+            'membership_level' => MembershipLevel::Citizen,
+        ]);
+
+        $originalLevel = $user->membership_level;
+        PromoteUser::run($user, MembershipLevel::Citizen);
+
+        expect($user->fresh()->membership_level)->toBe($originalLevel);
+        expect(ActivityLog::count())->toBe(0);
     });
 });

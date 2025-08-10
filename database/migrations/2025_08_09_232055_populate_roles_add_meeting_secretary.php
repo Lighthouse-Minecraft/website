@@ -12,10 +12,10 @@ return new class extends Migration
     {
         DB::table('roles')->insert([
             [
-                'name' => 'Stowaway',
-                'description' => 'Has agreed to the community rules but has not been verified by a staff member.',
-                'color' => 'lime',
-                'icon' => 'lifebuoy',
+                'name' => 'Meeting Secretary',
+                'description' => 'Has permission to manage meetings to take notes. Includes the ability to create, and edit meetings.',
+                'color' => 'amber',
+                'icon' => 'inbox-arrow-down',
             ],
         ]);
     }
@@ -25,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        DB::table('roles')->where('name', 'Stoaway')->delete();
+        DB::table('roles')->where('name', 'Meeting Secretary')->delete();
     }
 };
