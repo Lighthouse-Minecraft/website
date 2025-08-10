@@ -1,9 +1,11 @@
 <?php
 
-use App\Http\Controllers\{AdminControlPanelController, AnnouncementController, PageController, UserController};
-use App\Models\{Announcement, Page};
-use Illuminate\Support\Facades\{Route};
-use Livewire\Volt\{Volt};
+use App\Http\Controllers\AdminControlPanelController;
+use App\Http\Controllers\AnnouncementController;
+use App\Http\Controllers\PageController;
+use App\Http\Controllers\UserController;
+use Illuminate\Support\Facades\Route;
+use Livewire\Volt\Volt;
 
 Route::get('/pages/{slug}', [PageController::class, 'show'])->name('pages.show');
 
@@ -52,7 +54,7 @@ Route::prefix('admin/announcements')
         Route::get('{id}/edit', 'edit')->name('edit');
         Route::put('{/id}/update', 'update')->name('update');
         Route::delete('{announcement}', 'destroy')->name('delete');
-});
+    });
 
 Route::prefix('meetings')->name('meeting.')->controller(App\Http\Controllers\MeetingController::class)->group(function () {
     Route::get('/', 'index')->name('index');
