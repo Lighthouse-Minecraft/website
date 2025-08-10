@@ -20,6 +20,8 @@ class AnnouncementController extends Controller
      */
     public function show($id)
     {
+        Gate::authorize('view', Announcement::class);
+
         $announcement = Announcement::with(['author.roles'])->findOrFail($id);
 
         return view('announcements.show', compact('announcement'));

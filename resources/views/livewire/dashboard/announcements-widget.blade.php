@@ -1,45 +1,40 @@
 <?php
 
+use App\Models\Announcement;
 use Livewire\Volt\Component;
+use Livewire\WithPagination;
 
 new class extends Component {
-    public $activeAnnouncements;
-    public $activeAnnouncementTab = 'active-announcements';
+    use WithPagination;
 
-    public function mount()
+    public $activeAnnouncementTab = 'active-announcements';
+    public int $perPage = 4;
+
+    public function getAnnouncementsProperty()
     {
-        $this->activeAnnouncements = \App\Models\Announcement::where('is_published', true)->get();
+        return Announcement::query()
+            ->where('is_published', true)
+            ->with(['author', 'categories', 'tags'])
+            ->paginate($this->perPage, ['*'], 'ann_widget_page'); // unique page name
     }
 
 }; ?>
 
 <flux:card class="w-full">
     <!-- START OF ANNOUNCEMENTS WIDGET -->
-    <flux:heading size="md" class="mb-4">Community Announcements</flux:heading>
+    <flux:heading size="md" class="mb-2">Community Announcements</flux:heading>
 
-    <flux:tab.group>
-        <flux:tabs wire:model="activeAnnouncementTab">
-            <flux:tab name="active-announcements">Current</flux:tab>
-        </flux:tabs>
+    <flux:table :paginate="$this->announcements">
+        <flux:table.rows>
+            @foreach ($this->announcements as $announcement)
+                <flux:table.row>
+                    <flux:table.cell>
+                        <flux:link href="{{ route('announcements.show', $announcement->id) }}">{{  $announcement->title }}</flux:link>
+                    </flux:table.cell>
+                </flux:table.row>
+            @endforeach
+        </flux:table.rows>
+    </flux:table>
 
-        <flux:tab.panel name="active-announcements">
-            <flux:table>
-                <flux:table.columns>
-                    <flux:table.column>Announcement</flux:table.column>
-                </flux:table.columns>
-
-                <flux:table.rows>
-                    @foreach ($activeAnnouncements as $announcement)
-                        <flux:table.row>
-                            <flux:table.cell>
-                                <flux:link href="{{ route('announcements.show', $announcement->id) }}">{{  $announcement->title }}</flux:link>
-                            </flux:table.cell>
-                        </flux:table.row>
-                    @endforeach
-                </flux:table.rows>
-            </flux:table>
-        </flux:tab.panel>
-
-    </flux:tab.group>
     <!-- END OF ANNOUNCEMENTS WIDGET -->
 </flux:card>
