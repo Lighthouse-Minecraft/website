@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\StaffDepartment;
 use App\Models\Meeting;
 
 use function Pest\Laravel\get;
@@ -11,6 +12,8 @@ beforeEach(function () {
         'scheduled_time' => '2025-05-04 19:00:00',
     ]);
 });
+
+// TODO: RENAME THIS FEATURE TO USE MEETING EDIT
 
 describe('Meeting Show - Loading', function () {
 
@@ -46,7 +49,18 @@ describe('Meeting Show - Attendance', function () {
 })->todo(assignee: 'jonzenor', issue: 55);
 
 describe('Meeting Show - Notes', function () {
-    // Show a section for each department
+    it('shows a section for each department', function () {
+        loginAsAdmin();
+
+        get(route('meeting.show', ['meeting' => $this->meeting->id]))
+            ->assertSeeLivewire('meeting.department-section')
+            ->assertSee('General')
+            ->assertSee(StaffDepartment::Command->label())
+            ->assertSee(StaffDepartment::Chaplain->label())
+            ->assertSee(StaffDepartment::Engineer->label())
+            ->assertSee(StaffDepartment::Quartermaster->label())
+            ->assertSee(StaffDepartment::Steward->label());
+    })->wip();
 
     // Show blank notes for each department section
 
@@ -55,7 +69,7 @@ describe('Meeting Show - Notes', function () {
     // Locks the note section when the user starts editing
     // Unlocks the note section after the lock expires
     // Unlocks the note section when the user is done editing
-})->todo(assignee: 'jonzenor', issue: 13);
+})->wip(assignee: 'jonzenor', issue: 13);
 
 describe('Meeting Show - Action Items', function () {
     // Each department section has a todo list that can be added
