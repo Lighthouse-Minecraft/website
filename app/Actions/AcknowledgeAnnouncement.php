@@ -13,8 +13,8 @@ class AcknowledgeAnnouncement
 
     public function handle(Announcement $announcement, ?User $user)
     {
-        if (!$user) {
-            if (!Auth::check()) {
+        if (! $user) {
+            if (! Auth::check()) {
                 throw new \Exception(message: 'User must be authenticated to acknowledge an announcement.');
             }
             // If the user is not passed, use the authenticated user

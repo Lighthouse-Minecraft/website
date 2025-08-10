@@ -50,10 +50,18 @@ Route::prefix('acp/announcements')
 
         Route::get('create', 'create')->name('create');
         Route::post('store', 'store')->name('store');
-        Route::get('{id}', 'show')->name('show');
         Route::get('{id}/edit', 'edit')->name('edit');
         Route::put('{/id}/update', 'update')->name('update');
         Route::delete('{announcement}', 'destroy')->name('delete');
+    });
+
+Route::prefix('announcements')
+    ->name('announcements.')
+    ->controller(AnnouncementController::class)
+    ->middleware('auth')
+    ->group(function () {
+        Route::get(uri: '{id}', action: 'show')->name('show');
+
     });
 
 Route::prefix('meetings')->name('meeting.')->controller(App\Http\Controllers\MeetingController::class)->group(function () {
