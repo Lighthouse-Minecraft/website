@@ -42,15 +42,15 @@ Route::get('/acp/pages/{page}/edit', [PageController::class, 'edit'])
     ->name('admin.pages.edit')
     ->middleware('can:update,page');
 
-Route::prefix('admin/announcements')
-    ->name('admin.announcements.')
+Route::prefix('acp/announcements')
+    ->name('acp.announcements.')
     ->controller(AnnouncementController::class)
     ->middleware('auth')
     ->group(function () {
 
-        Route::get('{id}', 'show')->name('show');
         Route::get('create', 'create')->name('create');
         Route::post('store', 'store')->name('store');
+        Route::get('{id}', 'show')->name('show');
         Route::get('{id}/edit', 'edit')->name('edit');
         Route::put('{/id}/update', 'update')->name('update');
         Route::delete('{announcement}', 'destroy')->name('delete');
