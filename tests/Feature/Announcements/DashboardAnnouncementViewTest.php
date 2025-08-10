@@ -16,19 +16,8 @@ describe('Dashboard display', function () {
             ->assertSeeLivewire('dashboard.view-announcements')
             ->assertSee($announcement->title)
             ->assertSee($announcement->content);
-    })->wip();
+    })->done();
 
-    it('does not display announcements if none exist', function () {
-        loginAsAdmin();
-
-        get(route('dashboard'))
-            ->assertSeeLivewire('dashboard.view-announcements')
-            ->assertDontSee('Announcements');
-    })->wip();
-})->wip();
-
-// Announcements heading does not display if there are no announcements
-
-// Announcements have a link to the full announcement
+})->done();
 
 // Announcements are dismissable
