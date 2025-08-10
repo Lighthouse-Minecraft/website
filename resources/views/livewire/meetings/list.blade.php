@@ -37,7 +37,10 @@ new class extends Component {
                 @can('view', $meeting)
                     <flux:table.row>
                         <flux:table.cell><flux:link href="{{ route('meeting.show', $meeting) }}">{{ $meeting->title }} - {{ $meeting->day }}</flux:link></flux:table.cell>
-                        <flux:table.cell>{{ $meeting->scheduled_time->setTimezone('America/New_York')->format('Y-m-d  \@  g:i A') }}</flux:table.cell>
+                        <flux:table.cell>
+                            {{ $meeting->scheduled_time->setTimezone('America/New_York')->format('F j, Y') }} &nbsp;
+                            {{ $meeting->scheduled_time->setTimezone('America/New_York')->format('g:i A') }}
+                        </flux:table.cell>
                         <flux:table.cell>{{ $meeting->summary }}</flux:table.cell>
                     </flux:table.row>
                 @endcan
