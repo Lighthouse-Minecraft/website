@@ -39,6 +39,16 @@ class MeetingPolicy
         }
     }
 
+    public function viewAnyPrivate(User $user): bool
+    {
+        return $user->isAtLeastRank(StaffRank::Officer);
+    }
+
+    public function viewAnyPublic(User $user): bool
+    {
+        return $user->isAtLeastLevel(MembershipLevel::Resident);
+    }
+
     /**
      * Determine whether the user can create models.
      */

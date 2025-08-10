@@ -1,15 +1,14 @@
 <?php
 
-use Illuminate\Testing\Fluent\Concerns\Has;
-use function Pest\Laravel\get;
-use function Pest\Livewire\livewire;
-
 use App\Enums\MembershipLevel;
 use App\Enums\StaffDepartment;
 use App\Enums\StaffRank;
 use App\Models\Meeting;
 use App\Models\User;
+
 use function Pest\Laravel\actingAs;
+use function Pest\Laravel\get;
+use function Pest\Livewire\livewire;
 
 uses()->group('feature');
 
@@ -43,7 +42,6 @@ describe('Meetings List Page - Load', function () {
             ->assertSee(route('meeting.index'));
     });
 
-
 });
 
 describe('Meeting List Page - Livewire Component', function () {
@@ -66,7 +64,7 @@ describe('Meeting List Page - Livewire Component', function () {
     });
 });
 
-describe('Meetings List Page - Permissions', function() {
+describe('Meetings List Page - Permissions', function () {
     it('shows a 404 if an unauthorized person views the page', function () {
         get(route('meeting.index'))
             ->assertStatus(404);
@@ -179,6 +177,17 @@ describe('Meetings List Page - Functionality', function () {
 
         get(route('meeting.index'))
             ->assertSee('Create Meeting')
-            ->assertSee(route('meeting.create'));
-    })->todo('implement create functionality');
+            ->assertSeeLivewire('meeting.create-modal');
+    })->done();
+
+    it('displays a list of meetings', function () {
+        $meetings = Meeting::factory()->count(3)->create();
+        loginAsAdmin();
+
+        get(route('meeting.index'))
+            ->assertOk()
+            ->assertSee($meetings[0]->title)
+            ->assertSee($meetings[1]->title)
+            ->assertSee($meetings[2]->title);
+    })->done();
 });

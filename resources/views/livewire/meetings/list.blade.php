@@ -9,10 +9,12 @@ new class extends Component {
 
     public function mount()
     {
-        if (auth()->user()->isAtLeastRank(StaffRank::Officer)) {
+        if (Gate::allows('viewAnyPrivate', Meeting::class)) {
             $this->meetings = Meeting::all();
-        } else {
+        } elseif (Gate::allows('viewAnyPublic', Meeting::class)) {
             $this->meetings = Meeting::where('is_public', true)->get();
+        } else {
+            $this->meetings = [];
         }
     }
 }; ?>
@@ -25,7 +27,8 @@ new class extends Component {
 
     <flux:table>
         <flux:table.columns>
-                <flux:table.column>Meeting Date</flux:table.column>
+                <flux:table.column>Meeting</flux:table.column>
+                <flux:table.column>Meeting Start</flux:table.column>
                 <flux:table.column>Summary</flux:table.column>
         </flux:table.columns>
 
@@ -33,7 +36,8 @@ new class extends Component {
             @forelse ($meetings as $meeting)
                 @can('view', $meeting)
                     <flux:table.row>
-                        <flux:table.cell><flux:link href="{{ route('meeting.show', $meeting) }}">{{ $meeting->day }}</flux:link></flux:table.cell>
+                        <flux:table.cell><flux:link href="{{ route('meeting.show', $meeting) }}">{{ $meeting->title }} - {{ $meeting->day }}</flux:link></flux:table.cell>
+                        <flux:table.cell>{{ $meeting->scheduled_time->setTimezone('America/New_York')->format('Y-m-d  \@  g:i A') }}</flux:table.cell>
                         <flux:table.cell>{{ $meeting->summary }}</flux:table.cell>
                     </flux:table.row>
                 @endcan

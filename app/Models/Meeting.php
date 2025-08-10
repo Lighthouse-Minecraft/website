@@ -10,4 +10,10 @@ class Meeting extends Model
     use HasFactory;
 
     protected $fillable = ['title', 'day', 'scheduled_time', 'is_public'];
+
+    protected $casts = [
+        'day' => 'date',
+        'scheduled_time' => 'datetime',
+        'is_public' => 'boolean',
+    ];
 }
