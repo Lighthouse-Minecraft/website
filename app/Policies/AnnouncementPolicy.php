@@ -15,10 +15,8 @@ class AnnouncementPolicy
                 && $user->isAtLeastRank(StaffRank::Officer)
                 )
             ) {
-
             return true;
         }
-
         return null;
     }
 
@@ -84,20 +82,4 @@ class AnnouncementPolicy
             )
         );
     }
-
-    /**
-     * Determine whether the user can restore the model.
-     */
-    public function restore(User $user, Announcement $announcement): bool
-    {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can permanently delete the model.
-     */
-    public function forceDelete(User $user, Announcement $announcement): bool
-    {
-        return false;
-    }
-}
+};

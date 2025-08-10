@@ -41,20 +41,20 @@ Route::get('/acp/pages/{page}/edit', [PageController::class, 'edit'])
     ->middleware('can:update,page');
 
 Route::middleware(['auth'])->prefix('admin/announcements')->group(function () {
+    Route::get('/announcements/{announcement}', function (Announcement $announcement) {
+        return view('livewire.announcements.show', compact('announcement'));
+    })
+        ->name('announcement.show');
     Route::get('create', [AnnouncementController::class, 'create'])
-        ->name('admin.announcements.create')
-        ->middleware('can:create,App\\Models\\Announcement');
+        ->name('admin.announcements.create');
     Route::post('/', [AnnouncementController::class, 'store'])
-        ->name('admin.announcements.store')
-        ->middleware('can:create,App\\Models\\Announcement');
+        ->name('admin.announcements.store');
     Route::get('{id}', [AnnouncementController::class, 'show'])
         ->name('admin.announcements.show');
     Route::get('{id}/edit', [AnnouncementController::class, 'edit'])
-        ->name('admin.announcements.edit')
-        ->middleware('can:update,App\\Models\\Announcement');
+        ->name('admin.announcements.edit');
     Route::put('{id}', [AnnouncementController::class, 'update'])
-        ->name('admin.announcements.update')
-        ->middleware('can:update,App\\Models\\Announcement');
+        ->name('admin.announcements.update');
     Route::delete('{announcement}', [AnnouncementController::class, 'destroy'])
         ->name('admin.announcements.delete');
 });
