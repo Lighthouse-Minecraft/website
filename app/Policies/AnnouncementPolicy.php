@@ -69,6 +69,11 @@ class AnnouncementPolicy
             );
     }
 
+    public function acknowledge(User $user, Announcement $announcement): bool
+    {
+        return $user->isAuthenticated();
+    }
+
     /**
      * Determine whether the user can delete the model.
      */

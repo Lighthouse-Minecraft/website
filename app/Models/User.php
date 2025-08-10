@@ -112,4 +112,9 @@ class User extends Authenticatable // implements MustVerifyEmail
     {
         return $this->staff_department === $department;
     }
+    public function acknowledgedAnnouncements()
+    {
+        return $this->belongsToMany(Announcement::class)->withTimestamps();
+    }
+
 }

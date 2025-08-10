@@ -254,4 +254,10 @@ class Announcement extends Model
     {
         return $this->tags()->count();
     }
+
+    public function acknowledgers()
+    {
+        return $this->belongsToMany(User::class)->withTimestamps();
+    }
+
 }

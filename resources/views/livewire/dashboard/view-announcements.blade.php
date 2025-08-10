@@ -11,7 +11,27 @@ new class extends Component {
 
     public function mount()
     {
-        $this->announcements = Announcement::where('is_published', true)->with('author', 'categories', 'tags')->get();
+        $this->announcements = Announcement::where('is_published', true)
+            ->whereDoesntHave('acknowledgers', function ($query) {
+                $query->where('users.id', auth()->id());
+            })
+            ->with(['author', 'categories', 'tags'])
+            ->get();
+    }
+
+    public function acknowledgeAnnouncement($announcementId)
+    {
+        $announcement = Announcement::findOrFail($announcementId);
+
+        if (auth()->user()->can('acknowledge', $announcement)) {
+            \App\Actions\AcknowledgeAnnouncement::run($announcement, auth()->user());
+            Flux::toast('Announcement acknowledged successfully.', 'success');
+        } else {
+            Flux::toast('You do not have permission to acknowledge this announcement.', 'error');
+        }
+
+        Flux::modal('view-announcement-' . $announcementId)->close();
+        return redirect()->route('dashboard');
     }
 };
 
@@ -37,6 +57,14 @@ new class extends Component {
                 <div id="editor_content" class="prose max-w-none">
                     {!!  $announcement->content !!}
                 </div>
+
+                @can('acknowledge', $announcement)
+                    <div class="w-full text-right mb-4">
+                        <flux:button wire:click="acknowledgeAnnouncement({{ $announcement->id }})" size="sm" variant="primary">
+                            Acknowledge Announcement
+                        </flux:button>
+                    </div>
+                @endcan
 
                 <flux:separator />
                 <livewire:announcements.author-info :announcement="$announcement" />
