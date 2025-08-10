@@ -99,9 +99,9 @@ new class extends Component {
                 @endforeach
             </select>
 
-            <flux:switch label="Published" wire:model="isPublished" />
+            <flux:checkbox label="Published" wire:model="isPublished" />
 
-            <flux:input label="Published At" wire:model="published_at" type="datetime-local" />
+            {{-- <flux:input label="Published At" wire:model="published_at" type="datetime-local" /> --}}
 
             <div class="w-full text-right">
                 <flux:button wire:navigate href="{{ route('acp.index', ['tab' => 'announcement-manager']) }}" class="mx-4">Cancel</flux:button>

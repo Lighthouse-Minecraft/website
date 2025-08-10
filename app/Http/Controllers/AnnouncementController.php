@@ -78,7 +78,7 @@ class AnnouncementController extends Controller
 
         Gate::authorize('update', $announcement);
 
-        return view('livewire.announcements.edit', compact('announcement'));
+        return view('announcements.edit', compact('announcement'));
     }
 
     /**
