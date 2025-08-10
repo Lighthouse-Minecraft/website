@@ -15,6 +15,7 @@ new class extends Component {
         return Announcement::query()
             ->where('is_published', true)
             ->with(['author', 'categories', 'tags'])
+            ->orderBy('created_at', 'desc')
             ->paginate($this->perPage, ['*'], 'ann_widget_page'); // unique page name
     }
 
