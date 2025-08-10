@@ -22,7 +22,7 @@ class AnnouncementController extends Controller
     {
         $announcement = Announcement::with(['author.roles'])->findOrFail($id);
 
-        return view('livewire.announcements.show', compact('announcement'));
+        return view('announcements.show', compact('announcement'));
     }
 
     /**

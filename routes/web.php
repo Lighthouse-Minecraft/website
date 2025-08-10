@@ -42,6 +42,7 @@ Route::get('/acp/pages/{page}/edit', [PageController::class, 'edit'])
     ->name('admin.pages.edit')
     ->middleware('can:update,page');
 
+// This is for admin announcement links
 Route::prefix('acp/announcements')
     ->name('acp.announcements.')
     ->controller(AnnouncementController::class)
@@ -55,13 +56,14 @@ Route::prefix('acp/announcements')
         Route::delete('{announcement}', 'destroy')->name('delete');
     });
 
+// This is for non admin announcement links
 Route::prefix('announcements')
     ->name('announcements.')
     ->controller(AnnouncementController::class)
     ->middleware('auth')
     ->group(function () {
-        Route::get(uri: '{id}', action: 'show')->name('show');
 
+        Route::get(uri: '{id}', action: 'show')->name('show');
     });
 
 Route::prefix('meetings')->name('meeting.')->controller(App\Http\Controllers\MeetingController::class)->group(function () {
