@@ -22,14 +22,6 @@ class PromoteUser
         $currentIndex = array_search($current, $levels, strict: true);
         $nextLevel = $levels[$currentIndex + 1] ?? null;
 
-        if (! $nextLevel) {
-            return;
-        }
-
-        if ($nextLevel->value > $maxLevel->value) {
-            return;
-        }
-
         $user->membership_level = $nextLevel;
         $user->save();
 

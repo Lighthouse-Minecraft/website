@@ -1,5 +1,11 @@
 <?php
 
+use App\Models\User;
+
+use function Pest\Laravel\actingAs;
+
+pest()->project()->github('Lighthouse-Minecraft/website');
+
 /*
 |--------------------------------------------------------------------------
 | Test Case
@@ -44,7 +50,17 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+function loginAsAdmin(): User
 {
-    // ..
+    $admin = User::factory()->admin()->create();
+    actingAs($admin);
+
+    return $admin;
+}
+
+function loginAs(User $user): User
+{
+    actingAs($user);
+
+    return $user;
 }
