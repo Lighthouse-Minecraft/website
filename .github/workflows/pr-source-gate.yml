@@ -1,0 +1,23 @@
+name: PR Source Gate (main)
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  source-branch-policy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enforce staging or hotfix/*
+        run: |
+          src="${{ github.event.pull_request.head.ref }}"
+          if [[ "$src" == "staging" ]]; then
+            echo "✅ OK: staging → main"
+            exit 0
+          fi
+          if [[ "$src" == hotfix/* ]]; then
+            echo "✅ OK: hotfix → main"
+            exit 0
+          fi
+          echo "❌ Only PRs from 'staging' or 'hotfix/*' may target main. Got: $src"
+          exit 1

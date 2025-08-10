@@ -40,23 +40,23 @@ Route::get('/acp/pages/{page}/edit', [PageController::class, 'edit'])
     ->name('admin.pages.edit')
     ->middleware('can:update,page');
 
-Route::middleware(['auth'])->prefix('admin/announcements')->group(function () {
-    Route::get('/announcements/{announcement}', function (Announcement $announcement) {
-        return view('livewire.announcements.show', compact('announcement'));
-    })
-        ->name('announcement.show');
-    Route::get('create', [AnnouncementController::class, 'create'])
-        ->name('admin.announcements.create');
-    Route::post('/', [AnnouncementController::class, 'store'])
-        ->name('admin.announcements.store');
-    Route::get('{id}', [AnnouncementController::class, 'show'])
-        ->name('admin.announcements.show');
-    Route::get('{id}/edit', [AnnouncementController::class, 'edit'])
-        ->name('admin.announcements.edit');
-    Route::put('{id}', [AnnouncementController::class, 'update'])
-        ->name('admin.announcements.update');
-    Route::delete('{announcement}', [AnnouncementController::class, 'destroy'])
-        ->name('admin.announcements.delete');
+Route::prefix('admin/announcements')
+    ->name('admin.announcements.')
+    ->controller(AnnouncementController::class)
+    ->middleware('auth')
+    ->group(function () {
+
+        Route::get('{id}', 'show')->name('show');
+        Route::get('create', 'create')->name('create');
+        Route::post('store', 'store')->name('store');
+        Route::get('{id}/edit', 'edit')->name('edit');
+        Route::put('{/id}/update', 'update')->name('update');
+        Route::delete('{announcement}', 'destroy')->name('delete');
+});
+
+Route::prefix('meetings')->name('meeting.')->controller(App\Http\Controllers\MeetingController::class)->group(function () {
+    Route::get('/', 'index')->name('index');
+    Route::get('/{meeting}', 'show')->name('show')->middleware('can:view,meeting');
 });
 
 require __DIR__.'/auth.php';

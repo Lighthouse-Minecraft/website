@@ -1,8 +1,6 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
@@ -38,43 +36,43 @@ return new class extends Migration
                 'name' => 'Officer',
                 'description' => 'Manages operations and oversees users.',
                 'color' => 'emerald',
-                'icon' => 'star'
+                'icon' => 'star',
             ],
             [
                 'name' => 'Command',
                 'description' => 'Officer of the Command department.',
                 'color' => 'orange',
-                'icon' => 'finger-print'
+                'icon' => 'finger-print',
             ],
             [
                 'name' => 'Chaplain',
                 'description' => 'Officer of the Chaplain department.',
                 'color' => 'orange',
-                'icon' => 'fire'
+                'icon' => 'fire',
             ],
             [
                 'name' => 'Engineer',
                 'description' => 'Officer of the Engineer department.',
                 'color' => 'orange',
-                'icon' => 'code-bracket'
+                'icon' => 'code-bracket',
             ],
             [
                 'name' => 'Quartermaster',
                 'description' => 'Officer of the Quartermaster department.',
                 'color' => 'orange',
-                'icon' => 'check-badge'
+                'icon' => 'check-badge',
             ],
             [
                 'name' => 'Steward',
                 'description' => 'Officer of the Steward department.',
                 'color' => 'orange',
-                'icon' => 'chat-bubble-bottom-center-text'
+                'icon' => 'chat-bubble-bottom-center-text',
             ],
             [
                 'name' => 'Crew Member',
                 'description' => 'Crew member on the site.',
                 'color' => 'orange',
-                'icon' => 'beaker'
+                'icon' => 'beaker',
             ],
         ]);
     }

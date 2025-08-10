@@ -1,14 +1,14 @@
 <?php
 
+use App\Enums\StaffRank;
 use App\Http\Controllers\Auth\VerifyEmailController;
+use App\Models\User;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
-use Illuminate\Support\Facades\Gate;
-use App\Models\User;
-use App\Enums\StaffRank;
 
 Gate::define('viewACP', function (?User $user) {
-    if (!$user) {
+    if (! $user) {
         return false;
     }
 
