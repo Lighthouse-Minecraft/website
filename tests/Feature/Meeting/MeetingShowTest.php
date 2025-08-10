@@ -33,7 +33,7 @@ describe('Meeting Show - Loading', function () {
             ->assertSeeText($this->meeting->day);
     })->done();
 
-})->wip(assignee: 'jonzenor', issue: 56);
+})->done(assignee: 'jonzenor', issue: 56);
 
 describe('Meeting Show - Page Data', function () {
     // Handles invalid meeting
@@ -66,3 +66,7 @@ describe('Meeting Show - Action Items', function () {
 
     // Have a button that imports tasks completed since a selected meeting
 })->todo(assignee: 'jonzenor', issue: 28);
+
+describe('Meeting Show - Permissions', function () {
+    // Test permissions for the page
+})->todo();
