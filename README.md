@@ -6,7 +6,7 @@
 - ``cd lighthouse-website``
 - Get the FluxUI credentials from FinalAsgard
 - ``compoer install``
-- ``cp .env.example``
+- ``cp .env.example .env``
 - ``php artisan key:generate``
 - ``npm install``
 - ``php artisan migrate``
