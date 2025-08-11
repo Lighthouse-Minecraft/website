@@ -111,7 +111,7 @@ describe('Meetings List Page - Permissions', function () {
         get(route('meeting.index'))
             ->assertOk()
             ->assertDontSee($privateMeeting->day)
-            ->assertDontSee(route('meeting.show', $privateMeeting));
+            ->assertDontSee(route('meeting.edit', $privateMeeting));
     });
 
     it('shows private meetings to officers', function () {
@@ -122,7 +122,7 @@ describe('Meetings List Page - Permissions', function () {
         get(route('meeting.index'))
             ->assertOk()
             ->assertSee($privateMeeting->day)
-            ->assertSee(route('meeting.show', $privateMeeting));
+            ->assertSee(route('meeting.edit', $privateMeeting));
     });
 
     it('allows members to view the page', function () {
@@ -130,9 +130,9 @@ describe('Meetings List Page - Permissions', function () {
         $user = User::factory()->withMembershipLevel(MembershipLevel::Resident)->create();
         actingAs($user);
 
-        get(route('meeting.show', $meeting))
+        get(route('meeting.edit', $meeting))
             ->assertOk()
-            ->assertViewIs('meeting.show');
+            ->assertViewIs('meeting.edit');
     })->todo('move to ViewMeetingTest.php');
 
     it('shows 404 if a member tries to view a meeting they do not have permission for', function () {
@@ -140,7 +140,7 @@ describe('Meetings List Page - Permissions', function () {
         $user = User::factory()->withMembershipLevel(MembershipLevel::Traveler)->create();
         actingAs($user);
 
-        get(route('meeting.show', $meeting))
+        get(route('meeting.edit', $meeting))
             ->assertStatus(404);
     })->todo('move to ViewMeetingTest.php');
 });
@@ -152,7 +152,7 @@ describe('Meetings List Page - Functionality', function () {
 
         get(route('meeting.index'))
             ->assertSee($meeting->day)
-            ->assertSee(route('meeting.show', $meeting));
+            ->assertSee(route('meeting.edit', $meeting));
     });
 
     it('shows a message when there are no meetings', function () {
