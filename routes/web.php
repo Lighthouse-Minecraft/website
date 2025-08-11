@@ -1,8 +1,11 @@
 <?php
 
+use App\Http\Controllers\AdminControlPanelController;
+use App\Http\Controllers\AnnouncementController;
+use App\Http\Controllers\PageController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
-use App\Http\Controllers\PageController;
 
 Route::get('/pages/{slug}', [PageController::class, 'show'])->name('pages.show');
 
@@ -22,12 +25,12 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('settings/appearance', 'settings.appearance')->name('settings.appearance');
 });
 
-Route::get('/profile/{user}', [App\Http\Controllers\UserController::class, 'show'])
+Route::get('/profile/{user}', [UserController::class, 'show'])
     ->name('profile.show')
     ->middleware('can:view,user');
 
 Route::middleware(['auth'])->group(function () {
-    Route::get('acp', [App\Http\Controllers\AdminControlPanelController::class, 'index'])
+    Route::get('acp', [AdminControlPanelController::class, 'index'])
         ->name('acp.index');
 });
 
@@ -38,6 +41,30 @@ Route::get('/acp/pages/create', [PageController::class, 'create'])
 Route::get('/acp/pages/{page}/edit', [PageController::class, 'edit'])
     ->name('admin.pages.edit')
     ->middleware('can:update,page');
+
+// This is for admin announcement links
+Route::prefix('acp/announcements')
+    ->name('acp.announcements.')
+    ->controller(AnnouncementController::class)
+    ->middleware('auth')
+    ->group(function () {
+
+        Route::get('create', 'create')->name('create');
+        Route::post('store', 'store')->name('store');
+        Route::get('{id}/edit', 'edit')->name('edit');
+        Route::put('{/id}/update', 'update')->name('update');
+        Route::delete('{announcement}', 'destroy')->name('delete');
+    });
+
+// This is for non admin announcement links
+Route::prefix('announcements')
+    ->name('announcements.')
+    ->controller(AnnouncementController::class)
+    ->middleware('auth')
+    ->group(function () {
+
+        Route::get(uri: '{id}', action: 'show')->name('show');
+    });
 
 Route::prefix('meetings')->name('meeting.')->controller(App\Http\Controllers\MeetingController::class)->group(function () {
     Route::get('/', 'index')->name('index');
