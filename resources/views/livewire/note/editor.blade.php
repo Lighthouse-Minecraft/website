@@ -90,7 +90,7 @@ new class extends Component {
         <flux:button variant="primary" wire:click="CreateNote">Create {{  ucfirst($section_key) }}</flux:button>
     @else
         @if ($isLocked)
-            <flux:textarea wire:model.defer="updatedContent" label="{{ ucfirst($section_key) }} Notes" />
+            <flux:textarea wire:model.defer="updatedContent" label="{{ ucfirst($section_key) }} Notes" rows="15" />
             <flux:text size="xs">Locked by {{ $lockedByName }}</flux:text>
             <div class="w-full text-right">
                 <flux:button variant="primary" wire:click="SaveNote">Save {{  ucfirst($section_key) }}</flux:button>
@@ -100,7 +100,7 @@ new class extends Component {
                 <flux:heading class="mb-4">Meeting Notes - {{  ucfirst($section_key) }}</flux:heading>
 
                 <flux:text>
-                    {{  $this->note->content }}
+                    {!!  nl2br($this->note->content) !!}
                 </flux:text>
                 <div class="w-full text-right">
                     <flux:button size="sm" wire:click="EditNote">Edit {{ ucfirst($section_key) }}</flux:button>
