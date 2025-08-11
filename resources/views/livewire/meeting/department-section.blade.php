@@ -26,5 +26,5 @@ new class extends Component {
 }; ?>
 
 <div class="w-full space-y-6 my-6">
-    <flux:heading size="xl"><span class="text-sky-600 dark:text-sky-400">{{  $departmentLabel }}</span></flux:heading>
+    <flux:heading><span class="text-sky-600 dark:text-sky-400">{{  $departmentLabel }}</span></flux:heading>
 </div>

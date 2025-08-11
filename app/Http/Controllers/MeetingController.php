@@ -51,7 +51,9 @@ class MeetingController extends Controller
      */
     public function edit(Meeting $meeting)
     {
-        //
+        Gate::authorize('update', $meeting);
+
+        return view('meeting.edit', compact('meeting'));
     }
 
     /**

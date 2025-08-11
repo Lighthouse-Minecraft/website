@@ -36,7 +36,7 @@ new class extends Component {
             @forelse ($meetings as $meeting)
                 @can('view', $meeting)
                     <flux:table.row>
-                        <flux:table.cell><flux:link href="{{ route('meeting.show', $meeting) }}">{{ $meeting->title }} - {{ $meeting->day }}</flux:link></flux:table.cell>
+                        <flux:table.cell><flux:link href="{{ route('meeting.edit', $meeting) }}">{{ $meeting->title }} - {{ $meeting->day }}</flux:link></flux:table.cell>
                         <flux:table.cell>
                             {{ $meeting->scheduled_time->setTimezone('America/New_York')->format('F j, Y') }} &nbsp;
                             {{ $meeting->scheduled_time->setTimezone('America/New_York')->format('g:i A') }}
