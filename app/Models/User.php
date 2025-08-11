@@ -3,15 +3,14 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\MembershipLevel;
+use App\Enums\StaffDepartment;
+use App\Enums\StaffRank;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
-use App\Enums\MembershipLevel;
-use App\Enums\StaffDepartment;
-use App\Enums\StaffRank;
 
 class User extends Authenticatable // implements MustVerifyEmail
 {
@@ -105,11 +104,16 @@ class User extends Authenticatable // implements MustVerifyEmail
 
     public function isRank(StaffRank $rank): bool
     {
-        return ($this->staff_rank == $rank);
+        return $this->staff_rank == $rank;
     }
 
     public function isInDepartment(StaffDepartment $department): bool
     {
         return $this->staff_department === $department;
+    }
+
+    public function acknowledgedAnnouncements()
+    {
+        return $this->belongsToMany(Announcement::class)->withTimestamps();
     }
 }

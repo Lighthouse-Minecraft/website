@@ -4,14 +4,13 @@ use Livewire\Attributes\{Url};
 use Livewire\Volt\{Component};
 
 new class extends Component {
+    #[Url]
     public $tab = 'user-manager';
 
     public function reactive()
     {
         return ['tab'];
     }
-
-
 }; ?>
 
 <div class="w-full flex">
@@ -28,6 +27,7 @@ new class extends Component {
             @can('viewAny', \App\Models\Page::class)
                 <flux:tab name="page-manager">Page Manager</flux:tab>
             @endcan
+
             @can('viewAny', \App\Models\Announcement::class)
                 <flux:tab name="announcement-manager">Announcement Manager</flux:tab>
             @endcan

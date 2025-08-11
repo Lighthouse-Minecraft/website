@@ -42,18 +42,28 @@ Route::get('/acp/pages/{page}/edit', [PageController::class, 'edit'])
     ->name('admin.pages.edit')
     ->middleware('can:update,page');
 
-Route::prefix('admin/announcements')
-    ->name('admin.announcements.')
+// This is for admin announcement links
+Route::prefix('acp/announcements')
+    ->name('acp.announcements.')
     ->controller(AnnouncementController::class)
     ->middleware('auth')
     ->group(function () {
 
-        Route::get('{id}', 'show')->name('show');
         Route::get('create', 'create')->name('create');
         Route::post('store', 'store')->name('store');
         Route::get('{id}/edit', 'edit')->name('edit');
         Route::put('{/id}/update', 'update')->name('update');
         Route::delete('{announcement}', 'destroy')->name('delete');
+    });
+
+// This is for non admin announcement links
+Route::prefix('announcements')
+    ->name('announcements.')
+    ->controller(AnnouncementController::class)
+    ->middleware('auth')
+    ->group(function () {
+
+        Route::get(uri: '{id}', action: 'show')->name('show');
     });
 
 Route::prefix('meetings')->name('meeting.')->controller(App\Http\Controllers\MeetingController::class)->group(function () {

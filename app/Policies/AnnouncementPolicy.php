@@ -2,21 +2,24 @@
 
 namespace App\Policies;
 
-use App\Enums\{MembershipLevel, StaffDepartment, StaffRank};
-use App\Models\{Announcement, User};
-use Illuminate\Auth\Access\{Response};
+use App\Enums\StaffDepartment;
+use App\Enums\StaffRank;
+use App\Models\Announcement;
+use App\Models\User;
 
 class AnnouncementPolicy
 {
-    public function before(User $user, string $ability): bool|null
+    public function before(User $user, string $ability): ?bool
     {
-        if ($user->isAdmin()
-            || ($user->isInDepartment(StaffDepartment::Command)
-                && $user->isAtLeastRank(StaffRank::Officer)
-                )
-            ) {
+        if ($user->isAdmin()) {
             return true;
         }
+
+        if ($user->isInDepartment(StaffDepartment::Command)
+            && $user->isAtLeastRank(StaffRank::Officer)) {
+            return true;
+        }
+
         return null;
     }
 
@@ -41,15 +44,14 @@ class AnnouncementPolicy
      */
     public function create(User $user): bool
     {
-        return (
+        return
             $user->hasRole('Announcement Editor')
             || $user->isAtLeastRank(StaffRank::Officer)
             || ($user->isAtLeastRank(StaffRank::CrewMember)
                 && ($user->isInDepartment(StaffDepartment::Engineer)
                     || $user->isInDepartment(StaffDepartment::Steward)
                 )
-            )
-        );
+            );
     }
 
     /**
@@ -57,15 +59,19 @@ class AnnouncementPolicy
      */
     public function update(User $user, Announcement $announcement): bool
     {
-        return (
+        return
             $user->hasRole('Announcement Editor')
             || $user->isAtLeastRank(StaffRank::Officer)
             || ($user->isAtLeastRank(StaffRank::CrewMember)
                 && ($user->isInDepartment(StaffDepartment::Engineer)
                     || $user->isInDepartment(StaffDepartment::Steward)
                 )
-            )
-        );
+            );
+    }
+
+    public function acknowledge(User $user, Announcement $announcement): bool
+    {
+        return $user->isAuthenticated();
     }
 
     /**
@@ -73,13 +79,12 @@ class AnnouncementPolicy
      */
     public function delete(User $user, Announcement $announcement): bool
     {
-        return (
+        return
             $user->hasRole('Announcement Editor')
             || ($user->isAtLeastRank(StaffRank::Officer)
                 && ($user->isInDepartment(StaffDepartment::Engineer)
                     || $user->isInDepartment(StaffDepartment::Steward)
                 )
-            )
-        );
+            );
     }
-};
+}

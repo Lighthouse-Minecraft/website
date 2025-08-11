@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{Announcement, Category, Comments, Tag};
-use Illuminate\Http\{Request};
-use Illuminate\Foundation\Auth\Access\{AuthorizesRequests};
-use Illuminate\Support\Facades\{Auth, Gate};
+use App\Models\Announcement;
+use App\Models\Category;
+use App\Models\Tag;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class AnnouncementController extends Controller
 {
@@ -18,9 +20,11 @@ class AnnouncementController extends Controller
      */
     public function show($id)
     {
+        Gate::authorize('view', Announcement::class);
+
         $announcement = Announcement::with(['author.roles'])->findOrFail($id);
 
-        return view('livewire.announcements.show', compact('announcement'));
+        return view('announcements.show', compact('announcement'));
     }
 
     /**
@@ -29,9 +33,11 @@ class AnnouncementController extends Controller
     public function create()
     {
         Gate::authorize('create', Announcement::class);
+
         $categories = Category::all();
         $tags = Tag::all();
-        return view('livewire.announcements.create', compact('categories', 'tags'));
+
+        return view('announcements.create', compact('categories', 'tags'));
     }
 
     /**
@@ -60,6 +66,7 @@ class AnnouncementController extends Controller
             'is_published' => $request->is_published,
             'published_at' => $request->is_published ? now() : null,
         ]);
+
         return view('livewire.announcements.show', ['announcement' => $announcement])
             ->with('status', 'Announcement created successfully!');
     }
@@ -73,7 +80,7 @@ class AnnouncementController extends Controller
 
         Gate::authorize('update', $announcement);
 
-        return view('livewire.announcements.edit', compact('announcement'));
+        return view('announcements.edit', compact('announcement'));
     }
 
     /**
