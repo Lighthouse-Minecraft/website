@@ -136,7 +136,7 @@ describe('Note Editor - Lock The Note for Editing', function () {
     })->done();
 
     // If the lock is expired, allow another user to edit the note
-    it('unlocks the note after configured expirey time', function () {
+    it('unlocks the note after configured expiry time', function () {
         $user = loginAsAdmin();
         $updatedContent = 'Space: the final frontier. These are the voyages of the starship Enterprise.';
 
