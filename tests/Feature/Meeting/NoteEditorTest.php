@@ -249,7 +249,7 @@ describe('Note Editor - Save', function () {
         $content = 'Indeed';
         $note = MeetingNote::factory()->withMeeting($this->meeting)->withContent($content)->withSectionKey('agenda')->withLockAtTime($user, $pastTime)->create();
 
-        $updatedContent = 'Peace is a lie. There is only Passion. Through Passion, I gain Strength. Through Strenght, I gain Power. Through Power, I gain Victory. Through Victory my chains are Broken. The Force shall free me.';
+        $updatedContent = 'Peace is a lie. There is only Passion. Through Passion, I gain Strength. Through Strength, I gain Power. Through Power, I gain Victory. Through Victory my chains are Broken. The Force shall free me.';
         livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
             ->call('UpdateNote')
             ->assertOk();
