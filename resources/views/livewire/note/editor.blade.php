@@ -95,7 +95,11 @@ new class extends Component {
             $lock_last_updated_at = Carbon::parse($this->note->lock_updated_at);
 
             // See if it's time to release the lock
-            if ($lock_last_updated_at->lt(now()->subMinutes($expirey_age))) {
+            $expiry_age = config('lighthouse.meeting_note_unlock_mins');
+            $lock_last_updated_at = Carbon::parse($this->note->lock_updated_at);
+
+            // See if it's time to release the lock
+            if ($lock_last_updated_at->lt(now()->subMinutes($expiry_age))) {
                 $this->UnlockNote();
             }
 
