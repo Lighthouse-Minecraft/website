@@ -263,7 +263,7 @@ describe('Note Editor - Save', function () {
     })->done();
 })->done(issue: 13, assignee: 'jonzenor');
 
-describe('Note Editor - Permissions', function () {
+describe('Note Editor - Permissions for Editing', function () {
 
     it('authorizes users for note editors EditNote method', function (User $user) {
         loginAs($user);
@@ -292,4 +292,159 @@ describe('Note Editor - Permissions', function () {
             ->assertStatus(403);
     })->with('memberAll')->done();
 
-})->wip();
+    it('shows edit button to users who are allowed to edit the note', function ($user) {
+        loginAs($user);
+        $note = MeetingNote::factory()->withMeeting($this->meeting)->withSectionKey('agenda')->create();
+        $meeting = Meeting::factory()->create();
+
+        livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
+            ->assertSeeText('Edit Agenda')
+            ->assertOk();
+    })->with('rankAtLeastCrewMembers')->done();
+
+    it('hides the edit button from staff who are not allowed to edit the note', function ($user) {
+        loginAs($user);
+        $note = MeetingNote::factory()->withMeeting($this->meeting)->withSectionKey('agenda')->create();
+        $meeting = Meeting::factory()->create();
+
+        livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
+            ->assertDontSeeText('Edit Agenda')
+            ->assertOk();
+    })->with('rankAtMostJrCrew')->done();
+
+    it('hides the edit button from members', function ($user) {
+        loginAs($user);
+        $note = MeetingNote::factory()->withMeeting($this->meeting)->withSectionKey('agenda')->create();
+        $meeting = Meeting::factory()->create();
+
+        livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
+            ->assertDontSeeText('Edit Agenda')
+            ->assertOk();
+    })->with('memberAll')->done();
+});
+
+describe('Note Editor - Permissions for Creating', function () {
+    it('shows officers the create button', function ($user) {
+        loginAs($user);
+        $meeting = Meeting::factory()->create();
+
+        livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
+            ->assertSeeText('Create Agenda')
+            ->assertOk();
+    })->with('rankAtLeastCrewMembers')->done();
+
+    it('hides the create button from Jr Staff', function ($user) {
+        loginAs($user);
+        $meeting = Meeting::factory()->create();
+
+        livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
+            ->assertDontSeeText('Create Agenda')
+            ->assertOk();
+    })->with('rankAtMostJrCrew')->done();
+
+    it('hides the create button from members', function ($user) {
+        loginAs($user);
+        $meeting = Meeting::factory()->create();
+
+        livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
+            ->assertDontSeeText('Create Agenda')
+            ->assertOk();
+    })->with('memberAll')->done();
+
+    it('allows officer access to the CreateNote method', function ($user) {
+        loginAs($user);
+        $meeting = Meeting::factory()->create();
+
+        livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
+            ->call('CreateNote')
+            ->assertOk();
+    })->with('rankAtLeastCrewMembers')->done();
+
+    it('denies access from Jr Crew to the CreateNote method', function ($user) {
+        loginAs($user);
+        $meeting = Meeting::factory()->create();
+
+        livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
+            ->call('CreateNote')
+            ->assertStatus(403);
+    })->with('rankAtMostJrCrew')->done();
+
+    it('denies access from Members to the CreateNote method', function ($user) {
+        loginAs($user);
+        $meeting = Meeting::factory()->create();
+
+        livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
+            ->call('CreateNote')
+            ->assertStatus(403);
+    })->with('memberAll')->done();
+})->done();
+
+describe('Note Editor - Permissions for Saving', function () {
+    it('allows officer access to the SaveNote method', function ($user) {
+        loginAs($user);
+        $note = MeetingNote::factory()->withMeeting($this->meeting)->withLock($user)->withSectionKey('agenda')->create();
+        $meeting = Meeting::factory()->create();
+
+        livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
+            ->call('SaveNote')
+            ->assertOk();
+    })->with('rankAtLeastCrewMembers')->done();
+
+    it('denies Jr Crew access to the SaveNote method', function ($user) {
+        loginAs($user);
+        $note = MeetingNote::factory()->withMeeting($this->meeting)->withSectionKey('agenda')->create();
+        $meeting = Meeting::factory()->create();
+
+        livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
+            ->set('updatedContent', 'Testing')
+            ->call('SaveNote')
+            ->assertStatus(403);
+    })->with('rankAtMostJrCrew')->done();
+
+    it('only allows UpdateNote to be called by the lock holder', function ($user) {
+        loginAs($user);
+        $note = MeetingNote::factory()->withMeeting($this->meeting)->withLock($user)->withSectionKey('agenda')->create();
+        $meeting = Meeting::factory()->create();
+
+        livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
+            ->set('updatedContent', 'Testing')
+            ->call('UpdateNote')
+            ->assertOk();
+    })->with('rankAtLeastCrewMembers')->wip();
+
+    it('denies UpdateNote to be called by non-lock holders', function ($user) {
+        $lockUser = User::factory()->create();
+        loginAs($user);
+        $note = MeetingNote::factory()->withMeeting($this->meeting)->withLock($lockUser)->withSectionKey('agenda')->create();
+        $meeting = Meeting::factory()->create();
+
+        livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
+            ->set('updatedContent', 'Testing')
+            ->call('UpdateNote')
+            ->assertStatus(403);
+    })->with('rankAtLeastCrewMembers')->wip();
+
+});
+
+describe('Note Editor - Permissions for Locking and Unlocking', function () {
+    it('allows officer access to the UnlockNote method', function ($user) {
+        loginAs($user);
+        $note = MeetingNote::factory()->withMeeting($this->meeting)->withSectionKey('agenda')->create();
+        $meeting = Meeting::factory()->create();
+
+        livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
+            ->call('UnlockNote')
+            ->assertOk();
+    })->with('rankAtLeastCrewMembers')->done();
+
+    it('denies Jr Crew access to the UnlockNote method', function ($user) {
+        loginAs($user);
+        $note = MeetingNote::factory()->withMeeting($this->meeting)->withSectionKey('agenda')->create();
+        $meeting = Meeting::factory()->create();
+
+        livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
+            ->set('updatedContent', 'Testing')
+            ->call('UnlockNote')
+            ->assertStatus(403);
+    })->with('rankAtMostJrCrew')->done();
+});

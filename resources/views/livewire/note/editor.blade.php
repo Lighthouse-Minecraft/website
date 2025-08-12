@@ -37,6 +37,8 @@ new class extends Component {
     }
 
     public function CreateNote() {
+        $this->authorize('create', App\Models\MeetingNote::class);
+
         $user = auth()->user();
         $time = now();
 
@@ -74,6 +76,8 @@ new class extends Component {
     }
 
     public function SaveNote() {
+        $this->authorize('updateSave', $this->note);
+
         $this->note->update([
             'content' => $this->updatedContent,
         ]);
@@ -82,6 +86,7 @@ new class extends Component {
     }
 
     public function UnlockNote() {
+        $this->authorize('update', $this->note);
         $this->note->update([
             'locked_by' => null,
             'locked_at' => null,
@@ -113,6 +118,8 @@ new class extends Component {
 
     // UpdateNote will do a periodic save but not release the lock
     public function UpdateNote() {
+        $this->authorize('updateSave', $this->note);
+
         if ($this->note->content == $this->updatedContent) {
             return;
         }
@@ -144,7 +151,9 @@ new class extends Component {
 
 <div class="space-y-6">
     @if (! $this->note->exists)
-        <flux:button variant="primary" wire:click="CreateNote">Create {{  ucfirst($section_key) }}</flux:button>
+        @can('create', App\Models\MeetingNote::class)
+            <flux:button variant="primary" wire:click="CreateNote">Create {{  ucfirst($section_key) }}</flux:button>
+        @endcan
     @else
         @if ($isLockedByMe)
             <div wire:poll.3s="HeartbeatCheck"></div>
@@ -179,11 +188,13 @@ new class extends Component {
                     </div>
 
                     <div class="w-full text-right">
-                        @if($isLocked)
-                            <flux:button size="xs" disabled variant="filled">Edit {{ ucfirst($section_key) }}</flux:button>
-                        @else
-                            <flux:button size="xs" wire:click="EditNote" variant="primary" color="indigo">Edit {{ ucfirst($section_key) }}</flux:button>
-                        @endif
+                        @can('update', $this->note)
+                            @if($isLocked)
+                                <flux:button size="xs" disabled variant="filled">Edit {{ ucfirst($section_key) }}</flux:button>
+                            @else
+                                <flux:button size="xs" wire:click="EditNote" variant="primary" color="indigo">Edit {{ ucfirst($section_key) }}</flux:button>
+                            @endif
+                        @endcan
                     </div>
                 </div>
             </div>
