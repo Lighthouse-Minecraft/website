@@ -4,7 +4,9 @@ use App\Models\Meeting;
 use App\Models\User;
 use App\Models\MeetingNote;
 use Carbon\Carbon;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Volt\Component;
+
 
 new class extends Component {
     public Meeting $meeting;
@@ -49,6 +51,8 @@ new class extends Component {
     }
 
     public function EditNote() {
+        $this->authorize('update', $this->note);
+
         // Make sure someone else hasn't locked the record already
         $this->note->refresh();
         if ($this->note->locked_by) {

@@ -4,9 +4,20 @@ namespace App\Policies;
 
 use App\Models\MeetingNote;
 use App\Models\User;
+use App\Enums\StaffDepartment;
+use App\Enums\StaffRank;
 
 class MeetingNotePolicy
 {
+    public function before(User $user, string $ability): ?bool
+    {
+        if ($user->isAdmin() || ($user->isInDepartment(StaffDepartment::Command) && $user->isAtLeastRank(StaffRank::Officer))) {
+            return true;
+        }
+
+        return null;
+    }
+
     /**
      * Determine whether the user can view any models.
      */
@@ -36,6 +47,10 @@ class MeetingNotePolicy
      */
     public function update(User $user, MeetingNote $meetingNote): bool
     {
+        if ($user->isAtLeastRank(StaffRank::CrewMember)) {
+            return true;
+        }
+
         return false;
     }
 

@@ -261,4 +261,35 @@ describe('Note Editor - Save', function () {
             'lock_updated_at' => $pastTime,
         ]);
     })->done();
-})->wip(issue: 13, assignee: 'jonzenor');
+})->done(issue: 13, assignee: 'jonzenor');
+
+describe('Note Editor - Permissions', function () {
+
+    it('authorizes users for note editors EditNote method', function (User $user) {
+        loginAs($user);
+        $meeting = Meeting::factory()->create();
+
+        livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
+            ->call('EditNote')
+            ->assertOk();
+    })->with('rankAtLeastCrewMembers')->done();
+
+    it('denies Jr Crew for note editors EditNote method', function (User $user) {
+        loginAs($user);
+        $meeting = Meeting::factory()->create();
+
+        livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
+            ->call('EditNote')
+            ->assertStatus(403);
+    })->with('rankAtMostJrCrew')->done();
+
+    it('denies Members for note editors EditNote method', function (User $user) {
+        loginAs($user);
+        $meeting = Meeting::factory()->create();
+
+        livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
+            ->call('EditNote')
+            ->assertStatus(403);
+    })->with('memberAll')->done();
+
+})->wip();
