@@ -2,6 +2,7 @@
 
 use App\Models\Meeting;
 use App\Models\MeetingNote;
+use App\Models\User;
 use Carbon\Carbon;
 
 use function Pest\Livewire\livewire;
@@ -98,9 +99,23 @@ describe('Note Editor - Lock The Note for Editing', function () {
             ->assertSee('Save Agenda');
     })->done();
 
-    // If a lock exists for another user, show an editing message
+    it('shows the person who has the lock for the viewer', function () {
+        $user = loginAsAdmin();
+        $locker = User::factory()->create();
+        $note = MeetingNote::factory()->withMeeting($this->meeting)->withSectionKey('agenda')->withLock($locker)->create();
 
-    // If a lock exists for another user, disable the edit button
+        livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
+            ->assertSeeText('Locked by '.$locker->name);
+    })->done();
+
+    it('disables the edit button if a lock is held by another user', function () {
+        $user = loginAsAdmin();
+        $locker = User::factory()->create();
+        $note = MeetingNote::factory()->withMeeting($this->meeting)->withSectionKey('agenda')->withLock($locker)->create();
+
+        livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
+            ->assertSeeInOrder(['Locked by', 'disabled', 'Edit Agenda']);
+    })->done();
 
     // If the lock is expired, allow another user to edit the note
 
@@ -187,8 +202,3 @@ describe('Note Editor - Save', function () {
         ]);
     })->wip();
 })->wip(issue: 13, assignee: 'jonzenor');
-
-// I'm not sure how we're going to test these....
-// The editor saves the data
-
-// The editor keeps the lock engaged
