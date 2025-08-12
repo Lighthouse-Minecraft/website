@@ -1,25 +1,26 @@
 <?php
+
 // tests/Unit/Models/MeetingNoteTest.php
 
-use App\Models\User;
 use App\Models\Meeting;
 use App\Models\MeetingNote;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
 it('mass-assigns fillable attributes', function () {
     $creator = User::factory()->create();
-    $locker  = User::factory()->create();
+    $locker = User::factory()->create();
     $meeting = Meeting::factory()->create();
 
     $note = MeetingNote::create([
-        'created_by'      => $creator->id,
-        'locked_by'       => $locker->id,
-        'meeting_id'      => $meeting->id,
-        'section_key'     => 'agenda',
-        'content'         => 'Initial content',
-        'locked_at'       => now(),
+        'created_by' => $creator->id,
+        'locked_by' => $locker->id,
+        'meeting_id' => $meeting->id,
+        'section_key' => 'agenda',
+        'content' => 'Initial content',
+        'locked_at' => now(),
         'lock_updated_at' => now(),
     ]);
 
@@ -33,12 +34,12 @@ it('mass-assigns fillable attributes', function () {
 
 it('relationships resolve to the right models', function () {
     $creator = User::factory()->create();
-    $locker  = User::factory()->create();
+    $locker = User::factory()->create();
     $meeting = Meeting::factory()->create();
 
     $note = MeetingNote::factory()->create([
         'created_by' => $creator->id,
-        'locked_by'  => $locker->id,
+        'locked_by' => $locker->id,
         'meeting_id' => $meeting->id,
     ]);
 
@@ -58,7 +59,7 @@ it('eager loads createdBy and lockedBy via $with', function () {
 it('casts locked_at and lock_updated_at to datetime when set', function () {
     // add in model: protected $casts = ['locked_at' => 'datetime','lock_updated_at' => 'datetime'];
     $note = MeetingNote::factory()->create([
-        'locked_at'       => now(),
+        'locked_at' => now(),
         'lock_updated_at' => now(),
     ]);
 
