@@ -117,6 +117,21 @@ describe('Note Editor - Lock The Note for Editing', function () {
             ->assertSeeInOrder(['Locked by', 'disabled', 'Edit Agenda']);
     })->done();
 
+    it('does not allow the lock to be taken if someone else has it already', function () {
+        $user = loginAsAdmin();
+        $locker = User::factory()->create();
+        $note = MeetingNote::factory()->withMeeting($this->meeting)->withSectionKey('agenda')->withLock($locker)->create();
+
+        livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
+            ->call('EditNote')
+            ->assertOk();
+
+        $this->assertDatabaseHas('meeting_notes', [
+            'id' => $note->id,
+            'locked_by' => $locker->id,
+        ]);
+    });
+
     // If the lock is expired, allow another user to edit the note
 
     // If the note is not locked, show the note viewer

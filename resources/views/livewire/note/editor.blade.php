@@ -49,6 +49,13 @@ new class extends Component {
     }
 
     public function EditNote() {
+        // Make sure someone else hasn't locked the record already
+        $this->note->refresh();
+        if ($this->note->locked_by) {
+            $this->syncLockState();
+            return;
+        }
+
         $user = auth()->user();
         $time = now();
 
