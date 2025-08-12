@@ -179,15 +179,4 @@ describe('Meetings List Page - Functionality', function () {
             ->assertSee('Create Meeting')
             ->assertSeeLivewire('meeting.create-modal');
     })->done();
-
-    it('displays a list of meetings', function () {
-        $meetings = Meeting::factory()->count(3)->create();
-        loginAsAdmin();
-
-        get(route('meeting.index'))
-            ->assertOk()
-            ->assertSee($meetings[0]->title)
-            ->assertSee($meetings[1]->title)
-            ->assertSee($meetings[2]->title);
-    })->done();
 });

@@ -21,7 +21,7 @@ class MeetingFactory extends Factory
             'scheduled_time' => $this->faker->dateTimeBetween('-1 month', '+1 month'),
             'start_time' => $this->faker->dateTimeBetween('-1 month', '+1 month'),
             'end_time' => $this->faker->dateTimeBetween('-1 month', '+1 month'),
-            'summary' => $this->faker->paragraph(),
+            'summary' => $this->faker->text(255),
             'day' => $this->faker->dateTimeBetween('-1 month', '+1 month')->format('Y-m-d'),
             'is_public' => true,
         ];
