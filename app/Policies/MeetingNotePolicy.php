@@ -2,10 +2,10 @@
 
 namespace App\Policies;
 
-use App\Models\MeetingNote;
-use App\Models\User;
 use App\Enums\StaffDepartment;
 use App\Enums\StaffRank;
+use App\Models\MeetingNote;
+use App\Models\User;
 
 class MeetingNotePolicy
 {

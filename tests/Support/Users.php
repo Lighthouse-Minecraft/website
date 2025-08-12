@@ -6,93 +6,107 @@ use App\Enums\StaffRank;
 use App\Models\User;
 
 // == Membership Levels == //
-function membershipDrifter() {
+function membershipDrifter()
+{
     return User::factory()->withMembershipLevel(MembershipLevel::Drifter)->create();
 }
 
-function membershipStowaway() {
+function membershipStowaway()
+{
     return User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create();
 }
 
-function membershipTraveler() {
+function membershipTraveler()
+{
     return User::factory()->withMembershipLevel(MembershipLevel::Traveler)->create();
 }
 
-function membershipResident() {
+function membershipResident()
+{
     return User::factory()->withMembershipLevel(MembershipLevel::Resident)->create();
 }
 
-function membershipCitizen() {
+function membershipCitizen()
+{
     return User::factory()->withMembershipLevel(MembershipLevel::Citizen)->create();
 }
 
 // == Crew Member Positions ==
-function crewCommand() {
+function crewCommand()
+{
     return User::factory()
-    ->withMembershipLevel(MembershipLevel::Resident)
-    ->withStaffPosition(StaffDepartment::Command, StaffRank::CrewMember, 'Test Command Crewman')
-    ->create();
+        ->withMembershipLevel(MembershipLevel::Resident)
+        ->withStaffPosition(StaffDepartment::Command, StaffRank::CrewMember, 'Test Command Crewman')
+        ->create();
 }
 
-function crewChaplain() {
+function crewChaplain()
+{
     return User::factory()
-    ->withMembershipLevel(MembershipLevel::Resident)
-    ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember, 'Test Chaplain Crewman')
-    ->create();
+        ->withMembershipLevel(MembershipLevel::Resident)
+        ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember, 'Test Chaplain Crewman')
+        ->create();
 }
 
-function crewEngineer() {
+function crewEngineer()
+{
     return User::factory()
         ->withMembershipLevel(MembershipLevel::Resident)
         ->withStaffPosition(StaffDepartment::Engineer, StaffRank::CrewMember, 'Test Engineer Crewman')
         ->create();
 }
 
-function crewQuartermaster() {
+function crewQuartermaster()
+{
     return User::factory()
         ->withMembershipLevel(MembershipLevel::Resident)
         ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::CrewMember, 'Test Quartermaster Crewman')
         ->create();
 }
 
-function crewSteward() {
+function crewSteward()
+{
     return User::factory()
         ->withMembershipLevel(MembershipLevel::Resident)
         ->withStaffPosition(StaffDepartment::Steward, StaffRank::CrewMember, 'Test Steward Crewman')
         ->create();
 }
 
-
 // == Officer Positions ==
-function officerCommand() {
+function officerCommand()
+{
     return User::factory()
-    ->withMembershipLevel(MembershipLevel::Resident)
-    ->withStaffPosition(StaffDepartment::Command, StaffRank::Officer, 'Test Command Officer')
-    ->create();
+        ->withMembershipLevel(MembershipLevel::Resident)
+        ->withStaffPosition(StaffDepartment::Command, StaffRank::Officer, 'Test Command Officer')
+        ->create();
 }
 
-function officerChaplain() {
+function officerChaplain()
+{
     return User::factory()
-    ->withMembershipLevel(MembershipLevel::Resident)
-    ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::Officer, 'Test Chaplain Officer')
-    ->create();
+        ->withMembershipLevel(MembershipLevel::Resident)
+        ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::Officer, 'Test Chaplain Officer')
+        ->create();
 }
 
-function officerEngineer() {
+function officerEngineer()
+{
     return User::factory()
         ->withMembershipLevel(MembershipLevel::Resident)
         ->withStaffPosition(StaffDepartment::Engineer, StaffRank::Officer, 'Test Engineer Officer')
         ->create();
 }
 
-function officerQuartermaster() {
+function officerQuartermaster()
+{
     return User::factory()
         ->withMembershipLevel(MembershipLevel::Resident)
         ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::Officer, 'Test Quartermaster Officer')
         ->create();
 }
 
-function officerSteward() {
+function officerSteward()
+{
     return User::factory()
         ->withMembershipLevel(MembershipLevel::Resident)
         ->withStaffPosition(StaffDepartment::Steward, StaffRank::Officer, 'Test Steward Officer')
@@ -100,35 +114,40 @@ function officerSteward() {
 }
 
 // == Officer Positions ==
-function jrCrewCommand() {
+function jrCrewCommand()
+{
     return User::factory()
-    ->withMembershipLevel(MembershipLevel::Resident)
-    ->withStaffPosition(StaffDepartment::Command, StaffRank::JrCrew, 'Test Command JrCrew')
-    ->create();
+        ->withMembershipLevel(MembershipLevel::Resident)
+        ->withStaffPosition(StaffDepartment::Command, StaffRank::JrCrew, 'Test Command JrCrew')
+        ->create();
 }
 
-function jrCrewChaplain() {
+function jrCrewChaplain()
+{
     return User::factory()
-    ->withMembershipLevel(MembershipLevel::Resident)
-    ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::JrCrew, 'Test Chaplain JrCrew')
-    ->create();
+        ->withMembershipLevel(MembershipLevel::Resident)
+        ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::JrCrew, 'Test Chaplain JrCrew')
+        ->create();
 }
 
-function jrCrewEngineer() {
+function jrCrewEngineer()
+{
     return User::factory()
         ->withMembershipLevel(MembershipLevel::Resident)
         ->withStaffPosition(StaffDepartment::Engineer, StaffRank::JrCrew, 'Test Engineer JrCrew')
         ->create();
 }
 
-function jrCrewQuartermaster() {
+function jrCrewQuartermaster()
+{
     return User::factory()
         ->withMembershipLevel(MembershipLevel::Resident)
         ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::JrCrew, 'Test Quartermaster JrCrew')
         ->create();
 }
 
-function jrCrewSteward() {
+function jrCrewSteward()
+{
     return User::factory()
         ->withMembershipLevel(MembershipLevel::Resident)
         ->withStaffPosition(StaffDepartment::Steward, StaffRank::JrCrew, 'Test Steward JrCrew')
