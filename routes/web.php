@@ -68,7 +68,7 @@ Route::prefix('announcements')
 
 Route::prefix('meetings')->name('meeting.')->controller(App\Http\Controllers\MeetingController::class)->group(function () {
     Route::get('/', 'index')->name('index');
-    Route::get('/{meeting}', 'show')->name('show')->middleware('can:view,meeting');
+    Route::get('/{meeting}', 'edit')->name('edit')->middleware('can:update,meeting');
 });
 
 require __DIR__.'/auth.php';

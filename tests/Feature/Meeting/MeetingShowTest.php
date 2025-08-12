@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\StaffDepartment;
 use App\Models\Meeting;
 
 use function Pest\Laravel\get;
@@ -12,14 +13,14 @@ beforeEach(function () {
     ]);
 });
 
-describe('Meeting Show - Loading', function () {
+describe('Meeting Edit - Loading', function () {
 
     it('loads the page and relevant views', function () {
         loginAsAdmin();
 
-        get(route('meeting.show', ['meeting' => $this->meeting->id]))
+        get(route('meeting.edit', ['meeting' => $this->meeting->id]))
             ->assertOk()
-            ->assertViewIs('meeting.show')
+            ->assertViewIs('meeting.edit')
             ->assertSee('Lighthouse Layout', false)
             ->assertViewHas('meeting', $this->meeting);
     })->done();
@@ -28,25 +29,54 @@ describe('Meeting Show - Loading', function () {
     it('loads model data', function () {
         loginAsAdmin();
 
-        get(route('meeting.show', ['meeting' => $this->meeting->id]))
+        get(route('meeting.edit', ['meeting' => $this->meeting->id]))
             ->assertSeeText($this->meeting->title)
             ->assertSeeText($this->meeting->day);
     })->done();
 
+    it('displays an agenda edit textarea if the meeting has not started', function () {
+        loginAsAdmin();
+
+        get(route('meeting.edit', ['meeting' => $this->meeting->id]))
+            ->assertSee('Agenda')
+            ->assertSeeLivewire('note.editor');
+    })->wip();
+
+    it('displays the agenda content if the meeting has started', function () {
+        $this->meeting->update(['start_time' => now()]);
+        loginAsAdmin();
+
+        get(route('meeting.edit', ['meeting' => $this->meeting->id]))
+            ->assertSeeText($this->meeting->agenda)
+            ->assertDontSeeLivewire('meeting.note-editor')
+            ->assertSeeLivewire('meeting.note-viewer');
+    })->todo();
+
 })->done(assignee: 'jonzenor', issue: 56);
 
-describe('Meeting Show - Page Data', function () {
+describe('Meeting Edit - Page Data', function () {
     // Handles invalid meeting
 })->todo(assignee: 'jonzenor', issue: 56);
 
-describe('Meeting Show - Attendance', function () {
+describe('Meeting Edit - Attendance', function () {
     // Shows the modal to select users for attendance
 
     // Shows users who attended the meeting
 })->todo(assignee: 'jonzenor', issue: 55);
 
-describe('Meeting Show - Notes', function () {
-    // Show a section for each department
+describe('Meeting Edit - Notes', function () {
+    it('shows a section for each department', function () {
+        loginAsAdmin();
+
+        get(route('meeting.edit', ['meeting' => $this->meeting->id]))
+            ->assertSeeLivewire('meeting.department-section')
+            ->assertSee('General')
+            ->assertSee(StaffDepartment::Command->label())
+            ->assertSee(StaffDepartment::Chaplain->label())
+            ->assertSee(StaffDepartment::Engineer->label())
+            ->assertSee(StaffDepartment::Quartermaster->label())
+            ->assertSee(StaffDepartment::Steward->label());
+    })->done();
 
     // Show blank notes for each department section
 
@@ -55,9 +85,9 @@ describe('Meeting Show - Notes', function () {
     // Locks the note section when the user starts editing
     // Unlocks the note section after the lock expires
     // Unlocks the note section when the user is done editing
-})->todo(assignee: 'jonzenor', issue: 13);
+})->wip(assignee: 'jonzenor', issue: 13);
 
-describe('Meeting Show - Action Items', function () {
+describe('Meeting Edit - Action Items', function () {
     // Each department section has a todo list that can be added
 
     // The meeting should show existing todo items that are not completed
@@ -67,6 +97,6 @@ describe('Meeting Show - Action Items', function () {
     // Have a button that imports tasks completed since a selected meeting
 })->todo(assignee: 'jonzenor', issue: 28);
 
-describe('Meeting Show - Permissions', function () {
+describe('Meeting Edit - Permissions', function () {
     // Test permissions for the page
 })->todo();
