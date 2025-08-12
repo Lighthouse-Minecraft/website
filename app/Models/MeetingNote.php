@@ -24,7 +24,7 @@ class MeetingNote extends Model
 
     public function createdBy(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     public function meeting(): BelongsTo
@@ -34,6 +34,6 @@ class MeetingNote extends Model
 
     public function lockedBy(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'locked_by');
     }
 }
