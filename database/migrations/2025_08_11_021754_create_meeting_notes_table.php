@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignIdFor(\App\Models\Meeting::class);
             $table->string('section_key');
             $table->text('content')->nullable();
-            $table->foreignId('locked_by')->nullable();
+            $table->foreignId('locked_by')->nullable()->constrained('users');
             $table->timestamp('locked_at')->nullable();
             $table->timestamp('lock_updated_at')->nullable();
             $table->timestamps();
