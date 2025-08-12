@@ -4,11 +4,13 @@ use App\Models\Meeting;
 use App\Models\MeetingNote;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Config;
 
 use function Pest\Livewire\livewire;
 
 beforeEach(function () {
     $this->meeting = Meeting::factory()->create();
+    Config::set('lighthouse.meeting_note_unlock_mins', 15);
 });
 
 describe('Note Editor - Create Note', function () {
@@ -111,6 +113,7 @@ describe('Note Editor - Lock The Note for Editing', function () {
     it('disables the edit button if a lock is held by another user', function () {
         $user = loginAsAdmin();
         $locker = User::factory()->create();
+
         $note = MeetingNote::factory()->withMeeting($this->meeting)->withSectionKey('agenda')->withLock($locker)->create();
 
         livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
@@ -130,13 +133,52 @@ describe('Note Editor - Lock The Note for Editing', function () {
             'id' => $note->id,
             'locked_by' => $locker->id,
         ]);
-    });
+    })->done();
 
     // If the lock is expired, allow another user to edit the note
+    it('unlocks the note after configured expirey time', function () {
+        $user = loginAsAdmin();
+        $updatedContent = 'Space: the final frontier. These are the voyages of the starship Enterprise.';
 
-    // If the note is not locked, show the note viewer
+        $currentTime = Carbon::now();
+        $pastTime = $currentTime->subMinutes(4);
+        Config::set('lighthouse.meeting_note_unlock_mins', 2);
 
-    // If the note is locked, show the note viewer for other users
+        $note = MeetingNote::factory()->withMeeting($this->meeting)->withContent($updatedContent)->withSectionKey('agenda')->withLockAtTime($user, $pastTime)->create();
+
+        livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
+            ->set('updatedContent', $updatedContent)
+            ->call('HeartbeatCheck');
+
+        $note = MeetingNote::first();
+
+        expect($note->locked_by)->toBeNull();
+        expect($note->locked_at)->toBeNull();
+        expect($note->lock_updated_at)->toBeNull();
+    })->done();
+
+    it('unlocks the note when a new user loads the page if it has expired', function () {
+        $user = loginAsAdmin();
+        $locker = User::factory()->create();
+        $content = 'Space: the final frontier. These are the voyages of the starship Enterprise.';
+
+        $currentTime = Carbon::now();
+        $pastTime = $currentTime->subMinutes(15);
+        Config::set('lighthouse.meeting_note_unlock_mins', 2);
+
+        $note = MeetingNote::factory()->withMeeting($this->meeting)->withContent($content)->withSectionKey('agenda')->withLockAtTime($locker, $pastTime)->create();
+
+        livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
+            ->assertOk();
+
+        $this->assertDatabaseHas('meeting_notes', [
+            'id' => $note->id,
+            'locked_by' => null,
+            'locked_at' => null,
+            'lock_updated_at' => null,
+        ]);
+    })->wip();
+
 })->wip(issue: 13, assignee: 'jonzenor');
 
 describe('Note Editor - Save', function () {
@@ -174,8 +216,11 @@ describe('Note Editor - Save', function () {
 
     it('saves the content and retains the lock when UpdateNote is called', function () {
         $user = loginAsAdmin();
+
         $currentTime = Carbon::now();
         $pastTime = $currentTime->subMinutes(1);
+        Config::set('lighthouse.meeting_note_unlock_mins', 15);
+
         $note = MeetingNote::factory()->withMeeting($this->meeting)->withSectionKey('agenda')->withLockAtTime($user, $pastTime)->create();
 
         $updatedContent = 'Peace is a lie. There is only Passion. Through Passion, I gain Strength. Through Strenght, I gain Power. Through Power, I gain Victory. Through Victory my chains are Broken. The Force shall free me.';
@@ -201,6 +246,7 @@ describe('Note Editor - Save', function () {
         $user = loginAsAdmin();
         $currentTime = Carbon::now();
         $pastTime = $currentTime->subMinutes(1);
+        Config::set('lighthouse.meeting_note_unlock_mins', 15);
         $content = 'Indeed';
         $note = MeetingNote::factory()->withMeeting($this->meeting)->withContent($content)->withSectionKey('agenda')->withLockAtTime($user, $pastTime)->create();
 
@@ -215,5 +261,5 @@ describe('Note Editor - Save', function () {
             'content' => $content,
             'lock_updated_at' => $pastTime,
         ]);
-    })->wip();
+    })->done();
 })->wip(issue: 13, assignee: 'jonzenor');

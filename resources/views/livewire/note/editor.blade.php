@@ -3,6 +3,7 @@
 use App\Models\Meeting;
 use App\Models\User;
 use App\Models\MeetingNote;
+use Carbon\Carbon;
 use Livewire\Volt\Component;
 
 new class extends Component {
@@ -29,8 +30,8 @@ new class extends Component {
 
         $this->note = $note ?: new MeetingNote();
         $this->updatedContent = $this->note->content;
-        $this->syncLockState();
 
+        $this->HeartbeatCheck();
         $this->syncLockState();
     }
 
@@ -72,6 +73,13 @@ new class extends Component {
     public function SaveNote() {
         $this->note->update([
             'content' => $this->updatedContent,
+        ]);
+
+        $this->UnlockNote();
+    }
+
+    public function UnlockNote() {
+        $this->note->update([
             'locked_by' => null,
             'locked_at' => null,
             'lock_updated_at' => null,
@@ -79,6 +87,21 @@ new class extends Component {
 
         $this->note->refresh();
         $this->syncLockState();
+    }
+
+    // Check if the lock needs to be released
+    public function HeartbeatCheck() {
+        if ($this->note->content == $this->updatedContent) {
+            $expirey_age = config('lighthouse.meeting_note_unlock_mins');
+            $lock_last_updated_at = Carbon::parse($this->note->lock_updated_at);
+
+            // See if it's time to release the lock
+            if ($lock_last_updated_at->lt(now()->subMinutes($expirey_age))) {
+                $this->UnlockNote();
+            }
+
+            return;
+        }
     }
 
     // UpdateNote will do a periodic save but not release the lock
@@ -116,7 +139,8 @@ new class extends Component {
         <flux:button variant="primary" wire:click="CreateNote">Create {{  ucfirst($section_key) }}</flux:button>
     @else
         @if ($isLockedByMe)
-            <flux:textarea wire:model.live.debounce.10s="updatedContent" wire:input.debounce.10s="UpdateNote" label="{{ ucfirst($section_key) }} Notes" rows="15" />
+            <div wire:poll.3s="HeartbeatCheck"></div>
+            <flux:textarea wire:model.live.debounce.5s="updatedContent" wire:input.debounce.5s="UpdateNote" label="{{ ucfirst($section_key) }} Notes" rows="15" />
 
             <div class="flex my-4">
                 <div class="text-left w-1/2">
