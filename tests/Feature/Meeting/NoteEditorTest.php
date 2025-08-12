@@ -2,6 +2,7 @@
 
 use App\Models\Meeting;
 use App\Models\MeetingNote;
+use Carbon\Carbon;
 
 use function Pest\Livewire\livewire;
 
@@ -93,7 +94,7 @@ describe('Note Editor - Lock The Note for Editing', function () {
 
         livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
             ->assertDontSee('Edit Agenda')
-            ->assertSee('Locked by '.$user->name)
+            ->assertSee('You have locked this section')
             ->assertSee('Save Agenda');
     })->done();
 
@@ -139,8 +140,53 @@ describe('Note Editor - Save', function () {
             'locked_at' => null,
             'lock_updated_at' => null,
         ]);
-    });
-})->done(issue: 13, assignee: 'jonzenor');
+    })->done();
+
+    it('saves the content and retains the lock when UpdateNote is called', function () {
+        $user = loginAsAdmin();
+        $currentTime = Carbon::now();
+        $pastTime = $currentTime->subMinutes(1);
+        $note = MeetingNote::factory()->withMeeting($this->meeting)->withSectionKey('agenda')->withLockAtTime($user, $pastTime)->create();
+
+        $updatedContent = 'Peace is a lie. There is only Passion. Through Passion, I gain Strength. Through Strenght, I gain Power. Through Power, I gain Victory. Through Victory my chains are Broken. The Force shall free me.';
+        livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
+            ->set('updatedContent', $updatedContent)
+            ->call('UpdateNote')
+            ->assertOk();
+
+        $this->assertDatabaseHas('meeting_notes', [
+            'id' => $note->id,
+            'locked_by' => $user->id,
+            'content' => $updatedContent,
+        ]);
+
+        $note = MeetingNote::first();
+
+        expect($note->locked_at)->not->toBeNull();
+        expect($note->lock_updated_at)->not->toBeNull();
+        expect($note->lock_updated_at)->toBeGreaterThan($note->locked_at);
+    })->done();
+
+    it('does not update the note if the content has not changed', function () {
+        $user = loginAsAdmin();
+        $currentTime = Carbon::now();
+        $pastTime = $currentTime->subMinutes(1);
+        $content = 'Indeed';
+        $note = MeetingNote::factory()->withMeeting($this->meeting)->withContent($content)->withSectionKey('agenda')->withLockAtTime($user, $pastTime)->create();
+
+        $updatedContent = 'Peace is a lie. There is only Passion. Through Passion, I gain Strength. Through Strenght, I gain Power. Through Power, I gain Victory. Through Victory my chains are Broken. The Force shall free me.';
+        livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
+            ->call('UpdateNote')
+            ->assertOk();
+
+        $this->assertDatabaseHas('meeting_notes', [
+            'id' => $note->id,
+            'locked_by' => $user->id,
+            'content' => $content,
+            'lock_updated_at' => $pastTime,
+        ]);
+    })->wip();
+})->wip(issue: 13, assignee: 'jonzenor');
 
 // I'm not sure how we're going to test these....
 // The editor saves the data

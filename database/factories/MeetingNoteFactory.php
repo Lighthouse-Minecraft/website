@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -63,14 +64,23 @@ class MeetingNoteFactory extends Factory
         });
     }
 
-    public function withLock(\App\Models\User $user): Factory
+    public function withLockAtTime(\App\Models\User $user, string $time): Factory
     {
-        return $this->state(function (array $attributes) use ($user) {
+        $useTime = $time;
+
+        return $this->state(function (array $attributes) use ($user, $useTime) {
             return [
                 'locked_by' => $user->id,
-                'locked_at' => now(),
-                'lock_updated_at' => now(),
+                'locked_at' => $useTime,
+                'lock_updated_at' => $useTime,
             ];
         });
+    }
+
+    public function withLock(\App\Models\User $user): Factory
+    {
+        $useTime = Carbon::now();
+
+        return $this->withLockAtTime($user, $useTime);
     }
 }
