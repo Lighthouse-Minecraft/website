@@ -12,7 +12,7 @@ enum StaffDepartment: string
 
     public function label(): string
     {
-        return match($this) {
+        return match ($this) {
             self::Command => 'Command',
             self::Chaplain => 'Chaplain',
             self::Engineer => 'Engineer',

@@ -2,26 +2,28 @@
 
 namespace App\Policies;
 
-use App\Enums\{MembershipLevel, StaffDepartment, StaffRank};
-use App\Models\{Role, User};
-use Illuminate\Auth\Access\{Response};
+use App\Enums\StaffDepartment;
+use App\Enums\StaffRank;
+use App\Models\Role;
+use App\Models\User;
 
 class RolePolicy
 {
-    public function before(User $user, string $ability): bool|null
+    public function before(User $user, string $ability): ?bool
     {
-        if ($user->isAdmin() || ($user->isInDepartment(StaffDepartment::Command) && $user->isAtLeastRank(StaffRank::Officer) )) {
+        if ($user->isAdmin() || ($user->isInDepartment(StaffDepartment::Command) && $user->isAtLeastRank(StaffRank::Officer))) {
             return true;
         }
 
         return null;
     }
+
     /**
      * Determine whether the user can view any models.
      */
     public function viewAny(User $user): bool
     {
-        return ($user->isAdmin());
+        return $user->isAdmin();
     }
 
     /**
@@ -37,7 +39,7 @@ class RolePolicy
      */
     public function create(User $user): bool
     {
-        return ($user->isAdmin());
+        return $user->isAdmin();
     }
 
     /**
@@ -45,7 +47,7 @@ class RolePolicy
      */
     public function update(User $user, Role $role): bool
     {
-        return ($user->isAdmin());
+        return $user->isAdmin();
     }
 
     /**
