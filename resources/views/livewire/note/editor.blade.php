@@ -31,7 +31,6 @@ new class extends Component {
         $this->note = $note ?: new MeetingNote();
         $this->updatedContent = $this->note->content;
 
-        $this->HeartbeatCheck();
         $this->syncLockState();
     }
 
@@ -120,6 +119,7 @@ new class extends Component {
 
     public function RefreshNote() {
         $this->note->refresh();
+        $this->HeartbeatCheck();
         $this->syncLockState();
     }
 

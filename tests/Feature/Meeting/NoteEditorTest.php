@@ -157,7 +157,7 @@ describe('Note Editor - Lock The Note for Editing', function () {
         expect($note->lock_updated_at)->toBeNull();
     })->done();
 
-    it('unlocks the note when a new user loads the page if it has expired', function () {
+    it('unlocks the note when another user polls for data if the note has expired', function () {
         $user = loginAsAdmin();
         $locker = User::factory()->create();
         $content = 'Space: the final frontier. These are the voyages of the starship Enterprise.';
@@ -169,7 +169,7 @@ describe('Note Editor - Lock The Note for Editing', function () {
         $note = MeetingNote::factory()->withMeeting($this->meeting)->withContent($content)->withSectionKey('agenda')->withLockAtTime($locker, $pastTime)->create();
 
         livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
-            ->assertOk();
+            ->call('RefreshNote');
 
         $this->assertDatabaseHas('meeting_notes', [
             'id' => $note->id,
@@ -178,7 +178,6 @@ describe('Note Editor - Lock The Note for Editing', function () {
             'lock_updated_at' => null,
         ]);
     })->wip();
-
 })->wip(issue: 13, assignee: 'jonzenor');
 
 describe('Note Editor - Save', function () {
