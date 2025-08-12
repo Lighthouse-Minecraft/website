@@ -13,11 +13,11 @@ return new class extends Migration
     {
         Schema::create('meeting_notes', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('created_by');
+            $table->foreignId('created_by')->constrained('users');
             $table->foreignIdFor(\App\Models\Meeting::class);
             $table->string('section_key');
             $table->text('content')->nullable();
-            $table->foreignId('locked_by')->nullable();
+            $table->foreignId('locked_by')->nullable()->constrained('users');
             $table->timestamp('locked_at')->nullable();
             $table->timestamp('lock_updated_at')->nullable();
             $table->timestamps();

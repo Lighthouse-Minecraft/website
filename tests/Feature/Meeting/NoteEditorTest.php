@@ -136,7 +136,7 @@ describe('Note Editor - Lock The Note for Editing', function () {
     })->done();
 
     // If the lock is expired, allow another user to edit the note
-    it('unlocks the note after configured expirey time', function () {
+    it('unlocks the note after configured expiry time', function () {
         $user = loginAsAdmin();
         $updatedContent = 'Space: the final frontier. These are the voyages of the starship Enterprise.';
 
@@ -222,7 +222,7 @@ describe('Note Editor - Save', function () {
 
         $note = MeetingNote::factory()->withMeeting($this->meeting)->withSectionKey('agenda')->withLockAtTime($user, $pastTime)->create();
 
-        $updatedContent = 'Peace is a lie. There is only Passion. Through Passion, I gain Strength. Through Strenght, I gain Power. Through Power, I gain Victory. Through Victory my chains are Broken. The Force shall free me.';
+        $updatedContent = 'Peace is a lie. There is only Passion. Through Passion, I gain Strength. Through Strength, I gain Power. Through Power, I gain Victory. Through Victory my chains are Broken. The Force shall free me.';
         livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
             ->set('updatedContent', $updatedContent)
             ->call('UpdateNote')
@@ -249,7 +249,7 @@ describe('Note Editor - Save', function () {
         $content = 'Indeed';
         $note = MeetingNote::factory()->withMeeting($this->meeting)->withContent($content)->withSectionKey('agenda')->withLockAtTime($user, $pastTime)->create();
 
-        $updatedContent = 'Peace is a lie. There is only Passion. Through Passion, I gain Strength. Through Strenght, I gain Power. Through Power, I gain Victory. Through Victory my chains are Broken. The Force shall free me.';
+        $updatedContent = 'Peace is a lie. There is only Passion. Through Passion, I gain Strength. Through Strength, I gain Power. Through Power, I gain Victory. Through Victory my chains are Broken. The Force shall free me.';
         livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
             ->call('UpdateNote')
             ->assertOk();
