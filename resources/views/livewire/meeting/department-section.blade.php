@@ -27,4 +27,10 @@ new class extends Component {
 
 <div class="w-full space-y-6 my-6">
     <flux:heading><span class="text-sky-600 dark:text-sky-400">{{  $departmentLabel }}</span></flux:heading>
+
+    <div class="flex w-full">
+        <div class="w-2/4">
+            <livewire:note.editor :meeting="$meeting" :section_key="$departmentValue"/>
+        </div>
+    </div>
 </div>

@@ -181,6 +181,23 @@ describe('Meeting Edit - Meeting Workflow', function () {
     })->done(assignee: 'jonzenor');
 
     // If the Meeting is In Progress, show the department note editors
+    it('shows the department note editors when the meeting is in progress', function () {
+        $meeting = Meeting::factory()->withStatus(MeetingStatus::InProgress)->create();
+        loginAsAdmin();
+
+        get(route('meeting.edit', ['meeting' => $meeting->id]))
+            ->assertSee('Create General Note')
+            ->assertSee('Create Command Note')
+            ->assertSee('Create Chaplain Note')
+            ->assertSee('Create Engineer Note')
+            ->assertSee('Create Quartermaster Note')
+            ->assertSee('Create Steward Note')
+            ->assertSeeLivewire('note.editor');
+    });
+
+    // You can't start a meeting that has already started
+
+    // Hide the Start Meeting button if the meeting is In Progress
 
     // If the Meeting is In Progress, show an End Meeting button
 

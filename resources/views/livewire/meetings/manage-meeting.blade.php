@@ -37,7 +37,7 @@ new class extends Component {
     @else
         <div class="w-3/4 mx-auto">
             <flux:card>
-                <flux:heading>Meeting Agenda</flux:heading>
+                <flux:heading class="mb-4">Meeting Agenda</flux:heading>
 
                 <flux:text>{!! nl2br($meeting->agenda) !!}</flux:text>
             </flux:card>
