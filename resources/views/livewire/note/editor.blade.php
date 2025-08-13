@@ -42,8 +42,24 @@ new class extends Component {
         $this->syncLockState();
     }
 
+    public function LookupNote() {
+        $note = MeetingNote::where('meeting_id', $this->meeting->id)
+            ->where('section_key', $this->section_key)
+            ->with('lockedBy')
+            ->first();
+
+        $this->note = $note ?: new MeetingNote();
+    }
+
     public function CreateNote() {
         $this->authorize('create', App\Models\MeetingNote::class);
+
+        // Make sure the note wasn't already created
+        $this->LookupNote();
+        if ($this->note->id) {
+            $this->RefreshNote();
+            return;
+        }
 
         $user = auth()->user();
         $time = now();
@@ -56,9 +72,7 @@ new class extends Component {
             'locked_at' => $time,
             'lock_updated_at' => $time
         ]);
-
-        $this->note->save();
-        $this->syncLockState();
+        $this->RefreshNote();
     }
 
     public function EditNote() {
@@ -66,7 +80,6 @@ new class extends Component {
 
         // Make sure someone else hasn't locked the record already
         $this->note->refresh();
-
         if ($this->note->locked_by) {
             $this->syncLockState();
             return;
@@ -143,6 +156,11 @@ new class extends Component {
     }
 
     public function RefreshNote() {
+        if (! $this->note->id) {
+            $this->LookupNote();
+            $this->noteExists = ($this->note->id) ? true : false;
+        }
+
         $this->note->refresh();
         $this->HeartbeatCheck();
         $this->syncLockState();
@@ -151,22 +169,16 @@ new class extends Component {
     private function syncLockState(): void {
         $lockerId = $this->note->locked_by;
 
+        $this->noteExists = ($this->note->id) ? true : false;
         $this->isLocked = (bool) $lockerId;
         $this->lockedById = $lockerId;
         $this->lockedByName = $lockerId ? optional(User::find($lockerId))->name : null;
         $this->isLockedByMe = $lockerId && $lockerId === auth()->id();
-        $this->noteExists = ($this->note->id) ? true : false;
     }
 
 }; ?>
 
 <div class="space-y-6">
-    @if (! $noteExists)
-            @can('create', App\Models\MeetingNote::class)
-                @php $buttonLabel = ($section_key == 'agenda') ? 'Create Agenda' : 'Create ' . ucfirst($section_key) . ' Note'; @endphp
-                <flux:button variant="primary" wire:click="CreateNote">{{ $buttonLabel }}</flux:button>
-            @endcan
-    @else
         @if ($isLockedByMe)
             <div wire:poll.3s="HeartbeatCheck"></div>
             @php $rows = ($section_key == 'agenda') ? 15 : 6; @endphp
@@ -186,39 +198,39 @@ new class extends Component {
         @else
             <div wire:poll.{{  $pollTime }}="RefreshNote">
 
-                    @if (! $this->note->id)
-                        @can('create', App\Models\MeetingNote::class)
-                            @php $buttonLabel = ($section_key == 'agenda') ? 'Create Agenda' : 'Create ' . ucfirst($section_key) . ' Note'; @endphp
-                            <flux:button variant="primary" wire:click="CreateNote">{{ $buttonLabel }}</flux:button>
-                        @endcan
-                    @endif
+                @if(! $this->noteExists)
+                    @can('create', App\Models\MeetingNote::class)
+                        @php $buttonLabel = ($section_key == 'agenda') ? 'Create Agenda' : 'Create ' . ucfirst($section_key) . ' Note'; @endphp
+                        <flux:button variant="primary" wire:click="CreateNote">{{ $buttonLabel }}</flux:button>
+                    @endcan
+                @else
 
-                <flux:card>
-                    <flux:heading class="mb-4">Meeting Notes - {{  ucfirst($section_key) }}</flux:heading>
+                    <flux:card>
+                        <flux:heading class="mb-4">Meeting Notes - {{  ucfirst($section_key) }}</flux:heading>
 
-                    <flux:text>
-                        {!!  nl2br($this->note->content) !!}
-                    </flux:text>
-                </flux:card>
+                        <flux:text>
+                            {!!  nl2br($this->note->content) !!}
+                        </flux:text>
+                    </flux:card>
 
-                <div class="flex my-4">
-                    <div class="text-left w-1/2">
-                        @if($isLocked)
-                            <flux:text size="xs">Locked by <flux:link href="{{ route('profile.show', $lockedById) }}">{{ $lockedByName }}</flux:link></flux:text>
-                        @endif
-                    </div>
-
-                    <div class="w-full text-right">
-                        @can('update', $this->note)
+                    <div class="flex my-4">
+                        <div class="text-left w-1/2">
                             @if($isLocked)
-                                <flux:button size="xs" disabled variant="filled">Edit {{ ucfirst($section_key) }}</flux:button>
-                            @else
-                                <flux:button size="xs" wire:click="EditNote" variant="primary" color="indigo">Edit {{ ucfirst($section_key) }}</flux:button>
+                                <flux:text size="xs">Locked by <flux:link href="{{ route('profile.show', $lockedById) }}">{{ $lockedByName }}</flux:link></flux:text>
                             @endif
-                        @endcan
+                        </div>
+
+                        <div class="w-full text-right">
+                            @can('update', $this->note)
+                                @if($isLocked)
+                                    <flux:button size="xs" disabled variant="filled">Edit {{ ucfirst($section_key) }}</flux:button>
+                                @else
+                                    <flux:button size="xs" wire:click="EditNote" variant="primary" color="indigo">Edit {{ ucfirst($section_key) }}</flux:button>
+                                @endif
+                            @endcan
+                        </div>
                     </div>
-                </div>
+                @endif
             </div>
         @endif
-    @endif
 </div>
