@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\MeetingStatus;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -24,6 +25,8 @@ class MeetingFactory extends Factory
             'summary' => $this->faker->text(255),
             'day' => $this->faker->dateTimeBetween('-1 month', '+1 month')->format('Y-m-d'),
             'is_public' => true,
+            'status' => MeetingStatus::Pending,
+            'agenda' => $this->faker->paragraph(),
         ];
     }
 
@@ -35,6 +38,15 @@ class MeetingFactory extends Factory
         return $this->state(function (array $attributes) {
             return [
                 'is_public' => false,
+            ];
+        });
+    }
+
+    public function withStatus(MeetingStatus $status): Factory
+    {
+        return $this->state(function (array $attributes) use ($status) {
+            return [
+                'status' => $status,
             ];
         });
     }
