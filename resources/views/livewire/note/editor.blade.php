@@ -199,10 +199,12 @@ new class extends Component {
             <div wire:poll.{{  $pollTime }}="RefreshNote">
 
                 @if(! $this->noteExists)
-                    @can('create', App\Models\MeetingNote::class)
-                        @php $buttonLabel = ($section_key == 'agenda') ? 'Create Agenda' : 'Create ' . ucfirst($section_key) . ' Note'; @endphp
-                        <flux:button variant="primary" wire:click="CreateNote">{{ $buttonLabel }}</flux:button>
-                    @endcan
+                    <div class="w-full text-right">
+                        @can('create', App\Models\MeetingNote::class)
+                            @php $buttonLabel = ($section_key == 'agenda') ? 'Create Agenda' : 'Create ' . ucfirst($section_key) . ' Note'; @endphp
+                            <flux:button variant="primary" wire:click="CreateNote">{{ $buttonLabel }}</flux:button>
+                        @endcan
+                    </div>
                 @else
 
                     <flux:card>

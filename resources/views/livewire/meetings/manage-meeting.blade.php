@@ -1,13 +1,21 @@
 <?php
 
+use App\Enums\MeetingStatus;
+use App\Enums\StaffDepartment;
 use App\Models\Meeting;
 use Livewire\Volt\Component;
 
 new class extends Component {
     public Meeting $meeting;
+    public $pollTime = 0;
 
     public function mount(Meeting $meeting) {
         $this->meeting = $meeting;
+
+        if ($meeting->status == MeetingStatus::Pending && $meeting->day == now()->format('Y-m-d'))
+        {
+            $this->pollTime = 15;
+        }
     }
 
     public function StartMeeting() {
@@ -23,15 +31,17 @@ new class extends Component {
     }
 }; ?>
 
-<div class="space-y-6">
+<div class="space-y-6" wire:poll.{{  $pollTime }}>
     <flux:heading size="xl">{{  $meeting->title }} - {{  $meeting->day }}</flux:heading>
 
 
     <div class="text-right w-full">
-        <flux:button wire:click="StartMeeting" variant="primary">Start Meeting</flux:button>
+        @if ($this->meeting->status == MeetingStatus::Pending)
+            <flux:button wire:click="StartMeeting" variant="primary">Start Meeting</flux:button>
+        @endif
     </div>
 
-    @if ($meeting->status == \App\Enums\MeetingStatus::Pending)
+    @if ($meeting->status == MeetingStatus::Pending)
         <flux:heading variant="primary">Agenda</flux:heading>
         <livewire:note.editor :meeting="$meeting" section_key="agenda"/>
     @else
@@ -44,10 +54,11 @@ new class extends Component {
         </div>
     @endif
 
-    @if ($meeting->status != \App\Enums\MeetingStatus::Pending)
+    @if ($meeting->status != MeetingStatus::Pending)
         <livewire:meeting.department-section :meeting="$meeting" departmentValue="general" :key="'department-section-general'" />
         <flux:separator />
-        @foreach(\App\Enums\StaffDepartment::cases() as $department)
+
+        @foreach(StaffDepartment::cases() as $department)
             <livewire:meeting.department-section :meeting="$meeting" :departmentValue="$department->value" :key="'department-section-' . $department->value" />
             <flux:separator />
         @endforeach

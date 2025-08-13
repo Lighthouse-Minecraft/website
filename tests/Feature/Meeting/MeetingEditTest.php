@@ -195,9 +195,14 @@ describe('Meeting Edit - Meeting Workflow', function () {
             ->assertSeeLivewire('note.editor');
     });
 
-    // You can't start a meeting that has already started
-
     // Hide the Start Meeting button if the meeting is In Progress
+    it('hides the start button if the meeting is not Pending', function () {
+        loginAsAdmin();
+        $meeting = Meeting::factory()->withStatus(MeetingStatus::InProgress)->create();
+
+        get(route('meeting.edit', ['meeting' => $meeting->id]))
+            ->assertDontSee('Start Meeting');
+    });
 
     // If the Meeting is In Progress, show an End Meeting button
 
