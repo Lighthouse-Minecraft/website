@@ -31,6 +31,17 @@ class Meeting extends Model
         $this->save();
     }
 
+    public function endMeeting(): void
+    {
+        if ($this->status !== MeetingStatus::InProgress) {
+            throw new \Exception('Meeting cannot be ended unless it is in progress.');
+        }
+
+        $this->status = MeetingStatus::Finalizing;
+        $this->end_time = now();
+        $this->save();
+    }
+
     public function notes(): HasMany
     {
         return $this->hasMany(MeetingNote::class);

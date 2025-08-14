@@ -29,6 +29,20 @@ new class extends Component {
             $this->meeting->save();
         }
     }
+
+    public function EndMeeting() {
+        $this->authorize('update', $this->meeting);
+
+        $this->modal('end-meeting-confirmation')->show();
+    }
+
+    public function EndMeetingConfirmed() {
+        $this->authorize('update', $this->meeting);
+
+        $this->meeting->endMeeting();
+
+        $this->modal('end-meeting-confirmation')->close();
+    }
 }; ?>
 
 <div class="space-y-6" wire:poll.{{  $pollTime }}>
@@ -63,4 +77,40 @@ new class extends Component {
             <flux:separator />
         @endforeach
     @endif
+
+    <div class="w-full text-right">
+        @can('update', $meeting)
+
+            <flux:button wire:click="EndMeeting" variant="primary">End Meeting</flux:button>
+        @endcan
+    </div>
+
+    {{-- End Meeting Confirmation Modal --}}
+    <flux:modal name="end-meeting-confirmation" class="min-w-[28rem]">
+        <div class="space-y-6">
+            <div>
+                <flux:heading size="lg">End Meeting?</flux:heading>
+
+                <flux:text class="mt-2">
+                    You're about to end this meeting and move it to the finalizing stage.
+                </flux:text>
+                <flux:callout color="rose" class="mt-2">
+                    <flux:callout.heading>Note:</flux:callout.heading>
+                    <flux:callout.text>
+                        Once ended, the note fields will no longer be editable and the meeting will be locked for finalization.
+                    </flux:callout.text>
+                </flux:callout>
+            </div>
+
+            <div class="flex gap-2">
+                <flux:spacer />
+
+                <flux:modal.close>
+                    <flux:button variant="ghost">Cancel</flux:button>
+                </flux:modal.close>
+
+                <flux:button wire:click="EndMeetingConfirmed" variant="danger">End Meeting</flux:button>
+            </div>
+        </div>
+    </flux:modal>
 </div>

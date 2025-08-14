@@ -205,8 +205,48 @@ describe('Meeting Edit - Meeting Workflow', function () {
     });
 
     // If the Meeting is In Progress, show an End Meeting button
+    it('shows an End Meeting button if the meeting is in progress', function () {
+        $meeting = Meeting::factory()->withStatus(MeetingStatus::InProgress)->create();
+        loginAsAdmin();
+
+        get(route('meeting.edit', ['meeting' => $meeting->id]))
+            ->assertSee('End Meeting');
+    })->done(assignee: 'jonzenor');
+
+    // The End Meeting confirmation modal should be present on the page
+    it('displays the end meeting confirmation modal', function () {
+        $meeting = Meeting::factory()->withStatus(MeetingStatus::InProgress)->create();
+        loginAsAdmin();
+
+        get(route('meeting.edit', ['meeting' => $meeting->id]))
+            ->assertSee('End Meeting?')
+            ->assertSee('Once ended, the note fields will no longer be editable')
+            ->assertSee('Cancel');
+    })->done(assignee: 'jonzenor');
 
     // If the End Meeting button is pressed, confirm the action
+    it('shows the end meeting confirmation modal when the End Meeting button is pressed', function () {
+        $meeting = Meeting::factory()->withStatus(MeetingStatus::InProgress)->create();
+        loginAsAdmin();
+
+        livewire('meetings.manage-meeting', ['meeting' => $meeting])
+            ->call('EndMeeting')
+            ->assertSuccessful();
+    })->done(assignee: 'jonzenor');
+
+    // If the End Meeting confirmation is confirmed, transition the meeting to Finalizing
+    it('transitions the meeting to finalizing when the end meeting is confirmed', function () {
+        $meeting = Meeting::factory()->withStatus(MeetingStatus::InProgress)->create();
+        loginAsAdmin();
+
+        livewire('meetings.manage-meeting', ['meeting' => $meeting])
+            ->call('EndMeetingConfirmed')
+            ->assertSuccessful();
+
+        $meeting->refresh();
+        expect($meeting->status)->toBe(MeetingStatus::Finalizing);
+        expect($meeting->end_time)->not->toBeNull();
+    })->done(assignee: 'jonzenor');
 
     // If the End Meeting button is pressed, transition the meeting to Finalizing
 
