@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\AdminControlPanelController;
 use App\Http\Controllers\AnnouncementController;
+use App\Http\Controllers\BlogController;
+use App\Http\Controllers\MeetingController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -48,7 +50,7 @@ Route::prefix('acp/announcements')
     ->controller(AnnouncementController::class)
     ->middleware('auth')
     ->group(function () {
-
+        Route::get('show', 'show')->name('show');
         Route::get('create', 'create')->name('create');
         Route::post('store', 'store')->name('store');
         Route::get('{id}/edit', 'edit')->name('edit');
@@ -66,7 +68,33 @@ Route::prefix('announcements')
         Route::get(uri: '{id}', action: 'show')->name('show');
     });
 
-Route::prefix('meetings')->name('meeting.')->controller(App\Http\Controllers\MeetingController::class)->group(function () {
+// This is for admin blog links
+Route::prefix('acp/blogs')
+    ->name('acp.blogs.')
+    ->controller(BlogController::class)
+    ->middleware('auth')
+    ->group(function () {
+        Route::get('show', 'show')->name('show');
+        Route::get('create', 'create')->name('create');
+        Route::post('store', 'store')->name('store');
+        Route::get('{id}/edit', 'edit')->name('edit');
+        Route::put('{/id}/update', 'update')->name('update');
+        Route::delete('{blog}', 'destroy')->name('delete');
+    });
+
+// This is for non admin blog links
+Route::prefix('blogs')
+    ->name('blogs.')
+    ->controller(BlogController::class)
+    ->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('{id}', 'show')->name('show');
+        Route::post('/', 'store')->name('store');
+        Route::put('{id}', 'update')->name('update');
+        Route::delete('{id}', 'destroy')->name('destroy');
+    });
+
+Route::prefix('meetings')->name('meeting.')->controller(MeetingController::class)->group(function () {
     Route::get('/', 'index')->name('index');
     Route::get('/{meeting}', 'show')->name('show')->middleware('can:view,meeting');
 });

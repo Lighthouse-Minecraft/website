@@ -1,0 +1,309 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+class Blog extends Model
+{
+    use HasFactory, SoftDeletes;
+
+    /**
+     * The attributes that are mass assignable.
+     */
+    protected $fillable = [
+        'title',
+        'slug',
+        'content',
+        'author_id',
+        'is_published',
+        'published_at',
+    ];
+
+    /**
+     * The table associated with the model.
+     */
+    protected $table = 'blogs';
+
+    // -------------------- Relationships --------------------
+    /**
+     * The relationships to eager load by default.
+     */
+    protected $with = [
+        'author',
+        'comments',
+        'tags',
+        'categories',
+    ];
+
+    /**
+     * The attributes that should be cast to native types.
+     */
+    protected $casts = [
+        'is_published' => 'boolean',
+        'published_at' => 'datetime',
+    ];
+
+    /**
+     * Get the author of the blog.
+     */
+    public function author()
+    {
+        return $this->belongsTo(User::class, 'author_id');
+    }
+
+    /**
+     * Get the comments for the blog.
+     */
+    public function comments()
+    {
+        return $this->morphMany(Comment::class, 'commentable');
+    }
+
+    /**
+     * Get the tags for the blog.
+     */
+    public function tags()
+    {
+        return $this->belongsToMany(Tag::class, 'blog_tag', 'blog_id', 'tag_id');
+    }
+
+    /**
+     * Get the categories for the blog.
+     */
+    public function categories()
+    {
+        return $this->belongsToMany(Category::class, 'blog_category', 'blog_id', 'category_id');
+    }
+
+    // -------------------- Scopes --------------------
+    /**
+     * Scope a query to only include published blogs.
+     */
+    public function scopePublished($query)
+    {
+        return $query->where('is_published', true);
+    }
+
+    /**
+     * Scope a query to only include blogs published at or after a given date.
+     */
+    public function scopePublishedAt($query, $date)
+    {
+        return $query->where('published_at', '>=', $date);
+    }
+
+    /**
+     * Scope a query to only include blogs by a specific author.
+     */
+    public function scopeByAuthor($query, $authorId)
+    {
+        return $query->where('author_id', $authorId);
+    }
+
+    /**
+     * Scope a query to only include blogs with a specific category.
+     */
+    public function scopeWithCategory($query, $category)
+    {
+        return $query->whereHas('categories', function ($q) use ($category) {
+            $q->where('name', $category);
+        });
+    }
+
+    /**
+     * Scope a query to only include blogs with a specific tag.
+     */
+    public function scopeWithTag($query, $tag)
+    {
+        return $query->whereHas('tags', function ($q) use ($tag) {
+            $q->where('name', $tag);
+        });
+    }
+
+    // -------------------- Attribute Accessors & Helpers --------------------
+    /**
+     * Get the formatted publication date.
+     */
+    public function publicationDate()
+    {
+        return $this->published_at->format('F j, Y');
+    }
+
+    /**
+     * Return the first 3 lines of content; append "..." if more exist.
+     * Works with either HTML or plain text input.
+     */
+    public function excerpt(int $linesToShow = 3): string
+    {
+        $content = (string) ($this->content ?? '');
+        if ($content === '') {
+            return '';
+        }
+
+        // Detect whether it looks like HTML
+        $looksLikeHtml = (bool) preg_match('/<[^>]+>/', $content);
+
+        if ($looksLikeHtml) {
+            // Treat common HTML line boundaries as actual newlines *before* stripping tags
+            $blockTags = '(p|div|section|article|header|footer|h[1-6]|ul|ol|li|blockquote|pre|table|thead|tbody|tr|td|th)'; // Add more as needed
+            $content = preg_replace('/<\s*br\s*\/?>/i', "\n", $content);                   // <br> -> \n
+            $content = preg_replace('/<\/\s*'.$blockTags.'\s*>/i', "\n", $content);    // </block> -> \n
+            $content = strip_tags($content);
+            $content = html_entity_decode($content, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        }
+
+        // Normalize line endings and whitespace for both HTML and plain text paths
+        $content = str_replace(["\r\n", "\r"], "\n", $content);
+        $content = trim($content);
+
+        // If there's still no newline (pure single-paragraph plain text), soft-wrap so
+        // we have "lines" to preview. Tweak width to taste.
+        if (strpos($content, "\n") === false) {
+            $content = wordwrap($content, 120, "\n", false);
+        }
+
+        // Split into lines and lightly trim each
+        $lines = preg_split('/\n/', $content);
+        $lines = array_map(fn ($l) => trim(preg_replace('/[ \t]+/', ' ', $l)), $lines);
+
+        // Remove leading/trailing empty lines
+        while (! empty($lines) && $lines[0] === '') {
+            array_shift($lines);
+        }
+        while (! empty($lines) && end($lines) === '') {
+            array_pop($lines);
+        }
+
+        if (empty($lines)) {
+            return '';
+        }
+
+        $excerptLines = array_slice($lines, 0, $linesToShow);
+        $excerpt = implode("\n", $excerptLines);
+
+        if (count($lines) > $linesToShow) {
+            $excerpt .= "\n...";
+        }
+
+        return $excerpt;
+    }
+
+    /**
+     * Get the route for the blog.
+     */
+    public function route()
+    {
+        return route('blogs.show', $this);
+    }
+
+    /**
+     * Determine if the blog is authored by a given user.
+     */
+    public function isAuthoredBy(User $user)
+    {
+        return $this->author_id === $user->id;
+    }
+
+    /**
+     * Get the name of the author.
+     */
+    public function authorName()
+    {
+        return $this->author ? $this->author->name : 'Unknown Author';
+    }
+
+    // -------------------- String Representations --------------------
+    /**
+     * Get the tags as a comma-separated string.
+     */
+    public function tagsAsString()
+    {
+        return $this->tags->pluck('name')->implode(', ');
+    }
+
+    /**
+     * Get the categories as a comma-separated string.
+     */
+    public function categoriesAsString()
+    {
+        return $this->categories->pluck('name')->implode(', ');
+    }
+
+    // -------------------- Counts --------------------
+    /**
+     * Get the comments count.
+     */
+    public function commentsCount()
+    {
+        return $this->comments()->count();
+    }
+
+    /**
+     * Get the categories count.
+     */
+    public function categoriesCount()
+    {
+        return $this->categories()->count();
+    }
+
+    /**
+     * Get the tags count.
+     */
+    public function tagsCount()
+    {
+        return $this->tags()->count();
+    }
+
+    public function acknowledgers()
+    {
+        return $this->belongsToMany(User::class, 'blog_author', 'blog_id', 'author_id')->withTimestamps();
+    }
+
+    // -------------------- Validation --------------------
+    /**
+     * Validate the Blog model instance.
+     * Checks for required title and unique title.
+     */
+    public function isValid(): bool
+    {
+        // Title is required
+        if (empty($this->title)) {
+            return false;
+        }
+        // Title must be unique (excluding current model)
+        $query = Blog::where('title', $this->title);
+        if ($this->exists) {
+            $query->where('id', '!=', $this->id);
+        }
+        if ($query->exists()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Get validation errors for the Blog model instance.
+     * Returns an array of error messages for title and uniqueness.
+     */
+    public function getErrors(): array
+    {
+        $errors = [];
+        if (empty($this->title)) {
+            $errors['title'] = 'The title field is required.';
+        } else {
+            $query = Blog::where('title', $this->title);
+            if ($this->exists) {
+                $query->where('id', '!=', $this->id);
+            }
+            if ($query->exists()) {
+                $errors['title'] = 'The title field must be unique.';
+            }
+        }
+
+        return $errors;
+    }
+}

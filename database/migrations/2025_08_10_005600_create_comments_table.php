@@ -1,8 +1,8 @@
 <?php
 
-use Illuminate\Database\Migrations\{Migration};
-use Illuminate\Database\Schema\{Blueprint};
-use Illuminate\Support\Facades\{Schema};
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -14,10 +14,13 @@ return new class extends Migration
         Schema::create('comments', function (Blueprint $table) {
             $table->id();
             $table->text('content');
-            $table->foreignId('announcement_id')->constrained('announcements')->onDelete('cascade');
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            $table->unsignedBigInteger('commentable_id');
+            $table->string('commentable_type');
+            $table->foreignId('author_id')->constrained('users')->onDelete('cascade');
             $table->string('status')->default('pending');
             $table->foreignId('parent_id')->nullable()->constrained('comments')->onDelete('cascade');
+            $table->unsignedBigInteger('created_by')->nullable()->constrained('comments')->onDelete('cascade');
+            $table->unsignedBigInteger('updated_by')->nullable()->constrained('comments')->onDelete('cascade');
             $table->timestamp('edited_at')->nullable();
             $table->timestamps();
         });
@@ -28,6 +31,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-    Schema::dropIfExists('comments');
+        Schema::dropIfExists('comments');
     }
 };

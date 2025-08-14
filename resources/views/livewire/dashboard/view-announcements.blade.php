@@ -1,10 +1,16 @@
 <?php
 
-use App\Enums\{MembershipLevel};
-use App\Models\{Announcement, Category, Comment, Role, Tag, User};
-use Flux\{Flux};
-use Livewire\{WithPagination};
-use Livewire\Volt\{Component};
+use App\Actions\AcknowledgeAnnouncement;
+use App\Enums\MembershipLevel;
+use App\Models\Announcement;
+use App\Models\Category;
+use App\Models\Comment;
+use App\Models\Role;
+use App\Models\Tag;
+use App\Models\User;
+use Flux\Flux;
+use Livewire\WithPagination;
+use Livewire\Volt\Component;
 
 new class extends Component {
     public $announcements;
@@ -24,7 +30,7 @@ new class extends Component {
         $announcement = Announcement::findOrFail($announcementId);
 
         if (auth()->user()->can('acknowledge', $announcement)) {
-            \App\Actions\AcknowledgeAnnouncement::run($announcement, auth()->user());
+            AcknowledgeAnnouncement::run($announcement, auth()->user());
             Flux::toast('Announcement acknowledged successfully.', 'success');
         } else {
             Flux::toast('You do not have permission to acknowledge this announcement.', 'error');

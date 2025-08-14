@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\{Model};
-use Illuminate\Database\Eloquent\Factories\{HasFactory};
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Comment model for user feedback on announcements.
@@ -18,8 +18,11 @@ class Comment extends Model
      */
     protected $fillable = [
         'content',
+        'author_id',
         'announcement_id',
-        'user_id',
+        'blog_id',
+        'commentable_id',
+        'commentable_type',
         'status',
         'parent_id',
         'edited_at',
@@ -31,17 +34,17 @@ class Comment extends Model
     protected $table = 'comments';
 
     /**
-     * The announcement this comment belongs to.
+     * Get the parent commentable model (announcement or blog).
      */
-    public function announcement()
+    public function commentable()
     {
-        return $this->belongsTo(Announcement::class);
+        return $this->morphTo();
     }
 
     /**
-     * The user who made the comment.
+     * The author who made the comment.
      */
-    public function user()
+    public function author()
     {
         return $this->belongsTo(User::class);
     }

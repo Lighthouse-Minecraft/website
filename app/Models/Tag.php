@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\{Model};
-use Illuminate\Database\Eloquent\Factories\{HasFactory};
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Tag model for categorizing announcements.
@@ -23,17 +23,32 @@ class Tag extends Model
      */
     protected $fillable = [
         'name',
+        'slug',
         'description',
         'color',
-        'created_by',
+        'author_id',
         'is_active',
+        'parent_id',
+        'created_by',
+        'updated_by',
     ];
 
     /**
-     * The announcements that belong to the tag.
+     * Get all of the models that are assigned this tag (announcements, blogs).
      */
+    public function taggables()
+    {
+        return $this->morphedByMany(Announcement::class, 'taggable')
+            ->union($this->morphedByMany(Blog::class, 'taggable'));
+    }
+
     public function announcements()
     {
-    return $this->belongsToMany(Announcement::class, 'announcement_tag', 'tag_id', 'announcement_id');
+        return $this->morphedByMany(Announcement::class, 'taggable');
+    }
+
+    public function blogs()
+    {
+        return $this->morphedByMany(Blog::class, 'taggable');
     }
 }
