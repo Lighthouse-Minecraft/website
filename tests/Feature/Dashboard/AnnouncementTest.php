@@ -11,5 +11,5 @@ describe('Announcements do not break the dashboard', function () {
 
         get(route('dashboard'))
             ->assertOk();
-    })->with('memberAll')->wip();
-})->wip(issue: 71, assignee: 'jonzenor');
+    })->with('memberAll')->done();
+})->done(issue: 71, assignee: 'jonzenor');
