@@ -248,6 +248,15 @@ describe('Meeting Edit - Meeting Workflow', function () {
         expect($meeting->end_time)->not->toBeNull();
     })->done(assignee: 'jonzenor');
 
+    // If the Meeting is in a Finalizing state, do not show the End Meeting button
+    it('does not show the End Meeting button if the meeting is in finalizing state', function () {
+        $meeting = Meeting::factory()->withStatus(MeetingStatus::Finalizing)->create();
+        loginAsAdmin();
+
+        get(route('meeting.edit', ['meeting' => $meeting->id]))
+            ->assertDontSee('End Meeting');
+    });
+
     // If the End Meeting button is pressed, transition the meeting to Finalizing
 
     // If the End Meeting button is pressed, show all department notes sections
