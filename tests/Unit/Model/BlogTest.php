@@ -121,7 +121,7 @@ describe('Blog Feature', function () {
             $b1->categories()->sync([$cat->id]);
             $b1->tags()->sync([$tag->id]);
 
-            // Adjust endpoints/params if your controller names differ
+            // Adjust endpoints/params if controller names differ
             $this->get("/blogs?category={$cat->id}")
                 ->assertStatus(200)
                 ->assertSee($b1->title)
@@ -287,7 +287,6 @@ describe('Blog Feature', function () {
     // Edge Cases
     // ───────────────────────────────────────────────────────────────────────────
     describe('Edge Cases', function () {
-
         // Categories
         describe('Categories', function () {
             it('can associate and retrieve a single category for a blog', function () {
@@ -600,4 +599,4 @@ describe('Blog Feature', function () {
             });
         });
     });
-});
+})->done('Implement strict validation for Blog model.');
