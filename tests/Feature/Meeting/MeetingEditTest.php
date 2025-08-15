@@ -363,7 +363,7 @@ describe('Meeting Edit - Meeting Workflow', function () {
         expect($communityNote->created_by)->toBe(auth()->id());
     });
 
-    // If the Meeting is in a FFinalizing state, show a Complete Meeting button
+    // If the Meeting is in a Finalizing state, show a Complete Meeting button
     it('shows a Complete Meeting button if the meeting is finalizing', function () {
         $meeting = Meeting::factory()->withStatus(MeetingStatus::Finalizing)->create();
         loginAsAdmin();
