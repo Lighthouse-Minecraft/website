@@ -42,6 +42,16 @@ class Meeting extends Model
         $this->save();
     }
 
+    public function completeMeeting(): void
+    {
+        if ($this->status !== MeetingStatus::Finalizing) {
+            throw new \Exception('Meeting cannot be completed unless it is finalizing.');
+        }
+
+        $this->status = MeetingStatus::Completed;
+        $this->save();
+    }
+
     public function notes(): HasMany
     {
         return $this->hasMany(MeetingNote::class);

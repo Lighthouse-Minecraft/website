@@ -37,6 +37,12 @@ new class extends Component {
         $this->modal('end-meeting-confirmation')->show();
     }
 
+    public function CompleteMeeting() {
+        $this->authorize('update', $this->meeting);
+
+        $this->modal('complete-meeting-confirmation')->show();
+    }
+
     public function EndMeetingConfirmed() {
         $this->authorize('update', $this->meeting);
 
@@ -65,6 +71,21 @@ new class extends Component {
         $this->meeting->save();
 
         $this->modal('end-meeting-confirmation')->close();
+    }
+
+    public function CompleteMeetingConfirmed() {
+        $this->authorize('update', $this->meeting);
+
+        // Get the community note and save it to the meeting's community_minutes field
+        $communityNote = $this->meeting->notes()->where('section_key', 'community')->first();
+        if ($communityNote) {
+            $this->meeting->community_minutes = $communityNote->content;
+        }
+
+        $this->meeting->completeMeeting();
+        $this->meeting->save();
+
+        $this->modal('complete-meeting-confirmation')->close();
     }
 }; ?>
 
@@ -109,6 +130,22 @@ new class extends Component {
         </div>
 
         <livewire:meeting.department-section :meeting="$meeting" departmentValue="community" description="Sanitized notes that will be publicly viewable to all members." key="'department-section-community'" />
+    @elseif ($meeting->status == MeetingStatus::Completed)
+        <div class="w-3/4 mx-auto space-y-6">
+            <flux:card>
+                <flux:heading class="mb-4">Meeting Minutes</flux:heading>
+
+                <flux:text>{!! nl2br($meeting->minutes) !!}</flux:text>
+            </flux:card>
+
+            @if($meeting->community_minutes)
+                <flux:card>
+                    <flux:heading class="mb-4">Community Notes</flux:heading>
+
+                    <flux:text>{!! nl2br($meeting->community_minutes) !!}</flux:text>
+                </flux:card>
+            @endif
+        </div>
     @endif
 
     <div class="w-full text-right">
@@ -141,6 +178,38 @@ new class extends Component {
                         </flux:modal.close>
 
                         <flux:button wire:click="EndMeetingConfirmed" variant="danger">End Meeting</flux:button>
+                    </div>
+                </div>
+            </flux:modal>
+        @elseif($meeting->status == MeetingStatus::Finalizing)
+            @can('update', $meeting)
+                <flux:button wire:click="CompleteMeeting" variant="primary">Complete Meeting</flux:button>
+            @endcan
+            {{-- Complete Meeting Confirmation Modal --}}
+            <flux:modal name="complete-meeting-confirmation" class="min-w-[28rem] !text-left">
+                <div class="space-y-6">
+                    <div>
+                        <flux:heading size="lg">Complete Meeting?</flux:heading>
+
+                        <flux:text class="mt-2">
+                            You're about to complete this meeting and finalize all the notes.
+                        </flux:text>
+                        <flux:callout color="blue" class="mt-2">
+                            <flux:callout.heading>Note:</flux:callout.heading>
+                            <flux:callout.text>
+                                Once completed, the meeting will be archived and no further changes can be made.
+                            </flux:callout.text>
+                        </flux:callout>
+                    </div>
+
+                    <div class="flex gap-2">
+                        <flux:spacer />
+
+                        <flux:modal.close>
+                            <flux:button variant="ghost">Cancel</flux:button>
+                        </flux:modal.close>
+
+                        <flux:button wire:click="CompleteMeetingConfirmed" variant="primary">Complete Meeting</flux:button>
                     </div>
                 </div>
             </flux:modal>
