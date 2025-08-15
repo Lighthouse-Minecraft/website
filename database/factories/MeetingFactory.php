@@ -27,6 +27,8 @@ class MeetingFactory extends Factory
             'is_public' => true,
             'status' => MeetingStatus::Pending,
             'agenda' => $this->faker->paragraph(),
+            'minutes' => null,
+            'community_minutes' => null,
         ];
     }
 
@@ -47,6 +49,33 @@ class MeetingFactory extends Factory
         return $this->state(function (array $attributes) use ($status) {
             return [
                 'status' => $status,
+            ];
+        });
+    }
+
+    public function withAgenda(string $agenda): Factory
+    {
+        return $this->state(function (array $attributes) use ($agenda) {
+            return [
+                'agenda' => $agenda,
+            ];
+        });
+    }
+
+    public function withMinutes(string $minutes): Factory
+    {
+        return $this->state(function (array $attributes) use ($minutes) {
+            return [
+                'minutes' => $minutes,
+            ];
+        });
+    }
+
+    public function withCommunityMinutes(string $communityMinutes): Factory
+    {
+        return $this->state(function (array $attributes) use ($communityMinutes) {
+            return [
+                'community_minutes' => $communityMinutes,
             ];
         });
     }

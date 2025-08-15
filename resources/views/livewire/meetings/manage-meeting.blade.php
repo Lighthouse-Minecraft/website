@@ -3,6 +3,7 @@
 use App\Enums\MeetingStatus;
 use App\Enums\StaffDepartment;
 use App\Models\Meeting;
+use App\Models\MeetingNote;
 use Livewire\Volt\Component;
 
 new class extends Component {
@@ -39,7 +40,29 @@ new class extends Component {
     public function EndMeetingConfirmed() {
         $this->authorize('update', $this->meeting);
 
+        // Add the general note and each department note to the minutes, if they exist. Use a heading for each section.
+        $generalNote = $this->meeting->notes()->where('section_key', 'general')->first();
+        if ($generalNote) {
+            $this->meeting->minutes .= "\n\n## General Notes\n" . $generalNote->content . "\n";
+        }
+
+        foreach (StaffDepartment::cases() as $department) {
+            $departmentNote = $this->meeting->notes()->where('section_key', $department->value)->first();
+            if ($departmentNote) {
+                $this->meeting->minutes .= "\n\n## " . $department->label() . " Notes\n" . $departmentNote->content;
+            }
+        }
+
+        $note = MeetingNote::create([
+            'meeting_id' => $this->meeting->id,
+            'section_key' => 'community',
+            'content' => $this->meeting->minutes,
+            'created_by' => auth()->id(),
+        ]);
+
         $this->meeting->endMeeting();
+
+        $this->meeting->save();
 
         $this->modal('end-meeting-confirmation')->close();
     }
@@ -68,14 +91,24 @@ new class extends Component {
         </div>
     @endif
 
-    @if ($meeting->status != MeetingStatus::Pending)
-        <livewire:meeting.department-section :meeting="$meeting" departmentValue="general" :key="'department-section-general'" />
+    @if ($meeting->status == MeetingStatus::InProgress)
+        <livewire:meeting.department-section :meeting="$meeting" departmentValue="general" description="Notes not associated with any particular department." :key="'department-section-general'" />
         <flux:separator />
 
         @foreach(StaffDepartment::cases() as $department)
-            <livewire:meeting.department-section :meeting="$meeting" :departmentValue="$department->value" :key="'department-section-' . $department->value" />
+            <livewire:meeting.department-section :meeting="$meeting" :departmentValue="$department->value" description="" :key="'department-section-' . $department->value" />
             <flux:separator />
         @endforeach
+    @elseif ($meeting->status == MeetingStatus::Finalizing)
+        <div class="w-3/4 mx-auto">
+            <flux:card>
+                <flux:heading class="mb-4">Meeting Minutes</flux:heading>
+
+                <flux:text>{!! nl2br($meeting->minutes) !!}</flux:text>
+            </flux:card>
+        </div>
+
+        <livewire:meeting.department-section :meeting="$meeting" departmentValue="community" description="Sanitized notes that will be publicly viewable to all members." key="'department-section-community'" />
     @endif
 
     <div class="w-full text-right">
@@ -84,7 +117,7 @@ new class extends Component {
                 <flux:button wire:click="EndMeeting" variant="primary">End Meeting</flux:button>
             @endcan
             {{-- End Meeting Confirmation Modal --}}
-            <flux:modal name="end-meeting-confirmation" class="min-w-[28rem]">
+            <flux:modal name="end-meeting-confirmation" class="min-w-[28rem] !text-left">
                 <div class="space-y-6">
                     <div>
                         <flux:heading size="lg">End Meeting?</flux:heading>

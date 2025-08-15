@@ -11,7 +11,7 @@ class Meeting extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['title', 'day', 'scheduled_time', 'is_public'];
+    protected $fillable = ['title', 'day', 'scheduled_time', 'is_public', 'agenda', 'minutes', 'community_minutes'];
 
     protected $casts = [
         'day' => 'string',

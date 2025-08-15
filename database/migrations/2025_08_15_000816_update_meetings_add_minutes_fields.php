@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\MeetingStatus;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -13,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('meetings', function (Blueprint $table) {
-            $table->string('status')->default(MeetingStatus::Pending);
-            $table->text('agenda')->nullable();
+            $table->text('minutes')->nullable();
+            $table->text('community_minutes')->nullable();
         });
     }
 
@@ -25,8 +24,8 @@ return new class extends Migration
     {
         Schema::table('meetings', function (Blueprint $table) {
             $table->dropColumn([
-                'status',
-                'agenda',
+                'minutes',
+                'community_minutes',
             ]);
         });
     }

@@ -257,9 +257,111 @@ describe('Meeting Edit - Meeting Workflow', function () {
             ->assertDontSee('End Meeting');
     });
 
-    // If the End Meeting button is pressed, transition the meeting to Finalizing
+    // If the Meeting is in Finalized, do not show the department note editors
+    it('does not show department note editors if the meeting is finalized', function () {
+        $meeting = Meeting::factory()->withStatus(MeetingStatus::Finalizing)->create();
+        loginAsAdmin();
 
-    // If the End Meeting button is pressed, show all department notes sections
+        get(route('meeting.edit', ['meeting' => $meeting->id]))
+            ->assertDontSee('Edit General')
+            ->assertDontSee('Create General Note')
+            ->assertDontSee('Edit Command')
+            ->assertDontSee('Create Command Note')
+            ->assertDontSee('Edit Chaplain')
+            ->assertDontSee('Create Chaplain Note')
+            ->assertDontSee('Edit Engineer')
+            ->assertDontSee('Create Engineer Note')
+            ->assertDontSee('Edit Quartermaster')
+            ->assertDontSee('Create Quartermaster Note')
+            ->assertDontSee('Edit Steward')
+            ->assertDontSee('Create Steward Note');
+    });
+
+    // The End Meeting function copies all notes to the minutes_summary field of the meeting record
+    it('copies all notes to the minutes summary when the meeting is finalized', function () {
+        $meeting = Meeting::factory()->withStatus(MeetingStatus::InProgress)->create();
+        $generalContent = 'Meeting General Content';
+        $note = MeetingNote::factory()->create([
+            'content' => $generalContent,
+            'section_key' => 'general',
+            'meeting_id' => $meeting->id,
+        ]);
+        loginAsAdmin();
+
+        livewire('meetings.manage-meeting', ['meeting' => $meeting])
+            ->call('EndMeetingConfirmed')
+            ->assertSuccessful();
+
+        $meeting->refresh();
+        expect($meeting->minutes)->toContain($generalContent);
+    })->done(assignee: 'jonzenor');
+
+    // If the Meeting is in Finalizing, show the meeting minutes
+    it('shows the meeting minutes if the meeting is finalizing', function () {
+        $meeting = Meeting::factory()->withStatus(MeetingStatus::Finalizing)->withMinutes('This is a test of the minutes recording system.')->create();
+        loginAsAdmin();
+
+        get(route('meeting.edit', ['meeting' => $meeting->id]))
+            ->assertSeeText('Meeting Minutes')
+            ->assertSeeText($meeting->minutes);
+    });
+
+    // If the Meeting is in Finalizing, show the Community Notes section for public sanitized notes
+    it('shows the community notes section if the meeting is finalizing', function () {
+        $meeting = Meeting::factory()->withStatus(MeetingStatus::Finalizing)->create();
+        loginAsAdmin();
+
+        get(route('meeting.edit', ['meeting' => $meeting->id]))
+            ->assertSee('Community')
+            ->assertSee('Sanitized notes that will be publicly viewable to all members')
+            ->assertSeeLivewire('meeting.department-section');
+    });
+
+    // The Community Notes section should allow editing during finalizing
+    it('allows editing of community notes during finalizing', function () {
+        $meeting = Meeting::factory()->withStatus(MeetingStatus::Finalizing)->create();
+        loginAsAdmin();
+
+        get(route('meeting.edit', ['meeting' => $meeting->id]))
+            ->assertSeeLivewire('meeting.department-section')
+            ->assertSee('Create Community Note');
+    });
+
+    // When ending a meeting, a community note should be created with the meeting minutes
+    it('creates a community note with the meeting minutes when the meeting ends', function () {
+        $meeting = Meeting::factory()->withStatus(MeetingStatus::InProgress)->create();
+        $generalContent = 'General meeting notes';
+        $commandContent = 'Command department notes';
+
+        // Create some notes for different departments
+        MeetingNote::factory()->create([
+            'content' => $generalContent,
+            'section_key' => 'general',
+            'meeting_id' => $meeting->id,
+        ]);
+
+        MeetingNote::factory()->create([
+            'content' => $commandContent,
+            'section_key' => 'command',
+            'meeting_id' => $meeting->id,
+        ]);
+
+        loginAsAdmin();
+
+        livewire('meetings.manage-meeting', ['meeting' => $meeting])
+            ->call('EndMeetingConfirmed')
+            ->assertSuccessful();
+
+        // Check that a community note was created
+        $communityNote = MeetingNote::where('meeting_id', $meeting->id)
+            ->where('section_key', 'community')
+            ->first();
+
+        expect($communityNote)->not->toBeNull();
+        expect($communityNote->content)->toContain($generalContent);
+        expect($communityNote->content)->toContain($commandContent);
+        expect($communityNote->created_by)->toBe(auth()->id());
+    });
 
     // If the Meeting is in a Finalizing state, show a button to auto summarize the meeting
 

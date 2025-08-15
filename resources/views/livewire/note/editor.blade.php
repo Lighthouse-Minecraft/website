@@ -185,14 +185,14 @@ new class extends Component {
             <flux:textarea wire:model.live.debounce.5s="updatedContent" wire:input.debounce.5s="UpdateNote" label="{{ ucfirst($section_key) }} Notes" rows="{{ $rows }}" />
 
             <div class="flex my-4">
-                <div class="text-left w-1/2">
+                <div class="text-left w-full">
                     @if($isLocked)
                         <flux:text size="xs">You have locked this section.</flux:text>
                     @endif
                 </div>
 
                 <div class="w-full text-right">
-                        <flux:button size="xs" wire:click="SaveNote" variant="primary">Save {{  ucfirst($section_key) }}</flux:button>
+                    <flux:button size="xs" wire:click="SaveNote" variant="primary">Save {{  ucfirst($section_key) }} Notes</flux:button>
                 </div>
             </div>
         @else
@@ -216,7 +216,7 @@ new class extends Component {
                     </flux:card>
 
                     <div class="flex my-4">
-                        <div class="text-left w-1/2">
+                        <div class="text-left w-full">
                             @if($isLocked)
                                 <flux:text size="xs">Locked by <flux:link href="{{ route('profile.show', $lockedById) }}">{{ $lockedByName }}</flux:link></flux:text>
                             @endif
@@ -225,9 +225,9 @@ new class extends Component {
                         <div class="w-full text-right">
                             @can('update', $this->note)
                                 @if($isLocked)
-                                    <flux:button size="xs" disabled variant="filled">Edit {{ ucfirst($section_key) }}</flux:button>
+                                    <flux:button size="xs" disabled variant="filled">Edit {{ ucfirst($section_key) }} Notes</flux:button>
                                 @else
-                                    <flux:button size="xs" wire:click="EditNote" variant="primary" color="indigo">Edit {{ ucfirst($section_key) }}</flux:button>
+                                    <flux:button size="xs" wire:click="EditNote" variant="primary" color="indigo">Edit {{ ucfirst($section_key) }} Notes</flux:button>
                                 @endif
                             @endcan
                         </div>
