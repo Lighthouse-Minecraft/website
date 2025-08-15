@@ -12,7 +12,7 @@ enum MembershipLevel: int
 
     public function label(): string
     {
-        return match($this) {
+        return match ($this) {
             self::Drifter => 'Drifter',
             self::Stowaway => 'Stowaway',
             self::Traveler => 'Traveler',
@@ -20,5 +20,4 @@ enum MembershipLevel: int
             self::Citizen => 'Citizen',
         };
     }
-
 }
