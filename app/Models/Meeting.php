@@ -18,6 +18,8 @@ class Meeting extends Model
         'scheduled_time' => 'datetime',
         'is_public' => 'boolean',
         'status' => MeetingStatus::class,
+        'start_time' => 'datetime',
+        'end_time' => 'datetime',
     ];
 
     public function startMeeting(): void

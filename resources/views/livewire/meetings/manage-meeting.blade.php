@@ -92,25 +92,38 @@ new class extends Component {
 <div class="space-y-6" wire:poll.{{  $pollTime }}>
     <flux:heading size="xl">{{  $meeting->title }} - {{  $meeting->day }}</flux:heading>
 
+    <div class="flex gap-4">
+        <flux:card class="w-full lg:w-1/2 max-h-36">
+            <flux:heading class="mb-4">Meeting Details</flux:heading>
+
+            <flux:text>
+                <strong>Scheduled Time:</strong> {{ $meeting->scheduled_time->setTimezone('America/New_York')->format('F j, Y g:i A') }}<br>
+                <strong>Status:</strong> {{ $meeting->status->label() }}<br>
+                <strong>Start Time:</strong> {{ $meeting->start_time->setTimezone('America/New_York')->format('F j, Y g:i A') }} ET<br>
+            </flux:text>
+        </flux:card>
+
+        <div class="w-full lg:w-1/2">
+            <flux:card class="w-full">
+                @if ($meeting->status == MeetingStatus::Pending)
+                    <flux:heading variant="primary">Agenda</flux:heading>
+                    <livewire:note.editor :meeting="$meeting" section_key="agenda"/>
+                @else
+                    <div class="w-full mx-auto">
+                        <flux:heading class="mb-4">Meeting Agenda</flux:heading>
+
+                        <flux:text>{!! nl2br($meeting->agenda) !!}</flux:text>
+                    </div>
+                @endif
+            </flux:card>
+        </div>
+    </div>
 
     <div class="text-right w-full">
         @if ($this->meeting->status == MeetingStatus::Pending)
             <flux:button wire:click="StartMeeting" variant="primary">Start Meeting</flux:button>
         @endif
     </div>
-
-    @if ($meeting->status == MeetingStatus::Pending)
-        <flux:heading variant="primary">Agenda</flux:heading>
-        <livewire:note.editor :meeting="$meeting" section_key="agenda"/>
-    @else
-        <div class="w-3/4 mx-auto">
-            <flux:card>
-                <flux:heading class="mb-4">Meeting Agenda</flux:heading>
-
-                <flux:text>{!! nl2br($meeting->agenda) !!}</flux:text>
-            </flux:card>
-        </div>
-    @endif
 
     @if ($meeting->status == MeetingStatus::InProgress)
         <livewire:meeting.department-section :meeting="$meeting" departmentValue="general" description="Notes not associated with any particular department." :key="'department-section-general'" />
