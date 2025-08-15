@@ -101,6 +101,9 @@ new class extends Component {
                 <strong>Status:</strong> {{ $meeting->status->label() }}<br>
                 <strong>Start Time:</strong> {{ $meeting->start_time->setTimezone('America/New_York')->format('F j, Y g:i A') }} ET<br>
             </flux:text>
+
+            <!-- List Atendees here -->
+
         </flux:card>
 
         <div class="w-full lg:w-1/2">
