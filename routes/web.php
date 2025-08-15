@@ -3,8 +3,10 @@
 use App\Http\Controllers\AdminControlPanelController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\BlogController;
+use App\Http\Controllers\CommentController;
 use App\Http\Controllers\MeetingController;
 use App\Http\Controllers\PageController;
+use App\Http\Controllers\TaxonomyController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
@@ -86,6 +88,7 @@ Route::prefix('acp/blogs')
 Route::prefix('blogs')
     ->name('blogs.')
     ->controller(BlogController::class)
+    ->middleware('auth')
     ->group(function () {
         Route::get('/', 'index')->name('index');
         Route::get('{id}', 'show')->name('show');
@@ -94,9 +97,51 @@ Route::prefix('blogs')
         Route::delete('{id}', 'destroy')->name('destroy');
     });
 
-Route::prefix('meetings')->name('meeting.')->controller(MeetingController::class)->group(function () {
-    Route::get('/', 'index')->name('index');
-    Route::get('/{meeting}', 'show')->name('show')->middleware('can:view,meeting');
+// Comments management (announcements & blogs)
+Route::prefix('comments')
+    ->name('comments.')
+    ->controller(CommentController::class)
+    ->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('{id}', 'show')->name('show');
+        Route::post('/', 'store')->name('store');
+        Route::put('{id}', 'update')->name('update');
+        Route::delete('{id}', 'destroy')->name('destroy');
+    });
+
+Route::group(['Taxonomy'], function () {
+    // Category management
+    Route::prefix('categories')
+        ->name('categories.')
+        ->group(function () {
+            Route::get('/', [TaxonomyController::class, 'categoriesIndex'])->name('index');
+            Route::get('{id}', [TaxonomyController::class, 'categoriesShow'])->name('show');
+            Route::post('/', [TaxonomyController::class, 'categoriesStore'])->name('store');
+            Route::put('{id}', [TaxonomyController::class, 'categoriesUpdate'])->name('update');
+            Route::delete('{id}', [TaxonomyController::class, 'categoriesDestroy'])->name('destroy');
+        });
+
+    // Tag management
+    Route::prefix('tags')
+        ->name('tags.')
+        ->group(function () {
+            Route::get('/', [TaxonomyController::class, 'tagsIndex'])->name('index');
+            Route::get('/{id}', [TaxonomyController::class, 'tagsShow'])->name('show');
+            Route::post('/', [TaxonomyController::class, 'tagsStore'])->name('store');
+            Route::put('/{id}', [TaxonomyController::class, 'tagsUpdate'])->name('update');
+            Route::delete('/{id}', [TaxonomyController::class, 'tagsDestroy'])->name('destroy');
+        });
+
+    // Endpoints
+    Route::get('categories/{id}/blogs', [TaxonomyController::class, 'blogsByCategory'])->name('categories.blogs');
+    Route::get('tags/{id}/blogs', [TaxonomyController::class, 'blogsByTag'])->name('tags.blogs');
 });
+
+Route::prefix('meetings')
+    ->name('meeting.')
+    ->controller(MeetingController::class)->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/{meeting}', 'show')->name('show')->middleware('can:view,meeting');
+    });
 
 require __DIR__.'/auth.php';

@@ -20,6 +20,7 @@ class Blog extends Model
         'author_id',
         'is_published',
         'published_at',
+        'is_public',
     ];
 
     /**
@@ -44,6 +45,7 @@ class Blog extends Model
     protected $casts = [
         'is_published' => 'boolean',
         'published_at' => 'datetime',
+        'is_public' => 'boolean',
     ];
 
     /**
@@ -93,6 +95,14 @@ class Blog extends Model
     public function scopePublishedAt($query, $date)
     {
         return $query->where('published_at', '>=', $date);
+    }
+
+    /**
+     * Scope a query to only include blogs that are public.
+     */
+    public function scopePublic($query)
+    {
+        return $query->where('is_public', true);
     }
 
     /**

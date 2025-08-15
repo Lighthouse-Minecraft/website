@@ -46,6 +46,14 @@ class Category extends Model
     }
 
     /**
+     * Get the author of the category.
+     */
+    public function author()
+    {
+        return $this->belongsTo(User::class, 'author_id');
+    }
+
+    /**
      * The parent category (for nested categories).
      */
     public function parent()

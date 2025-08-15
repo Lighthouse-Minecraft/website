@@ -96,6 +96,7 @@ class BlogController extends Controller
             'categories' => 'array',
             'is_published' => 'boolean',
             'published_at' => 'nullable|date',
+            'is_public' => 'boolean',
         ]);
 
         // Generate slug from title
@@ -111,6 +112,7 @@ class BlogController extends Controller
             'author_id' => $validated['author_id'] ?? null,
             'is_published' => $validated['is_published'] ?? false,
             'published_at' => ($validated['is_published'] ?? false) ? now() : null,
+            'is_public' => $request->boolean('is_public', false),
         ]);
 
         // Attach tags and categories if provided
@@ -159,6 +161,7 @@ class BlogController extends Controller
             'categories' => 'array',
             'published' => 'boolean',
             'published_at' => 'nullable|date',
+            'is_public' => 'boolean',
         ]);
 
         $blog->update([
@@ -169,6 +172,7 @@ class BlogController extends Controller
             'categories' => $request->categories,
             'published' => $request->published,
             'published_at' => $request->published_at,
+            'is_public' => $request->boolean('is_public', false),
         ]);
 
         return response()->view('blogs.show', [

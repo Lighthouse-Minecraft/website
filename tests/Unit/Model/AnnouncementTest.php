@@ -432,8 +432,8 @@ describe('Announcement Feature', function () {
     if (class_exists(Livewire::class)) {
         describe('Livewire announcements list', function () {
             it('renders and searches', function () {
-                Announcement::factory()->create(['title' => 'Laravel Tips']);
-                Announcement::factory()->create(['title' => 'Minecraft Tricks']);
+                Announcement::factory()->create(['title' => 'Laravel Tips', 'is_public' => true]);
+                Announcement::factory()->create(['title' => 'Minecraft Tricks', 'is_public' => false]);
                 Livewire::test('announcements.index') // update alias if needed
                     ->assertSee('Laravel Tips')
                     ->assertSee('Minecraft Tricks')

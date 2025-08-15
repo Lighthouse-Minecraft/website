@@ -21,6 +21,7 @@ return new class extends Migration
             $table->foreignId('tag_id')->nullable()->constrained('categories')->onDelete('set null');
             $table->boolean('is_published')->default(false);
             $table->timestamp('published_at')->nullable();
+            $table->boolean('is_public')->default(false);
             $table->timestamps();
             $table->softDeletes();
         });

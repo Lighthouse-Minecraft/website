@@ -13,6 +13,7 @@ new class extends Component {
     public array $selectedCategories = [];
     public bool $isPublished = false;
     public ?Carbon $published_at = null;
+    public bool $isPublic = false;
 
     public function mount(blog $blog)
     {
@@ -21,6 +22,7 @@ new class extends Component {
         $this->blogContent = $blog->content;
         $this->isPublished = (bool) $blog->is_published;
         $this->published_at = $blog->published_at;
+        $this->isPublic = (bool) $blog->is_public;
         $this->selectedTags = $blog->tags->pluck('id')->toArray();
         $this->selectedCategories = $blog->categories->pluck('id')->toArray();
     }
@@ -52,6 +54,7 @@ new class extends Component {
             'selectedCategories' => 'array',
             'isPublished' => 'boolean',
             'published_at' => 'date|nullable',
+            'isPublic' => 'boolean',
         ]);
 
         // Force types to ensure correct data types
@@ -61,6 +64,7 @@ new class extends Component {
         $this->selectedCategories = array_map('intval', Arr::wrap($this->selectedCategories));
         $this->isPublished = (bool) $this->isPublished;
         $this->published_at = $this->published_at ? Carbon::parse($this->published_at) : null;
+        $this->isPublic = (bool) $this->isPublic;
 
         $this->blog->update([
             'title' => $this->blogTitle,
@@ -70,6 +74,7 @@ new class extends Component {
             'categories' => $this->selectedCategories,
             'is_published' => $this->isPublished,
             'published_at' => $this->isPublished ? ($this->published_at ?? now()) : null,
+            'is_public' => $this->isPublic,
         ]);
 
         Flux::toast('Blog updated successfully!', 'Success', variant: 'success');
@@ -100,6 +105,8 @@ new class extends Component {
             </select>
 
             <flux:checkbox label="Published" wire:model="isPublished" />
+
+            <flux:checkbox label="Public" wire:model="isPublic" />
 
             {{-- <flux:input label="Published At" wire:model="published_at" type="datetime-local" /> --}}
 

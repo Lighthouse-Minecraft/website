@@ -14,9 +14,17 @@ new class extends Component {
 
 <div class="w-full space-y-6">
     <div class="bg-red-900/30 border-l-4 border-red-500 text-red-300 px-4 py-3 shadow-sm rounded">
-        <strong class="font-semibold text-red-200">Warning:</strong>
-        You are about to delete this blog post.<br>
-        <span class="text-sm text-red-200">Use the buttons on the right-hand side to edit or confirm deletion, or use the back button to go back.</span>
+        <span>
+            <strong class="font-semibold text-red-200">Warning:</strong>
+            You are about to delete this blog post.
+        </span>
+        @if($blog->is_public)
+            <br>
+            <p class="text-sm text-red-200">This blog is currently public. Deleting it will remove it from public view.</p>
+        @endif
+    </div>
+    <div class="bg-blue-900/30 border-l-4 border-blue-500 text-blue-300 px-4 py-3 shadow-sm rounded">
+        <span class="text-sm text-blue-200">Use the buttons on the right-hand side to edit or confirm deletion, or use the back button to go back.</span>
     </div>
     <div class="flex items-center justify-between">
         <flux:heading size="xl">{{ $blog->title }}</flux:heading>
@@ -45,7 +53,8 @@ new class extends Component {
     <livewire:blogs.tags :blog="$blog" />
     <livewire:blogs.comments :blog="$blog" />
 
-    <div class="text-sm text-gray-500" style="display: flex; align-items: center; gap: 8px;">
+    {{-- DEPRECATING --}}
+    {{-- <div class="text-sm text-gray-500" style="display: flex; align-items: center; gap: 8px;">
         @php $author = $blog->author; @endphp
         By
         @if($author)
@@ -64,7 +73,10 @@ new class extends Component {
         @if($blog->published_at)
             <span>&middot; Published: {{ $blog->published_at->format('M d, Y H:i') }}</span>
         @endif
-    </div>
+        @if($blog->is_public)
+            <span>&middot; Public</span>
+        @endif
+    </div> --}}
 
     <div class="mb-4">
         <strong>Tags:</strong>

@@ -50,9 +50,8 @@ new class extends Component {
             <flux:table.column sortable :sorted="$sortBy === 'created_at'" :direction="$sortDirection" wire:click="sort('created_at')">Created At</flux:table.column>
             <flux:table.column sortable :sorted="$sortBy === 'updated_at'" :direction="$sortDirection" wire:click="sort('updated_at')">Updated At</flux:table.column>
             <flux:table.column sortable :sorted="$sortBy === 'is_published'" :direction="$sortDirection" wire:click="sort('is_published')">Published</flux:table.column>
-            <flux:table.column sortable :sorted="$sortBy === 'published_at'" :direction="$sortDirection" wire:click="sort('published_at')">
-                Published At
-            </flux:table.column>
+            <flux:table.column sortable :sorted="$sortBy === 'published_at'" :direction="$sortDirection" wire:click="sort('published_at')">Published At</flux:table.column>
+            <flux:table.column sortable :sorted="$sortBy === 'is_public'" :direction="$sortDirection" wire:click="sort('is_public')">Public</flux:table.column>
             <flux:table.column>Actions</flux:table.column>
         </flux:table.columns>
         <flux:table.rows>
@@ -81,6 +80,7 @@ new class extends Component {
                     <flux:table.cell>{{ $blog->updated_at->diffForHumans() }}</flux:table.cell>
                     <flux:table.cell>{{ $blog->is_published ? 'Yes' : 'No' }}</flux:table.cell>
                     <flux:table.cell>{{ $blog->published_at ? $blog->published_at->format('F j, Y H:i') : 'N/A' }}</flux:table.cell>
+                    <flux:table.cell>{{ $blog->is_public ? 'Yes' : 'No' }}</flux:table.cell>
                     <flux:table.cell>
                         <flux:button wire:navigate href="{{ route('acp.blogs.edit', $blog->id) }}" size="xs" icon="pencil-square"></flux:button>
                         <flux:button wire:navigate href="{{ route('blogs.show', $blog->id) }}" size="xs" icon="trash" variant="danger"></flux:button>

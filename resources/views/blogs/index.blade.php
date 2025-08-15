@@ -1,5 +1,5 @@
 <x-layouts.app>
-    <h1>Blog Index</h1>
+    <flux:header>Blog Index</flux:header>
     <ul>
         @foreach($blogs as $blog)
             <li>{{ $blog->title }}</li>

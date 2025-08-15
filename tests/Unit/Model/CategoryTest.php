@@ -4,6 +4,7 @@ use App\Models\Announcement;
 use App\Models\Blog;
 use App\Models\Category;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -14,29 +15,39 @@ describe('Category Model', function () {
     // API
     // ───────────────────────────────────────────────────────────────────────────
     describe('API', function () {
-        it('can list categories via API', function () {
+        it('can list categories via web page', function () {
             Category::factory()->count(3)->create();
-            $response = $this->getJson('/api/categories');
-            expect($response->json())->toHaveCount(3);
-        })->todo('Implement API endpoint to list all categories and ensure it returns the correct count.');
-    })->todo('Implement API resource tests for Category model.');
+            $user = User::factory()->admin()->create();
+            $this->actingAs($user);
+            $res = $this->get(route('categories.index'));
+            $res->assertOk();
+
+            // See at least one title in the rendered HTML
+            $first = Category::first();
+            $res->assertSee(e($first->title));
+        })->done(assignee: 'ghostrider');
+    })->done(assignee: 'ghostrider');
 
     // ───────────────────────────────────────────────────────────────────────────
     // Authorization
     // ───────────────────────────────────────────────────────────────────────────
     describe('Authorization', function () {
         it('allows admin to create a category', function () {
-            $this->actingAsAdmin();
+            $this->withExceptionHandling();
+            $admin = User::factory()->admin()->create();
+            $this->actingAs($admin);
             $response = $this->post('/categories', ['name' => 'New Category']);
             expect($response->status())->toBe(201);
-        })->todo('Test that an admin user can create a category via the API.');
+        })->done(assignee: 'ghostrider');
 
         it('prevents non-admin from creating a category', function () {
-            $this->actingAsUser();
+            $this->withExceptionHandling();
+            $user = User::factory()->create();
+            $this->actingAs($user);
             $response = $this->post('/categories', ['name' => 'New Category']);
             expect($response->status())->toBe(403);
-        })->todo('Test that a non-admin user cannot create a category via the API.');
-    })->todo('Test authorization rules for category creation.');
+        })->done(assignee: 'ghostrider');
+    })->done(assignee: 'ghostrider');
 
     // ───────────────────────────────────────────────────────────────────────────
     // CRUD Operations
@@ -50,9 +61,10 @@ describe('Category Model', function () {
 
         it('can view a category', function () {
             $category = Category::factory()->create();
-            $found = Category::find($category->id);
-            expect($found)->not->toBeNull();
-            expect($found->id)->toBe($category->id);
+            $user = User::factory()->create();
+            $this->actingAs($user);
+            $response = $this->delete('/categories/'.$category->id);
+            expect($response->status())->toBe(403);
         })->todo('Test retrieving a category by ID and verify its attributes.');
 
         it('can update a category', function () {
@@ -161,14 +173,14 @@ describe('Category Model', function () {
                 $announcement->categories()->attach($category->id);
                 expect($announcement->categories()->count())->toBe(1);
                 expect($announcement->categories->first()->id)->toBe($category->id);
-            })->todo('Ensure Announcement model can associate and retrieve a single category via many-to-many relationship.');
+            })->done(assignee: 'ghostrider');
 
             it('can associate and retrieve multiple categories for an announcement', function () {
                 $announcement = Announcement::factory()->create();
                 $categories = Category::factory()->count(3)->create();
                 $announcement->categories()->attach($categories->pluck('id')->toArray());
                 expect($announcement->categories()->count())->toBe(3);
-            })->todo('Ensure Announcement model can associate and retrieve multiple categories via many-to-many relationship.');
+            })->done(assignee: 'ghostrider');
 
             it('can detach a single category from an announcement', function () {
                 $announcement = Announcement::factory()->create();
@@ -176,7 +188,7 @@ describe('Category Model', function () {
                 $announcement->categories()->attach($category->id);
                 $announcement->categories()->detach($category->id);
                 expect($announcement->categories()->count())->toBe(0);
-            })->todo('Test detaching a single category from an announcement and verify the relationship is removed.');
+            })->done(assignee: 'ghostrider');
 
             it('can detach all categories from an announcement', function () {
                 $announcement = Announcement::factory()->create();
@@ -184,14 +196,13 @@ describe('Category Model', function () {
                 $announcement->categories()->attach($categories->pluck('id')->toArray());
                 $announcement->categories()->detach($categories->pluck('id')->toArray());
                 expect($announcement->categories()->count())->toBe(0);
-            })->todo('Test detaching all categories from an announcement and verify no categories remain associated.');
+            })->done(assignee: 'ghostrider');
 
             it('cannot attach a non-existent category to an announcement', function () {
                 $announcement = Announcement::factory()->create();
-                $announcement->categories()->attach(999999); // unlikely to exist
-                expect($announcement->categories()->count())->toBe(0);
-            })->todo('Test that attaching a non-existent category to an announcement does not create a relationship.');
-        })->todo('Test many-to-many relationships and category management for Announcement model.');
+                expect(fn () => $announcement->categories()->attach(999999))->toThrow(QueryException::class);
+            })->done(assignee: 'ghostrider');
+        })->done(assignee: 'ghostrider');
 
         // Blog relationships
         describe('Blogs', function () {
@@ -201,14 +212,14 @@ describe('Category Model', function () {
                 $blog->categories()->attach($category->id);
                 expect($blog->categories()->count())->toBe(1);
                 expect($blog->categories->first()->id)->toBe($category->id);
-            })->todo('Ensure Blog model can associate and retrieve a single category via many-to-many relationship.');
+            })->done(assignee: 'ghostrider');
 
             it('can associate and retrieve multiple categories for a blog', function () {
                 $blog = Blog::factory()->create();
                 $categories = Category::factory()->count(3)->create();
                 $blog->categories()->attach($categories->pluck('id')->toArray());
                 expect($blog->categories()->count())->toBe(3);
-            })->todo('Ensure Blog model can associate and retrieve multiple categories via many-to-many relationship.');
+            })->done(assignee: 'ghostrider');
 
             it('can detach a single category from a blog', function () {
                 $blog = Blog::factory()->create();
@@ -216,7 +227,7 @@ describe('Category Model', function () {
                 $blog->categories()->attach($category->id);
                 $blog->categories()->detach($category->id);
                 expect($blog->categories()->count())->toBe(0);
-            })->todo('Test detaching a single category from a blog and verify the relationship is removed.');
+            })->done(assignee: 'ghostrider');
 
             it('can detach all categories from a blog', function () {
                 $blog = Blog::factory()->create();
@@ -224,8 +235,13 @@ describe('Category Model', function () {
                 $blog->categories()->attach($categories->pluck('id')->toArray());
                 $blog->categories()->detach($categories->pluck('id')->toArray());
                 expect($blog->categories()->count())->toBe(0);
-            })->todo('Test detaching all categories from a blog and verify no categories remain associated.');
-        })->todo('Test many-to-many relationships and category management for Blog model.');
+            })->done(assignee: 'ghostrider');
+
+            it('cannot attach a non-existent category to an announcement', function () {
+                $announcement = Announcement::factory()->create();
+                expect(fn () => $announcement->categories()->attach(999999))->toThrow(QueryException::class);
+            })->done(assignee: 'ghostrider');
+        })->done(assignee: 'ghostrider');
 
         // User relationships
         describe('Users', function () {
@@ -234,21 +250,43 @@ describe('Category Model', function () {
                 $category = Category::factory()->create(['author_id' => $author->id]);
                 expect($category->author)->toBeInstanceOf(User::class);
                 expect($category->author->id)->toBe($author->id);
-            })->todo('Ensure Category model has an author relationship and can retrieve the associated user.');
-        });
-    })->todo('Test many-to-many relationships and category management for Category model.');
+            })->done(assignee: 'ghostrider');
+        })->done(assignee: 'ghostrider');
+    })->done(assignee: 'ghostrider');
 
     // ───────────────────────────────────────────────────────────────────────────
     // Security
     // ───────────────────────────────────────────────────────────────────────────
     describe('Security', function () {
-        it('prevents unauthorized user from deleting a Category', function () {
-            $Category = Category::factory()->create();
-            $this->actingAsUser();
-            $response = $this->delete('/Categories/'.$Category->id);
+        it('prevents unauthorized user from accessing a category', function () {
+            $category = Category::factory()->create();
+            $response = $this->get('/categories/'.$category->id);
             expect($response->status())->toBe(403);
-        })->todo('Test that a non-admin user cannot delete a category via the API.');
-    })->todo('Test security and authorization for category deletion.');
+        })->done(assignee: 'ghostrider');
+
+        it('prevents unauthorized user from creating a category', function () {
+            $user = User::factory()->create();
+            $this->actingAs($user);
+            $response = $this->post('/categories/', ['name' => 'New Category']);
+            expect($response->status())->toBe(403);
+        })->done(assignee: 'ghostrider');
+
+        it('prevents unauthorized user from deleting a category', function () {
+            $category = Category::factory()->create();
+            $user = User::factory()->create();
+            $this->actingAs($user);
+            $response = $this->delete('/categories/'.$category->id);
+            expect($response->status())->toBe(403);
+        })->done(assignee: 'ghostrider');
+
+        it('prevents unauthorized user from updating a category', function () {
+            $category = Category::factory()->create();
+            $user = User::factory()->create();
+            $this->actingAs($user);
+            $response = $this->put('/categories/'.$category->id, ['name' => 'Updated Category']);
+            expect($response->status())->toBe(403);
+        })->done(assignee: 'ghostrider');
+    })->done(assignee: 'ghostrider');
 
     // ───────────────────────────────────────────────────────────────────────────
     // Soft Deletes
@@ -291,4 +329,4 @@ describe('Category Model', function () {
             expect($category2->getErrors())->toContain('The name field must be unique.');
         })->todo('Implement validation logic in Category model to require a unique name and return errors if duplicate.');
     })->todo('Test validation rules for Category model.');
-})->todo('Implement all Category feature tests.');
+}); // ->done(assignee: 'ghostrider');

@@ -43,6 +43,10 @@ new class extends Component {
             @can('viewAny', Blog::class)
                 <flux:tab name="blog-manager">Blog Manager</flux:tab>
             @endcan
+
+            @can('viewAny', Taxonomy::class)
+                <flux:tab name="taxonomy-manager">Taxonomy Manager</flux:tab>
+            @endcan
         </flux:tabs>
 
         <flux:tab.panel name="user-manager">
@@ -72,6 +76,12 @@ new class extends Component {
         <flux:tab.panel name="blog-manager">
             @can('viewAny', Blog::class)
                 <livewire:admin-manage-blogs-page />
+            @endcan
+        </flux:tab.panel>
+
+        <flux:tab.panel name="taxonomy-manager">
+            @can('viewAny', Taxonomy::class)
+                <livewire:admin-manage-taxonomies-page />
             @endcan
         </flux:tab.panel>
     </flux:tab.group>

@@ -28,7 +28,7 @@ class BlogPolicy
      */
     public function viewAny(User $user): bool
     {
-        return true;
+        return $user->isAdmin();
     }
 
     /**
@@ -36,7 +36,10 @@ class BlogPolicy
      */
     public function view(User $user, Blog $blog): bool
     {
-        return $user->isAdmin()
+        // Only allow if blog is public
+        return
+            $blog->is_public
+            || $user->isAdmin()
             || $user->hasRole('Blog Editor')
             || $blog->author_id === $user->id;
     }
