@@ -11,7 +11,7 @@ new class extends Component {
     public $pollTime = 0;
 
     public function mount(Meeting $meeting) {
-        $this->meeting = $meeting;
+        $this->meeting = $meeting->load('attendees');
 
         if ($meeting->status == MeetingStatus::Pending && $meeting->day == now()->format('Y-m-d'))
         {
@@ -93,16 +93,53 @@ new class extends Component {
     <flux:heading size="xl">{{  $meeting->title }} - {{  $meeting->day }}</flux:heading>
 
     <div class="flex gap-4">
-        <flux:card class="w-full lg:w-1/2 max-h-36">
+        <flux:card class="w-full lg:w-1/2">
             <flux:heading class="mb-4">Meeting Details</flux:heading>
 
             <flux:text>
                 <strong>Scheduled Time:</strong> {{ $meeting->scheduled_time->setTimezone('America/New_York')->format('F j, Y g:i A') }}<br>
                 <strong>Status:</strong> {{ $meeting->status->label() }}<br>
-                <strong>Start Time:</strong> {{ $meeting->start_time->setTimezone('America/New_York')->format('F j, Y g:i A') }} ET<br>
+                @if($meeting->start_time)
+                    <strong>Start Time:</strong> {{ $meeting->start_time->setTimezone('America/New_York')->format('F j, Y g:i A') }} ET<br>
+                @endif
+                @if($meeting->attendees->count() > 0)
+                    <strong>Attendees:</strong> {{ $meeting->attendees->count() }}<br>
+                @endif
             </flux:text>
 
-            <!-- List Atendees here -->
+            @if($meeting->attendees->count() > 0)
+                <div class="mt-4">
+                    <flux:heading size="sm" class="mb-2">Attendees</flux:heading>
+                    <div class="space-y-1">
+                        @foreach($meeting->attendees as $attendee)
+                            <div class="flex justify-between items-center text-sm">
+                                <span>
+                                    <strong><flux:link href="{{ route('profile.show', $attendee) }}">{{ $attendee->name }}</flux:link></strong>
+                                    @if($attendee->staff_rank && $attendee->staff_title)
+                                        <br>
+                                        <span class="text-gray-600 dark:text-gray-400 text-xs">
+                                            {{ $attendee->staff_rank->label() }} - {{ $attendee->staff_title }}
+                                        </span>
+                                    @endif
+                                </span>
+                                <span class="text-gray-500 dark:text-gray-400 text-xs">
+                                    @if(is_object($attendee->pivot->added_at))
+                                        {{ $attendee->pivot->added_at->setTimezone('America/New_York')->format('g:i A') }}
+                                    @else
+                                        {{ $attendee->pivot->added_at }}
+                                    @endif
+                                </span>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
+            @if($meeting->status->value === 'in_progress')
+                <div class="mt-4">
+                    <livewire:meeting.manage-attendees :meeting="$meeting" :key="'attendees-' . $meeting->id" />
+                </div>
+            @endif
 
         </flux:card>
 
