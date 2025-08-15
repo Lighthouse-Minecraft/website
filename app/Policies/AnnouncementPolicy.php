@@ -71,7 +71,7 @@ class AnnouncementPolicy
 
     public function acknowledge(User $user, Announcement $announcement): bool
     {
-        return $user->isAuthenticated();
+        return $user != null;
     }
 
     /**

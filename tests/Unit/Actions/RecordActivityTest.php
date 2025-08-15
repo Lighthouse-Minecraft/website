@@ -121,7 +121,6 @@ describe('RecordActivity Action', function () {
         ]);
         app()->instance('request', $request);
 
-
         RecordActivity::handle($subject, 'null_agent_test');
 
         $activityLog = ActivityLog::first();

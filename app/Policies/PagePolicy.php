@@ -2,13 +2,14 @@
 
 namespace App\Policies;
 
-use App\Enums\{MembershipLevel, StaffDepartment, StaffRank};
-use App\Models\{Page, User};
-use Illuminate\Auth\Access\{Response};
+use App\Enums\StaffDepartment;
+use App\Enums\StaffRank;
+use App\Models\Page;
+use App\Models\User;
 
 class PagePolicy
 {
-    public function before(User $user, string $ability): bool|null
+    public function before(User $user, string $ability): ?bool
     {
         if ($user->isAdmin() || ($user->isInDepartment(StaffDepartment::Command) && $user->isAtLeastRank(StaffRank::Officer))) {
             return true;
@@ -20,9 +21,9 @@ class PagePolicy
     /**
      * Determine whether the user can view any models.
      */
-public function viewAny(User $user): bool
+    public function viewAny(User $user): bool
     {
-        return ($user->isAtLeastRank(StaffRank::Officer) || $user->hasRole('Page Editor'));
+        return $user->isAtLeastRank(StaffRank::Officer) || $user->hasRole('Page Editor');
     }
 
     /**
@@ -30,7 +31,7 @@ public function viewAny(User $user): bool
      */
     public function view(User $user, Page $page): bool
     {
-        return ($page->is_published || $user->hasRole('Page Editor') || $user->isAtLeastRank(StaffRank::CrewMember));
+        return $page->is_published || $user->hasRole('Page Editor') || $user->isAtLeastRank(StaffRank::CrewMember);
     }
 
     /**
@@ -38,7 +39,7 @@ public function viewAny(User $user): bool
      */
     public function create(User $user): bool
     {
-        return ($user->isAtLeastRank(StaffRank::Officer) && ($user->isInDepartment(StaffDepartment::Steward) || $user->isInDepartment(StaffDepartment::Engineer)));
+        return $user->isAtLeastRank(StaffRank::Officer) && ($user->isInDepartment(StaffDepartment::Steward) || $user->isInDepartment(StaffDepartment::Engineer));
     }
 
     /**
@@ -46,7 +47,7 @@ public function viewAny(User $user): bool
      */
     public function update(User $user, Page $page): bool
     {
-        return ($user->hasRole('Page Editor') || ($user->isAtLeastRank(StaffRank::Officer) && ($user->isInDepartment(StaffDepartment::Steward) || $user->isInDepartment(StaffDepartment::Engineer))));
+        return $user->hasRole('Page Editor') || ($user->isAtLeastRank(StaffRank::Officer) && ($user->isInDepartment(StaffDepartment::Steward) || $user->isInDepartment(StaffDepartment::Engineer)));
     }
 
     /**

@@ -11,7 +11,7 @@ enum StaffRank: int
 
     public function label(): string
     {
-        return match($this) {
+        return match ($this) {
             self::None => 'None',
             self::JrCrew => 'Junior Crew Member',
             self::CrewMember => 'Crew Member',

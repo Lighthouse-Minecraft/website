@@ -1,5 +1,7 @@
 <?php
 
+require __DIR__.'/Support/Users.php';
+
 use App\Models\User;
 
 use function Pest\Laravel\actingAs;

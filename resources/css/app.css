@@ -106,6 +106,22 @@ select:focus[data-flux-control] {
   @apply text-amber-300 font-semibold;
 }
 
+#editor_content ul {
+  @apply list-disc list-outside ml-5 mb-4 text-gray-300;
+}
+
+#editor_content ol {
+  @apply list-decimal list-outside ml-5 mb-4 text-gray-300;
+}
+
+#editor_content li {
+  @apply mb-2;
+}
+
+#editor_content li p {
+  @apply m-0 p-0 inline;
+}
+
 /* \[:where(&)\]:size-4 {
     @apply size-4;
 } */
