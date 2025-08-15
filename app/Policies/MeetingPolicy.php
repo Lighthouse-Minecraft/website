@@ -39,6 +39,11 @@ class MeetingPolicy
         }
     }
 
+    public function attend(User $user, Meeting $meeting): bool
+    {
+        return $user->isAtLeastRank(StaffRank::CrewMember);
+    }
+
     public function viewAnyPrivate(User $user): bool
     {
         return $user->isAtLeastRank(StaffRank::Officer);

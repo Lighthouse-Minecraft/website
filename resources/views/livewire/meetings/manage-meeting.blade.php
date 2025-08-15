@@ -49,7 +49,7 @@ new class extends Component {
         // Add the general note and each department note to the minutes, if they exist. Use a heading for each section.
         $generalNote = $this->meeting->notes()->where('section_key', 'general')->first();
         if ($generalNote) {
-            $this->meeting->minutes .= "\n\n## General Notes\n" . $generalNote->content . "\n";
+            $this->meeting->minutes .= "## General Notes\n" . $generalNote->content . "\n\n";
         }
 
         foreach (StaffDepartment::cases() as $department) {
