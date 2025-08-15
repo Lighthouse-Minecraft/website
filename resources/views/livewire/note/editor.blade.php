@@ -1,9 +1,9 @@
 <?php
 
-use App\Models\Meeting;
-use App\Models\User;
-use App\Models\MeetingNote;
 use App\Enums\MeetingStatus;
+use App\Models\Meeting;
+use App\Models\MeetingNote;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Volt\Component;
