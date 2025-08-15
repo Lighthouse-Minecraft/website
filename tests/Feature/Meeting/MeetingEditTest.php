@@ -43,7 +43,7 @@ describe('Meeting Edit - Loading', function () {
         get(route('meeting.edit', ['meeting' => $this->meeting->id]))
             ->assertSee('Agenda')
             ->assertSeeLivewire('note.editor');
-    })->wip();
+    })->done();
 
     it('displays the agenda content if the meeting has started', function () {
         $this->meeting->update(['start_time' => now()]);
@@ -82,7 +82,7 @@ describe('Meeting Edit - Notes', function () {
             ->assertSee(StaffDepartment::Steward->label());
     })->done();
 
-})->wip(assignee: 'jonzenor', issue: 13);
+})->done(assignee: 'jonzenor', issue: 13);
 
 describe('Meeting Edit - Action Items', function () {
     // Each department section has a todo list that can be added
@@ -370,7 +370,7 @@ describe('Meeting Edit - Meeting Workflow', function () {
 
         get(route('meeting.edit', ['meeting' => $meeting->id]))
             ->assertSee('Complete Meeting');
-    })->wip();
+    })->done();
 
     // The Complete Meeting confirmation modal should be present on the page
     it('displays the complete meeting confirmation modal', function () {
@@ -447,7 +447,7 @@ describe('Meeting Edit - Meeting Workflow', function () {
             ->assertDontSeeLivewire('meeting.department-section');
     });
 
-})->wip(issue: 13, assignee: 'jonzenor');
+})->done(issue: 13, assignee: 'jonzenor');
 
 // Next make a public page for viewing the completed meetings
 
