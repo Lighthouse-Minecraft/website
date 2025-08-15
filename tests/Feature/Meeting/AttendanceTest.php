@@ -6,6 +6,7 @@ use App\Enums\StaffRank;
 use App\Models\Meeting;
 use App\Models\User;
 
+use function Pest\Laravel\get;
 use function Pest\Livewire\livewire;
 
 beforeEach(function () {
@@ -121,15 +122,20 @@ test('attendees list is displayed in meeting details', function () {
     // Debug: verify the attendees were attached correctly
     expect($this->meeting->fresh()->attendees)->toHaveCount(2);
 
-    $response = $this->actingAs($this->admin)
-        ->get('/meetings/'.$this->meeting->id);
+    loginAsAdmin();
 
-    $response->assertSee('Attendees:', false); // Don't escape HTML
-    $response->assertSee('2');
-    $response->assertSee($this->officer->name);
-    $response->assertSee($this->crewMember->name);
-    $response->assertSee($this->officer->staff_title);
-    $response->assertSee($this->crewMember->staff_title);
+    get(route('meeting.edit', $this->meeting))
+        ->assertSee('Attendees:', false) // Don't escape HTML
+        ->assertSee('2')
+        ->assertSee($this->meeting->attendees->first()->name)
+        ->assertSee($this->meeting->attendees->last()->name)
+        ->assertSee($this->meeting->attendees->first()->staff_title)
+        ->assertSee($this->meeting->attendees->last()->staff_title)
+        ->assertSee($this->officer->name)
+        ->assertSee($this->crewMember->name)
+        ->assertSee($this->officer->staff_title)
+        ->assertSee($this->crewMember->staff_title);
+
 });
 
 test('person who starts meeting is automatically added as attendee', function () {
@@ -180,20 +186,19 @@ test('attendee count is displayed in meeting details', function () {
         $this->jrCrew->id => ['added_at' => now()],
     ]);
 
-    $response = $this->actingAs($this->admin)
-        ->get('/meetings/'.$this->meeting->id);
+    loginAsAdmin();
 
-    $response->assertSee('Attendees:', false); // Don't escape HTML
-    $response->assertSee('3');
+    get(route('meeting.edit', $this->meeting))
+        ->assertSee('Attendees:', false) // Don't escape HTML
+        ->assertSee('3'); // Should show total count of attendees
 });
 
 test('attendees display full staff title and rank', function () {
     $this->meeting->attendees()->attach($this->officer->id, ['added_at' => now()]);
+    loginAsAdmin();
 
-    $response = $this->actingAs($this->admin)
-        ->get('/meetings/'.$this->meeting->id);
-
-    $response->assertSee($this->officer->staff_rank->label())
+    get(route('meeting.edit', $this->meeting))
+        ->assertSee($this->officer->staff_rank->label())
         ->assertSee($this->officer->staff_title);
 });
 
