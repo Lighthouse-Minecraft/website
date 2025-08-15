@@ -363,23 +363,91 @@ describe('Meeting Edit - Meeting Workflow', function () {
         expect($communityNote->created_by)->toBe(auth()->id());
     });
 
-    // If the Meeting is in a Finalizing state, show a button to auto summarize the meeting
+    // If the Meeting is in a FFinalizing state, show a Complete Meeting button
+    it('shows a Complete Meeting button if the meeting is finalizing', function () {
+        $meeting = Meeting::factory()->withStatus(MeetingStatus::Finalizing)->create();
+        loginAsAdmin();
 
-    // In Auto-Summarize send each department note to AI
+        get(route('meeting.edit', ['meeting' => $meeting->id]))
+            ->assertSee('Complete Meeting');
+    })->wip();
 
-    // The AI returns a summary of the meeting and stores it on the Meeting record
+    // The Complete Meeting confirmation modal should be present on the page
+    it('displays the complete meeting confirmation modal', function () {
+        $meeting = Meeting::factory()->withStatus(MeetingStatus::Finalizing)->create();
+        loginAsAdmin();
 
-    // The AI returns a community sanitized version of each note and stores it with the repsective note record
+        get(route('meeting.edit', ['meeting' => $meeting->id]))
+            ->assertSee('Complete Meeting?')
+            ->assertSee('Once completed, the meeting will be archived')
+            ->assertSee('Cancel');
+    });
 
-    // If the Meeting is in a FInalizing state, show a Complete Meeting button
+    // If the Complete Meeting button is pressed, show confirmation modal
+    it('shows the complete meeting confirmation modal when the Complete Meeting button is pressed', function () {
+        $meeting = Meeting::factory()->withStatus(MeetingStatus::Finalizing)->create();
+        loginAsAdmin();
 
-    // If the Complete Meeting button is pressed, change state to Closed
+        livewire('meetings.manage-meeting', ['meeting' => $meeting])
+            ->call('CompleteMeeting')
+            ->assertSuccessful();
+    });
 
-    // If the Meeting is in a Closed state, hide all department note editors
+    // If the Complete Meeting confirmation is confirmed, transition the meeting to Completed
+    it('transitions the meeting to completed when the complete meeting is confirmed', function () {
+        $meeting = Meeting::factory()->withStatus(MeetingStatus::Finalizing)->create();
+        loginAsAdmin();
 
-    // Allow editing after closing??
+        livewire('meetings.manage-meeting', ['meeting' => $meeting])
+            ->call('CompleteMeetingConfirmed')
+            ->assertSuccessful();
 
-})->wip();
+        $meeting->refresh();
+        expect($meeting->status)->toBe(MeetingStatus::Completed);
+    });
+
+    // When completing a meeting, the community note should be saved to community_minutes
+    it('saves the community note to community_minutes when the meeting is completed', function () {
+        $meeting = Meeting::factory()->withStatus(MeetingStatus::Finalizing)->create();
+        $communityContent = 'These are the community meeting notes';
+
+        $communityNote = MeetingNote::factory()->create([
+            'content' => $communityContent,
+            'section_key' => 'community',
+            'meeting_id' => $meeting->id,
+        ]);
+
+        loginAsAdmin();
+
+        livewire('meetings.manage-meeting', ['meeting' => $meeting])
+            ->call('CompleteMeetingConfirmed')
+            ->assertSuccessful();
+
+        $meeting->refresh();
+        expect($meeting->community_minutes)->toBe($communityContent);
+    });
+
+    // If the Meeting is Completed, do not show the Complete Meeting button
+    it('does not show the Complete Meeting button if the meeting is completed', function () {
+        $meeting = Meeting::factory()->withStatus(MeetingStatus::Completed)->create();
+        loginAsAdmin();
+
+        get(route('meeting.edit', ['meeting' => $meeting->id]))
+            ->assertDontSee('Complete Meeting');
+    });
+
+    // If the Meeting is Completed, do not show any note editors
+    it('does not show any note editors if the meeting is completed', function () {
+        $meeting = Meeting::factory()->withStatus(MeetingStatus::Completed)->create();
+        loginAsAdmin();
+
+        get(route('meeting.edit', ['meeting' => $meeting->id]))
+            ->assertDontSee('Create Community Note')
+            ->assertDontSee('Edit Community')
+            ->assertDontSeeLivewire('meeting.department-section');
+    });
+
+})->wip(issue: 13, assignee: 'jonzenor');
 
 // Next make a public page for viewing the completed meetings
 
