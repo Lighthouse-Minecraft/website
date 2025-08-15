@@ -10,7 +10,7 @@ enum MeetingStatus: string
     case Completed = 'completed';
     case Cancelled = 'cancelled';
 
-    public function label()
+    public function label(): string
     {
         return match ($this) {
             self::Pending => 'Pending',
