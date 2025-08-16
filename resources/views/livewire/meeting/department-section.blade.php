@@ -29,12 +29,20 @@ new class extends Component {
 
 }; ?>
 
-<div class="w-full lg:w-3/4 mx-auto space-y-6 my-6">
+<div class="w-full lg:w-full mx-auto space-y-6 my-6">
     <flux:heading><span class="text-sky-600 dark:text-sky-400">{{  $departmentLabel }}</span></flux:heading>
 
     <flux:text variant="subtle">
         {{ $description }}
     </flux:text>
 
-    <livewire:note.editor :meeting="$meeting" :section_key="$departmentValue"/>
+    <div class="flex w-full gap-4">
+        <div class="w-full lg:w-2/3">
+            <livewire:note.editor :meeting="$meeting" :section_key="$departmentValue"/>
+        </div>
+
+        <div class="w-full lg:w-1/3">
+            <livewire:task.department-list :meeting="$meeting" :section_key="$departmentValue"/>
+        </div>
+    </div>
 </div>
