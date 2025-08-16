@@ -179,6 +179,8 @@ new class extends Component {
 }; ?>
 
 <div class="space-y-6">
+    <flux:heading class="mb-4">Meeting Notes - {{  ucfirst($section_key) }}</flux:heading>
+
     @if ($isLockedByMe)
         <div wire:poll.3s="HeartbeatCheck"></div>
         @php $rows = ($section_key == 'agenda') ? 15 : 6; @endphp
@@ -208,8 +210,6 @@ new class extends Component {
             @else
 
                 <flux:card class="my-2">
-                    <flux:heading class="mb-4">Meeting Notes - {{  ucfirst($section_key) }}</flux:heading>
-
                     <flux:text>
                         {!!  nl2br($this->note->content) !!}
                     </flux:text>

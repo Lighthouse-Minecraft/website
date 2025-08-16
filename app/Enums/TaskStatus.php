@@ -2,13 +2,11 @@
 
 namespace App\Enums;
 
-enum MeetingStatus: string
+enum TaskStatus: string
 {
     case Pending = 'pending';
-    case InProgress = 'in_progress';
-    case Finalizing = 'finalizing';
+    case InProgress = 'in-progress';
     case Completed = 'completed';
-    case Cancelled = 'cancelled';
     case Archived = 'archived';
 
     public function label(): string
@@ -16,10 +14,8 @@ enum MeetingStatus: string
         return match ($this) {
             self::Pending => 'Pending',
             self::InProgress => 'In Progress',
-            self::Finalizing => 'Finalizing',
             self::Completed => 'Completed',
-            self::Cancelled => 'Cancelled',
-            self::Archived => 'Archived'
+            self::Archived => 'Archived',
         };
     }
 }
