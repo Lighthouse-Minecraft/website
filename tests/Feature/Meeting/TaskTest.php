@@ -84,6 +84,7 @@ describe('Task Management - Permissions', function () {
 
         livewire('task.department-list', ['meeting' => $this->meeting, 'section_key' => 'command'])
             ->assertSee('Add Task')
+            ->set('taskName', 'Test Task')
             ->call('addTask')
             ->assertOk();
     })->with('rankAtLeastCrewMembers');
