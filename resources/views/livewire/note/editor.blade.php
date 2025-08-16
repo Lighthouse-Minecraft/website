@@ -179,60 +179,60 @@ new class extends Component {
 }; ?>
 
 <div class="space-y-6">
-        @if ($isLockedByMe)
-            <div wire:poll.3s="HeartbeatCheck"></div>
-            @php $rows = ($section_key == 'agenda') ? 15 : 6; @endphp
-            <flux:textarea wire:model.live.debounce.5s="updatedContent" wire:input.debounce.5s="UpdateNote" label="{{ ucfirst($section_key) }} Notes" rows="{{ $rows }}" />
+    @if ($isLockedByMe)
+        <div wire:poll.3s="HeartbeatCheck"></div>
+        @php $rows = ($section_key == 'agenda') ? 15 : 6; @endphp
+        <flux:textarea wire:model.live.debounce.5s="updatedContent" wire:input.debounce.5s="UpdateNote" label="{{ ucfirst($section_key) }} Notes" rows="{{ $rows }}" />
 
-            <div class="flex my-4">
-                <div class="text-left w-full">
-                    @if($isLocked)
-                        <flux:text size="xs">You have locked this section.</flux:text>
-                    @endif
-                </div>
-
-                <div class="w-full text-right">
-                    <flux:button size="xs" wire:click="SaveNote" variant="primary">Save {{  ucfirst($section_key) }} Notes</flux:button>
-                </div>
-            </div>
-        @else
-            <div wire:poll.{{  $pollTime }}="RefreshNote">
-
-                @if(! $this->noteExists)
-                    <div class="w-full text-right">
-                        @can('create', App\Models\MeetingNote::class)
-                            @php $buttonLabel = ($section_key == 'agenda') ? 'Create Agenda' : 'Create ' . ucfirst($section_key) . ' Note'; @endphp
-                            <flux:button variant="primary" wire:click="CreateNote">{{ $buttonLabel }}</flux:button>
-                        @endcan
-                    </div>
-                @else
-
-                    <flux:card>
-                        <flux:heading class="mb-4">Meeting Notes - {{  ucfirst($section_key) }}</flux:heading>
-
-                        <flux:text>
-                            {!!  nl2br($this->note->content) !!}
-                        </flux:text>
-                    </flux:card>
-
-                    <div class="flex my-4">
-                        <div class="text-left w-full">
-                            @if($isLocked)
-                                <flux:text size="xs">Locked by <flux:link href="{{ route('profile.show', $lockedById) }}">{{ $lockedByName }}</flux:link></flux:text>
-                            @endif
-                        </div>
-
-                        <div class="w-full text-right">
-                            @can('update', $this->note)
-                                @if($isLocked)
-                                    <flux:button size="xs" disabled variant="filled">Edit {{ ucfirst($section_key) }} Notes</flux:button>
-                                @else
-                                    <flux:button size="xs" wire:click="EditNote" variant="primary" color="indigo">Edit {{ ucfirst($section_key) }} Notes</flux:button>
-                                @endif
-                            @endcan
-                        </div>
-                    </div>
+        <div class="flex my-4">
+            <div class="text-left w-full">
+                @if($isLocked)
+                    <flux:text size="xs">You have locked this section.</flux:text>
                 @endif
             </div>
-        @endif
+
+            <div class="w-full text-right">
+                <flux:button size="xs" wire:click="SaveNote" variant="primary">Save {{  ucfirst($section_key) }} Notes</flux:button>
+            </div>
+        </div>
+    @else
+        <div wire:poll.{{  $pollTime }}="RefreshNote">
+
+            @if(! $this->noteExists)
+                <div class="w-full text-center">
+                    @can('create', App\Models\MeetingNote::class)
+                        @php $buttonLabel = ($section_key == 'agenda') ? 'Create Agenda' : 'Create ' . ucfirst($section_key) . ' Note'; @endphp
+                        <flux:button size="xs" wire:click="CreateNote">{{ $buttonLabel }}</flux:button>
+                    @endcan
+                </div>
+            @else
+
+                <flux:card class="my-2">
+                    <flux:heading class="mb-4">Meeting Notes - {{  ucfirst($section_key) }}</flux:heading>
+
+                    <flux:text>
+                        {!!  nl2br($this->note->content) !!}
+                    </flux:text>
+                </flux:card>
+
+                <div class="flex my-4">
+                    <div class="text-left w-full">
+                        @if($isLocked)
+                            <flux:text size="xs">Locked by <flux:link href="{{ route('profile.show', $lockedById) }}">{{ $lockedByName }}</flux:link></flux:text>
+                        @endif
+                    </div>
+
+                    <div class="w-full text-right">
+                        @can('update', $this->note)
+                            @if($isLocked)
+                                <flux:button size="xs" disabled variant="filled">Edit {{ ucfirst($section_key) }} Notes</flux:button>
+                            @else
+                                <flux:button size="xs" wire:click="EditNote" variant="primary" color="indigo">Edit {{ ucfirst($section_key) }} Notes</flux:button>
+                            @endif
+                        @endcan
+                    </div>
+                </div>
+            @endif
+        </div>
+    @endif
 </div>
