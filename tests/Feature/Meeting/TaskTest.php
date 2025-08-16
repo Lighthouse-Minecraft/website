@@ -1,0 +1,37 @@
+<?php
+
+describe('Task Management - Create Task', function () {
+    // There is an "add task" input field in the department component
+
+    // The assigned_meeting_id is set when a task is created
+
+    // The current department is set on the task
+});
+
+describe('Task Management - Task List', function () {
+    // There is a list of tasks displayed in the department component
+
+    // There is an Edit button on the task items
+
+    // Completed tasks can be confirmed as completed during a meeting
+});
+
+describe('Task Management - Task Completion', function () {
+    // Tasks can be marked as completed - Updates status to Completed
+
+    // The task records who completed it
+
+    // The task records the time it was completed at
+
+    // Confirming a task as completed sets the completed_meeting_id to the current meeting
+});
+
+describe('Task Management - Task Edit', function () {
+    // The task edit button opens a modal
+
+    // The task edit modal allows updating the name of the task
+
+    // The task edit modal allows assigning a user to the task
+
+    // A task can be marked as cancelled in the task edit modal
+});
