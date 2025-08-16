@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\StaffRank;
 use App\Models\Task;
 use App\Models\User;
 
@@ -37,7 +38,7 @@ class TaskPolicy
      */
     public function create(User $user): bool
     {
-        return false;
+        return $user->isAtLeastRank(StaffRank::CrewMember);
     }
 
     /**

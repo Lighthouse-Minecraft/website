@@ -50,7 +50,7 @@ describe('Task Management - Task List', function () {
 
         livewire('task.department-list', ['meeting' => $this->meeting, 'section_key' => 'command'])
             ->assertSee($task->name);
-    })->wip();
+    })->done();
 
     // There is an Edit button on the task items
 
@@ -79,4 +79,13 @@ describe('Task Management - Task Edit', function () {
 
 describe('Task Management - Permissions', function () {
     // Officers and Crew Members can create tasks
-})->todo(issue: 28, assignee: 'jonzenor');
+    it('should allow officers and crew members to create tasks', function ($user) {
+        loginAs($user);
+
+        livewire('task.department-list', ['meeting' => $this->meeting, 'section_key' => 'command'])
+            ->assertSee('Add Task')
+            ->call('addTask')
+            ->assertOk();
+    })->with('rankAtLeastCrewMembers');
+
+})->wip(issue: 28, assignee: 'jonzenor');
