@@ -40,6 +40,8 @@ describe('Task Management - Create Task', function () {
         ]);
     })->done();
 
+    // Validate input field
+
 })->done(issue: 28, assignee: 'jonzenor');
 
 describe('Task Management - Task List', function () {
@@ -75,6 +77,8 @@ describe('Task Management - Task Edit', function () {
     // The task edit modal allows assigning a user to the task
 
     // A task can be marked as cancelled in the task edit modal
+
+    // Validate user data
 })->todo(issue: 28, assignee: 'jonzenor');
 
 describe('Task Management - Permissions', function () {
@@ -90,3 +94,5 @@ describe('Task Management - Permissions', function () {
     })->with('rankAtLeastCrewMembers');
 
 })->wip(issue: 28, assignee: 'jonzenor');
+
+// When a meeting is completed (put into Finalizing) all of the New tasks this meeting and archived tsks this meeting are listed in the minutes
