@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\TaskStatus;
 use App\Models\Meeting;
 
 use function Pest\Livewire\livewire;
@@ -31,13 +32,11 @@ describe('Task Management - Create Task', function () {
 
         $this->assertDatabaseHas('tasks', [
             'name' => 'New Task',
+            'section_key' => 'command',
             'assigned_meeting_id' => $this->meeting->id,
+            'status' => TaskStatus::Pending,
         ]);
     })->done();
-
-    // The assigned_meeting_id is set when a task is created
-
-    // The current department is set on the task
 
     // The task status is set to not-started
 })->wip(issue: 28, assignee: 'jonzenor');

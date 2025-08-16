@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\TaskStatus;
 use App\Models\Meeting;
 use App\Models\Task;
 use Flux\Flux;
@@ -25,7 +26,8 @@ new class extends Component {
 
         $task = new Task([
             'name' => $this->taskName,
-            // 'department' => $this->section_key,
+            'section_key' => $this->section_key,
+            'status' => TaskStatus::Pending,
             'assigned_meeting_id' => $this->meeting->id,
         ]);
 
