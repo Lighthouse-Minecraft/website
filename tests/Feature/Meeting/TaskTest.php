@@ -19,7 +19,7 @@ describe('Task Management - Create Task', function () {
 
         livewire('meeting.department-section', ['meeting' => $this->meeting, 'departmentValue' => 'command', 'description' => ''])
             ->assertSee('Add Task');
-    })->wip();
+    })->done();
 
     // The "add task" form creates a new task
 
