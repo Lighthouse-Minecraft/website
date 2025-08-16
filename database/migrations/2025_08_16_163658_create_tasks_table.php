@@ -17,6 +17,12 @@ return new class extends Migration
             $table->string('section_key')->nullable();
             $table->string('status');
             $table->foreignId('assigned_meeting_id')->constrained('meetings');
+            $table->foreignId('created_by')->constrained('users');
+            $table->foreignId('completed_by')->nullable()->constrained('users');
+            $table->timestamp('completed_at')->nullable();
+            $table->foreignId('completed_meeting_id')->nullable()->constrained('meetings');
+            $table->foreignId('archived_meeting_id')->nullable()->constrained('meetings');
+            $table->timestamp('archived_at')->nullable();
             $table->timestamps();
         });
     }

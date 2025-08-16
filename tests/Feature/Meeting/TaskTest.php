@@ -2,6 +2,7 @@
 
 use App\Enums\TaskStatus;
 use App\Models\Meeting;
+use App\Models\Task;
 
 use function Pest\Livewire\livewire;
 
@@ -22,9 +23,9 @@ describe('Task Management - Create Task', function () {
             ->assertSee('Add Task');
     })->done();
 
-    // The "add task" form creates a new task
+    // The "add task" form creates a new task with appropriate default fields
     it('should create a new task when the form is submitted', function () {
-        loginAsAdmin();
+        $user = loginAsAdmin();
 
         livewire('task.department-list', ['meeting' => $this->meeting, 'section_key' => 'command'])
             ->set('taskName', 'New Task')
@@ -35,19 +36,26 @@ describe('Task Management - Create Task', function () {
             'section_key' => 'command',
             'assigned_meeting_id' => $this->meeting->id,
             'status' => TaskStatus::Pending,
+            'created_by' => $user->id,
         ]);
     })->done();
 
-    // The task status is set to not-started
-})->wip(issue: 28, assignee: 'jonzenor');
+})->done(issue: 28, assignee: 'jonzenor');
 
 describe('Task Management - Task List', function () {
     // There is a list of tasks displayed in the department component
+    it('should display a list of tasks in the department component', function () {
+        loginAsAdmin();
+        $task = Task::factory()->withDepartment('command')->withMeeting($this->meeting)->create();
+
+        livewire('task.department-list', ['meeting' => $this->meeting, 'section_key' => 'command'])
+            ->assertSee($task->name);
+    })->wip();
 
     // There is an Edit button on the task items
 
     // Completed tasks can be confirmed as completed during a meeting
-})->todo(issue: 28, assignee: 'jonzenor');
+})->wip(issue: 28, assignee: 'jonzenor');
 
 describe('Task Management - Task Completion', function () {
     // Tasks can be marked as completed - Updates status to Completed

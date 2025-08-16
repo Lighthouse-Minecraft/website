@@ -9,6 +9,7 @@ enum MeetingStatus: string
     case Finalizing = 'finalizing';
     case Completed = 'completed';
     case Cancelled = 'cancelled';
+    case Archived = 'archived';
 
     public function label(): string
     {
@@ -17,7 +18,8 @@ enum MeetingStatus: string
             self::InProgress => 'In Progress',
             self::Finalizing => 'Finalizing',
             self::Completed => 'Completed',
-            self::Cancelled => 'Cancelled'
+            self::Cancelled => 'Cancelled',
+            self::Archived => 'Archived'
         };
     }
 }
