@@ -5,7 +5,9 @@ namespace App\Models;
 use App\Enums\MeetingStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Auth;
 
 class Meeting extends Model
 {
@@ -18,6 +20,8 @@ class Meeting extends Model
         'scheduled_time' => 'datetime',
         'is_public' => 'boolean',
         'status' => MeetingStatus::class,
+        'start_time' => 'datetime',
+        'end_time' => 'datetime',
     ];
 
     public function startMeeting(): void
@@ -29,6 +33,13 @@ class Meeting extends Model
         $this->status = MeetingStatus::InProgress;
         $this->start_time = now();
         $this->save();
+
+        // Auto-add the person who starts the meeting as an attendee
+        if (Auth::check()) {
+            $this->attendees()->syncWithoutDetaching([
+                Auth::id() => ['added_at' => now()],
+            ]);
+        }
     }
 
     public function endMeeting(): void
@@ -55,5 +66,13 @@ class Meeting extends Model
     public function notes(): HasMany
     {
         return $this->hasMany(MeetingNote::class);
+    }
+
+    public function attendees(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class)
+            ->withPivot('added_at')
+            ->withTimestamps()
+            ->orderBy('pivot_added_at');
     }
 }
