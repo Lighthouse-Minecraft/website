@@ -2,7 +2,6 @@
 
 use App\Models\Meeting;
 
-// use function Pest\Laravel\get;
 use function Pest\Livewire\livewire;
 
 beforeEach(function () {
