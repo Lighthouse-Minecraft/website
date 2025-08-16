@@ -27,7 +27,7 @@ new class extends Component {
     {
         $this->tasks = Task::where('section_key', $this->section_key)
             ->where('status', TaskStatus::Pending)
-            ->orderBy('completed_at', 'asc')
+            ->orderBy('created_at', 'asc')
             ->get();
 
         $this->completedTasks = Task::where('section_key', $this->section_key)
