@@ -15,6 +15,7 @@ class Task extends Model
     protected $casts = [
         'status' => TaskStatus::class,
         'completed_at' => 'datetime',
+        'archived_at' => 'datetime',
     ];
 
     public function createdBy()
