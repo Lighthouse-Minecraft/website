@@ -35,6 +35,9 @@ new class extends Component {
 
 <div class="space-y-6">
     <flux:heading size="xl">Manage Announcements</flux:heading>
+    <flux:description>
+        Use this page to create, edit, publish, and organize announcements. You can manage announcement content, assign categories and tags, and control publication status. Actions here help keep your community informed and engaged with timely updates and news.
+    </flux:description>
 
     <flux:table :paginate="$this->announcements">
         <flux:table.columns>
@@ -77,8 +80,9 @@ new class extends Component {
                     <flux:table.cell>{{ $announcement->is_published ? 'Yes' : 'No' }}</flux:table.cell>
                     <flux:table.cell>{{ $announcement->published_at ? $announcement->published_at->format('F j, Y H:i') : 'N/A' }}</flux:table.cell>
                     <flux:table.cell>
-                        <flux:button wire:navigate href="{{ route('acp.announcements.edit', $announcement->id) }}" size="xs" icon="pencil-square"></flux:button>
-                        <flux:button wire:navigate href="{{ route('announcements.show', $announcement->id) }}" size="xs" icon="trash" variant="danger"></flux:button>
+                        <flux:button wire:navigate href="{{ route('announcements.show', $announcement->id) }}" size="xs" icon="eye" title="View Announcement"></flux:button>
+                        <flux:button wire:navigate href="{{ route('acp.announcements.edit', $announcement->id) }}" size="xs" icon="pencil-square" variant="primary" color="amber" title="Edit Announcement"></flux:button>
+                        <flux:button wire:navigate href="{{ route('announcements.show', $announcement->id) }}" size="xs" icon="trash" variant="danger" title="Delete Announcement"></flux:button>
                     </flux:table.cell>
                 </flux:table.row>
             @empty

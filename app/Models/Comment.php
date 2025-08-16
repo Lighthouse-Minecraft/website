@@ -72,4 +72,57 @@ class Comment extends Model
     {
         return $query->where('status', 'approved');
     }
+
+    // -------------------- Validation --------------------
+    /**
+     * Validate the Comment model instance.
+     * Checks for required content and unique content.
+     */
+    public function isValid(): bool
+    {
+        // Content is required
+        if (empty($this->content)) {
+            return false;
+        }
+        // Content length must not exceed 2000 characters
+        if (strlen($this->content) > 2000) {
+            return false;
+        }
+        // Content must be unique (excluding current model)
+        $query = Comment::where('content', $this->content);
+        if ($this->exists) {
+            $query->where('id', '!=', $this->id);
+        }
+        if ($query->exists()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Get validation errors for the Comment model instance.
+     * Returns an array of error messages for content and uniqueness.
+     */
+    public function getErrors(): array
+    {
+        $errors = [];
+        if (empty($this->content)) {
+            $errors['content'] = 'The content field is required.';
+        } else {
+            if (strlen($this->content) > 2000) {
+                $errors['content'] = 'The content may not be greater than 2000 characters.';
+            } else {
+                $query = Comment::where('content', $this->content);
+                if ($this->exists) {
+                    $query->where('id', '!=', $this->id);
+                }
+                if ($query->exists()) {
+                    $errors['content'] = 'The content field must be unique.';
+                }
+            }
+        }
+
+        return $errors;
+    }
 }

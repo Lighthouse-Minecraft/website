@@ -9,12 +9,12 @@
             <flux:heading size="xl">{{ $blog->title }}</flux:heading>
             <div>
                 @can('update', $blog)
-                    <a href="{{ route('admin.blogs.edit', $blog->id) }}">
+                    <a href="{{ route('acp.blogs.edit', $blog->id) }}">
                         <flux:button size="xs" icon="pencil-square"></flux:button>
                     </a>
                 @endcan
                 @can('delete', $blog)
-                    <form action="{{ route('admin.blogs.delete', $blog->id) }}" method="POST" style="display:inline;">
+                    <form action="{{ route('acp.blogs.delete', $blog->id) }}" method="POST" style="display:inline;">
                         @csrf
                         @method('DELETE')
                         <flux:button type="submit" size="xs" icon="trash" variant="danger"></flux:button>
@@ -69,7 +69,7 @@
                 @forelse($blog->comments as $comment)
                     <li class="mb-2 border-b pb-2">
                         <div class="text-xs text-gray-500">By {{ $comment->author->name ?? 'Unknown' }} on {{ $comment->created_at->format('M d, Y H:i') }}</div>
-                        <div>{{ $comment->content }}</div>
+                        <div>{!! $comment->content !!}</div>
                     </li>
                 @empty
                     <li class="text-gray-400">No comments yet.</li>

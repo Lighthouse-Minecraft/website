@@ -56,8 +56,18 @@ Route::prefix('acp/announcements')
         Route::get('create', 'create')->name('create');
         Route::post('store', 'store')->name('store');
         Route::get('{id}/edit', 'edit')->name('edit');
-        Route::put('{/id}/update', 'update')->name('update');
+        Route::put('{id}/update', 'update')->name('update');
         Route::delete('{announcement}', 'destroy')->name('delete');
+
+        // Tag management
+        Route::post('{announcement}/addTag', 'addTag')->name('addTag');
+        Route::post('{announcement}/attachTag', 'attachTag')->name('attachTag');
+        Route::post('{announcement}/removeTag', 'removeTag')->name('removeTag');
+
+        // Category management
+        Route::post('{announcement}/addCategory', 'addCategory')->name('addCategory');
+        Route::post('{announcement}/attachCategory', 'attachCategory')->name('attachCategory');
+        Route::post('{announcement}/removeCategory', 'removeCategory')->name('removeCategory');
     });
 
 // This is for non admin announcement links
@@ -66,8 +76,11 @@ Route::prefix('announcements')
     ->controller(AnnouncementController::class)
     ->middleware('auth')
     ->group(function () {
-
-        Route::get(uri: '{id}', action: 'show')->name('show');
+        Route::get('/', 'index')->name('index');
+        Route::get('{id}', 'show')->name('show');
+        Route::post('/', 'store')->name('store');
+        Route::put('{id}', 'update')->name('update');
+        Route::delete('{id}', 'destroy')->name('destroy');
     });
 
 // This is for admin blog links
@@ -80,8 +93,18 @@ Route::prefix('acp/blogs')
         Route::get('create', 'create')->name('create');
         Route::post('store', 'store')->name('store');
         Route::get('{id}/edit', 'edit')->name('edit');
-        Route::put('{/id}/update', 'update')->name('update');
+        Route::put('{id}/update', 'update')->name('update');
         Route::delete('{blog}', 'destroy')->name('delete');
+
+        // Tag management
+        Route::post('{blog}/addTag', 'addTag')->name('addTag');
+        Route::post('{blog}/attachTag', 'attachTag')->name('attachTag');
+        Route::post('{blog}/removeTag', 'removeTag')->name('removeTag');
+
+        // Category management
+        Route::post('{blog}/addCategory', 'addCategory')->name('addCategory');
+        Route::post('{blog}/attachCategory', 'attachCategory')->name('attachCategory');
+        Route::post('{blog}/removeCategory', 'removeCategory')->name('removeCategory');
     });
 
 // This is for non admin blog links
@@ -97,7 +120,22 @@ Route::prefix('blogs')
         Route::delete('{id}', 'destroy')->name('destroy');
     });
 
-// Comments management (announcements & blogs)
+// Admin comment management (announcements & blogs)
+Route::prefix('acp/comments')
+    ->name('acp.comments.')
+    ->controller(CommentController::class)
+    ->middleware('auth')
+    ->group(function () {
+        Route::get('create', 'create')->name('create');
+        Route::get('{id}/edit', 'edit')->name('edit');
+        Route::post('store', 'store')->name('store');
+        Route::put('{id}/update', 'update')->name('update');
+        Route::delete('{id}', 'destroy')->name('delete');
+        Route::post('{id}/approve', 'approve')->name('approve');
+        Route::post('{id}/reject', 'reject')->name('reject');
+    });
+
+// Comments (announcements & blogs)
 Route::prefix('comments')
     ->name('comments.')
     ->controller(CommentController::class)
@@ -109,33 +147,66 @@ Route::prefix('comments')
         Route::delete('{id}', 'destroy')->name('destroy');
     });
 
-Route::group(['Taxonomy'], function () {
-    // Category management
-    Route::prefix('categories')
-        ->name('categories.')
-        ->group(function () {
-            Route::get('/', [TaxonomyController::class, 'categoriesIndex'])->name('index');
-            Route::get('{id}', [TaxonomyController::class, 'categoriesShow'])->name('show');
-            Route::post('/', [TaxonomyController::class, 'categoriesStore'])->name('store');
-            Route::put('{id}', [TaxonomyController::class, 'categoriesUpdate'])->name('update');
-            Route::delete('{id}', [TaxonomyController::class, 'categoriesDestroy'])->name('destroy');
-        });
+// Admin taxonomy management (categories & tags)
+Route::prefix('acp/taxonomy')
+    ->name('acp.taxonomy.')
+    ->controller(TaxonomyController::class)
+    ->middleware('auth')
+    ->group(function () {
+        Route::prefix('categories')
+            ->name('categories.')
+            ->group(function () {
+                // Categories
+                Route::get('show', 'categoriesShow')->name('show');
+                Route::get('create', 'categoriesCreate')->name('create');
+                Route::post('store', 'categoriesStore')->name('store');
+                Route::get('{id}/edit', 'categoriesEdit')->name('edit');
+                Route::put('{id}/update', 'categoriesUpdate')->name('update');
+                Route::delete('{id}', 'categoriesDestroy')->name('delete');
+            });
 
-    // Tag management
-    Route::prefix('tags')
-        ->name('tags.')
-        ->group(function () {
-            Route::get('/', [TaxonomyController::class, 'tagsIndex'])->name('index');
-            Route::get('/{id}', [TaxonomyController::class, 'tagsShow'])->name('show');
-            Route::post('/', [TaxonomyController::class, 'tagsStore'])->name('store');
-            Route::put('/{id}', [TaxonomyController::class, 'tagsUpdate'])->name('update');
-            Route::delete('/{id}', [TaxonomyController::class, 'tagsDestroy'])->name('destroy');
-        });
+        // Tags
+        Route::prefix('tags')
+            ->name('tags.')
+            ->group(function () {
+                Route::get('show', 'tagsShow')->name('show');
+                Route::get('create', 'tagsCreate')->name('create');
+                Route::post('store', 'tagsStore')->name('store');
+                Route::get('{id}/edit', 'tagsEdit')->name('edit');
+                Route::put('{id}/update', 'tagsUpdate')->name('update');
+                Route::delete('{id}', 'tagsDestroy')->name('delete');
+            });
+    });
 
-    // Endpoints
-    Route::get('categories/{id}/blogs', [TaxonomyController::class, 'blogsByCategory'])->name('categories.blogs');
-    Route::get('tags/{id}/blogs', [TaxonomyController::class, 'blogsByTag'])->name('tags.blogs');
-});
+// Taxonomy
+Route::prefix('taxonomy')
+    ->name('taxonomy.')
+    ->controller(TaxonomyController::class)
+    ->group(function () {
+        // Categories
+        Route::prefix('categories')
+            ->name('categories.')
+            ->group(function () {
+                Route::get('/', [TaxonomyController::class, 'categoriesIndex'])->name('index');
+                Route::get('{id}', [TaxonomyController::class, 'categoriesShow'])->name('show');
+                Route::post('/', [TaxonomyController::class, 'categoriesStore'])->name('store');
+                Route::put('{id}', [TaxonomyController::class, 'categoriesUpdate'])->name('update');
+                Route::delete('{id}', [TaxonomyController::class, 'categoriesDestroy'])->name('destroy');
+            });
+        Route::get('categories/{id}/blogs', [TaxonomyController::class, 'blogsByCategory'])->name('categories.blogs');
+
+        // Tags
+        Route::prefix('tags')
+            ->name('tags.')
+            ->group(function () {
+                Route::get('/', [TaxonomyController::class, 'tagsIndex'])->name('index');
+                Route::get('/{id}', [TaxonomyController::class, 'tagsShow'])->name('show');
+                Route::post('/', [TaxonomyController::class, 'tagsStore'])->name('store');
+                Route::put('/{id}', [TaxonomyController::class, 'tagsUpdate'])->name('update');
+                Route::delete('/{id}', [TaxonomyController::class, 'tagsDestroy'])->name('destroy');
+            });
+        Route::get('tags/{id}/blogs', [TaxonomyController::class, 'blogsByTag'])->name('tags.blogs');
+    });
 
 Route::prefix('meetings')
     ->name('meeting.')

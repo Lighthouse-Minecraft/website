@@ -36,10 +36,15 @@ new class extends Component {
     {
         $this->blogs = $this->getBlogsProperty();
     }
-}; ?>
+};
+
+?>
 
 <div class="space-y-6">
     <flux:heading size="xl">Manage Blogs</flux:heading>
+    <flux:description>
+        Use this page to create, edit, publish, and organize blog posts. You can manage blog content, assign categories and tags, and control publication status. Actions here help keep your site's blog section fresh, relevant, and well-organized for your audience.
+    </flux:description>
 
     <flux:table :paginate="$this->blogs">
         <flux:table.columns>
@@ -82,8 +87,11 @@ new class extends Component {
                     <flux:table.cell>{{ $blog->published_at ? $blog->published_at->format('F j, Y H:i') : 'N/A' }}</flux:table.cell>
                     <flux:table.cell>{{ $blog->is_public ? 'Yes' : 'No' }}</flux:table.cell>
                     <flux:table.cell>
-                        <flux:button wire:navigate href="{{ route('acp.blogs.edit', $blog->id) }}" size="xs" icon="pencil-square"></flux:button>
-                        <flux:button wire:navigate href="{{ route('blogs.show', $blog->id) }}" size="xs" icon="trash" variant="danger"></flux:button>
+                        <flux:button wire:navigate href="{{ route('blogs.show', $blog->id) }}" size="xs" icon="eye" title="View Blog"></flux:button>
+                        @if(auth()->id() === $blog->author_id)
+                            <flux:button wire:navigate href="{{ route('acp.blogs.edit', $blog->id) }}" size="xs" icon="pencil-square" variant="primary" color="amber" title="Edit Blog"></flux:button>
+                        @endif
+                        <flux:button wire:navigate href="{{ route('blogs.show', $blog->id) }}" size="xs" icon="trash" variant="danger" title="Delete Blog"></flux:button>
                     </flux:table.cell>
                 </flux:table.row>
             @empty

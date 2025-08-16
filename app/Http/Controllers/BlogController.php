@@ -29,7 +29,7 @@ class BlogController extends Controller
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%$search%")
-                    ->orWhere('body', 'like', "%$search%");
+                    ->orWhere('content', 'like', "%$search%");
             });
         }
 
@@ -196,5 +196,81 @@ class BlogController extends Controller
             'blog' => $blog,
             'status' => 'Blog deleted successfully!',
         ], 200);
+    }
+
+    // -------------------- Category Management --------------------
+    public function addCategory(Request $request, $blog)
+    {
+        Gate::authorize('create', Blog::class);
+        $blog = Blog::findOrFail($blog);
+        $request->validate(['category' => 'required|string|max:255']);
+        $category = Category::firstOrCreate(['name' => $request->category]);
+        $blog->categories()->attach($category->id);
+
+        return back()->with('status', 'Category created and attached.');
+    }
+
+    public function attachCategory(Request $request, $blog)
+    {
+        Gate::authorize('update', Blog::class);
+        $blog = Blog::findOrFail($blog);
+        $request->validate(['category_id' => 'required|exists:categories,id']);
+        $blog->categories()->attach($request->category_id);
+
+        return back()->with('status', 'Category attached.');
+    }
+
+    /**
+     * Remove a category from blog (admin only).
+     */
+    public function removeCategory(Request $request, $blog)
+    {
+        Gate::authorize('update', Blog::class);
+        $blog = Blog::findOrFail($blog);
+        $request->validate(['category_id' => 'required|exists:categories,id']);
+        $blog->categories()->detach($request->category_id);
+
+        return back()->with('status', 'Category removed.');
+    }
+
+    // -------------------- Tag Management --------------------
+    /**
+     * Add a new tag to the blog (admin only).
+     */
+    public function addTag(Request $request, $blog)
+    {
+        Gate::authorize('create', Blog::class);
+        $blog = Blog::findOrFail($blog);
+        $request->validate(['tag' => 'required|string|max:255']);
+        $tag = Tag::firstOrCreate(['name' => $request->tag]);
+        $blog->tags()->attach($tag->id);
+
+        return back()->with('status', 'Tag created and attached.');
+    }
+
+    /**
+     * Create a new tag via TaxonomyController and attach to blog (admin only).
+     */
+    public function attachTag(Request $request, $blog)
+    {
+        Gate::authorize('update', Blog::class);
+        $blog = Blog::findOrFail($blog);
+        $request->validate(['tag_id' => 'required|exists:tags,id']);
+        $blog->tags()->attach($request->tag_id);
+
+        return back()->with('status', 'Tag attached.');
+    }
+
+    /**
+     * Remove a tag from blog (admin only).
+     */
+    public function removeTag(Request $request, $blog)
+    {
+        Gate::authorize('update', Blog::class);
+        $blog = Blog::findOrFail($blog);
+        $request->validate(['tag_id' => 'required|exists:tags,id']);
+        $blog->tags()->detach($request->tag_id);
+
+        return back()->with('status', 'Tag removed.');
     }
 }

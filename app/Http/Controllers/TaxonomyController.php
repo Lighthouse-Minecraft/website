@@ -78,7 +78,7 @@ class TaxonomyController extends Controller
         Gate::authorize('viewAny', Tag::class);
         $tags = Tag::latest()->paginate(20);
 
-        return view('tags.index', compact('tags'));
+        return view('taxonomy.tags.index', compact('tags'));
     }
 
     public function tagsShow($id)
@@ -86,7 +86,7 @@ class TaxonomyController extends Controller
         $tag = Tag::findOrFail($id);
         Gate::authorize('view', $tag);
 
-        return view('tags.show', compact('tag'));
+        return view('taxonomy.tags.show', compact('tag'));
     }
 
     public function tagsStore(Request $request)
@@ -96,10 +96,15 @@ class TaxonomyController extends Controller
             'name' => 'required|string|max:255|unique:tags,name',
             'description' => 'nullable|string',
             'color' => 'nullable|string',
+            'author_id' => 'nullable|exists:users,id',
         ]);
+        $validated['slug'] = Str::slug($validated['name']);
         $tag = Tag::create($validated);
 
-        return redirect()->back()->with('status', 'Tag created successfully!');
+        return response()->view('taxonomy.tags.show', [
+            'tag' => $tag,
+            'status' => 'Tag created successfully!',
+        ], 201);
     }
 
     public function tagsUpdate(Request $request, $id)

@@ -76,4 +76,49 @@ class Category extends Model
     {
         return $query->where('is_active', true);
     }
+
+    // -------------------- Validation --------------------
+    /**
+     * Validate the Category model instance.
+     * Checks for required name and unique name.
+     */
+    public function isValid(): bool
+    {
+        // Name is required
+        if (empty($this->name)) {
+            return false;
+        }
+        // Name must be unique (excluding current model)
+        $query = Category::where('name', $this->name);
+        if ($this->exists) {
+            $query->where('id', '!=', $this->id);
+        }
+        if ($query->exists()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Get validation errors for the Category model instance.
+     * Returns an array of error messages for name and uniqueness.
+     */
+    public function getErrors(): array
+    {
+        $errors = [];
+        if (empty($this->name)) {
+            $errors['name'] = 'The name field is required.';
+        } else {
+            $query = Category::where('name', $this->name);
+            if ($this->exists) {
+                $query->where('id', '!=', $this->id);
+            }
+            if ($query->exists()) {
+                $errors['name'] = 'The name field must be unique.';
+            }
+        }
+
+        return $errors;
+    }
 }

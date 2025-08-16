@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Announcement;
+use App\Models\Blog;
 use App\Models\Comment;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 
 class CommentController extends Controller
@@ -14,10 +17,15 @@ class CommentController extends Controller
     public function index(Request $request)
     {
         Gate::authorize('viewAny', Comment::class);
-        // TODO: Add pagination, filtering, etc.
-        $comments = Comment::latest()->paginate(20);
+        $announcementComments = Comment::where('commentable_type', 'App\\Models\\Announcement')
+            ->latest()->paginate(10, ['*'], 'announcement_page');
+        $blogComments = Comment::where('commentable_type', 'App\\Models\\Blog')
+            ->latest()->paginate(10, ['*'], 'blog_page');
 
-        return view('comments.index', compact('comments'));
+        return view('comments.index', [
+            'announcementComments' => $announcementComments,
+            'blogComments' => $blogComments,
+        ]);
     }
 
     /**
@@ -39,16 +47,42 @@ class CommentController extends Controller
         Gate::authorize('create', Comment::class);
         $validated = $request->validate([
             'content' => 'required|string|max:2000',
-            'author_id' => 'nullable|exists:users,id',
             'commentable_id' => 'required|integer',
             'commentable_type' => 'required|string',
         ]);
-        $comment = Comment::create($validated);
+        $validated['author_id'] = Auth::id();
+        Comment::create($validated);
 
-        return response()->view('comments.show', [
+        return redirect()->back()->with('success', 'Comment posted successfully!');
+    }
+
+    /**
+     * Show the form for creating a new comment.
+     */
+    public function create(Request $request)
+    {
+        Gate::authorize('create', Comment::class);
+
+        $blogs = Blog::all();
+        $announcements = Announcement::all();
+
+        return view('comments.create', compact('blogs', 'announcements'));
+    }
+
+    /**
+     * Show the form for editing the specified comment.
+     */
+    public function edit($id)
+    {
+        $comment = Comment::findOrFail($id);
+        Gate::authorize('update', $comment);
+
+        return view('comments.edit', [
+            'commentable_type' => $comment->commentable_type,
+            'commentable_id' => $comment->commentable_id,
+            'commentContent' => $comment->content,
             'comment' => $comment,
-            'status' => 'Comment created successfully!',
-        ], 201);
+        ]);
     }
 
     /**
@@ -76,5 +110,31 @@ class CommentController extends Controller
         $comment->delete();
 
         return redirect()->back()->with('status', 'Comment deleted successfully!');
+    }
+
+    /**
+     * Approve the specified comment.
+     */
+    public function approve(Request $request, $id)
+    {
+        $comment = Comment::findOrFail($id);
+        Gate::authorize('update', $comment);
+        $comment->status = 'approved';
+        $comment->save();
+
+        return redirect()->back()->with('status', 'Comment approved successfully!');
+    }
+
+    /**
+     * Reject the specified comment.
+     */
+    public function reject(Request $request, $id)
+    {
+        $comment = Comment::findOrFail($id);
+        Gate::authorize('update', $comment);
+        $comment->status = 'rejected';
+        $comment->save();
+
+        return redirect()->back()->with('status', 'Comment rejected successfully!');
     }
 }

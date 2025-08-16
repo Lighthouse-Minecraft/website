@@ -69,7 +69,7 @@
                 @forelse($announcement->comments as $comment)
                     <li class="mb-2 border-b pb-2">
                         <div class="text-xs text-gray-500">By {{ $comment->author->name ?? 'Unknown' }} on {{ $comment->created_at->format('M d, Y H:i') }}</div>
-                        <div>{{ $comment->content }}</div>
+                        <div>{!! $comment->content !!}</div>
                     </li>
                 @empty
                     <li class="text-gray-400">No comments yet.</li>

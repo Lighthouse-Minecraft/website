@@ -17,7 +17,7 @@ class Index extends Component
             })
             ->get();
 
-        return view('livewire.blogs.index', [
+        return view('blogs.index', [
             'blogs' => $blogs,
         ]);
     }
