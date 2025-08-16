@@ -22,10 +22,24 @@ describe('Task Management - Create Task', function () {
     })->done();
 
     // The "add task" form creates a new task
+    it('should create a new task when the form is submitted', function () {
+        loginAsAdmin();
+
+        livewire('task.department-list', ['meeting' => $this->meeting, 'section_key' => 'command'])
+            ->set('taskName', 'New Task')
+            ->call('addTask');
+
+        $this->assertDatabaseHas('tasks', [
+            'name' => 'New Task',
+            'assigned_meeting_id' => $this->meeting->id,
+        ]);
+    })->done();
 
     // The assigned_meeting_id is set when a task is created
 
     // The current department is set on the task
+
+    // The task status is set to not-started
 })->wip(issue: 28, assignee: 'jonzenor');
 
 describe('Task Management - Task List', function () {
@@ -54,4 +68,8 @@ describe('Task Management - Task Edit', function () {
     // The task edit modal allows assigning a user to the task
 
     // A task can be marked as cancelled in the task edit modal
+})->todo(issue: 28, assignee: 'jonzenor');
+
+describe('Task Management - Permissions', function () {
+    // Officers and Crew Members can create tasks
 })->todo(issue: 28, assignee: 'jonzenor');
