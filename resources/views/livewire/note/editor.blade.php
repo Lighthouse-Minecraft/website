@@ -96,6 +96,7 @@ new class extends Component {
 
         $this->note->refresh();
         $this->syncLockState();
+        $this->updatedContent = $this->note->content;
     }
 
     public function SaveNote() {
