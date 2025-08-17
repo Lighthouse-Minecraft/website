@@ -1,5 +1,8 @@
 <?php
 
+use App\Enums\MeetingStatus;
+use App\Models\Meeting;
+
 use function Pest\Laravel\get;
 
 describe('Community Updates Navigation page', function () {
@@ -61,12 +64,40 @@ describe('Community Updates page', function () {
             ->assertStatus(403);
     })->with('memberAtMostStowaway');
 
-})->wip(issue: 82, assignee: 'jonzenor');
+})->done(issue: 82, assignee: 'jonzenor');
 
 describe('Community Updates List', function () {
     // List meetings that have been finalized
+    it('lists finalized meetings with community updates', function () {
+        loginAsAdmin();
+        $meeting = Meeting::factory()->withStatus(MeetingStatus::Completed)->create();
 
-    // Show the Community Updates from that meeting
+        get(route('community-updates.index'))
+            ->assertOk()
+            ->assertSee($meeting->title)
+            ->assertSee($meeting->day)
+            ->assertSee($meeting->community_minutes);
+    });
+
+    // Do not show meetings that are any other status
+    it('does not show meetings that are not completed', function () {
+        loginAsAdmin();
+        $meetingPending = Meeting::factory()->withStatus(MeetingStatus::Pending)->create();
+        $meetingInProgress = Meeting::factory()->withStatus(MeetingStatus::InProgress)->create();
+        $meetingFinalizing = Meeting::factory()->withStatus(MeetingStatus::Finalizing)->create();
+
+        get(route('community-updates.index'))
+            ->assertOk()
+            ->assertDontSee($meetingPending->title)
+            ->assertDontSee($meetingPending->day)
+            ->assertDontSee($meetingPending->community_minutes)
+            ->assertDontSee($meetingInProgress->title)
+            ->assertDontSee($meetingInProgress->day)
+            ->assertDontSee($meetingInProgress->community_minutes)
+            ->assertDontSee($meetingFinalizing->title)
+            ->assertDontSee($meetingFinalizing->day)
+            ->assertDontSee($meetingFinalizing->community_minutes);
+    });
 
     // When Livewire 4 releases, make this an infinite scrolling list
-})->todo(issue: 82, assignee: 'jonzenor');
+})->done(issue: 82, assignee: 'jonzenor');

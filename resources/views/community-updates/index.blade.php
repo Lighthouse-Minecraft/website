@@ -1,3 +1,5 @@
 <x-layouts.app>
-    <!-- We must ship. - Taylor Otwell -->
+    <flux:header size="xl">Community Updates</flux:header>
+
+    <livewire:community-updates.list />
 </x-layouts.app>
