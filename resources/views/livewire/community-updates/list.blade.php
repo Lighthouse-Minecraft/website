@@ -11,6 +11,7 @@ new class extends Component {
     {
         $this->meetings = Meeting::query()
             ->where('status', MeetingStatus::Completed->value)
+            ->orderBy('day', 'desc')
             ->get();
     }
 }; ?>
