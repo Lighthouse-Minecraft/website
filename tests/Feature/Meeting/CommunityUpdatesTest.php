@@ -30,16 +30,38 @@ describe('Community Updates Navigation page', function () {
             ->assertDontSee(route('community-updates.index'));
     })->with('memberAtMostStowaway');
 
-});
+})->done(issue: 82, assignee: 'jonzenor');
 
 describe('Community Updates page', function () {
     // The Community Updates page loads
+    it('loads the Community Updates page', function () {
+        loginAsAdmin();
+
+        get(route('community-updates.index'))
+            ->assertStatus(200)
+            ->assertSee('Community Updates')
+            ->assertViewIs('community-updates.index');
+    });
 
     // Traveler and above should have access to the page
+    it('allows access to Traveler and above', function ($user) {
+        loginAs($user);
+
+        get(route('community-updates.index'))
+            ->assertStatus(200)
+            ->assertSee('Community Updates')
+            ->assertViewIs('community-updates.index');
+    })->with('memberAtLeastTraveler');
 
     // Below traveler should not have access to the page
+    it('denies access to Stowaway and below', function ($user) {
+        loginAs($user);
 
-});
+        get(route('community-updates.index'))
+            ->assertStatus(403);
+    })->with('memberAtMostStowaway');
+
+})->wip(issue: 82, assignee: 'jonzenor');
 
 describe('Community Updates List', function () {
     // List meetings that have been finalized
@@ -47,4 +69,4 @@ describe('Community Updates List', function () {
     // Show the Community Updates from that meeting
 
     // When Livewire 4 releases, make this an infinite scrolling list
-});
+})->todo(issue: 82, assignee: 'jonzenor');
