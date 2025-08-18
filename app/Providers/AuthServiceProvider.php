@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Enums\MembershipLevel;
+use App\Enums\StaffDepartment;
+use App\Enums\StaffRank;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 
@@ -26,6 +28,10 @@ class AuthServiceProvider extends ServiceProvider
 
         Gate::define('view-community-updates', function ($user) {
             return $user->isAtLeastLevel(MembershipLevel::Traveler) || $user->hasRole('Admin');
+        });
+
+        Gate::define('manage-stowaway-users', function ($user) {
+            return $user->hasRole('Admin') || $user->isAtLeastRank(StaffRank::Officer) || ($user->isAtLeastRank(StaffRank::CrewMember) && $user->isInDepartment(StaffDepartment::Quartermaster));
         });
     }
 }
