@@ -99,7 +99,7 @@ new class extends Component {
                      variant="danger"
                      :disabled="$selectedBlogCountOnPage === 0"
                      x-on:click.prevent="if (confirm('Delete selected blogs on this page?')) { $wire.bulkDeleteBlogs() }">
-            Delete Selected
+            Bulk
         </flux:button>
     </div>
 
@@ -139,8 +139,10 @@ new class extends Component {
                                wire:key="blog-row-{{ $blog->id }}-{{ in_array($blog->id, $selectedBlogIds) ? '1' : '0' }}"
                                wire:model="selectedBlogIds">
                     </flux:table.cell>
-                    <flux:table.cell style="white-space: pre-line; word-break: break-word; overflow-wrap: anywhere; max-width: 900px;">
-                        {{ $blog->title }}
+                    <flux:table.cell class="align-middle">
+                        <div class="truncate" style="max-width: 40ch" title="{{ $blog->title }}">
+                            {{ $blog->title }}
+                        </div>
                     </flux:table.cell>
                     <flux:table.cell class="flex items-center gap-3">
                         @php($author = $blog->author) {{-- may be null --}}
@@ -168,7 +170,7 @@ new class extends Component {
                     <flux:table.cell class="flex items-center gap-2">
                         <flux:button wire:navigate href="{{ route('blogs.show', ['id' => $blog->id, 'from' => 'acp']) }}" size="xs" icon="eye" title="View Blog"></flux:button>
                         @if(auth()->id() === $blog->author_id)
-                            <flux:button wire:navigate href="{{ route('acp.blogs.edit', $blog->id) }}" size="xs" icon="pencil-square" variant="primary" color="amber" title="Edit Blog"></flux:button>
+                            <flux:button wire:navigate href="{{ route('acp.blogs.edit', $blog->id) }}" size="xs" icon="pencil-square" variant="primary" color="sky" title="Edit Blog"></flux:button>
                         @endif
                         <flux:button wire:navigate href="{{ route('acp.blogs.confirmDelete', ['id' => $blog->id, 'from' => 'acp']) }}" size="xs" icon="trash" variant="danger" title="Delete Blog"></flux:button>
                     </flux:table.cell>

@@ -239,14 +239,14 @@ new class extends Component {
                     <flux:label for="category_name">Name</flux:label>
                     <flux:input id="category_name" name="name" wire:model.defer="newCategoryName" required placeholder="Name" />
                 </flux:field>
-        <div class="flex items-end gap-3 w-full sm:w-auto">
+                <div class="flex items-end gap-3 w-full sm:w-auto">
                     <flux:field>
                         <flux:label for="category_color">Color</flux:label>
-            <flux:input id="category_color" name="color" placeholder="#334155" pattern="^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$" title="HEX color like #334155" wire:model.live="newCategoryColor" />
+                        <flux:input id="category_color" name="color" placeholder="#334155" pattern="^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$" title="HEX color like #334155" wire:model.live="newCategoryColor" />
                     </flux:field>
                     <flux:field>
                         <flux:label class="opacity-70">Pick</flux:label>
-            <input type="color" wire:model.live="newCategoryColor" class="h-9 w-12 rounded border border-white/10 bg-transparent p-1" aria-label="Pick category color" />
+                        <input type="color" wire:model.live="newCategoryColor" class="h-9 w-12 rounded border border-white/10 bg-transparent p-1" aria-label="Pick category color" />
                     </flux:field>
                 </div>
                 <flux:text class="text-xs text-gray-400 w-full">Color accepts HEX like #334155; leave blank to use the default.</flux:text>
@@ -271,7 +271,7 @@ new class extends Component {
                                  variant="danger"
                                  :disabled="$selectedCategoryCountOnPage === 0"
                                  x-on:click.prevent="if (confirm('Delete selected categories on this page?')) { $wire.bulkDeleteCategories() }">
-                        Delete Selected
+                        Bulk
                     </flux:button>
                 </div>
                 <flux:table :paginate="$this->categories">
@@ -325,9 +325,9 @@ new class extends Component {
                                 </flux:table.cell>
                                 <flux:table.cell class="space-x-2">
                                     <flux:modal.trigger name="edit-taxonomy-modal" wire:click="openEditModal('category', {{ $category->id }})">
-                                        <flux:button size="xs" icon="pencil-square" variant="primary" color="amber"></flux:button>
+                                        <flux:button size="xs" icon="pencil-square" variant="primary" color="sky" title="Edit Category"></flux:button>
                                     </flux:modal.trigger>
-                                    <flux:button type="button" size="xs" icon="trash" variant="danger" x-on:click.prevent="if(confirm('Are you sure you want to delete this category? This cannot be undone.')) { $wire.deleteCategory({{ $category->id }}) }"></flux:button>
+                                    <flux:button type="button" size="xs" icon="trash" variant="danger" x-on:click.prevent="if(confirm('Are you sure you want to delete this category? This cannot be undone.')) { $wire.deleteCategory({{ $category->id }}) }" title="Delete Category"></flux:button>
                                 </flux:table.cell>
                             </flux:table.row>
                         @empty
@@ -380,7 +380,7 @@ new class extends Component {
                                  variant="danger"
                                  :disabled="$selectedTagCountOnPage === 0"
                                  x-on:click.prevent="if (confirm('Delete selected tags on this page?')) { $wire.bulkDeleteTags() }">
-                        Delete Selected
+                        Bulk
                     </flux:button>
                 </div>
                 <flux:table :paginate="$this->tags">
@@ -434,9 +434,9 @@ new class extends Component {
                                 </flux:table.cell>
                                 <flux:table.cell class="space-x-2">
                                     <flux:modal.trigger name="edit-taxonomy-modal" wire:click="openEditModal('tag', {{ $tag->id }})">
-                                        <flux:button size="xs" icon="pencil-square" variant="primary" color="amber"></flux:button>
+                                        <flux:button size="xs" icon="pencil-square" variant="primary" color="sky" title="Edit Tag"></flux:button>
                                     </flux:modal.trigger>
-                                    <flux:button type="button" size="xs" icon="trash" variant="danger" x-on:click.prevent="if(confirm('Are you sure you want to delete this tag? This cannot be undone.')) { $wire.deleteTag({{ $tag->id }}) }"></flux:button>
+                                    <flux:button type="button" size="xs" icon="trash" variant="danger" x-on:click.prevent="if(confirm('Are you sure you want to delete this tag? This cannot be undone.')) { $wire.deleteTag({{ $tag->id }}) }" title="Delete Tag"></flux:button>
                                 </flux:table.cell>
                             </flux:table.row>
                         @empty
