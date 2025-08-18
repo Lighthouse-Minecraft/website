@@ -1,161 +1,61 @@
-<?php
-
-use App\Models\Category;
-use App\Models\Tag;
-use Livewire\Volt\Component;
-
-new class extends Component {
-    public $announcement;
-
-    public function mount($announcement)
-    {
-        $this->announcement = $announcement;
-    }
-
-}; ?>
-
-<div class="w-full space-y-6">
-    @php
-        $user = auth()->user();
-        $isAdmin = $user && $user->is_admin;
-        $isAuthor = $user && $announcement->author_id === $user->id;
-    @endphp
-    @if($isAdmin || $isAuthor)
-        <div class="bg-red-900/30 border-l-4 border-red-500 text-red-300 px-4 py-3 shadow-sm rounded">
-            <span>
-                <strong class="font-semibold text-red-200">Warning:</strong>
-                You are about to delete this announcement.
-            </span>
-            @if($announcement->is_public)
-                <br>
-                <p class="text-sm text-red-200">This announcement is currently public. Deleting it will remove it from public view.</p>
+<flux:card class="max-w-3xl mx-auto mt-10">
+    <div class="p-8 space-y-6">
+        <flux:heading size="xl" style="font-weight: bold; text-align: center;">Announcement Details</flux:heading>
+        <div class="text-base text-gray-200 mb-2">
+            <strong>Title:</strong>
+            <div class="mt-2">{{ $announcement->title }}</div>
+        </div>
+        <br>
+        <div class="text-base text-gray-200 mb-2">
+            <strong>Content:</strong>
+            <div class="mt-2 prose max-w-none">{!! $announcement->content !!}</div>
+        </div>
+        <br>
+        <div class="text-sm text-gray-400">
+            <strong>Author:</strong>
+            @if($announcement->author)
+                <flux:link href="{{ route('profile.show', ['user' => $announcement->author]) }}">
+                    {{ $announcement->author->name }}
+                </flux:link>
+            @else
+                <span class="text-gray-400">Unknown</span>
             @endif
         </div>
-        <div class="bg-blue-900/30 border-l-4 border-blue-500 text-blue-300 px-4 py-3 shadow-sm rounded">
-            <span class="text-sm text-blue-200">Use the buttons on the right-hand side to edit or confirm deletion, or use the back button to go back.</span>
+        <div class="text-sm text-gray-400">
+            <strong>Posted:</strong>
+            {{ $announcement->created_at->format('M d, Y H:i') }}
         </div>
-        <div class="flex items-center justify-between">
-            <flux:heading size="xl">{{ $announcement->title }}</flux:heading>
-            <div>
-                @can('update', $announcement)
-                    <a href="{{ route('acp.announcements.edit', $announcement->id) }}">
-                        <flux:button size="xs" icon="pencil-square"></flux:button>
-                    </a>
-                @endcan
-                @can('delete', $announcement)
-                    <form action="{{ route('acp.announcements.delete', $announcement->id) }}" method="POST" style="display:inline;">
-                        @csrf
-                        @method('DELETE')
-                        <flux:button type="submit" size="xs" icon="trash" variant="danger"></flux:button>
-                    </form>
-                @endcan
+        @if($announcement->updated_at && $announcement->updated_at != $announcement->created_at)
+            <div class="text-xs text-gray-500">
+                <strong>Edited:</strong> {{ $announcement->updated_at->format('M d, Y H:i') }}
             </div>
-        </div>
-    @else
-        <div class="flex items-center justify-between">
-            <flux:heading size="xl">{{ $announcement->title }}</flux:heading>
-        </div>
-    @endif
-
-    <div id="editor_content" class="prose max-w-none">
-        {!! $announcement->content !!}
-    </div>
-    <flux:separator />
-    <livewire:announcements.author-info :announcement="$announcement" />
-    <livewire:announcements.categories :announcement="$announcement" />
-    <livewire:announcements.tags :announcement="$announcement" />
-    <livewire:announcements.comments :announcement="$announcement" />
-
-    <div class="mb-4">
-        <strong>Tags:</strong>
-        @forelse($announcement->tags as $tag)
-            <span class="inline-block bg-gray-200 text-gray-700 px-2 py-1 rounded mr-1">{{ $tag->name }}</span>
-        @empty
-            <span class="text-gray-400">No tags</span>
-        @endforelse
-        @if($isAdmin)
-            <form method="POST" action="{{ route('acp.announcements.addTag', $announcement->id) }}" class="inline-block ml-2">
-                @csrf
-                <input type="text" name="tag" placeholder="Create new tag" required>
-                <button type="submit" class="px-2 py-1 bg-green-600 text-white rounded">Create</button>
-            </form>
-            <form method="POST" action="{{ route('acp.announcements.removeTag', $announcement->id) }}" class="inline-block ml-2">
-                @csrf
-                <select name="tag_id">
-                    <option value="" >Select tag</option>
-                    @foreach($announcement->tags as $tag)
-                        <option value="{{ $tag->id }}">{{ $tag->name }}</option>
-                    @endforeach
-                </select>
-                <button type="submit" class="px-2 py-1 bg-red-600 text-white rounded">Remove</button>
-            </form>
         @endif
-        <form method="POST" action="{{ route('acp.announcements.attachTag', $announcement->id) }}" class="inline-block ml-2">
-            @csrf
-            <select name="tag_id">
-                <option value="" >Select tag</option>
-                @foreach(Tag::all() as $tag)
-                    <option value="{{ $tag->id }}">{{ $tag->name }}</option>
-                @endforeach
-            </select>
-        </form>
-    </div>
-    <div class="mb-4">
-        <strong>Categories:</strong>
-        @forelse($announcement->categories as $category)
-            <span class="inline-block bg-blue-200 text-blue-700 px-2 py-1 rounded mr-1">{{ $category->name }}</span>
-        @empty
-            <span class="text-gray-400">No categories</span>
-        @endforelse
-        @if($isAdmin)
-            <form method="POST" action="{{ route('acp.announcements.addCategory', $announcement->id) }}" class="inline-block ml-2">
-                @csrf
-                <input type="text" name="category" placeholder="Create new category" required>
-                <button type="submit" class="px-2 py-1 bg-green-600 text-white rounded">Create</button>
-            </form>
-            <form method="POST" action="{{ route('acp.announcements.removeCategory', $announcement->id) }}" class="inline-block ml-2">
-                @csrf
-                <select name="category_id">
-                    <option value="" >Select category</option>
-                    @foreach($announcement->categories as $category)
-                        <option value="{{ $category->id }}">{{ $category->name }}</option>
-                    @endforeach
-                </select>
-                <button type="submit" class="px-2 py-1 bg-red-600 text-white rounded">Remove</button>
-            </form>
-        @endif
-        <form method="POST" action="{{ route('acp.announcements.attachCategory', $announcement->id) }}" class="inline-block ml-2">
-            @csrf
-            <select name="category_id">
-                <option value="" >Select category</option>
-                @foreach(Category::all() as $category)
-                    <option value="{{ $category->id }}">{{ $category->name }}</option>
-                @endforeach
-            </select>
-        </form>
-    </div>
-    <div class="mt-6">
-        <strong>Comments:</strong>
-        <ul>
-            @php
-                foreach($announcement->comments as $comment) {
-                    if ($comment->status !== 'approved' && $comment->created_at->lt(now()->subDay())) {
-                        $comment->status = 'approved';
-                        $comment->save();
-                    }
-                }
-                $approvedComments = $announcement->comments->where('status', 'approved');
-            @endphp
-            @forelse($approvedComments as $comment)
-                <li class="mb-2 border-b pb-2">
-                    <div class="text-xs text-gray-500">By {{ $comment->author->name ?? 'Unknown' }} on {{ $comment->created_at->format('M d, Y H:i') }}</div>
-                    <div>{!! $comment->content !!}</div>
-                </li>
+        <div class="mb-4">
+            <strong>Tags:</strong>
+            @forelse($announcement->tags as $tag)
+                <span class="inline-block bg-gray-200 text-gray-700 px-2 py-1 rounded mr-1">{{ $tag->name }}</span>
             @empty
-                <li class="text-gray-400">No comments yet.</li>
+                <span class="text-gray-400">No tags</span>
             @endforelse
-        </ul>
+        </div>
+        <div class="mb-4">
+            <strong>Categories:</strong>
+            @forelse($announcement->categories as $category)
+                <span class="inline-block bg-blue-200 text-blue-700 px-2 py-1 rounded mr-1">{{ $category->name }}</span>
+            @empty
+                <span class="text-gray-400">No categories</span>
+            @endforelse
+        </div>
+        <div class="mt-6">
+            <strong>Comments:</strong>
+            <livewire:comments.comments-section :parent="$announcement" />
+        </div>
+        <div class="w-full text-right mt-4">
+            @if(request('from') === 'acp')
+                <flux:button wire:navigate href="{{ route('acp.index', ['tab' => 'announcement-manager']) }}" variant="primary">Back</flux:button>
+            @else
+                <flux:button wire:navigate href="{{ route('announcements.index') }}" variant="primary">Back</flux:button>
+            @endif
+        </div>
     </div>
-
-    <flux:button size="sm" icon="arrow-left" onclick="window.history.back();"></flux:button>
-</div>
+</flux:card>

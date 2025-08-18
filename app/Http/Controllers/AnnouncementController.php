@@ -8,6 +8,7 @@ use App\Models\Tag;
 use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 
 class AnnouncementController extends Controller
@@ -52,9 +53,11 @@ class AnnouncementController extends Controller
      */
     public function show($id)
     {
-        Gate::authorize('view', Announcement::class);
-
         $announcement = Announcement::with(['author.roles'])->findOrFail($id);
+
+        if (Auth::check() && Gate::denies('view', $announcement)) {
+            abort(403);
+        }
 
         return view('announcements.show', compact('announcement'));
     }
@@ -78,29 +81,37 @@ class AnnouncementController extends Controller
     public function store(Request $request)
     {
         Gate::authorize('create', Announcement::class);
-        $request->validate([
+        $validated = $request->validate([
             'title' => 'required|string|max:255',
             'content' => 'required|max:5000',
             'author_id' => 'nullable|exists:users,id',
-            'tags' => 'array',
-            'categories' => 'array',
+            'tags' => ['array'],
+            'tags.*' => ['integer', 'exists:tags,id'],
+            'categories' => ['array'],
+            'categories.*' => ['integer', 'exists:categories,id'],
             'is_published' => 'boolean',
             'published_at' => 'nullable|date',
         ]);
 
         // Create the announcement
         $announcement = Announcement::create([
-            'title' => $request->title,
-            'content' => $request->content,
-            'author_id' => $request->author_id,
-            'tags' => $request->tags,
-            'categories' => $request->categories,
-            'is_published' => $request->is_published,
-            'published_at' => $request->is_published ? now() : null,
+            'title' => $validated['title'],
+            'content' => $validated['content'],
+            'author_id' => $validated['author_id'] ?? null,
+            'is_published' => $validated['is_published'] ?? false,
+            'published_at' => ($validated['is_published'] ?? false) ? now() : null,
         ]);
 
-        return view('livewire.announcements.show', ['announcement' => $announcement])
-            ->with('status', 'Announcement created successfully!');
+        // Sync categories and tags via pivot tables
+        $announcement->categories()->sync($validated['categories'] ?? []);
+        $announcement->tags()->sync($validated['tags'] ?? []);
+
+        $announcement->load(['categories', 'tags']);
+
+        return response()->view('livewire.announcements.show', [
+            'announcement' => $announcement,
+            'status' => 'Announcement created successfully!',
+        ], 201);
     }
 
     /**
@@ -112,7 +123,10 @@ class AnnouncementController extends Controller
 
         Gate::authorize('update', $announcement);
 
-        return view('announcements.edit', compact('announcement'));
+        return response()->view('announcements.edit', [
+            'announcement' => $announcement,
+            'status' => 'Announcement edited successfully!',
+        ], 200);
     }
 
     /**
@@ -124,28 +138,51 @@ class AnnouncementController extends Controller
 
         Gate::authorize('update', $announcement);
 
-        $request->validate([
+        $validated = $request->validate([
             'title' => 'required|string|max:255',
             'content' => 'required',
             'author_id' => 'nullable|exists:users,id',
-            'tags' => 'array',
-            'categories' => 'array',
+            'tags' => ['array'],
+            'tags.*' => ['integer', 'exists:tags,id'],
+            'categories' => ['array'],
+            'categories.*' => ['integer', 'exists:categories,id'],
             'is_published' => 'boolean',
             'published_at' => 'nullable|date',
         ]);
 
         $announcement->update([
-            'title' => $request->title,
-            'content' => $request->content,
-            'author_id' => $request->author_id,
-            'tags' => $request->tags,
-            'categories' => $request->categories,
-            'is_published' => $request->is_published,
-            'published_at' => $request->published_at,
+            'title' => $validated['title'],
+            'content' => $validated['content'],
+            'author_id' => $validated['author_id'] ?? null,
+            'is_published' => $validated['is_published'] ?? false,
+            'published_at' => $validated['published_at'] ?? ($validated['is_published'] ?? false ? now() : null),
         ]);
 
-        return view('livewire.announcements.show', ['announcement' => $announcement])
-            ->with('status', 'Announcement updated successfully!');
+        // Sync categories and tags via pivot tables
+        $announcement->categories()->sync($validated['categories'] ?? []);
+        $announcement->tags()->sync($validated['tags'] ?? []);
+
+        $announcement->load(['categories', 'tags']);
+
+        return response()->view('announcements.show', [
+            'announcement' => $announcement,
+            'status' => 'Announcement updated successfully!',
+        ], 200);
+    }
+
+    /**
+     * Show confirmation page before deleting the specified announcement (GET).
+     */
+    public function confirmDestroy($id)
+    {
+        $announcement = Announcement::with(['author.roles', 'tags', 'categories', 'comments'])->findOrFail($id);
+
+        Gate::authorize('delete', $announcement);
+
+        return view('livewire.announcements.destroy', [
+            'announcement' => $announcement,
+            'status' => null,
+        ]);
     }
 
     /**
@@ -159,8 +196,11 @@ class AnnouncementController extends Controller
 
         $announcement->delete();
 
-        return redirect()->route('acp.index', ['tab' => 'announcement-manager'])
-            ->with('status', 'Announcement deleted successfully!');
+        return response()->view('livewire.announcements.destroy', [
+            'announcement' => $announcement,
+            'tab' => 'announcement-manager',
+            'status' => 'Announcement deleted successfully!',
+        ], 200);
     }
 
     // -------------------- Category Management --------------------

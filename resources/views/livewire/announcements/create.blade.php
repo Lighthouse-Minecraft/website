@@ -1,10 +1,17 @@
 
 <?php
 
-use App\Models\{Announcement, Category, Tag};
-use Flux\{Flux, Option};
-use Illuminate\Support\{Arr, Str, Carbon, Collection, Facades};
-use Livewire\Volt\{Component};
+use App\Models\Announcement;
+use App\Models\Category;
+use App\Models\Tag;
+use Flux\Flux;
+use Flux\Option;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades;
+use Livewire\Volt\Component;
 
 new class extends Component {
     public string $announcementTitle = '';
@@ -75,19 +82,31 @@ new class extends Component {
 
             <flux:editor label="Announcement Content" wire:model="announcementContent" />
 
-            <select name="tags">
-                <option value="">Select Tags</option>
-                @foreach ($this->getTagOptionsProperty() as $tag)
-                    <option value="{{ $tag['value'] }}">{{ $tag['label'] }}</option>
-                @endforeach
-            </select>
+            <flux:field>
+                <flux:label>Tags</flux:label>
+                <flux:select variant="listbox" multiple searchable indicator="checkbox" wire:model.live="selectedTags">
+                    <x-slot name="button">
+                        <flux:select.button class="w-full max-w-xl" placeholder="Select tags" :invalid="$errors->has('selectedTags')" />
+                    </x-slot>
+                    @foreach ($this->getTagOptionsProperty() as $tag)
+                        <flux:select.option value="{{ $tag['value'] }}">{{ $tag['label'] }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+                <flux:error name="selectedTags" />
+            </flux:field>
 
-            <select name="categories">
-                <option value="">Select Categories</option>
-                @foreach ($this->getCategoryOptionsProperty() as $category)
-                    <option value="{{ $category['value'] }}">{{ $category['label'] }}</option>
-                @endforeach
-            </select>
+            <flux:field>
+                <flux:label>Categories</flux:label>
+                <flux:select variant="listbox" multiple searchable indicator="checkbox" wire:model.live="selectedCategories">
+                    <x-slot name="button">
+                        <flux:select.button class="w-full max-w-xl" placeholder="Select categories" :invalid="$errors->has('selectedCategories')" />
+                    </x-slot>
+                    @foreach ($this->getCategoryOptionsProperty() as $category)
+                        <flux:select.option value="{{ $category['value'] }}">{{ $category['label'] }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+                <flux:error name="selectedCategories" />
+            </flux:field>
 
             <flux:checkbox label="Published" wire:model="isPublished" />
 
