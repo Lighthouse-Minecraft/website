@@ -1,4 +1,4 @@
-<x-layouts.app>
+{{-- <x-layouts.app>
     <div class="w-full space-y-6">
         <div class="bg-red-900/30 border-l-4 border-red-500 text-red-300 px-4 py-3 shadow-sm rounded">
             <strong class="font-semibold text-red-200">Warning:</strong>
@@ -79,4 +79,4 @@
 
         <flux:button size="sm" icon="arrow-left" onclick="window.history.back();"></flux:button>
     </div>
-</x-layouts.app>
+</x-layouts.app> --}}
