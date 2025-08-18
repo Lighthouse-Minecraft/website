@@ -53,6 +53,7 @@ new class extends Component {
 
 <flux:card class="w-full">
     <flux:heading size="md" class="mb-4">Stowaway Users</flux:heading>
+    <flux:text variant="subtle">Stowaway users are those who have agreed to the Lighthouse Rules and are awaiting promotion to Traveler.</flux:text>
 
     @if($this->stowawayUsers->count() > 0)
         <flux:table>
