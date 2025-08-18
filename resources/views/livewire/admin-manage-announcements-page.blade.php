@@ -14,6 +14,8 @@ new class extends Component {
 
     public $sortBy = 'created_at';
     public $sortDirection = 'desc';
+    // Bulk selection state
+    public array $selectedAnnouncementIds = [];
 
     public function sort($column)
     {
@@ -36,6 +38,42 @@ new class extends Component {
     {
         $this->announcements = $this->getAnnouncementsProperty();
     }
+
+    // Toggle select all on current page
+    public function toggleAllAnnouncements(bool $checked): void
+    {
+        $ids = collect($this->announcements->items())->pluck('id')->map(fn ($v) => (int) $v)->all();
+        $this->selectedAnnouncementIds = $checked ? $ids : [];
+    }
+
+    // Bulk delete, limited to items visible on current page
+    public function bulkDeleteAnnouncements(): void
+    {
+        $pageIds = collect($this->announcements->items())->pluck('id')->map(fn ($v) => (int) $v)->all();
+        $idsToDelete = array_values(array_intersect($this->selectedAnnouncementIds, $pageIds));
+
+        if (empty($idsToDelete)) {
+            return;
+        }
+
+        $announcements = Announcement::query()->whereIn('id', $idsToDelete)->get();
+        $deletableIds = $announcements->filter(fn ($a) => auth()->user()?->can('delete', $a))->pluck('id')->all();
+
+        if (! empty($deletableIds)) {
+            Announcement::query()->whereIn('id', $deletableIds)->delete();
+        }
+
+        $this->selectedAnnouncementIds = [];
+        $this->resetPage();
+        $this->announcements = $this->getAnnouncementsProperty();
+    }
+
+    // Keep selections scoped to the current page
+    public function updatedPage(): void
+    {
+        $currentPageIds = collect($this->getAnnouncementsProperty()->items())->pluck('id')->map(fn ($v) => (int) $v)->all();
+        $this->selectedAnnouncementIds = array_values(array_intersect($this->selectedAnnouncementIds, $currentPageIds));
+    }
 }; ?>
 
 <div class="space-y-6">
@@ -44,8 +82,39 @@ new class extends Component {
         Use this page to create, edit, publish, and organize announcements. You can manage announcement content, assign categories and tags, and control publication status. Actions here help keep your community informed and engaged with timely updates and news.
     </flux:description>
 
+    <div class="flex items-center justify-between">
+        @php
+            $announcementPageIds = collect($this->announcements->items())->pluck('id')->all();
+            $selectedAnnouncementCountOnPage = count(array_intersect($selectedAnnouncementIds, $announcementPageIds));
+        @endphp
+        <div class="text-sm text-gray-400">
+            <span>Selected:</span>
+            <span class="font-semibold text-gray-200">{{ $selectedAnnouncementCountOnPage }}</span>
+        </div>
+        <flux:button type="button"
+                     size="sm"
+                     icon="trash"
+                     variant="danger"
+                     :disabled="$selectedAnnouncementCountOnPage === 0"
+                     x-on:click.prevent="if (confirm('Delete selected announcements on this page?')) { $wire.bulkDeleteAnnouncements() }">
+            Delete Selected
+        </flux:button>
+    </div>
+
     <flux:table :paginate="$this->announcements">
         <flux:table.columns>
+            <flux:table.column>
+                @php
+                    $announcementPageIds = collect($this->announcements->items())->pluck('id')->all();
+                    $annOnPageSelectedCount = count(array_intersect($selectedAnnouncementIds, $announcementPageIds));
+                    $annAllOnPageSelected = $annOnPageSelectedCount === count($announcementPageIds) && count($announcementPageIds) > 0;
+                @endphp
+                <input type="checkbox"
+                       aria-label="Select all announcements"
+                       wire:key="announcements-header-{{ implode('-', $announcementPageIds) }}-{{ count($selectedAnnouncementIds) }}"
+                       wire:change="toggleAllAnnouncements($event.target.checked)"
+                       @checked($annAllOnPageSelected)>
+            </flux:table.column>
             <flux:table.column sortable :sorted="$sortBy === 'title'" :direction="$sortDirection" wire:click="sort('title')">Title</flux:table.column>
             <flux:table.column sortable :sorted="$sortBy === 'author_id'" :direction="$sortDirection" wire:click="sort('author_id')">Author</flux:table.column>
             <flux:table.column sortable :sorted="$sortBy === 'tags'" :direction="$sortDirection" wire:click="sort('tags')">Tags</flux:table.column>
@@ -61,6 +130,14 @@ new class extends Component {
         <flux:table.rows>
             @forelse($this->announcements as $announcement)
                 <flux:table.row :key="$announcement->id">
+                    <flux:table.cell>
+                        <input class="announcement-checkbox"
+                               type="checkbox"
+                               value="{{ $announcement->id }}"
+                               aria-label="Select announcement {{ $announcement->title }}"
+                               wire:key="announcement-row-{{ $announcement->id }}-{{ in_array($announcement->id, $selectedAnnouncementIds) ? '1' : '0' }}"
+                               wire:model="selectedAnnouncementIds">
+                    </flux:table.cell>
                     <flux:table.cell style="white-space: pre-line; word-break: break-word; overflow-wrap: anywhere; max-width: 900px;">
                         {{ $announcement->title }}
                     </flux:table.cell>
@@ -94,7 +171,7 @@ new class extends Component {
                 </flux:table.row>
             @empty
                 <flux:table.row>
-                    <flux:table.cell colspan="6" class="text-center text-gray-500">No announcements found</flux:table.cell>
+                    <flux:table.cell colspan="8" class="text-center text-gray-500">No announcements found</flux:table.cell>
                 </flux:table.row>
             @endforelse
         </flux:table.rows>

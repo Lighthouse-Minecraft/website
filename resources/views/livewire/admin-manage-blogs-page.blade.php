@@ -14,6 +14,8 @@ new class extends Component {
 
     public $sortBy = 'created_at';
     public $sortDirection = 'desc';
+    // Bulk selection state
+    public array $selectedBlogIds = [];
 
     public function sort($column)
     {
@@ -36,6 +38,42 @@ new class extends Component {
     {
         $this->blogs = $this->getBlogsProperty();
     }
+
+    // Toggle select all on current page
+    public function toggleAllBlogs(bool $checked): void
+    {
+        $ids = collect($this->blogs->items())->pluck('id')->map(fn ($v) => (int) $v)->all();
+        $this->selectedBlogIds = $checked ? $ids : [];
+    }
+
+    // Bulk delete, limited to items visible on current page
+    public function bulkDeleteBlogs(): void
+    {
+        $pageIds = collect($this->blogs->items())->pluck('id')->map(fn ($v) => (int) $v)->all();
+        $idsToDelete = array_values(array_intersect($this->selectedBlogIds, $pageIds));
+
+        if (empty($idsToDelete)) {
+            return;
+        }
+
+        $blogs = Blog::query()->whereIn('id', $idsToDelete)->get();
+        $deletableIds = $blogs->filter(fn ($b) => auth()->user()?->can('delete', $b))->pluck('id')->all();
+
+        if (! empty($deletableIds)) {
+            Blog::query()->whereIn('id', $deletableIds)->delete();
+        }
+
+        $this->selectedBlogIds = [];
+        $this->resetPage();
+        $this->blogs = $this->getBlogsProperty();
+    }
+
+    // Keep selections scoped to the current page
+    public function updatedPage(): void
+    {
+        $currentPageIds = collect($this->getBlogsProperty()->items())->pluck('id')->map(fn ($v) => (int) $v)->all();
+        $this->selectedBlogIds = array_values(array_intersect($this->selectedBlogIds, $currentPageIds));
+    }
 };
 
 ?>
@@ -46,8 +84,39 @@ new class extends Component {
         Use this page to create, edit, publish, and organize blog posts. You can manage blog content, assign categories and tags, and control publication status. Actions here help keep your site's blog section fresh, relevant, and well-organized for your audience.
     </flux:description>
 
+    <div class="flex items-center justify-between">
+        @php
+            $blogPageIds = collect($this->blogs->items())->pluck('id')->all();
+            $selectedBlogCountOnPage = count(array_intersect($selectedBlogIds, $blogPageIds));
+        @endphp
+        <div class="text-sm text-gray-400">
+            <span>Selected:</span>
+            <span class="font-semibold text-gray-200">{{ $selectedBlogCountOnPage }}</span>
+        </div>
+        <flux:button type="button"
+                     size="sm"
+                     icon="trash"
+                     variant="danger"
+                     :disabled="$selectedBlogCountOnPage === 0"
+                     x-on:click.prevent="if (confirm('Delete selected blogs on this page?')) { $wire.bulkDeleteBlogs() }">
+            Delete Selected
+        </flux:button>
+    </div>
+
     <flux:table :paginate="$this->blogs">
         <flux:table.columns>
+            <flux:table.column>
+                @php
+                    $blogPageIds = collect($this->blogs->items())->pluck('id')->all();
+                    $blogOnPageSelectedCount = count(array_intersect($selectedBlogIds, $blogPageIds));
+                    $blogAllOnPageSelected = $blogOnPageSelectedCount === count($blogPageIds) && count($blogPageIds) > 0;
+                @endphp
+                <input type="checkbox"
+                       aria-label="Select all blogs"
+                       wire:key="blogs-header-{{ implode('-', $blogPageIds) }}-{{ count($selectedBlogIds) }}"
+                       wire:change="toggleAllBlogs($event.target.checked)"
+                       @checked($blogAllOnPageSelected)>
+            </flux:table.column>
             <flux:table.column sortable :sorted="$sortBy === 'title'" :direction="$sortDirection" wire:click="sort('title')">Title</flux:table.column>
             <flux:table.column sortable :sorted="$sortBy === 'author_id'" :direction="$sortDirection" wire:click="sort('author_id')">Author</flux:table.column>
             <flux:table.column sortable :sorted="$sortBy === 'tags'" :direction="$sortDirection" wire:click="sort('tags')">Tags</flux:table.column>
@@ -62,6 +131,14 @@ new class extends Component {
         <flux:table.rows>
             @forelse($this->blogs as $blog)
                 <flux:table.row :key="$blog->id">
+                    <flux:table.cell>
+                        <input class="blog-checkbox"
+                               type="checkbox"
+                               value="{{ $blog->id }}"
+                               aria-label="Select blog {{ $blog->title }}"
+                               wire:key="blog-row-{{ $blog->id }}-{{ in_array($blog->id, $selectedBlogIds) ? '1' : '0' }}"
+                               wire:model="selectedBlogIds">
+                    </flux:table.cell>
                     <flux:table.cell style="white-space: pre-line; word-break: break-word; overflow-wrap: anywhere; max-width: 900px;">
                         {{ $blog->title }}
                     </flux:table.cell>
@@ -98,7 +175,7 @@ new class extends Component {
                 </flux:table.row>
             @empty
                 <flux:table.row>
-                    <flux:table.cell colspan="6" class="text-center text-gray-500">No blogs found</flux:table.cell>
+                    <flux:table.cell colspan="9" class="text-center text-gray-500">No blogs found</flux:table.cell>
                 </flux:table.row>
             @endforelse
         </flux:table.rows>
