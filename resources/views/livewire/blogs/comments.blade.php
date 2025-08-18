@@ -42,7 +42,7 @@ new class extends Component {
     <form method="POST" action="{{ route('comments.store') }}" style="margin-top:1rem;">
         @csrf
         <input type="hidden" name="commentable_id" value="{{ $blog->id }}">
-        <input type="hidden" name="commentable_type" value="App\\Models\\Blog">
+        <input type="hidden" name="commentable_type" value="blog">
         <div>
             <textarea name="content" rows="3" class="w-full border rounded p-2" placeholder="Add a comment..." required maxlength="2000" id="comment-content"></textarea>
         </div>

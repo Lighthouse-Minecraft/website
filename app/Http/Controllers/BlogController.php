@@ -92,8 +92,10 @@ class BlogController extends Controller
             'title' => 'required|string|max:255|unique:blogs,title',
             'content' => 'required|max:5000',
             'author_id' => 'nullable|exists:users,id',
-            'tags' => 'array',
-            'categories' => 'array',
+            'tags' => ['array'],
+            'tags.*' => ['integer', 'exists:tags,id'],
+            'categories' => ['array'],
+            'categories.*' => ['integer', 'exists:categories,id'],
             'is_published' => 'boolean',
             'published_at' => 'nullable|date',
             'is_public' => 'boolean',
@@ -107,8 +109,6 @@ class BlogController extends Controller
             'title' => $validated['title'],
             'slug' => $slug,
             'content' => $validated['content'],
-            'categories' => $validated['categories'] ?? [],
-            'tags' => $validated['tags'] ?? [],
             'author_id' => $validated['author_id'] ?? null,
             'is_published' => $validated['is_published'] ?? false,
             'published_at' => ($validated['is_published'] ?? false) ? now() : null,
@@ -116,12 +116,10 @@ class BlogController extends Controller
         ]);
 
         // Attach tags and categories if provided
-        if (! empty($validated['tags'])) {
-            $blog->tags()->attach($validated['tags']);
-        }
-        if (! empty($validated['categories'])) {
-            $blog->categories()->attach($validated['categories']);
-        }
+        $blog->tags()->sync($validated['tags'] ?? []);
+        $blog->categories()->sync($validated['categories'] ?? []);
+
+        $blog->load(['categories', 'tags']);
 
         return response()->view('livewire.blogs.show', [
             'blog' => $blog,
@@ -153,32 +151,53 @@ class BlogController extends Controller
 
         Gate::authorize('update', $blog);
 
-        $request->validate([
+        $validated = $request->validate([
             'title' => 'required|string|max:255',
             'content' => 'required',
             'author_id' => 'nullable|exists:users,id',
-            'tags' => 'array',
-            'categories' => 'array',
-            'published' => 'boolean',
+            'tags' => ['array'],
+            'tags.*' => ['integer', 'exists:tags,id'],
+            'categories' => ['array'],
+            'categories.*' => ['integer', 'exists:categories,id'],
+            'is_published' => 'boolean',
             'published_at' => 'nullable|date',
             'is_public' => 'boolean',
         ]);
 
         $blog->update([
-            'title' => $request->title,
-            'content' => $request->content,
-            'author_id' => $request->author_id,
-            'tags' => $request->tags,
-            'categories' => $request->categories,
-            'published' => $request->published,
-            'published_at' => $request->published_at,
-            'is_public' => $request->boolean('is_public', false),
+            'title' => $validated['title'],
+            'content' => $validated['content'],
+            'author_id' => $validated['author_id'] ?? null,
+            'is_published' => $validated['is_published'] ?? $blog->is_published,
+            'published_at' => $validated['published_at'] ?? ($validated['is_published'] ?? $blog->is_published ? ($blog->published_at ?? now()) : null),
+            'is_public' => $request->boolean('is_public', $blog->is_public),
         ]);
+
+        // Sync categories and tags via pivot tables
+        $blog->tags()->sync($validated['tags'] ?? []);
+        $blog->categories()->sync($validated['categories'] ?? []);
+
+        $blog->load(['categories', 'tags']);
 
         return response()->view('blogs.show', [
             'blog' => $blog,
             'status' => 'Blog updated successfully!',
         ], 200);
+    }
+
+    /**
+     * Show confirmation page before deleting the specified blog (GET).
+     */
+    public function confirmDestroy($id)
+    {
+        $blog = Blog::with(['author.roles', 'tags', 'categories', 'comments'])->findOrFail($id);
+
+        Gate::authorize('delete', $blog);
+
+        return view('livewire.blogs.destroy', [
+            'blog' => $blog,
+            'status' => null,
+        ]);
     }
 
     /**
@@ -192,8 +211,9 @@ class BlogController extends Controller
 
         $blog->delete();
 
-        return response()->view('blogs.show', [
+        return response()->view('livewire.blogs.destroy', [
             'blog' => $blog,
+            'tab' => 'blog-manager',
             'status' => 'Blog deleted successfully!',
         ], 200);
     }

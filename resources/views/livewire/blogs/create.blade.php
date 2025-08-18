@@ -1,10 +1,16 @@
-
 <?php
 
-use App\Models\{blog, Category, Tag};
-use Flux\{Flux, Option};
-use Illuminate\Support\{Arr, Str, Carbon, Collection, Facades};
-use Livewire\Volt\{Component};
+use App\Models\Blog;
+use App\Models\Category;
+use App\Models\Tag;
+use Flux\Flux;
+use Flux\Option;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades;
+use Livewire\Volt\Component;
 
 new class extends Component {
     public string $blogTitle = '';
@@ -38,8 +44,10 @@ new class extends Component {
         $this->validate([
             'blogTitle' => 'required|string|max:255',
             'blogContent' => 'required|string|max:5000',
-            'selectedTags' => 'array',
-            'selectedCategories' => 'array',
+            'selectedTags' => ['array'],
+            'selectedTags.*' => ['integer', 'exists:tags,id'],
+            'selectedCategories' => ['array'],
+            'selectedCategories.*' => ['integer', 'exists:categories,id'],
             'isPublished' => 'boolean',
             'published_at' => 'date|nullable',
             'isPublic' => 'boolean',
@@ -55,17 +63,19 @@ new class extends Component {
         $this->isPublic = (bool) $this->isPublic;
 
         $slug = Str::slug($this->blogTitle);
-        blog::create([
+        $blog = Blog::create([
             'title' => $this->blogTitle,
             'slug' => $slug,
             'content' => $this->blogContent,
             'author_id' => auth()->id(),
-            'tags' => $this->selectedTags,
-            'categories' => $this->selectedCategories,
             'is_published' => $this->isPublished,
             'published_at' => $this->isPublished ? ($this->published_at ?? now()) : null,
             'is_public' => $this->isPublic,
         ]);
+
+        // Sync pivot relations
+        $blog->tags()->sync($this->selectedTags);
+        $blog->categories()->sync($this->selectedCategories);
 
         Flux::toast('blog created successfully!', 'Success', variant: 'success');
         return redirect()->route('acp.index', ['tab' => 'blog-manager']);
@@ -81,19 +91,31 @@ new class extends Component {
 
             <flux:editor label="Blog Content" wire:model="blogContent" />
 
-            <select name="tags">
-                <option value="">Select Tags</option>
-                @foreach ($this->getTagOptionsProperty() as $tag)
-                    <option value="{{ $tag['value'] }}">{{ $tag['label'] }}</option>
-                @endforeach
-            </select>
+            <flux:field>
+                <flux:label>Tags</flux:label>
+                <flux:select variant="listbox" multiple searchable indicator="checkbox" wire:model.live="selectedTags">
+                    <x-slot name="button">
+                        <flux:select.button class="w-full max-w-xl" placeholder="Select tags" :invalid="$errors->has('selectedTags')" />
+                    </x-slot>
+                    @foreach ($this->getTagOptionsProperty() as $tag)
+                        <flux:select.option value="{{ $tag['value'] }}">{{ $tag['label'] }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+                <flux:error name="selectedTags" />
+            </flux:field>
 
-            <select name="categories">
-                <option value="">Select Categories</option>
-                @foreach ($this->getCategoryOptionsProperty() as $category)
-                    <option value="{{ $category['value'] }}">{{ $category['label'] }}</option>
-                @endforeach
-            </select>
+            <flux:field>
+                <flux:label>Categories</flux:label>
+                <flux:select variant="listbox" multiple searchable indicator="checkbox" wire:model.live="selectedCategories">
+                    <x-slot name="button">
+                        <flux:select.button class="w-full max-w-xl" placeholder="Select categories" :invalid="$errors->has('selectedCategories')" />
+                    </x-slot>
+                    @foreach ($this->getCategoryOptionsProperty() as $category)
+                        <flux:select.option value="{{ $category['value'] }}">{{ $category['label'] }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+                <flux:error name="selectedCategories" />
+            </flux:field>
 
             <flux:checkbox label="Published" wire:model="isPublished" />
 

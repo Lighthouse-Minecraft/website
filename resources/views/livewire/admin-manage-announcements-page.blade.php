@@ -1,8 +1,13 @@
 <?php
 
-use App\Models\{Announcement, Category, Comment, Role, Tag, User};
-use Livewire\{WithPagination};
-use Livewire\Volt\{Component};
+use App\Models\Announcement;
+use App\Models\Category;
+use App\Models\Comment;
+use App\Models\Role;
+use App\Models\Tag;
+use App\Models\User;
+use Livewire\WithPagination;
+use Livewire\Volt\Component;
 
 new class extends Component {
     use WithPagination;
@@ -56,7 +61,9 @@ new class extends Component {
         <flux:table.rows>
             @forelse($this->announcements as $announcement)
                 <flux:table.row :key="$announcement->id">
-                    <flux:table.cell>{{ $announcement->title }}</flux:table.cell>
+                    <flux:table.cell style="white-space: pre-line; word-break: break-word; overflow-wrap: anywhere; max-width: 900px;">
+                        {{ $announcement->title }}
+                    </flux:table.cell>
                     <flux:table.cell class="flex items-center gap-3">
                         @php($author = $announcement->author) {{-- may be null --}}
                         @if($author)
@@ -79,10 +86,10 @@ new class extends Component {
                     <flux:table.cell>{{ $announcement->updated_at->diffForHumans() }}</flux:table.cell>
                     <flux:table.cell>{{ $announcement->is_published ? 'Yes' : 'No' }}</flux:table.cell>
                     <flux:table.cell>{{ $announcement->published_at ? $announcement->published_at->format('F j, Y H:i') : 'N/A' }}</flux:table.cell>
-                    <flux:table.cell>
-                        <flux:button wire:navigate href="{{ route('announcements.show', $announcement->id) }}" size="xs" icon="eye" title="View Announcement"></flux:button>
+                    <flux:table.cell class="flex items-center gap-2">
+                        <flux:button wire:navigate href="{{ route('announcements.show', ['id' => $announcement->id, 'from' => 'acp']) }}" size="xs" icon="eye" title="View Announcement"></flux:button>
                         <flux:button wire:navigate href="{{ route('acp.announcements.edit', $announcement->id) }}" size="xs" icon="pencil-square" variant="primary" color="amber" title="Edit Announcement"></flux:button>
-                        <flux:button wire:navigate href="{{ route('announcements.show', $announcement->id) }}" size="xs" icon="trash" variant="danger" title="Delete Announcement"></flux:button>
+                        <flux:button wire:navigate href="{{ route('acp.announcements.confirmDelete', ['id' => $announcement->id, 'from' => 'acp']) }}" size="xs" icon="trash" variant="danger" title="Delete Announcement"></flux:button>
                     </flux:table.cell>
                 </flux:table.row>
             @empty

@@ -62,7 +62,9 @@ new class extends Component {
         <flux:table.rows>
             @forelse($this->blogs as $blog)
                 <flux:table.row :key="$blog->id">
-                    <flux:table.cell>{{ $blog->title }}</flux:table.cell>
+                    <flux:table.cell style="white-space: pre-line; word-break: break-word; overflow-wrap: anywhere; max-width: 900px;">
+                        {{ $blog->title }}
+                    </flux:table.cell>
                     <flux:table.cell class="flex items-center gap-3">
                         @php($author = $blog->author) {{-- may be null --}}
                         @if($author)
@@ -86,12 +88,12 @@ new class extends Component {
                     <flux:table.cell>{{ $blog->is_published ? 'Yes' : 'No' }}</flux:table.cell>
                     <flux:table.cell>{{ $blog->published_at ? $blog->published_at->format('F j, Y H:i') : 'N/A' }}</flux:table.cell>
                     <flux:table.cell>{{ $blog->is_public ? 'Yes' : 'No' }}</flux:table.cell>
-                    <flux:table.cell>
-                        <flux:button wire:navigate href="{{ route('blogs.show', $blog->id) }}" size="xs" icon="eye" title="View Blog"></flux:button>
+                    <flux:table.cell class="flex items-center gap-2">
+                        <flux:button wire:navigate href="{{ route('blogs.show', ['id' => $blog->id, 'from' => 'acp']) }}" size="xs" icon="eye" title="View Blog"></flux:button>
                         @if(auth()->id() === $blog->author_id)
                             <flux:button wire:navigate href="{{ route('acp.blogs.edit', $blog->id) }}" size="xs" icon="pencil-square" variant="primary" color="amber" title="Edit Blog"></flux:button>
                         @endif
-                        <flux:button wire:navigate href="{{ route('blogs.show', $blog->id) }}" size="xs" icon="trash" variant="danger" title="Delete Blog"></flux:button>
+                        <flux:button wire:navigate href="{{ route('acp.blogs.confirmDelete', ['id' => $blog->id, 'from' => 'acp']) }}" size="xs" icon="trash" variant="danger" title="Delete Blog"></flux:button>
                     </flux:table.cell>
                 </flux:table.row>
             @empty
