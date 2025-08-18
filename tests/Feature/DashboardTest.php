@@ -69,7 +69,7 @@ describe('Dashboard', function () {
         it('can view user details through the modal', function () {
             $admin = loginAsAdmin();
 
-            $stowaawayUser = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create([
+            $stowawayUser = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create([
                 'name' => 'Test Stowaway',
                 'email' => 'stowaway@example.com',
             ]);
@@ -80,30 +80,6 @@ describe('Dashboard', function () {
 
             // Test the Livewire component directly to verify modal functionality
             \Livewire\Volt\Volt::test('dashboard.stowaway-users-widget')
-                ->call('viewUser', $stowawaUser->id)
-                ->assertSet('selectedUser.id', $stowawaUser->id)
-                ->assertSet('showUserModal', true)
-                ->assertSee($stowawaUser->email)
-                ->assertSee($stowawaUser->membership_level->label());
-        });
-
-        it('allows admins to promote stowaway users to traveler', function () {
-            $admin = loginAsAdmin();
-
-            $stowawaUser = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create([
-                'name' => 'Test Stowaway',
-            ]);
-
-            // Ensure the user starts as Stowaway
-            expect($stowawaUser->membership_level)->toBe(MembershipLevel::Stowaway);
-
-            // Test promotion through the Livewire component
-            \Livewire\Volt\Volt::test('dashboard.stowaway-users-widget')
-                ->set('selectedUser', $stowawaUser)
-                ->call('promoteToTraveler');
-
-            // Verify the user was promoted
-            $stowawaUser->refresh();
                 ->call('viewUser', $stowawayUser->id)
                 ->assertSet('selectedUser.id', $stowawayUser->id)
                 ->assertSet('showUserModal', true)
@@ -135,76 +111,6 @@ describe('Dashboard', function () {
             $regularUser = User::factory()->create();
             $this->actingAs($regularUser);
 
-            $stowawaUser = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create();
-
-            // Test that promotion fails for non-admin
-            \Livewire\Volt\Volt::test('dashboard.stowaway-users-widget')
-                ->set('selectedUser', $stowawaUser)
-                ->call('promoteToTraveler');
-
-            // Verify the user was NOT promoted
-            $stowawaUser->refresh();
-                ->call('viewUser', $stowaawayUser->id)
-                ->assertSet('selectedUser.id', $stowaawayUser->id)
-                ->assertSet('showUserModal', true)
-                ->assertSee($stowaawayUser->email)
-                ->assertSee($stowaawayUser->membership_level->label());
-        });
-
-        it('allows admins to promote stowaway users to traveler', function () {
-            $admin = loginAsAdmin();
-
-            $stowaawayUser = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create([
-                'name' => 'Test Stowaway',
-            ]);
-
-            // Ensure the user starts as Stowaway
-            expect($stowaawayUser->membership_level)->toBe(MembershipLevel::Stowaway);
-
-            // Test promotion through the Livewire component
-            \Livewire\Volt\Volt::test('dashboard.stowaway-users-widget')
-                ->set('selectedUser', $stowaawayUser)
-                ->call('promoteToTraveler');
-
-            // Verify the user was promoted
-            $stowaawayUser->refresh();
-            expect($stowaawayUser->membership_level)->toBe(MembershipLevel::Traveler);
-        });
-
-        it('prevents non-admin users from promoting users', function () {
-            $regularUser = User::factory()->create();
-            $this->actingAs($regularUser);
-
-            $stowaawayUser = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create();
-
-            // Test that promotion fails for non-admin
-            \Livewire\Volt\Volt::test('dashboard.stowaway-users-widget')
-                ->set('selectedUser', $stowaawayUser)
-                ->call('promoteToTraveler');
-
-            // Verify the user was NOT promoted
-            $stowaawayUser->refresh();
-            expect($stowaawayUser->membership_level)->toBe(MembershipLevel::Stowaway);
-        });
-
-        it('records activity when promoting a user', function () {
-            $admin = loginAsAdmin();
-
-            $stowawaUser = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create();
-
-            // Check that no promotion activity exists initially
-            expect(\App\Models\ActivityLog::where('subject_type', \App\Models\User::class)
-                ->where('subject_id', $stowawaUser->id)
-                ->where('action', 'user_promoted')
-                ->count())->toBe(0);
-
-            // Promote the user
-            \Livewire\Volt\Volt::test('dashboard.stowaway-users-widget')
-                ->set('selectedUser', $stowawaUser)
-                ->call('promoteToTraveler');
-
-            // Verify activity was recorded
-            expect(\App\Models\ActivityLog::where('subject_type', \App\Models\User::class)
             $stowawayUser = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create();
 
             // Test that promotion fails for non-admin
@@ -255,13 +161,10 @@ describe('Dashboard', function () {
 
         it('closes modal properly', function () {
             $admin = loginAsAdmin();
-            $stowawaUser = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create();
+            $stowawayUser = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create();
 
             \Livewire\Volt\Volt::test('dashboard.stowaway-users-widget')
-            $stowaawayUser = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create();
-
-            \Livewire\Volt\Volt::test('dashboard.stowaway-users-widget')
-                ->call('viewUser', $stowaawayUser->id)
+                ->call('viewUser', $stowawayUser->id)
                 ->assertSet('showUserModal', true)
                 ->call('closeModal')
                 ->assertSet('showUserModal', false)
@@ -273,24 +176,6 @@ describe('Dashboard', function () {
         it('uses the PromoteUser action correctly', function () {
             $admin = loginAsAdmin();
 
-            $stowawaUser = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create();
-
-            // Promote through the action directly to ensure it works
-            \App\Actions\PromoteUser::run($stowawaUser, MembershipLevel::Traveler);
-
-            $stowawaUser->refresh();
-            expect($stowawaUser->membership_level)->toBe(MembershipLevel::Traveler);
-        });
-
-        it('respects max promotion level in PromoteUser action', function () {
-            $admin = loginAsAdmin();
-
-            $stowawaUser = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create();
-
-            // The action should promote to Traveler when called without max level
-            \App\Actions\PromoteUser::run($stowawaUser);
-
-            $stowawaUser->refresh();
             $stowawayUser = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create();
 
             // Promote through the action directly to ensure it works
