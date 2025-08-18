@@ -104,7 +104,31 @@ describe('Dashboard', function () {
 
             // Verify the user was promoted
             $stowawaUser->refresh();
-            expect($stowawaUser->membership_level)->toBe(MembershipLevel::Traveler);
+                ->call('viewUser', $stowawayUser->id)
+                ->assertSet('selectedUser.id', $stowawayUser->id)
+                ->assertSet('showUserModal', true)
+                ->assertSee($stowawayUser->email)
+                ->assertSee($stowawayUser->membership_level->label());
+        });
+
+        it('allows admins to promote stowaway users to traveler', function () {
+            $admin = loginAsAdmin();
+
+            $stowawayUser = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create([
+                'name' => 'Test Stowaway',
+            ]);
+
+            // Ensure the user starts as Stowaway
+            expect($stowawayUser->membership_level)->toBe(MembershipLevel::Stowaway);
+
+            // Test promotion through the Livewire component
+            \Livewire\Volt\Volt::test('dashboard.stowaway-users-widget')
+                ->set('selectedUser', $stowawayUser)
+                ->call('promoteToTraveler');
+
+            // Verify the user was promoted
+            $stowawayUser->refresh();
+            expect($stowawayUser->membership_level)->toBe(MembershipLevel::Traveler);
         });
 
         it('prevents non-admin users from promoting users', function () {
