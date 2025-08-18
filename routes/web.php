@@ -57,6 +57,10 @@ Route::prefix('acp/announcements')
         Route::post('store', 'store')->name('store');
         Route::get('{id}/edit', 'edit')->name('edit');
         Route::put('{id}/update', 'update')->name('update');
+        Route::get('{id}/destroy', 'confirmDestroy')->name('confirmDelete');
+        Route::get('{id}', function ($id) {
+            return redirect()->route('acp.announcements.confirmDelete', ['id' => $id]);
+        })->whereNumber('id');
         Route::delete('{announcement}', 'destroy')->name('delete');
 
         // Tag management
@@ -94,6 +98,10 @@ Route::prefix('acp/blogs')
         Route::post('store', 'store')->name('store');
         Route::get('{id}/edit', 'edit')->name('edit');
         Route::put('{id}/update', 'update')->name('update');
+        Route::get('{id}/destroy', 'confirmDestroy')->name('confirmDelete');
+        Route::get('{id}', function ($id) {
+            return redirect()->route('acp.blogs.confirmDelete', ['id' => $id]);
+        })->whereNumber('id');
         Route::delete('{blog}', 'destroy')->name('delete');
 
         // Tag management
@@ -130,6 +138,10 @@ Route::prefix('acp/comments')
         Route::get('{id}/edit', 'edit')->name('edit');
         Route::post('store', 'store')->name('store');
         Route::put('{id}/update', 'update')->name('update');
+        Route::get('{id}/destroy', 'confirmDestroy')->name('confirmDelete');
+        Route::get('{id}', function ($id) {
+            return redirect()->route('acp.comments.confirmDelete', ['id' => $id]);
+        })->whereNumber('id');
         Route::delete('{id}', 'destroy')->name('delete');
         Route::post('{id}/approve', 'approve')->name('approve');
         Route::post('{id}/reject', 'reject')->name('reject');
@@ -163,6 +175,7 @@ Route::prefix('acp/taxonomy')
                 Route::get('{id}/edit', 'categoriesEdit')->name('edit');
                 Route::put('{id}/update', 'categoriesUpdate')->name('update');
                 Route::delete('{id}', 'categoriesDestroy')->name('delete');
+                Route::post('bulk-delete', 'categoriesBulkDestroy')->name('bulkDelete');
             });
 
         // Tags
@@ -175,6 +188,7 @@ Route::prefix('acp/taxonomy')
                 Route::get('{id}/edit', 'tagsEdit')->name('edit');
                 Route::put('{id}/update', 'tagsUpdate')->name('update');
                 Route::delete('{id}', 'tagsDestroy')->name('delete');
+                Route::post('bulk-delete', 'tagsBulkDestroy')->name('bulkDelete');
             });
     });
 
