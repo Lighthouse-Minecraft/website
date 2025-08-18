@@ -136,7 +136,26 @@ describe('Stowaway Users Widget', function () {
 
         $component = Volt::test('dashboard.stowaway-users-widget');
 
-        $component->call('viewUser', $stowawaUser->id)
+        $stowawayUser = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create();
+
+        $component = Volt::test('dashboard.stowaway-users-widget');
+
+        $component->set('selectedUser', $stowawayUser)
+            ->call('promoteToTraveler');
+
+        // Verify the user was NOT promoted
+        $stowawayUser->refresh();
+        expect($stowawayUser->membership_level)->toBe(MembershipLevel::Stowaway);
+    });
+
+    it('can close the modal', function () {
+        loginAsAdmin();
+
+        $stowawayUser = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create();
+
+        $component = Volt::test('dashboard.stowaway-users-widget');
+
+        $component->call('viewUser', $stowawayUser->id)
             ->assertSet('showUserModal', true)
             ->call('closeModal')
             ->assertSet('showUserModal', false)
