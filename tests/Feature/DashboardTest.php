@@ -164,7 +164,10 @@ describe('Dashboard', function () {
             $stowawaUser = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create();
 
             \Livewire\Volt\Volt::test('dashboard.stowaway-users-widget')
-                ->call('viewUser', $stowawaUser->id)
+            $stowaawayUser = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create();
+
+            \Livewire\Volt\Volt::test('dashboard.stowaway-users-widget')
+                ->call('viewUser', $stowaawayUser->id)
                 ->assertSet('showUserModal', true)
                 ->call('closeModal')
                 ->assertSet('showUserModal', false)
