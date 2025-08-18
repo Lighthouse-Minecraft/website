@@ -22,7 +22,7 @@ describe('Stowaway Users Widget', function () {
         loginAsAdmin();
 
         // Create a stowaway user
-        $stowawaUser = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create([
+        $stowawayUser = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create([
             'name' => 'Test Stowaway',
         ]);
 
