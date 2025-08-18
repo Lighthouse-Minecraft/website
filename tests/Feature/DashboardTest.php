@@ -69,7 +69,7 @@ describe('Dashboard', function () {
         it('can view user details through the modal', function () {
             $admin = loginAsAdmin();
 
-            $stowawaUser = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create([
+            $stowaawayUser = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create([
                 'name' => 'Test Stowaway',
                 'email' => 'stowaway@example.com',
             ]);
