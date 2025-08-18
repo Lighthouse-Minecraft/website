@@ -70,6 +70,19 @@ class TaxonomyController extends Controller
         return redirect()->back()->with('status', 'Category deleted successfully!');
     }
 
+    public function categoriesBulkDestroy(Request $request)
+    {
+        Gate::authorize('delete', Category::class);
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'exists:categories,id'],
+        ]);
+
+        Category::whereIn('id', $validated['ids'])->delete();
+
+        return redirect()->back()->with('status', 'Selected categories deleted successfully!');
+    }
+
     /**
      * Tag methods
      */
@@ -128,5 +141,18 @@ class TaxonomyController extends Controller
         $tag->delete();
 
         return redirect()->back()->with('status', 'Tag deleted successfully!');
+    }
+
+    public function tagsBulkDestroy(Request $request)
+    {
+        Gate::authorize('delete', Tag::class);
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'exists:tags,id'],
+        ]);
+
+        Tag::whereIn('id', $validated['ids'])->delete();
+
+        return redirect()->back()->with('status', 'Selected tags deleted successfully!');
     }
 }
