@@ -84,7 +84,32 @@ describe('Stowaway Users Widget', function () {
 
         // Verify the user was promoted
         $stowawaUser->refresh();
-        expect($stowawaUser->membership_level)->toBe(MembershipLevel::Traveler);
+        $stowawayUser = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create([
+            'name' => 'Test Stowaway',
+        ]);
+
+        $component = Volt::test('dashboard.stowaway-users-widget');
+
+        $component->call('viewUser', $stowawayUser->id)
+            ->assertSet('selectedUser.id', $stowawayUser->id)
+            ->assertSet('showUserModal', true);
+    });
+
+    it('can promote stowaway to traveler', function () {
+        loginAsAdmin();
+
+        $stowawayUser = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create([
+            'name' => 'Test Stowaway',
+        ]);
+
+        $component = Volt::test('dashboard.stowaway-users-widget');
+
+        $component->set('selectedUser', $stowawayUser)
+            ->call('promoteToTraveler');
+
+        // Verify the user was promoted
+        $stowawayUser->refresh();
+        expect($stowawayUser->membership_level)->toBe(MembershipLevel::Traveler);
     });
 
     it('prevents non-admin users from promoting', function () {
