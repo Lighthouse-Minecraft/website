@@ -38,7 +38,7 @@ describe('Meetings List Page - Load', function () {
         loginAsAdmin();
 
         get(route('dashboard'))
-            ->assertSee('Meeting Minutes')
+            ->assertSee('Manage Meetings')
             ->assertSee(route('meeting.index'));
     });
 
@@ -65,14 +65,14 @@ describe('Meeting List Page - Livewire Component', function () {
 });
 
 describe('Meetings List Page - Permissions', function () {
-    it('shows a 404 if an unauthorized person views the page', function () {
+    it('shows a 403 if an unauthorized person views the page', function () {
         get(route('meeting.index'))
-            ->assertStatus(404);
+            ->assertStatus(status: 403);
     });
 
     it('does not allow guests to see the menu item for meetings', function () {
         get('/pages/home')
-            ->assertDontSee('Meeting Minutes')
+            ->assertDontSee('Manage Meetings')
             ->assertDontSee(route('meeting.index'));
     });
 
@@ -81,17 +81,8 @@ describe('Meetings List Page - Permissions', function () {
         actingAs($user);
 
         get(route('dashboard'))
-            ->assertDontSee('Meeting Minutes')
+            ->assertDontSee('Manage Meetings')
             ->assertDontSee(route('meeting.index'));
-    });
-
-    it('is visible to Resident members', function () {
-        $user = User::factory()->withMembershipLevel(MembershipLevel::Resident)->create();
-        actingAs($user);
-
-        get(route('dashboard'))
-            ->assertSee('Meeting Minutes')
-            ->assertSee(route('meeting.index'));
     });
 
     it('is visible to Crew Members', function () {
@@ -99,17 +90,17 @@ describe('Meetings List Page - Permissions', function () {
         actingAs($user);
 
         get(route('dashboard'))
-            ->assertSee('Meeting Minutes')
+            ->assertSee('Manage Meetings')
             ->assertSee(route('meeting.index'));
     });
 
-    it('does not show private meetings to members', function () {
+    it('does not load for members', function () {
         $privateMeeting = Meeting::factory()->private()->create();
         $user = User::factory()->withMembershipLevel(MembershipLevel::Resident)->create();
         actingAs($user);
 
         get(route('meeting.index'))
-            ->assertOk()
+            ->assertStatus(403)
             ->assertDontSee($privateMeeting->day)
             ->assertDontSee(route('meeting.edit', $privateMeeting));
     });
@@ -160,16 +151,6 @@ describe('Meetings List Page - Functionality', function () {
 
         get(route('meeting.index'))
             ->assertSeeText('No meetings found');
-    });
-
-    it('shows a message when the only meeting is private and the user is not authorized', function () {
-        $meeting = Meeting::factory()->private()->create();
-        $user = User::factory()->withMembershipLevel(MembershipLevel::Resident)->create();
-        actingAs($user);
-
-        get(route('meeting.index'))
-            ->assertOk()
-            ->assertSee('No meetings found');
     });
 
     it('shows a Create Meeting button for admins', function () {

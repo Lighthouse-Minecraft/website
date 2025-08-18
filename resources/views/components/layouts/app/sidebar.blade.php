@@ -27,9 +27,14 @@
                 </flux:navlist.group>
 
                 <flux:navlist.group heading="Platform" class="grid">
-                    <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>Dashboard</flux:navlist.item>
+                    <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate class="mb-2">Dashboard</flux:navlist.item>
+
+                    @can('view-community-updates')
+                        <flux:navlist.item icon="user-group" :href="route('community-updates.index')" :current="request()->routeIs('community-updates.index')" wire:navigate>Community Updates</flux:navlist.item>
+                    @endcan
+
                     @can('viewAny', \App\Models\Meeting::class)
-                        <flux:navlist.item icon="users" :href="route('meeting.index')" :current="request()->routeIs('meeting.index')" wire:navigate>Meeting Minutes</flux:navlist.item>
+                        <flux:navlist.item icon="users" :href="route('meeting.index')" :current="request()->routeIs('meeting.index')" wire:navigate>Manage Meetings</flux:navlist.item>
                     @endcan
                     @can('viewACP')
                         <flux:navlist.item icon="home" :href="route('acp.index')" :current="request()->routeIs('acp.index')" wire:navigate>Admin Control Panel</flux:navlist.item>

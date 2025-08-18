@@ -92,8 +92,8 @@ new class extends Component {
 <div class="space-y-6" wire:poll.{{  $pollTime }}>
     <flux:heading size="xl">{{  $meeting->title }} - {{  $meeting->day }}</flux:heading>
 
-    <div class="flex gap-4">
-        <flux:card class="w-full lg:w-1/2">
+    <div class="block lg:flex gap-4">
+        <flux:card class="w-full lg:w-1/2 mb-4">
             <flux:heading class="mb-4">Meeting Details</flux:heading>
 
             <flux:text>

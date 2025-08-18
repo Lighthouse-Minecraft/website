@@ -13,7 +13,7 @@ class MeetingController extends Controller
     public function index()
     {
         if (Gate::denies('viewAny', Meeting::class)) {
-            abort(404);
+            abort(403);
         }
 
         return view('meeting.index');

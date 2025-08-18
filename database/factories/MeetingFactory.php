@@ -28,7 +28,7 @@ class MeetingFactory extends Factory
             'status' => MeetingStatus::Pending,
             'agenda' => $this->faker->paragraph(),
             'minutes' => null,
-            'community_minutes' => null,
+            'community_minutes' => $this->faker->paragraph(),
         ];
     }
 

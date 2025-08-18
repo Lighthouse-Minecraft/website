@@ -36,7 +36,7 @@ new class extends Component {
         {{ $description }}
     </flux:text>
 
-    <div class="flex w-full gap-4">
+    <div class="block lg:flex w-full gap-4">
         <div class="w-full lg:w-2/3">
             <livewire:note.editor :meeting="$meeting" :section_key="$departmentValue"/>
         </div>
