@@ -141,7 +141,37 @@ describe('Dashboard', function () {
 
             // Verify activity was recorded
             expect(\App\Models\ActivityLog::where('subject_type', \App\Models\User::class)
-                ->where('subject_id', $stowawaUser->id)
+            $stowawayUser = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create();
+
+            // Test that promotion fails for non-admin
+            \Livewire\Volt\Volt::test('dashboard.stowaway-users-widget')
+                ->set('selectedUser', $stowawayUser)
+                ->call('promoteToTraveler');
+
+            // Verify the user was NOT promoted
+            $stowawayUser->refresh();
+            expect($stowawayUser->membership_level)->toBe(MembershipLevel::Stowaway);
+        });
+
+        it('records activity when promoting a user', function () {
+            $admin = loginAsAdmin();
+
+            $stowawayUser = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create();
+
+            // Check that no promotion activity exists initially
+            expect(\App\Models\ActivityLog::where('subject_type', \App\Models\User::class)
+                ->where('subject_id', $stowawayUser->id)
+                ->where('action', 'user_promoted')
+                ->count())->toBe(0);
+
+            // Promote the user
+            \Livewire\Volt\Volt::test('dashboard.stowaway-users-widget')
+                ->set('selectedUser', $stowawayUser)
+                ->call('promoteToTraveler');
+
+            // Verify activity was recorded
+            expect(\App\Models\ActivityLog::where('subject_type', \App\Models\User::class)
+                ->where('subject_id', $stowawayUser->id)
                 ->where('action', 'user_promoted')
                 ->count())->toBeGreaterThan(0);
         });
