@@ -59,7 +59,14 @@ describe('Stowaway Users Widget', function () {
         $component = Volt::test('dashboard.stowaway-users-widget');
 
         $component->call('viewUser', $stowawaUser->id)
-            ->assertSet('selectedUser.id', $stowawaUser->id)
+        $stowawayUser = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create([
+            'name' => 'Test Stowaway',
+        ]);
+
+        $component = Volt::test('dashboard.stowaway-users-widget');
+
+        $component->call('viewUser', $stowawayUser->id)
+            ->assertSet('selectedUser.id', $stowawayUser->id)
             ->assertSet('showUserModal', true);
     });
 
