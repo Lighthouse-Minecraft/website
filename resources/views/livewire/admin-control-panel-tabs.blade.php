@@ -7,6 +7,7 @@ use App\Models\Comment;
 use App\Models\Page;
 use App\Models\Role;
 use App\Models\Tag;
+use App\Models\Taxonomy;
 use App\Models\User;
 use Livewire\Attributes\Url;
 use Livewire\Volt\Component;

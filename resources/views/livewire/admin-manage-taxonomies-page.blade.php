@@ -266,6 +266,7 @@ new class extends Component {
                         <span class="font-semibold text-gray-200">{{ $selectedCategoryCountOnPage }}</span>
                     </div>
                     <flux:button type="button"
+                                 size="sm"
                                  icon="trash"
                                  variant="danger"
                                  :disabled="$selectedCategoryCountOnPage === 0"
@@ -374,6 +375,7 @@ new class extends Component {
                         <span class="font-semibold text-gray-200">{{ $selectedTagCountOnPage }}</span>
                     </div>
                     <flux:button type="button"
+                                 size="sm"
                                  icon="trash"
                                  variant="danger"
                                  :disabled="$selectedTagCountOnPage === 0"
