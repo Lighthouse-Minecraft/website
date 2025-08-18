@@ -6,6 +6,9 @@
         <livewire:dashboard.view-rules />
 
         <livewire:dashboard.announcements-widget />
-        {{-- <livewire:dashboard.view-upcoming-meetings /> --}}
+
+        @can('manage-stowaway-users')
+            <livewire:dashboard.stowaway-users-widget />
+        @endcan
     </div>
 </x-layouts.app>

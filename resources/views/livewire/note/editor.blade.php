@@ -183,9 +183,9 @@ new class extends Component {
     <flux:heading class="mb-4">Meeting Notes - {{  ucfirst($section_key) }}</flux:heading>
 
     @if ($isLockedByMe)
-        <div wire:poll.3s="HeartbeatCheck"></div>
+        <div wire:poll.30s="HeartbeatCheck"></div>
         @php $rows = ($section_key == 'agenda') ? 15 : 6; @endphp
-        <flux:textarea wire:model.live.debounce.5s="updatedContent" wire:input.debounce.5s="UpdateNote" label="{{ ucfirst($section_key) }} Notes" rows="{{ $rows }}" />
+        <flux:textarea wire:model.live.debounce.5s="updatedContent" wire:input.debounce.5s="UpdateNote" rows="{{ $rows }}" />
 
         <div class="flex my-4">
             <div class="text-left w-full">
@@ -204,8 +204,10 @@ new class extends Component {
             @if(! $this->noteExists)
                 <div class="w-full text-center">
                     @can('create', App\Models\MeetingNote::class)
-                        @php $buttonLabel = ($section_key == 'agenda') ? 'Create Agenda' : 'Create ' . ucfirst($section_key) . ' Note'; @endphp
-                        <flux:button size="xs" wire:click="CreateNote">{{ $buttonLabel }}</flux:button>
+                        <flux:modal.trigger name="create-note-modal">
+                            @php $buttonLabel = ($section_key == 'agenda') ? 'Create Agenda' : 'Create ' . ucfirst($section_key) . ' Note'; @endphp
+                            <flux:button size="xs" wire:click="CreateNote">{{ $buttonLabel }}</flux:button>
+                        </flux:modal.trigger>
                     @endcan
                 </div>
             @else

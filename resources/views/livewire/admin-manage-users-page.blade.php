@@ -4,11 +4,12 @@ use App\Models\User;
 use App\Models\Role;
 use Livewire\Volt\Component;
 use Illuminate\Support\Facades\Validator;
-use \Livewire\WithPagination;
+use Livewire\WithPagination;
 use Flux\Flux;
 
 
 new class extends Component {
+    use WithPagination;
     public $sortBy = 'name';
     public $sortDirection = 'desc';
     public $perPage = 10;
