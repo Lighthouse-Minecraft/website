@@ -39,7 +39,7 @@ describe('Dashboard', function () {
             $admin = loginAsAdmin();
 
             // Create some test users
-            $stowawaUser = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create([
+            $stowawayUser = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create([
                 'name' => 'John Stowaway',
             ]);
             $travelerUser = User::factory()->withMembershipLevel(MembershipLevel::Traveler)->create([
