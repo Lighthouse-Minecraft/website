@@ -7,7 +7,7 @@
                     <div class="text-white font-semibold">{{ $announcement->title }}</div>
                     <div class="text-purple-300 text-sm">{!! Str::limit($announcement->content, 120) !!}</div>
                 </div>
-                <a href="{{ route('announcements.show', $announcement->id) }}" class="bg-zinc-700 text-white px-4 py-2 rounded hover:bg-zinc-600 transition">Read Full Announcement</a>
+                <a href="{{ route('announcements.show', ['id' => $announcement->id, 'from' => 'index']) }}" class="bg-zinc-700 text-white px-4 py-2 rounded hover:bg-zinc-600 transition">Read Full Announcement</a>
             </div>
         @endforeach
         <div class="mt-4">{{ $announcements->links() }}</div>

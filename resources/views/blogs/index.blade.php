@@ -7,7 +7,7 @@
                     <div class="text-white font-semibold">{{ $blog->title }}</div>
                     <div class="text-blue-300 text-sm">{!! Str::limit($blog->content, 120) !!}</div>
                 </div>
-                <a href="{{ route('blogs.show', $blog->id) }}" class="bg-zinc-700 text-white px-4 py-2 rounded hover:bg-zinc-600 transition">Read Full Blog</a>
+                <a href="{{ route('blogs.show', ['id' => $blog->id, 'from' => 'index']) }}" class="bg-zinc-700 text-white px-4 py-2 rounded hover:bg-zinc-600 transition">Read Full Blog</a>
             </div>
         @endforeach
         <div class="mt-4">{{ $blogs->links() }}</div>
