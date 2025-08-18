@@ -13,9 +13,18 @@ new class extends Component {
     public function mount(Meeting $meeting) {
         $this->meeting = $meeting->load('attendees');
 
+        // Only poll when meeting is pending and it's today - but less aggressively
         if ($meeting->status == MeetingStatus::Pending && $meeting->day == now()->format('Y-m-d'))
         {
-            $this->pollTime = 15;
+            $this->pollTime = 30;
+        }
+
+        if ($meeting->status == MeetingStatus::InProgress) {
+            $this->pollTime = 60;
+        } elseif ($meeting->status == MeetingStatus::Finalizing) {
+            $this->pollTime = 30;
+        } elseif ($meeting->status == MeetingStatus::Completed) {
+            $this->pollTime = 0;
         }
     }
 
@@ -29,6 +38,8 @@ new class extends Component {
             $this->meeting->agenda = $agendaNote->content;
             $this->meeting->save();
         }
+
+        $this->pollTime = 60;
     }
 
     public function EndMeeting() {
@@ -40,7 +51,25 @@ new class extends Component {
     public function CompleteMeeting() {
         $this->authorize('update', $this->meeting);
 
-        $this->modal('complete-meeting-confirmation')->show();
+        // Add logging for debugging
+        logger()->info('CompleteMeeting called', [
+            'meeting_id' => $this->meeting->id,
+            'status' => $this->meeting->status->value,
+            'user_id' => auth()->id(),
+        ]);
+
+        try {
+            $this->modal('complete-meeting-confirmation')->show();
+        } catch (\Exception $e) {
+            // Log the error and try to refresh the component
+            logger()->error('Modal failed to open', [
+                'error' => $e->getMessage(),
+                'meeting_id' => $this->meeting->id,
+            ]);
+
+            // Force a component refresh
+            $this->dispatch('$refresh');
+        }
     }
 
     public function EndMeetingConfirmed() {
@@ -89,80 +118,83 @@ new class extends Component {
     }
 }; ?>
 
-<div class="space-y-6" wire:poll.{{  $pollTime }}>
-    <flux:heading size="xl">{{  $meeting->title }} - {{  $meeting->day }}</flux:heading>
+<div class="space-y-6">
+    <div wire:poll.{{ $pollTime }}>
+        <!-- Polling only affects this section -->
+        <flux:heading size="xl" class="mb-6">{{  $meeting->title }} - {{  $meeting->day }}</flux:heading>
 
-    <div class="block lg:flex gap-4">
-        <flux:card class="w-full lg:w-1/2 mb-4">
-            <flux:heading class="mb-4">Meeting Details</flux:heading>
+        <div class="block lg:flex gap-4">
+            <flux:card class="w-full lg:w-1/2 mb-4 lg:mb-0">
+                <flux:heading class="mb-4">Meeting Details</flux:heading>
 
-            <flux:text>
-                <strong>Scheduled Time:</strong> {{ $meeting->scheduled_time->setTimezone('America/New_York')->format('F j, Y g:i A') }}<br>
-                <strong>Status:</strong> {{ $meeting->status->label() }}<br>
-                @if($meeting->start_time)
-                    <strong>Start Time:</strong> {{ $meeting->start_time->setTimezone('America/New_York')->format('F j, Y g:i A') }} ET<br>
-                @endif
+                <flux:text>
+                    <strong>Scheduled Time:</strong> {{ $meeting->scheduled_time->setTimezone('America/New_York')->format('F j, Y g:i A') }}<br>
+                    <strong>Status:</strong> {{ $meeting->status->label() }}<br>
+                    @if($meeting->start_time)
+                        <strong>Start Time:</strong> {{ $meeting->start_time->setTimezone('America/New_York')->format('F j, Y g:i A') }} ET<br>
+                    @endif
+                    @if($meeting->attendees->count() > 0)
+                        <strong>Attendees:</strong> {{ $meeting->attendees->count() }}<br>
+                    @endif
+                </flux:text>
+
                 @if($meeting->attendees->count() > 0)
-                    <strong>Attendees:</strong> {{ $meeting->attendees->count() }}<br>
-                @endif
-            </flux:text>
-
-            @if($meeting->attendees->count() > 0)
-                <div class="mt-4">
-                    <flux:heading size="sm" class="mb-2">Attendees</flux:heading>
-                    <div class="space-y-1">
-                        @foreach($meeting->attendees as $attendee)
-                            <div class="flex justify-between items-center text-sm">
-                                <span>
-                                    <strong><flux:link href="{{ route('profile.show', $attendee) }}">{{ $attendee->name }}</flux:link></strong>
-                                    @if($attendee->staff_rank && $attendee->staff_title)
-                                        <br>
-                                        <span class="text-gray-600 dark:text-gray-400 text-xs">
-                                            {{ $attendee->staff_rank->label() }} - {{ $attendee->staff_title }}
-                                        </span>
-                                    @endif
-                                </span>
-                                <span class="text-gray-500 dark:text-gray-400 text-xs">
-                                    @if(is_object($attendee->pivot->added_at))
-                                        {{ $attendee->pivot->added_at->setTimezone('America/New_York')->format('g:i A') }}
-                                    @else
-                                        {{ $attendee->pivot->added_at }}
-                                    @endif
-                                </span>
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
-            @endif
-
-            @if($meeting->status->value === 'in_progress')
-                <div class="mt-4">
-                    <livewire:meeting.manage-attendees :meeting="$meeting" :key="'attendees-' . $meeting->id" />
-                </div>
-            @endif
-
-        </flux:card>
-
-        <div class="w-full lg:w-1/2">
-            <flux:card class="w-full">
-                @if ($meeting->status == MeetingStatus::Pending)
-                    <flux:heading variant="primary">Agenda</flux:heading>
-                    <livewire:note.editor :meeting="$meeting" section_key="agenda"/>
-                @else
-                    <div class="w-full mx-auto">
-                        <flux:heading class="mb-4">Meeting Agenda</flux:heading>
-
-                        <flux:text>{!! nl2br($meeting->agenda) !!}</flux:text>
+                    <div class="mt-4">
+                        <flux:heading size="sm" class="mb-2">Attendees</flux:heading>
+                        <div class="space-y-1">
+                            @foreach($meeting->attendees as $attendee)
+                                <div class="flex justify-between items-center text-sm">
+                                    <span>
+                                        <strong><flux:link href="{{ route('profile.show', $attendee) }}">{{ $attendee->name }}</flux:link></strong>
+                                        @if($attendee->staff_rank && $attendee->staff_title)
+                                            <br>
+                                            <span class="text-gray-600 dark:text-gray-400 text-xs">
+                                                {{ $attendee->staff_rank->label() }} - {{ $attendee->staff_title }}
+                                            </span>
+                                        @endif
+                                    </span>
+                                    <span class="text-gray-500 dark:text-gray-400 text-xs">
+                                        @if(is_object($attendee->pivot->added_at))
+                                            {{ $attendee->pivot->added_at->setTimezone('America/New_York')->format('g:i A') }}
+                                        @else
+                                            {{ $attendee->pivot->added_at }}
+                                        @endif
+                                    </span>
+                                </div>
+                            @endforeach
+                        </div>
                     </div>
                 @endif
+
+                @if($meeting->status->value === 'in_progress')
+                    <div class="mt-4">
+                        <livewire:meeting.manage-attendees :meeting="$meeting" :key="'attendees-' . $meeting->id" />
+                    </div>
+                @endif
+
             </flux:card>
-        </div>
-    </div>
 
-    <div class="text-right w-full">
-        @if ($this->meeting->status == MeetingStatus::Pending)
-            <flux:button wire:click="StartMeeting" variant="primary">Start Meeting</flux:button>
-        @endif
+            <div class="w-full lg:w-1/2">
+                <flux:card class="w-full">
+                    @if ($meeting->status == MeetingStatus::Pending)
+                        <flux:heading variant="primary">Agenda</flux:heading>
+                        <livewire:note.editor :meeting="$meeting" section_key="agenda"/>
+                    @else
+                        <div class="w-full mx-auto">
+                            <flux:heading class="mb-4">Meeting Agenda</flux:heading>
+
+                            <flux:text>{!! nl2br($meeting->agenda) !!}</flux:text>
+                        </div>
+                    @endif
+                </flux:card>
+            </div>
+        </div>
+
+        <div class="text-right w-full mt-6">
+            @if ($this->meeting->status == MeetingStatus::Pending)
+                <flux:button wire:click="StartMeeting" variant="primary">Start Meeting</flux:button>
+            @endif
+        </div>
     </div>
 
     @if ($meeting->status == MeetingStatus::InProgress)
@@ -236,7 +268,15 @@ new class extends Component {
             </flux:modal>
         @elseif($meeting->status == MeetingStatus::Finalizing)
             @can('update', $meeting)
-                <flux:button wire:click="CompleteMeeting" variant="primary">Complete Meeting</flux:button>
+                <flux:button
+                    wire:click="CompleteMeeting"
+                    wire:loading.attr="disabled"
+                    wire:loading.class="opacity-50"
+                    variant="primary"
+                >
+                    <span wire:loading.remove wire:target="CompleteMeeting">Complete Meeting</span>
+                    <span wire:loading wire:target="CompleteMeeting">Loading...</span>
+                </flux:button>
             @endcan
             {{-- Complete Meeting Confirmation Modal --}}
             <flux:modal name="complete-meeting-confirmation" class="min-w-[28rem] !text-left">
