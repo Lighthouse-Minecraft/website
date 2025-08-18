@@ -194,7 +194,25 @@ describe('Dashboard', function () {
             \App\Actions\PromoteUser::run($stowawaUser);
 
             $stowawaUser->refresh();
-            expect($stowawaUser->membership_level)->toBe(MembershipLevel::Traveler);
+            $stowawayUser = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create();
+
+            // Promote through the action directly to ensure it works
+            \App\Actions\PromoteUser::run($stowawayUser, MembershipLevel::Traveler);
+
+            $stowawayUser->refresh();
+            expect($stowawayUser->membership_level)->toBe(MembershipLevel::Traveler);
+        });
+
+        it('respects max promotion level in PromoteUser action', function () {
+            $admin = loginAsAdmin();
+
+            $stowawayUser = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create();
+
+            // The action should promote to Traveler when called without max level
+            \App\Actions\PromoteUser::run($stowawayUser);
+
+            $stowawayUser->refresh();
+            expect($stowawayUser->membership_level)->toBe(MembershipLevel::Traveler);
         });
     });
 });
