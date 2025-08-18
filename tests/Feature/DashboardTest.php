@@ -120,7 +120,47 @@ describe('Dashboard', function () {
 
             // Verify the user was NOT promoted
             $stowawaUser->refresh();
-            expect($stowawaUser->membership_level)->toBe(MembershipLevel::Stowaway);
+                ->call('viewUser', $stowaawayUser->id)
+                ->assertSet('selectedUser.id', $stowaawayUser->id)
+                ->assertSet('showUserModal', true)
+                ->assertSee($stowaawayUser->email)
+                ->assertSee($stowaawayUser->membership_level->label());
+        });
+
+        it('allows admins to promote stowaway users to traveler', function () {
+            $admin = loginAsAdmin();
+
+            $stowaawayUser = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create([
+                'name' => 'Test Stowaway',
+            ]);
+
+            // Ensure the user starts as Stowaway
+            expect($stowaawayUser->membership_level)->toBe(MembershipLevel::Stowaway);
+
+            // Test promotion through the Livewire component
+            \Livewire\Volt\Volt::test('dashboard.stowaway-users-widget')
+                ->set('selectedUser', $stowaawayUser)
+                ->call('promoteToTraveler');
+
+            // Verify the user was promoted
+            $stowaawayUser->refresh();
+            expect($stowaawayUser->membership_level)->toBe(MembershipLevel::Traveler);
+        });
+
+        it('prevents non-admin users from promoting users', function () {
+            $regularUser = User::factory()->create();
+            $this->actingAs($regularUser);
+
+            $stowaawayUser = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create();
+
+            // Test that promotion fails for non-admin
+            \Livewire\Volt\Volt::test('dashboard.stowaway-users-widget')
+                ->set('selectedUser', $stowaawayUser)
+                ->call('promoteToTraveler');
+
+            // Verify the user was NOT promoted
+            $stowaawayUser->refresh();
+            expect($stowaawayUser->membership_level)->toBe(MembershipLevel::Stowaway);
         });
 
         it('records activity when promoting a user', function () {
