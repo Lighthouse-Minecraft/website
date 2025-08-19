@@ -18,4 +18,14 @@ enum StaffRank: int
             self::Officer => 'Officer',
         };
     }
+
+    public function color(): string
+    {
+        return match ($this) {
+            self::None => 'zinc',
+            self::JrCrew => 'amber',
+            self::CrewMember => 'fuchsia',
+            self::Officer => 'emerald',
+        };
+    }
 }
