@@ -17,9 +17,9 @@ class CommentController extends Controller
     public function index(Request $request)
     {
         Gate::authorize('viewAny', Comment::class);
-        $announcementComments = Comment::where('commentable_type', 'App\\Models\\Announcement')
+        $announcementComments = Comment::where('commentable_type', 'announcement')
             ->latest()->paginate(10, ['*'], 'announcement_page');
-        $blogComments = Comment::where('commentable_type', 'App\\Models\\Blog')
+        $blogComments = Comment::where('commentable_type', 'blog')
             ->latest()->paginate(10, ['*'], 'blog_page');
 
         return view('comments.index', [
@@ -101,15 +101,68 @@ class CommentController extends Controller
     }
 
     /**
+     * Show confirmation page before deleting the specified comment (GET).
+     */
+    public function confirmDestroy($id)
+    {
+        $comment = Comment::with(['author'])->findOrFail($id);
+
+        Gate::authorize('delete', $comment);
+
+        // Resolve the parent manually to avoid morphTo instantiation issues in the view
+        [$parent, $parentType] = $this->resolveParent($comment);
+
+        return view('livewire.comments.destroy', [
+            'comment' => $comment,
+            'parent' => $parent,
+            'parentType' => $parentType,
+            'status' => null,
+        ]);
+    }
+
+    /**
      * Remove the specified comment from storage.
      */
     public function destroy($id)
     {
         $comment = Comment::findOrFail($id);
         Gate::authorize('delete', $comment);
+
+        // Resolve the parent before deletion for display after delete
+        [$parent, $parentType] = $this->resolveParent($comment);
+
         $comment->delete();
 
-        return redirect()->back()->with('status', 'Comment deleted successfully!');
+        return response()->view('livewire.comments.destroy', [
+            'comment' => $comment,
+            'parent' => $parent,
+            'parentType' => $parentType,
+            'tab' => 'comment-manager',
+            'status' => 'Comment deleted successfully!',
+        ], 200);
+    }
+
+    /**
+     * Resolve the parent model for a comment based on its stored type/id.
+     * Returns [parentModel|null, parentType|null]
+     */
+    protected function resolveParent(Comment $comment): array
+    {
+        $rawType = (string) ($comment->getRawOriginal('commentable_type') ?? '');
+        $normalized = match ($rawType) {
+            'App\\Models\\Blog', Blog::class, 'Blog', 'blog' => 'blog',
+            'App\\Models\\Announcement', Announcement::class, 'Announcement', 'announcement' => 'announcement',
+            default => strtolower($rawType),
+        };
+
+        if ($normalized === 'blog') {
+            return [Blog::withTrashed()->find($comment->commentable_id), 'blog'];
+        }
+        if ($normalized === 'announcement') {
+            return [Announcement::withTrashed()->find($comment->commentable_id), 'announcement'];
+        }
+
+        return [null, null];
     }
 
     /**
@@ -118,8 +171,11 @@ class CommentController extends Controller
     public function approve(Request $request, $id)
     {
         $comment = Comment::findOrFail($id);
-        Gate::authorize('update', $comment);
+        Gate::authorize('review', $comment);
         $comment->status = 'approved';
+        $comment->reviewed_by = Auth::id();
+        $comment->reviewed_at = now();
+        $comment->needs_review = false;
         $comment->save();
 
         return redirect()->back()->with('status', 'Comment approved successfully!');
@@ -131,8 +187,11 @@ class CommentController extends Controller
     public function reject(Request $request, $id)
     {
         $comment = Comment::findOrFail($id);
-        Gate::authorize('update', $comment);
+        Gate::authorize('review', $comment);
         $comment->status = 'rejected';
+        $comment->reviewed_by = Auth::id();
+        $comment->reviewed_at = now();
+        $comment->needs_review = false;
         $comment->save();
 
         return redirect()->back()->with('status', 'Comment rejected successfully!');
