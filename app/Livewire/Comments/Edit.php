@@ -2,10 +2,14 @@
 
 namespace App\Livewire\Comments;
 
+use App\Models\Announcement;
+use App\Models\Blog;
 use App\Models\Comment;
 use Flux\Flux;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
+use Livewire\Features\SupportRedirects\Redirector as LivewireRedirector;
 
 class Edit extends Component
 {
@@ -25,12 +29,12 @@ class Edit extends Component
         $this->commentable_type = $comment->commentable_type;
     }
 
-    public function saveComment()
+    public function saveComment(): RedirectResponse|LivewireRedirector
     {
         if (! Auth::check()) {
             Flux::toast('You must be logged in to edit comments.', 'Error', variant: 'danger');
 
-            return;
+            return redirect()->back();
         }
         $this->validate([
             'commentContent' => 'required|string|max:2000',
@@ -40,15 +44,15 @@ class Edit extends Component
         ]);
         Flux::toast('Comment updated successfully!', 'Success', variant: 'success');
 
-        return redirect()->route('acp.index', ['tab' => 'comment-manager']);
+        return $this->redirectAfterMutation();
     }
 
-    public function editComment()
+    public function editComment(): RedirectResponse|LivewireRedirector
     {
         if (! Auth::check()) {
             Flux::toast('You must be logged in to edit comments.', 'Error', variant: 'danger');
 
-            return;
+            return redirect()->back();
         }
         $this->validate([
             'commentContent' => 'required|string|max:2000',
@@ -58,19 +62,74 @@ class Edit extends Component
         ]);
         Flux::toast('Comment updated successfully!', 'Success', variant: 'success');
 
-        return redirect()->route('acp.index', ['tab' => 'comment-manager']);
+        return $this->redirectAfterMutation();
     }
 
-    public function deleteComment()
+    public function deleteComment(): RedirectResponse|LivewireRedirector
     {
         if (! Auth::check()) {
             Flux::toast('You must be logged in to delete comments.', 'Error', variant: 'danger');
 
-            return;
+            return redirect()->back();
         }
         $this->comment->delete();
         Flux::toast('Comment deleted successfully!', 'Success', variant: 'success');
 
-        return redirect()->route('acp.index', ['tab' => 'comment-manager']);
+        return $this->redirectAfterMutation();
+    }
+
+    /**
+     * Decide where to redirect a user after editing/deleting a comment.
+     */
+    protected function redirectAfterMutation(): RedirectResponse|LivewireRedirector
+    {
+        $from = (string) request()->query('from', '');
+        $return = (string) request()->query('return', '');
+
+        if ($from === 'acp' || request()->routeIs('acp.*')) {
+            return redirect()->route('acp.index', ['tab' => 'comment-manager']);
+        }
+
+        if ($return !== '') {
+            return redirect()->to($return);
+        }
+
+        $type = strtolower((string) $this->comment->commentable_type);
+        $id = (int) $this->comment->commentable_id;
+
+        if ($type === 'blog' && $id > 0) {
+            return redirect()->route('blogs.show', $id);
+        }
+        if ($type === 'announcement' && $id > 0) {
+            return redirect()->route('announcements.show', $id);
+        }
+
+        return redirect()->route('comments.show', $this->comment->id);
+    }
+
+    /**
+     * Computed: Blog select options for the edit view.
+     *
+     * @return array<int, array{label:string,value:int}>
+     */
+    public function getBlogOptionsProperty(): array
+    {
+        return Blog::query()
+            ->get(['id', 'title'])
+            ->map(fn ($b) => ['label' => (string) $b->title, 'value' => (int) $b->id])
+            ->toArray();
+    }
+
+    /**
+     * Computed: Announcement select options for the edit view.
+     *
+     * @return array<int, array{label:string,value:int}>
+     */
+    public function getAnnouncementOptionsProperty(): array
+    {
+        return Announcement::query()
+            ->get(['id', 'title'])
+            ->map(fn ($a) => ['label' => (string) $a->title, 'value' => (int) $a->id])
+            ->toArray();
     }
 }

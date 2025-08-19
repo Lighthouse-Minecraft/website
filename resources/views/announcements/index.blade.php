@@ -5,9 +5,9 @@
             <div class="bg-zinc-800 border border-purple-900 rounded-lg p-4 flex items-center justify-between">
                 <div>
                     <div class="text-white font-semibold">{{ $announcement->title }}</div>
-                    <div class="text-purple-300 text-sm">{!! Str::limit($announcement->content, 120) !!}</div>
+                    <div class="text-purple-300 text-sm whitespace-pre-wrap break-words [&_pre]:whitespace-pre-wrap [&_pre]:break-words [&_pre]:max-w-full [&_pre]:w-full [&_pre]:overflow-x-auto [&_code]:break-words [&_code]:break-all">{!! Str::limit($announcement->content, 120) !!}</div>
                 </div>
-                <a href="{{ route('announcements.show', ['id' => $announcement->id, 'from' => 'index']) }}" class="bg-zinc-700 text-white px-4 py-2 rounded hover:bg-zinc-600 transition">Read Full Announcement</a>
+                <flux:button size="xs" wire:navigate href="{{ route('announcements.show', ['id' => $announcement->id, 'from' => 'index']) }}" variant="primary">Read Full Announcement</flux:button>
             </div>
         @endforeach
         <div class="mt-4">{{ $announcements->links() }}</div>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\StaffRank;
 use App\Models\Announcement;
 use App\Models\Blog;
 use App\Models\Comment;
@@ -47,11 +48,50 @@ class CommentController extends Controller
         Gate::authorize('create', Comment::class);
         $validated = $request->validate([
             'content' => 'required|string|max:2000',
-            'commentable_id' => 'required|integer',
-            'commentable_type' => 'required|string',
+            'commentable_id' => 'required|integer|gt:0',
+            'commentable_type' => 'required|string|in:announcement,blog',
         ]);
-        $validated['author_id'] = Auth::id();
-        Comment::create($validated);
+
+        $type = strtolower($validated['commentable_type']);
+        $id = (int) $validated['commentable_id'];
+
+        // Snapshot the parent title/content for display even if parent is later deleted
+        $snapshotTitle = null;
+        $snapshotContent = null;
+        if ($type === 'announcement') {
+            $parent = Announcement::withTrashed()->find($id);
+            if ($parent) {
+                $snapshotTitle = $parent->title;
+                $snapshotContent = $parent->content;
+            }
+        } elseif ($type === 'blog') {
+            $parent = Blog::withTrashed()->find($id);
+            if ($parent) {
+                $snapshotTitle = $parent->title;
+                $snapshotContent = $parent->content;
+            }
+        }
+
+        $user = Auth::user();
+
+        $data = [
+            'content' => $validated['content'],
+            'author_id' => Auth::id(),
+            'commentable_id' => $id,
+            'commentable_type' => $type,
+            'commentable_title' => $snapshotTitle,
+            'commentable_content' => $snapshotContent,
+        ];
+
+        if ($user && ($user->isAdmin() || $user->staff_rank === StaffRank::Officer)) {
+            $data['status'] = 'approved';
+            $data['needs_review'] = false;
+        } else {
+            $data['status'] = 'needs_review';
+            $data['needs_review'] = true;
+        }
+
+        Comment::create($data);
 
         return redirect()->back()->with('success', 'Comment posted successfully!');
     }

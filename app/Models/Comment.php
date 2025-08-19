@@ -19,13 +19,16 @@ class Comment extends Model
     protected $fillable = [
         'content',
         'author_id',
-        'announcement_id',
-        'blog_id',
         'commentable_id',
         'commentable_type',
+        'commentable_title',
+        'commentable_content',
         'status',
         'parent_id',
         'edited_at',
+        'reviewed_by',
+        'reviewed_at',
+        'needs_review',
     ];
 
     /**
@@ -34,11 +37,55 @@ class Comment extends Model
     protected $table = 'comments';
 
     /**
+     * The attributes that should be cast to native types.
+     */
+    protected $casts = [
+        'reviewed_at' => 'datetime',
+    ];
+
+    /**
      * Get the parent commentable model (announcement or blog).
      */
     public function commentable()
     {
         return $this->morphTo();
+    }
+
+    /**
+     * Accessor: normalize legacy polymorphic types to our aliases.
+     * Ensures values like "App\\Models\\Blog" or "Blog" resolve to "blog".
+     */
+    public function getCommentableTypeAttribute($value)
+    {
+        if (! is_string($value)) {
+            return $value;
+        }
+
+        $normalized = match ($value) {
+            'App\\Models\\Blog', Blog::class, 'Blog' => 'blog',
+            'App\\Models\\Announcement', Announcement::class, 'Announcement' => 'announcement',
+            default => strtolower($value),
+        };
+
+        return $normalized;
+    }
+
+    /**
+     * Mutator: store polymorphic types using our lowercase aliases.
+     */
+    public function setCommentableTypeAttribute($value): void
+    {
+        if (is_string($value)) {
+            // Convert FQCNs or class basenames to lowercase alias
+            $alias = strtolower(class_basename($value));
+            if (in_array($alias, ['blog', 'announcement'], true)) {
+                $this->attributes['commentable_type'] = $alias;
+
+                return;
+            }
+        }
+
+        $this->attributes['commentable_type'] = $value;
     }
 
     /**
@@ -124,5 +171,13 @@ class Comment extends Model
         }
 
         return $errors;
+    }
+
+    /**
+     * The reviewer who marked the comment as reviewed.
+     */
+    public function reviewer()
+    {
+        return $this->belongsTo(User::class, 'reviewed_by');
     }
 }
