@@ -35,11 +35,14 @@ new class extends Component {
             ->orderBy('completed_at', 'asc')
             ->get();
 
-        $this->archivedTasks = Task::where('section_key', $this->section_key)
-            ->where('status', TaskStatus::Archived)
-            ->where('archived_meeting_id', $this->meeting->id)
-            ->orderBy('archived_at', 'asc')
-            ->get();
+        // Don't show archived tasks if we're not in a meeting
+        if ($this->meeting?->id) {
+            $this->archivedTasks = Task::where('section_key', $this->section_key)
+                ->where('status', TaskStatus::Archived)
+                ->where('archived_meeting_id', $this->meeting->id)
+                ->orderBy('archived_at', 'asc')
+                ->get();
+        }
     }
 
     public function addTask() {
@@ -84,7 +87,7 @@ new class extends Component {
             @endforeach
         @endif
 
-        @if(! $archivedTasks->isEmpty())
+        @if($archivedTasks && ! $archivedTasks->isEmpty())
             <flux:heading class="my-4">Archived Tasks This Meeting</flux:heading>
             @foreach ($archivedTasks as $task)
                 <livewire:task.show-task :task="$task" :meeting="$meeting" wire:key="task-{{ $task->id }}->archived" />

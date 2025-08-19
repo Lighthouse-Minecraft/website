@@ -1,5 +1,9 @@
 <?php
 
+use App\Enums\StaffDepartment;
+use App\Models\Meeting;
+use App\Models\Task;
+
 use function Pest\Laravel\get;
 
 describe('Ready Room Page', function () {
@@ -101,9 +105,28 @@ describe('Department Page - Departments', function () {
             ->assertDontSee($departments['quartermaster'])
             ->assertDontSee($departments['steward'])
             ->assertStatus(status: 200);
-    })->with('rankAtMostCrewMembers')->wip();
+    })->with('rankAtMostCrewMembers')->done();
+})->done(issue: 54, assignee: 'jonzenor');
+
+describe('Department Page - Recent Meeting Notes', function () {
+    // The recent meeting notes are displayed as a list
+    it('displays the recent meeting notes', function () {
+        loginAsAdmin();
+
+        get(route('ready-room.index'))
+            ->assertStatus(200)
+            ->assertSee('Recent Meeting Notes');
+    })->todo();
+
+    // The current task list is displayed
+    it('displays the current task list', function () {
+        loginAsAdmin();
+        $meeting = Meeting::factory()->create();
+        $task = Task::factory()->withDepartment(StaffDepartment::Command->value)->withMeeting($meeting)->create();
+
+        get(route('ready-room.index'))
+            ->assertStatus(200)
+            ->assertSee($task->name)
+            ->assertSee('Tasks');
+    })->wip();
 })->wip(issue: 54, assignee: 'jonzenor');
-
-// The recent meeting notes are displayed as a list
-
-// The current task list is displayed

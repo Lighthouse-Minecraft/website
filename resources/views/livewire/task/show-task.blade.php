@@ -70,7 +70,7 @@ new class extends Component {
     <flux:spacer />
 
     <div class="text-right">
-        @if ($this->isCompleted)
+        @if ($this->isCompleted && $this->meeting?->id)
             <flux:button size="xs" color="indigo" wire:click="markAsArchived">Archive</flux:button>
         @endif
     </div>
