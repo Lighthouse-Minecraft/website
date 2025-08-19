@@ -32,10 +32,10 @@ use App\Enums\StaffRank;
                                 @php
                                     $reviewerUser = $existing->reviewed_by ? User::find($existing->reviewed_by) : null;
                                     $reviewer = $reviewerUser ? $reviewerUser->name : 'Unknown';
-                                    $reviewedAt = $existing->reviewed_at ? $existing->reviewed_at->format('M d, Y H:i') : '';
+                                    $reviewedAtIso = $existing->reviewed_at ? $existing->reviewed_at->toIso8601String() : null;
                                 @endphp
                                 <span class="inline-flex items-center rounded-full border border-green-600 bg-green-600/10 text-green-200 text-[11px] px-2 py-0.5">
-                                    Reviewed by @if($reviewerUser)&nbsp;<flux:link href="{{ route('profile.show', ['user' => $reviewerUser]) }}">{{ $reviewer }}</flux:link>@else&nbsp;{{ $reviewer }} @endif @if($reviewedAt)&nbsp;on {{ $reviewedAt }}@endif
+                                    Reviewed by @if($reviewerUser)&nbsp;<flux:link href="{{ route('profile.show', ['user' => $reviewerUser]) }}">{{ $reviewer }}</flux:link>@else&nbsp;{{ $reviewer }} @endif @if($reviewedAtIso)&nbsp;on <time class="comment-ts" datetime="{{ $reviewedAtIso }}">{{ $existing->reviewed_at->format('M d, Y H:i') }}</time>@endif
                                 </span>
                             @endif
                         </div>
@@ -87,7 +87,7 @@ use App\Enums\StaffRank;
                         @else
                             <span class="text-gray-400">Unknown</span>
                         @endif
-                        on {{ $existing->created_at->format('M d, Y H:i') }}
+                        on <time class="comment-ts" datetime="{{ $existing->created_at->toIso8601String() }}">{{ $existing->created_at->format('M d, Y H:i') }}</time>
                     </div>
                 </flux:card>
             </div>
@@ -209,4 +209,30 @@ use App\Enums\StaffRank;
     <div class="w-full text-right mt-2">
         <flux:button type="submit" icon="chat-bubble-left-right" variant="primary">Post Comment</flux:button>
     </div>
+
+    <script>
+        (function () {
+            function formatLocalTimes() {
+                const formatter = new Intl.DateTimeFormat('en-US', {
+                    month: 'short', day: '2-digit', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                });
+                document.querySelectorAll('time.comment-ts[datetime]')
+                    .forEach(function (el) {
+                        const dt = new Date(el.getAttribute('datetime'));
+                        if (!isNaN(dt.getTime())) {
+                            el.textContent = formatter.format(dt);
+                        }
+                    });
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', formatLocalTimes);
+            } else {
+                formatLocalTimes();
+            }
+            if (window.Livewire && window.Livewire.hook) {
+                window.Livewire.hook('message.processed', formatLocalTimes);
+            }
+        })();
+    </script>
 </div>
