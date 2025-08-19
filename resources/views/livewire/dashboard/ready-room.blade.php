@@ -11,29 +11,32 @@ new class extends Component {
     }
 }; ?>
 
-<div>
+<div class="w-full">
+
     <flux:tab.group>
-        <flux:tabs variant="segmented" wire:model="tab">
-            @can('view-ready-room-command')
-                <flux:tab name="command">Command</flux:tab>
-            @endcan
+        <div class="text-center">
+            <flux:tabs variant="segmented" wire:model="tab">
+                @can('view-ready-room-command')
+                    <flux:tab name="command">Command</flux:tab>
+                @endcan
 
-            @can('view-ready-room-chaplain')
-                <flux:tab name="chaplain">Chaplain</flux:tab>
-            @endcan
+                @can('view-ready-room-chaplain')
+                    <flux:tab name="chaplain">Chaplain</flux:tab>
+                @endcan
 
-            @can('view-ready-room-engineer')
-                <flux:tab name="engineer">Engineer</flux:tab>
-            @endcan
+                @can('view-ready-room-engineer')
+                    <flux:tab name="engineer">Engineer</flux:tab>
+                @endcan
 
-            @can('view-ready-room-quartermaster')
-                <flux:tab name="quartermaster">Quartermaster</flux:tab>
-            @endcan
+                @can('view-ready-room-quartermaster')
+                    <flux:tab name="quartermaster">Quartermaster</flux:tab>
+                @endcan
 
-            @can('view-ready-room-steward')
-                <flux:tab name="steward">Steward</flux:tab>
-            @endcan
-        </flux:tabs>
+                @can('view-ready-room-steward')
+                    <flux:tab name="steward">Steward</flux:tab>
+                @endcan
+            </flux:tabs>
+        </div>
 
         @can('view-ready-room-command')
             <flux:tab.panel name="command">

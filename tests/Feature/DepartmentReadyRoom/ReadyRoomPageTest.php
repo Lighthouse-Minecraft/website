@@ -128,5 +128,5 @@ describe('Department Page - Recent Meeting Notes', function () {
             ->assertStatus(200)
             ->assertSee($task->name)
             ->assertSee('Tasks');
-    })->wip();
+    })->done();
 })->wip(issue: 54, assignee: 'jonzenor');
