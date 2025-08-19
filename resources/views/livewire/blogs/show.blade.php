@@ -6,7 +6,9 @@
             <h2 class="text-lg font-semibold text-gray-100 text-center">{{ $blog->title }}</h2>
         </div>
         <div class="text-base text-gray-200 mb-2 bg-transparent">
-            <div class="mt-2 prose max-w-none whitespace-pre-wrap break-words" style="text-align: justify;">{!! $blog->content !!}</div>
+            <div class="mt-2 prose max-w-none whitespace-pre-wrap break-words [&_pre]:whitespace-pre-wrap [&_pre]:break-words [&_pre]:max-w-full [&_pre]:w-full [&_pre]:overflow-x-auto [&_code]:break-words [&_code]:break-all" style="text-align: justify;">
+                {!! $blog->content !!}
+            </div>
         </div>
         <br>
         <div class="text-sm text-gray-400">

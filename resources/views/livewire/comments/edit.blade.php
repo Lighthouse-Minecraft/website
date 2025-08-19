@@ -32,7 +32,7 @@ new class extends Component {
         $this->validate([
             'commentContent' => 'required|string|max:2000',
             'commentable_id' => 'required|integer',
-            'commentable_type' => 'required|string',
+            'commentable_type' => 'required|in:blog,announcement',
         ]);
 
         Comment::create([
@@ -52,30 +52,115 @@ new class extends Component {
 <flux:card class="max-w-2xl mx-auto mt-10">
     <div class="space-y-6 p-6">
         <flux:heading size="xl" class="mb-4">Edit Comment</flux:heading>
+
         @if(auth()->id() === $comment->author_id)
             <form wire:submit.prevent="saveComment">
                 <div class="space-y-6">
-                    <flux:editor label="Comment Content" wire:model="commentContent" />
-                    <flux:dropdown label="Type" wire:model="commentable_type">
-                        <option value="">Select Type</option>
-                        <option value="App\\Models\\Blog">Blog</option>
-                        <option value="App\\Models\\Announcement">Announcement</option>
-                    </flux:dropdown>
-                    <flux:dropdown label="Resource" wire:model="commentable_id">
-                        <option value="">Select Resource</option>
-                        @if($commentable_type === 'App\\Models\\Blog')
-                            @foreach ($blogOptions as $blog)
-                                <option value="{{ $blog['value'] }}">{{ $blog['label'] }}</option>
-                            @endforeach
-                        @elseif($commentable_type === 'App\\Models\\Announcement')
-                            @foreach ($announcementOptions as $announcement)
-                                <option value="{{ $announcement['value'] }}">{{ $announcement['label'] }}</option>
-                            @endforeach
-                        @endif
-                    </flux:dropdown>
+                    <div>
+                        <flux:editor
+                            wire:model.defer="commentContent"
+                            label="Edit comment"
+                            placeholder="Type your comment..."
+                            class="
+                                mb-1
+                                w-full max-w-full overflow-hidden
+                                [&_[data-slot=content]_.ProseMirror]:break-words
+                                [&_[data-slot=content]_.ProseMirror]:break-all
+                                [&_[data-slot=content]_.ProseMirror]:whitespace-pre-wrap
+                                [&_[data-slot=content]_.ProseMirror]:w-full
+                                [&_[data-slot=content]_.ProseMirror]:max-w-full
+                                [&_[data-slot=content]_.ProseMirror]:overflow-x-auto
+                                [&_[data-slot=content]]:max-h-[500px]
+                                [&_[data-slot=content]]:overflow-y-auto
+                                [&_[data-slot=content]_pre]:overflow-x-auto
+                                [&_[data-slot=content]_pre]:!whitespace-pre-wrap
+                                [&_[data-slot=content]_pre]:max-w-full
+                                [&_[data-slot=content]_pre]:w-full
+                                [&_[data-slot=content]_pre_code]:!break-words
+                                [&_[data-slot=content]_pre_code]:break-all
+                                [&_[data-slot=content]_pre]:rounded-md
+                                [&_[data-slot=content]_pre]:p-3
+                                [&_[data-slot=content]_pre]:my-3
+                                [&_[data-slot=content]_pre]:border
+                                [&_[data-slot=content]_pre]:bg-black/10
+                                [&_[data-slot=content]_pre]:border-black/20
+                                dark:[&_[data-slot=content]_pre]:bg-white/10
+                                dark:[&_[data-slot=content]_pre]:border-white/20
+                                [&_[data-slot=content]_pre]:font-mono
+                                [&_[data-slot=content]_pre]:text-sm
+                            "
+                            style="text-align: justify;"
+                        />
+                    </div>
+
+                    <flux:field>
+                        <flux:label>Attached To</flux:label>
+                        @php
+                            $rawType = (string) ($comment->getRawOriginal('commentable_type') ?? '');
+                            $type = strtolower(class_basename($rawType));
+                            if (! in_array($type, ['blog', 'announcement'], true)) {
+                                $type = strtolower($rawType);
+                            }
+                            $title = $comment->commentable_title ?: ($comment->commentable->title ?? 'Unknown');
+                            $url = null;
+                            if ($type === 'blog') {
+                                $url = route('blogs.show', ['id' => $comment->commentable_id, 'from' => 'acp']);
+                            } elseif ($type === 'announcement') {
+                                $url = route('announcements.show', ['id' => $comment->commentable_id, 'from' => 'acp']);
+                            }
+                        @endphp
+
+                        <div class="text-sm text-gray-300">
+                            <span class="uppercase text-xs text-gray-400">{{ ucfirst($type ?: 'Unknown') }}</span>
+                            <span class="mx-2">—</span>
+                            @if($url)
+                                <flux:link wire:navigate href="{{ $url }}" class="font-medium">{{ $title }}</flux:link>
+                            @else
+                                <span class="font-medium">{{ $title }}</span>
+                            @endif
+                        </div>
+                    </flux:field>
+
                     <div class="w-full text-right flex gap-2">
-                        <flux:button wire:navigate href="{{ route('acp.index', ['tab' => 'comment-manager']) }}" variant="primary" class="mx-4">Cancel</flux:button>
-                        <flux:button wire:click="saveComment" icon="document-check" variant="primary">Update Comment</flux:button>
+                        <flux:button type="submit" icon="document-check" variant="primary">Update Comment</flux:button>
+
+                        @php
+                            $from = request('from');
+                            $returnUrl = request('return');
+                            $backUrl = null;
+
+                            if ($from === 'acp' || request()->routeIs('acp.*')) {
+                                $backUrl = route('acp.index', ['tab' => 'comment-manager']);
+                            } elseif (!empty($returnUrl)) {
+                                $backUrl = $returnUrl;
+                            } elseif ($from === 'dashboard') {
+                                $backUrl = route('dashboard');
+                            } else {
+                                // Fallback to the parent show page if available
+                                $rawType = (string) ($comment->getRawOriginal('commentable_type') ?? '');
+                                $type = strtolower(class_basename($rawType));
+                                if (! in_array($type, ['blog', 'announcement'], true)) {
+                                    $type = strtolower($rawType);
+                                }
+                                if ($type === 'blog') {
+                                    $backUrl = route('blogs.show', $comment->commentable_id);
+                                } elseif ($type === 'announcement') {
+                                    $backUrl = route('announcements.show', $comment->commentable_id);
+                                } else {
+                                    $backUrl = url('/');
+                                }
+                            }
+                        @endphp
+                        
+                        <flux:button
+                            onclick="if (document.referrer) { event.preventDefault(); window.history.back(); }"
+                            href="{{ $backUrl }}"
+                            wire:navigate
+                            variant="primary"
+                            class="mx-4"
+                        >
+                            Cancel
+                        </flux:button>
                     </div>
                 </div>
             </form>

@@ -23,17 +23,29 @@ new class extends Component {
         @if($blog->comments->isNotEmpty())
             <ul style="margin:0.5rem 0 0 0;padding-left:1rem;">
                 @foreach($blog->comments as $comment)
-                    <li style="color:#cbd5e1;font-size:0.95em;">
-                        <span class="whitespace-pre-wrap break-words">{!! $comment->content !!}</span>
+                    <li style="color:#cbd5e1;font-size:0.95em; position: relative;">
+                        <span class="prose max-w-none whitespace-pre-wrap break-words [&_pre]:whitespace-pre-wrap [&_pre]:break-words [&_pre]:max-w-full [&_pre]:w-full [&_pre]:overflow-x-auto [&_code]:break-words [&_code]:break-all">{!! $comment->content !!}</span>
+                        <br><br>
                         <em style="color:#94a3b8;">— {{ $comment->author->name ?? 'Unknown' }}</em>
-                        <span style="font-size:0.85em;color:#64748b;">({{ $comment->created_at->format('M d, Y H:i') }})</span>
-                        @if($isAdmin || ($user && $comment->author_id === $user->id))
+                        <br><br>
+                        <hr>
+                        <span style="font-size:0.85em;color:#64748b;">(
+                            <time class="comment-ts" datetime="{{ $comment->created_at->toIso8601String() }}">{{ $comment->created_at->format('M d, Y H:i') }}</time>
+                        )</span>
+                        @can('review', $comment)
+                            @if($comment->needs_review)
+                                <span class="inline-flex items-center rounded-full border border-amber-500 bg-amber-500/10 text-amber-200 text-[11px] px-2 py-0.5" style="margin-left:6px;">Needs Review</span>
+                            @elseif($comment->reviewed_by)
+                                <span class="inline-flex items-center rounded-full border border-green-600 bg-green-600/10 text-green-200 text-[11px] px-2 py-0.5" style="margin-left:6px;">Reviewed</span>
+                            @endif
+                        @endcan
+                        @can('delete', $comment)
                             <form method="POST" action="{{ route('comments.destroy', $comment->id) }}" style="display:inline; margin-left:8px;">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" style="color:#ef4444;background:none;border:none;cursor:pointer;">Delete</button>
                             </form>
-                        @endif
+                        @endcan
                     </li>
                 @endforeach
             </ul>
@@ -46,8 +58,8 @@ new class extends Component {
         @csrf
         <input type="hidden" name="commentable_id" value="{{ $blog->id }}">
         <input type="hidden" name="commentable_type" value="blog">
-        <div>
-            <textarea name="content" rows="3" class="w-full border rounded p-2" placeholder="Add a comment..." required maxlength="2000" id="comment-content"></textarea>
+        <div x-data="{ v: '', show: false, check(){ const t=(this.v||'').replace(/\r/g,''); const lines=t.split('\n'); const last=(lines[lines.length-1]||'').trimEnd(); this.show=/```[\w-]*$/.test(last);} }" x-init="check()" x-effect="check()">
+            <textarea name="content" rows="3" class="w-full border rounded p-2" placeholder="Add a quick comment..." required maxlength="2000" id="comment-content" x-model="v"></textarea>
         </div>
         <flux:button type="submit" variant="primary" class="mt-2">Post</flux:button>
         <div class="text-sm text-gray-500 mt-2" style="display: flex; align-items: center; gap: 8px;">
@@ -64,15 +76,31 @@ new class extends Component {
             @else
                 <span>Unknown</span>
             @endif
-            <span id="comment-preview-timestamp">{{ now()->format('M d, Y H:i') }}</span>
+            <span x-data="{ t: new Date() }"
+                  x-init="setInterval(() => { t = new Date() }, 1000)"
+                  x-text="t.toLocaleString('en-US', { month: 'short', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })"></span>
         </div>
         <script>
-            function updateTimestamp() {
-                const now = new Date();
-                const options = { month: 'short', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' };
-                document.getElementById('comment-preview-timestamp').textContent = now.toLocaleString('en-US', options);
-            }
-            setInterval(updateTimestamp, 1000);
+            (function () {
+                function formatLocalTimes() {
+                    const formatter = new Intl.DateTimeFormat('en-US', {
+                        month: 'short', day: '2-digit', year: 'numeric',
+                        hour: '2-digit', minute: '2-digit'
+                    });
+                    document.querySelectorAll('time.comment-ts[datetime]')
+                        .forEach(function (el) {
+                            const dt = new Date(el.getAttribute('datetime'));
+                            if (!isNaN(dt.getTime())) {
+                                el.textContent = formatter.format(dt);
+                            }
+                        });
+                }
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', formatLocalTimes);
+                } else {
+                    formatLocalTimes();
+                }
+            })();
         </script>
     </form>
 </div>

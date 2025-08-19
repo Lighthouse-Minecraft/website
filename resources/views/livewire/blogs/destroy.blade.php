@@ -54,7 +54,7 @@
             </div>
         </div>
 
-    <div id="editor_content" class="prose max-w-none whitespace-pre-wrap break-words">
+        <div id="editor_content" class="prose max-w-none whitespace-pre-wrap break-words [&_pre]:whitespace-pre-wrap [&_pre]:break-words [&_pre]:max-w-full [&_pre]:w-full [&_pre]:overflow-x-auto [&_code]:break-words [&_code]:break-all">
             {!! $blog->content !!}
         </div>
 
@@ -111,7 +111,16 @@
                                 @endif
                                 on {{ $comment->created_at->format('M d, Y H:i') }}
                             </div>
-                            <div class="prose max-w-none whitespace-pre-wrap break-words">{!! $comment->content !!}</div>
+                            <div class="prose max-w-none whitespace-pre-wrap break-words [&_pre]:whitespace-pre-wrap [&_pre]:break-words [&_pre]:max-w-full [&_pre]:w-full [&_pre]:overflow-x-auto [&_code]:break-words [&_code]:break-all">
+                                {!! $comment->content !!}
+                            </div>
+                            @can('delete', $comment)
+                                <form method="POST" action="{{ route('comments.destroy', $comment->id) }}" style="display:inline; margin-top:6px;">
+                                    @csrf
+                                    @method('DELETE')
+                                    <flux:button type="submit" size="xs" icon="trash" variant="danger">Delete</flux:button>
+                                </form>
+                            @endcan
                         </li>
                     @empty
                         <li class="text-gray-400">No comments yet.</li>

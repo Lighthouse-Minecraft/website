@@ -89,7 +89,33 @@ new class extends Component {
         <div class="space-y-6">
             <flux:input wire:model="blogTitle" placeholder="Enter title..." class="bg-transparent text-lg font-semibold" />
 
-            <flux:editor wire:model="blogContent" class="bg-transparent" style="text-align: justify;" />
+            <flux:editor
+                wire:model="blogContent"
+                class="bg-transparent
+                    [&_[data-slot=content]_.ProseMirror]:break-words
+                    [&_[data-slot=content]_.ProseMirror]:whitespace-pre-wrap
+                    [&_[data-slot=content]_.ProseMirror]:max-w-full
+                    [&_[data-slot=content]_.ProseMirror]:overflow-x-auto
+                    [&_[data-slot=content]]:max-h-[500px]
+                    [&_[data-slot=content]]:overflow-y-auto
+                    [&_[data-slot=content]_pre]:overflow-x-auto
+                    [&_[data-slot=content]_pre]:whitespace-pre-wrap!
+                    [&_[data-slot=content]_pre]:max-w-full
+                    [&_[data-slot=content]_pre]:w-full
+                    [&_[data-slot=content]_pre_code]:break-words!
+                    [&_[data-slot=content]_pre]:rounded-md
+                    [&_[data-slot=content]_pre]:p-3
+                    [&_[data-slot=content]_pre]:my-3
+                    [&_[data-slot=content]_pre]:border
+                    [&_[data-slot=content]_pre]:bg-black/10
+                    [&_[data-slot=content]_pre]:border-black/20
+                    dark:[&_[data-slot=content]_pre]:bg-white/10
+                    dark:[&_[data-slot=content]_pre]:border-white/20
+                    [&_[data-slot=content]_pre]:font-mono
+                    [&_[data-slot=content]_pre]:text-sm
+                "
+                style="text-align: justify;"
+            />
 
             <flux:field>
                 <flux:label>Tags</flux:label>

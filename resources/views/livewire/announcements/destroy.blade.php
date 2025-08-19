@@ -55,7 +55,7 @@
             </div>
         </div>
 
-    <div class="prose max-w-none whitespace-pre-wrap break-words [&_pre]:whitespace-pre-wrap [&_pre]:break-words [&_pre]:max-w-full [&_pre]:w-full [&_pre]:overflow-x-auto [&_code]:break-words [&_code]:break-all" id="editor_content">
+        <div class="prose max-w-none whitespace-pre-wrap break-words [&_pre]:whitespace-pre-wrap [&_pre]:break-words [&_pre]:max-w-full [&_pre]:w-full [&_pre]:overflow-x-auto [&_code]:break-words [&_code]:break-all" id="editor_content">
             {!! $announcement->content !!}
         </div>
 
@@ -113,7 +113,9 @@
                                 on {{ $comment->created_at->format('M d, Y H:i') }}
                             </div>
                             <br>
-                            <div class="prose max-w-none whitespace-pre-wrap break-words [&_pre]:whitespace-pre-wrap [&_pre]:break-words [&_pre]:max-w-full [&_pre]:w-full [&_pre]:overflow-x-auto [&_code]:break-words [&_code]:break-all">{!! $comment->content !!}</div>
+                            <div class="prose max-w-none whitespace-pre-wrap break-words [&_pre]:whitespace-pre-wrap [&_pre]:break-words [&_pre]:max-w-full [&_pre]:w-full [&_pre]:overflow-x-auto [&_code]:break-words [&_code]:break-all">
+                                {!! $comment->content !!}
+                            </div>
                             <br>
                             @can('delete', $comment)
                                 <form method="POST" action="{{ route('comments.destroy', $comment->id) }}" style="display:inline; margin-top:6px;">

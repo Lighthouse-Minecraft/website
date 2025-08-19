@@ -90,6 +90,7 @@ new class extends Component {
 
 <div class="space-y-6">
     <flux:heading size="xl">Edit Announcement</flux:heading>
+
     <form wire:submit.prevent="updateAnnouncement">
         <div class="space-y-6">
             <flux:input wire:model="announcementTitle" placeholder="Enter title..." class="bg-transparent text-lg font-semibold" />
@@ -121,53 +122,53 @@ new class extends Component {
                 "
                 style="text-align: justify;"
             />
+        </div>
 
-            <flux:field>
-                <flux:label>Tags</flux:label>
-                <flux:select variant="listbox" multiple searchable indicator="checkbox" wire:model.live="selectedTags">
-                    <x-slot name="button">
-                        <flux:select.button class="w-full max-w-xl" placeholder="Select tags" :invalid="$errors->has('selectedTags')" />
-                    </x-slot>
-                    @foreach ($this->getTagOptionsProperty() as $tag)
-                        <flux:select.option value="{{ $tag['value'] }}">{{ $tag['label'] }}</flux:select.option>
-                    @endforeach
-                </flux:select>
-                <flux:error name="selectedTags" />
-            </flux:field>
+        <flux:field>
+            <flux:label>Tags</flux:label>
+            <flux:select variant="listbox" multiple searchable indicator="checkbox" wire:model.live="selectedTags">
+                <x-slot name="button">
+                    <flux:select.button class="w-full max-w-xl" placeholder="Select tags" :invalid="$errors->has('selectedTags')" />
+                </x-slot>
+                @foreach ($this->getTagOptionsProperty() as $tag)
+                    <flux:select.option value="{{ $tag['value'] }}">{{ $tag['label'] }}</flux:select.option>
+                @endforeach
+            </flux:select>
+            <flux:error name="selectedTags" />
+        </flux:field>
 
-            <flux:field>
-                <flux:label>Categories</flux:label>
-                <flux:select variant="listbox" multiple searchable indicator="checkbox" wire:model.live="selectedCategories">
-                    <x-slot name="button">
-                        <flux:select.button class="w-full max-w-xl" placeholder="Select categories" :invalid="$errors->has('selectedCategories')" />
-                    </x-slot>
-                    @foreach ($this->getCategoryOptionsProperty() as $category)
-                        <flux:select.option value="{{ $category['value'] }}">{{ $category['label'] }}</flux:select.option>
-                    @endforeach
-                </flux:select>
-                <flux:error name="selectedCategories" />
-            </flux:field>
+        <flux:field>
+            <flux:label>Categories</flux:label>
+            <flux:select variant="listbox" multiple searchable indicator="checkbox" wire:model.live="selectedCategories">
+                <x-slot name="button">
+                    <flux:select.button class="w-full max-w-xl" placeholder="Select categories" :invalid="$errors->has('selectedCategories')" />
+                </x-slot>
+                @foreach ($this->getCategoryOptionsProperty() as $category)
+                    <flux:select.option value="{{ $category['value'] }}">{{ $category['label'] }}</flux:select.option>
+                @endforeach
+            </flux:select>
+            <flux:error name="selectedCategories" />
+        </flux:field>
 
-            <flux:checkbox label="Published" wire:model="isPublished" />
+        <flux:checkbox label="Published" wire:model="isPublished" />
 
-            {{-- <flux:input label="Published At" wire:model="published_at" type="datetime-local" /> --}}
+        {{-- <flux:input label="Published At" wire:model="published_at" type="datetime-local" /> --}}
 
-            <div class="w-full text-right">
-                @if(request('from') === 'acp' || request()->routeIs('acp.*'))
-                    <flux:button wire:navigate href="{{ route('acp.index', ['tab' => 'announcement-manager']) }}" class="mx-4">Cancel</flux:button>
-                @else
-                    <flux:button
-                        onclick="if (document.referrer) { event.preventDefault(); window.history.back(); }"
-                        href="{{ request('from') === 'dashboard' ? route('dashboard') : route('announcements.index') }}"
-                        wire:navigate
-                        variant="primary"
-                        class="mx-4"
-                    >
-                        Cancel
-                    </flux:button>
-                @endif
-                <flux:button wire:click="updateAnnouncement" icon="document-check" variant="primary">Update Announcement</flux:button>
-            </div>
+        <div class="w-full text-right">
+            @if(request('from') === 'acp' || request()->routeIs('acp.*'))
+                <flux:button wire:navigate href="{{ route('acp.index', ['tab' => 'announcement-manager']) }}" class="mx-4">Cancel</flux:button>
+            @else
+                <flux:button
+                    onclick="if (document.referrer) { event.preventDefault(); window.history.back(); }"
+                    href="{{ request('from') === 'dashboard' ? route('dashboard') : route('announcements.index') }}"
+                    wire:navigate
+                    variant="primary"
+                    class="mx-4"
+                >
+                    Cancel
+                </flux:button>
+            @endif
+            <flux:button wire:click="updateAnnouncement" icon="document-check" variant="primary">Update Announcement</flux:button>
         </div>
     </form>
 </div>

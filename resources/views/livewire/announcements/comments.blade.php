@@ -29,7 +29,9 @@ new class extends Component {
                         <em style="color:#94a3b8;">— {{ $comment->author->name ?? 'Unknown' }}</em>
                         <br><br>
                         <hr>
-                        <span style="font-size:0.85em;color:#64748b;">({{ $comment->created_at->format('M d, Y H:i') }})</span>
+                        <span style="font-size:0.85em;color:#64748b;">(
+                            <time class="comment-ts" datetime="{{ $comment->created_at->toIso8601String() }}">{{ $comment->created_at->format('M d, Y H:i') }}</time>
+                        )</span>
                         @can('review', $comment)
                             @if($comment->needs_review)
                                 <span class="inline-flex items-center rounded-full border border-amber-500 bg-amber-500/10 text-amber-200 text-[11px] px-2 py-0.5" style="margin-left:6px;">Needs Review</span>
@@ -74,18 +76,30 @@ new class extends Component {
             @else
                 <span>Unknown</span>
             @endif
-            <span id="comment-preview-timestamp">{{ now()->format('M d, Y H:i') }}</span>
+            <span x-data="{ t: new Date() }"
+                  x-init="setInterval(() => { t = new Date() }, 1000)"
+                  x-text="t.toLocaleString('en-US', { month: 'short', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })"></span>
         </div>
         <script>
             (function () {
-                function updateTimestamp() {
-                    const el = document.getElementById('comment-preview-timestamp');
-                    if (!el) { return; }
-                    const now = new Date();
-                    const options = { month: 'short', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' };
-                    el.textContent = now.toLocaleString('en-US', options);
+                function formatLocalTimes() {
+                    const formatter = new Intl.DateTimeFormat('en-US', {
+                        month: 'short', day: '2-digit', year: 'numeric',
+                        hour: '2-digit', minute: '2-digit'
+                    });
+                    document.querySelectorAll('time.comment-ts[datetime]')
+                        .forEach(function (el) {
+                            const dt = new Date(el.getAttribute('datetime'));
+                            if (!isNaN(dt.getTime())) {
+                                el.textContent = formatter.format(dt);
+                            }
+                        });
                 }
-                setInterval(updateTimestamp, 1000);
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', formatLocalTimes);
+                } else {
+                    formatLocalTimes();
+                }
             })();
         </script>
     </form>
