@@ -54,20 +54,20 @@ new class extends Component {
 
             <x-slot name="actions">
                 <flux:modal.trigger name="view-announcement-{{ $announcement->id }}">
-                    <flux:button>Read Full Announcement</flux:button>
+                    <flux:button size="xs" variant="primary">Read Full Announcement</flux:button>
                 </flux:modal.trigger>
             </x-slot>
 
             <flux:modal name="view-announcement-{{ $announcement->id }}" class="w-full md:w-3/4 xl:w-1/2">
                 <flux:heading size="xl" class="mb-4 text-center">{{ $announcement->title }}</flux:heading>
-                <div class="prose max-w-none whitespace-pre-wrap break-words" style="text-align: justify;">
+                <div class="prose max-w-none whitespace-pre-wrap break-words [&_pre]:whitespace-pre-wrap [&_pre]:break-words [&_pre]:max-w-full [&_pre]:w-full [&_pre]:overflow-x-auto [&_code]:break-words [&_code]:break-all" style="text-align: justify;">
                     {!!  $announcement->content !!}
                 </div>
 
                 @can('acknowledge', $announcement)
                     <div class="w-full text-right mb-4">
-                        <flux:button wire:click="acknowledgeAnnouncement({{ $announcement->id }})" size="sm" variant="primary">
-                            Acknowledge Announcement
+                        <flux:button wire:click="acknowledgeAnnouncement({{ $announcement->id }})" size="xs" variant="primary">
+                            Mark As Read
                         </flux:button>
                     </div>
                 @endcan
