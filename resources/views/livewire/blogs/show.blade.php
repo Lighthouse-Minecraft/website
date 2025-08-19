@@ -2,14 +2,11 @@
 <flux:card class="max-w-3xl mx-auto mt-10">
     <div class="p-8 space-y-6">
         <flux:heading size="xl" style="font-weight: bold; text-align: center;">Blog Details</flux:heading>
-        <div class="text-base text-gray-200 mb-2">
-            <strong>Title:</strong>
-            <div class="mt-2">{{ $blog->title }}</div>
+        <div class="mb-2 bg-transparent">
+            <h2 class="text-lg font-semibold text-gray-100 text-center">{{ $blog->title }}</h2>
         </div>
-        <br>
-        <div class="text-base text-gray-200 mb-2">
-            <strong>Content:</strong>
-            <div class="mt-2 prose max-w-none">{!! $blog->content !!}</div>
+        <div class="text-base text-gray-200 mb-2 bg-transparent">
+            <div class="mt-2 prose max-w-none whitespace-pre-wrap break-words" style="text-align: justify;">{!! $blog->content !!}</div>
         </div>
         <br>
         <div class="text-sm text-gray-400">
@@ -32,19 +29,19 @@
             </div>
         @endif
         <div class="mb-4">
-            <strong>Tags:</strong>
-            @forelse($blog->tags as $tag)
-                <span class="inline-block bg-gray-200 text-gray-700 px-2 py-1 rounded mr-1">{{ $tag->name }}</span>
+            <strong>Categories:</strong>
+            @forelse($blog->categories as $category)
+                <span class="text-sm inline-block bg-blue-200 text-blue-700 px-2 py-1 rounded mr-1">{{ $category->name }}</span>
             @empty
-                <span class="text-gray-400">No tags</span>
+                <span class="text-sm text-gray-400">No categories</span>
             @endforelse
         </div>
         <div class="mb-4">
-            <strong>Categories:</strong>
-            @forelse($blog->categories as $category)
-                <span class="inline-block bg-blue-200 text-blue-700 px-2 py-1 rounded mr-1">{{ $category->name }}</span>
+            <strong>Tags:</strong>
+            @forelse($blog->tags as $tag)
+                <span class="text-sm inline-block bg-gray-200 text-gray-700 px-2 py-1 rounded mr-1">{{ $tag->name }}</span>
             @empty
-                <span class="text-gray-400">No categories</span>
+                <span class="text-sm text-gray-400">No tags</span>
             @endforelse
         </div>
         <div class="mt-6">
@@ -52,10 +49,17 @@
             <livewire:comments.comments-section :parent="$blog" />
         </div>
         <div class="w-full text-right mt-4">
-            @if(request('from') === 'acp')
+            @if(request('from') === 'acp' || request()->routeIs('acp.*'))
                 <flux:button wire:navigate href="{{ route('acp.index', ['tab' => 'blog-manager']) }}" variant="primary">Back</flux:button>
             @else
-                <flux:button wire:navigate href="{{ route('blogs.index') }}" variant="primary">Back</flux:button>
+                <flux:button
+                    onclick="if (document.referrer) { event.preventDefault(); window.history.back(); }"
+                    href="{{ request('from') === 'dashboard' ? route('dashboard') : route('blogs.index') }}"
+                    wire:navigate
+                    variant="primary"
+                >
+                    Back
+                </flux:button>
             @endif
         </div>
     </div>

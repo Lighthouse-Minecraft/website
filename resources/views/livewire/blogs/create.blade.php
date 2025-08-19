@@ -77,7 +77,7 @@ new class extends Component {
         $blog->tags()->sync($this->selectedTags);
         $blog->categories()->sync($this->selectedCategories);
 
-        Flux::toast('blog created successfully!', 'Success', variant: 'success');
+    Flux::toast('Blog created successfully!', 'Success', variant: 'success');
         return redirect()->route('acp.index', ['tab' => 'blog-manager']);
     }
 }; ?>
@@ -87,9 +87,9 @@ new class extends Component {
     <flux:heading size="xl">Create New Blog</flux:heading>
     <form wire:submit.prevent="saveBlog">
         <div class="space-y-6">
-            <flux:input label="Blog Title" wire:model="blogTitle" placeholder="Enter the title of the blog" />
+            <flux:input wire:model="blogTitle" placeholder="Enter title..." class="bg-transparent text-lg font-semibold" />
 
-            <flux:editor label="Blog Content" wire:model="blogContent" />
+            <flux:editor wire:model="blogContent" class="bg-transparent" style="text-align: justify;" />
 
             <flux:field>
                 <flux:label>Tags</flux:label>
@@ -120,8 +120,6 @@ new class extends Component {
             <flux:checkbox label="Published" wire:model="isPublished" />
 
             <flux:checkbox label="Public" wire:model="isPublic" />
-
-            {{-- <flux:input label="Published At" wire:model="published_at" type="datetime-local" /> --}}
 
             <div class="w-full text-right">
                 <flux:button wire:click="saveBlog" icon="document-check" variant="primary">Save Blog</flux:button>
