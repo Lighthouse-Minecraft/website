@@ -22,7 +22,12 @@ return new class extends Migration
             $table->unsignedBigInteger('created_by')->nullable()->constrained('comments')->onDelete('cascade');
             $table->unsignedBigInteger('updated_by')->nullable()->constrained('comments')->onDelete('cascade');
             $table->timestamp('edited_at')->nullable();
+            $table->unsignedBigInteger('reviewed_by')->nullable()->after('updated_by');
+            $table->timestamp('reviewed_at')->nullable()->after('reviewed_by');
+            $table->boolean('needs_review')->default(false)->after('reviewed_at');
             $table->timestamps();
+
+            $table->foreign('reviewed_by')->references('id')->on('users')->onDelete('set null');
         });
     }
 
