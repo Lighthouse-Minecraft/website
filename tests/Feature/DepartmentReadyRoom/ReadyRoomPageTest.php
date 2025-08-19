@@ -10,7 +10,7 @@ describe('Ready Room Page', function () {
         get('dashboard')
             ->assertSee('Staff Ready Room')
             ->assertSee(route('ready-room.index'));
-    })->with('rankAtLeastJrCrew')->wip();
+    })->with('rankAtLeastJrCrew')->done();
 
     // The Ready Room link does not show up for members
     it('does not show the Ready Room link in the sidebar for members', function ($user) {
@@ -19,17 +19,39 @@ describe('Ready Room Page', function () {
         get('dashboard')
             ->assertDontSee('Staff Ready Room')
             ->assertDontSee(route('ready-room.index'));
-    })->with('memberAll')->todo();
+    })->with('memberAll')->done();
 
     // The Ready Room page loads
     it('loads the Ready Room page', function () {
-        // Test implementation
-    })->todo();
+        loginAsAdmin();
+
+        get(route('ready-room.index'))
+            ->assertStatus(200)
+            ->assertViewIs('dashboard.ready-room');
+    })->wip();
+
+    // The Ready Room page is accessible by all ranks
+    it('is accessible by all ranks', function ($user) {
+        loginAs($user);
+
+        get(route('ready-room.index'))
+            ->assertStatus(200);
+    })->with('rankAtLeastJrCrew')->done();
+
+    // The Ready Room page is not accessible by members
+    it('is not accessible by members', function ($user) {
+        loginAs($user);
+
+        get(route('ready-room.index'))
+            ->assertStatus(403);
+    })->with('memberAll')->done();
+
+    // The Ready Room is not accessible to guests
+    it('is not accessible to guests', function () {
+        get(route('ready-room.index'))
+            ->assertRedirect(route('login'));
+    })->done();
 })->wip(issue: 54, assignee: 'jonzenor');
-
-// The Ready Room page is accessible by all ranks
-
-// The Ready Room page is not accessible by members
 
 // The list of departments is displayed as a tab list
 

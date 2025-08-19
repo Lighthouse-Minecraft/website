@@ -9,8 +9,6 @@ use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
 
-Route::get('/pages/{slug}', [PageController::class, 'show'])->name('pages.show');
-
 Route::get('/', function () {
     return redirect()->route('pages.show', ['slug' => 'home']);
 })->name('home');
@@ -77,3 +75,5 @@ Route::prefix('meetings')->name('meeting.')->controller(App\Http\Controllers\Mee
 });
 
 require __DIR__.'/auth.php';
+
+Route::get('/{slug}', [PageController::class, 'show'])->name('pages.show');
