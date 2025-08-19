@@ -109,3 +109,33 @@ select:focus[data-flux-control] {
 /* \[:where(&)\]:size-4 {
     @apply size-4;
 } */
+
+/* Subtle visual indicator for fenced code blocks in editors and rendered content */
+@layer components {
+  /* Flux editor (ProseMirror) code blocks */
+  [data-flux-editor] [data-slot="content"] .ProseMirror pre {
+    @apply rounded-md p-3 my-3 border bg-black/10 border-black/20 dark:bg-white/10 dark:border-white/20 font-mono text-sm;
+  }
+
+  /* Rendered prose code blocks (e.g., Manage Comments table) */
+  .prose pre {
+    @apply rounded-md p-3 my-3 border bg-black/10 border-black/20 dark:bg-white/10 dark:border-white/20 font-mono text-sm;
+  }
+
+  /* Slightly increase contrast while actively editing (caret anywhere in editor) */
+  [data-flux-editor] [data-slot="content"] .ProseMirror:focus-within pre {
+    @apply border-accent/40 ring-1 ring-accent/20;
+  }
+
+  /* Ensure inline code inside pre doesn't introduce extra backgrounds */
+  [data-flux-editor] [data-slot="content"] .ProseMirror pre code,
+  .prose pre code {
+    @apply bg-transparent;
+  }
+
+  /* Subtle inline code treatment (backticks) — not inside pre */
+  [data-flux-editor] [data-slot="content"] .ProseMirror :not(pre) > code,
+  .prose :not(pre) > code {
+    @apply rounded bg-black/10 dark:bg-white/10 px-1 py-0.5;
+  }
+}
