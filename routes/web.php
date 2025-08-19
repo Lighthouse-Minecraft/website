@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdminControlPanelController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\CommunityUpdatesController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -57,9 +58,8 @@ Route::prefix('acp/announcements')
         Route::delete('{announcement}', 'destroy')->name('delete');
     });
 
-Route::get('community-updates', [CommunityUpdatesController::class, 'index'])
-    ->name('community-updates.index')
-    ->middleware('auth');
+Route::get('community-updates', [CommunityUpdatesController::class, 'index'])->name('community-updates.index')->middleware('auth');
+Route::get('ready-room', [DashboardController::class, 'readyRoom'])->name('ready-room.index')->middleware('auth');
 
 // This is for non admin announcement links
 Route::prefix('announcements')

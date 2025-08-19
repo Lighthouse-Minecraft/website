@@ -33,5 +33,9 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('manage-stowaway-users', function ($user) {
             return $user->hasRole('Admin') || $user->isAtLeastRank(StaffRank::Officer) || ($user->isAtLeastRank(StaffRank::CrewMember) && $user->isInDepartment(StaffDepartment::Quartermaster));
         });
+
+        Gate::define('view-ready-room', function ($user) {
+            return $user->hasRole('Admin') || $user->isAtLeastRank(StaffRank::JrCrew);
+        });
     }
 }

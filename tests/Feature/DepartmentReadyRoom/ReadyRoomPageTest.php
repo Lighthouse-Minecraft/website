@@ -4,18 +4,22 @@ use function Pest\Laravel\get;
 
 describe('Ready Room Page', function () {
     // The Ready Room link shows up in the sidebar for all ranks
-    it('shows the Ready Room link in the sidebar for all ranks', function () {
-        loginAsAdmin();
+    it('shows the Ready Room link in the sidebar for all ranks', function ($user) {
+        loginAs($user);
 
         get('dashboard')
             ->assertSee('Staff Ready Room')
             ->assertSee(route('ready-room.index'));
-    })->todo();
+    })->with('rankAtLeastJrCrew')->wip();
 
     // The Ready Room link does not show up for members
-    it('does not show the Ready Room link in the sidebar for members', function () {
-        // Test implementation
-    })->todo();
+    it('does not show the Ready Room link in the sidebar for members', function ($user) {
+        loginAs($user);
+
+        get('dashboard')
+            ->assertDontSee('Staff Ready Room')
+            ->assertDontSee(route('ready-room.index'));
+    })->with('memberAll')->todo();
 
     // The Ready Room page loads
     it('loads the Ready Room page', function () {
