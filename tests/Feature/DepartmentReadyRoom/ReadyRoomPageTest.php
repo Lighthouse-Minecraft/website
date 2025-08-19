@@ -10,7 +10,7 @@ describe('Ready Room Page', function () {
         get('dashboard')
             ->assertSee('Staff Ready Room')
             ->assertSee(route('ready-room.index'));
-    })->wip();
+    })->todo();
 
     // The Ready Room link does not show up for members
     it('does not show the Ready Room link in the sidebar for members', function () {
