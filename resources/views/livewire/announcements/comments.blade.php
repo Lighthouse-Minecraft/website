@@ -24,7 +24,7 @@ new class extends Component {
             <ul style="margin:0.5rem 0 0 0;padding-left:1rem;">
                 @foreach($announcement->comments as $comment)
                     <li style="color:#cbd5e1;font-size:0.95em;">
-                        {!! $comment->content !!} <em style="color:#94a3b8;">— {{ $comment->author->name ?? 'Unknown' }}</em>
+                        <span class="whitespace-pre-wrap break-words">{!! $comment->content !!}</span> <em style="color:#94a3b8;">— {{ $comment->author->name ?? 'Unknown' }}</em>
                         <span style="font-size:0.85em;color:#64748b;">({{ $comment->created_at->format('M d, Y H:i') }})</span>
                         @if($isAdmin || ($user && $comment->author_id === $user->id))
                             <form method="POST" action="{{ route('comments.destroy', $comment->id) }}" style="display:inline; margin-left:8px;">

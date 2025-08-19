@@ -5,10 +5,24 @@
                 <strong class="font-semibold text-green-200">Success:</strong>
                 {{ $status }}
             </div>
-            @if(request('from') === 'acp')
+            @if(request('from') === 'acp' || request()->routeIs('acp.*'))
                 <script>
                     setTimeout(function () {
                         window.location = "{{ route('acp.index', ['tab' => $tab ?? 'announcement-manager']) }}";
+                    }, 1200);
+                </script>
+            @else
+                <script>
+                    setTimeout(function () {
+                        if (document.referrer) {
+                            window.history.back();
+                        } else {
+                            @if(request('from') === 'dashboard')
+                                window.location = "{{ route('dashboard') }}";
+                            @else
+                                window.location = "{{ route('announcements.index') }}";
+                            @endif
+                        }
                     }, 1200);
                 </script>
             @endif
@@ -41,37 +55,11 @@
             </div>
         </div>
 
-        <div class="text-sm text-gray-500 flex items-center gap-2">
-            @php $author = $announcement->author; @endphp
-            <span>Published by</span>
-            @if($author)
-                <span class="inline-flex items-center">
-                    @if(!empty($author->avatar))
-                        <flux:avatar size="xs" src="{{ $author->avatar }}" class="mr-1" />
-                    @endif
-                    <flux:link href="{{ route('profile.show', ['user' => $author]) }}">
-                        {{ $author->name ?? 'Unknown' }}
-                    </flux:link>
-                </span>
-            @else
-                <span>Unknown</span>
-            @endif
-            <span>on {{ $announcement->created_at->format('m/d/y') }} @ {{ $announcement->created_at->format('H:i') }}</span>
-        </div>
-
-        <div class="prose max-w-none" id="editor_content">
+    <div class="prose max-w-none whitespace-pre-wrap break-words" id="editor_content">
             {!! $announcement->content !!}
         </div>
 
         <div class="mt-6 space-y-4">
-            <div>
-                <strong>Tags:</strong>
-                @forelse($announcement->tags as $tag)
-                    <span class="inline-block bg-gray-200 text-gray-700 px-2 py-1 rounded mr-1">{{ $tag->name }}</span>
-                @empty
-                    <span class="text-gray-400">No tags</span>
-                @endforelse
-            </div>
             <div>
                 <strong>Categories:</strong>
                 @forelse($announcement->categories as $category)
@@ -80,13 +68,51 @@
                     <span class="text-gray-400">No categories</span>
                 @endforelse
             </div>
+
+            <div>
+                <strong>Tags:</strong>
+                @forelse($announcement->tags as $tag)
+                    <span class="inline-block bg-gray-200 text-gray-700 px-2 py-1 rounded mr-1">{{ $tag->name }}</span>
+                @empty
+                    <span class="text-gray-400">No tags</span>
+                @endforelse
+            </div>
+
+            <div class="text-sm text-gray-500 flex items-center gap-2">
+                @php $author = $announcement->author; @endphp
+                <span>Published by</span>
+                @if($author)
+                    <span class="inline-flex items-center">
+                        @if(!empty($author->avatar))
+                            <flux:avatar size="xs" src="{{ $author->avatar }}" class="mr-1" />
+                        @endif
+                        <flux:link href="{{ route('profile.show', ['user' => $author]) }}">
+                            {{ $author->name ?? 'Unknown' }}
+                        </flux:link>
+                    </span>
+                @else
+                    <span>Unknown</span>
+                @endif
+                <span>on {{ $announcement->created_at->format('m/d/y') }} @ {{ $announcement->created_at->format('H:i') }}</span>
+            </div>
+
             <div>
                 <strong>Comments:</strong>
                 <ul>
                     @forelse($announcement->comments as $comment)
                         <li class="mb-2 border-b pb-2">
-                            <div class="text-xs text-gray-500">By {{ $comment->author->name ?? 'Unknown' }} on {{ $comment->created_at->format('M d, Y H:i') }}</div>
-                            <div>{!! $comment->content !!}</div>
+                            <div class="text-xs text-gray-500">
+                                By
+                                @if($comment->author)
+                                    <flux:link href="{{ route('profile.show', ['user' => $comment->author]) }}">
+                                        {{ $comment->author->name }}
+                                    </flux:link>
+                                @else
+                                    Unknown
+                                @endif
+                                on {{ $comment->created_at->format('M d, Y H:i') }}
+                            </div>
+                            <div class="prose max-w-none whitespace-pre-wrap break-words">{!! $comment->content !!}</div>
                         </li>
                     @empty
                         <li class="text-gray-400">No comments yet.</li>
@@ -96,10 +122,18 @@
         </div>
 
         <div class="flex items-center gap-3">
-            @if(request('from') === 'acp')
+            @if(request('from') === 'acp' || request()->routeIs('acp.*'))
                 <flux:button wire:navigate href="{{ route('acp.index', ['tab' => $tab ?? 'announcement-manager']) }}" size="sm" variant="primary">Back</flux:button>
             @else
-                <flux:button wire:navigate href="{{ route('announcements.index') }}" size="sm" variant="primary">Back</flux:button>
+                <flux:button
+                    onclick="if (document.referrer) { event.preventDefault(); window.history.back(); }"
+                    href="{{ route('announcements.index') }}"
+                    wire:navigate
+                    size="sm"
+                    variant="primary"
+                >
+                    Back
+                </flux:button>
             @endif
         </div>
     </div>

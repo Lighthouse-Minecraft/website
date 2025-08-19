@@ -55,8 +55,10 @@ new class extends Component {
         $this->validate([
             'announcementTitle' => 'required|string|max:255',
             'announcementContent' => 'required|string|max:5000',
-            'selectedTags' => 'array',
-            'selectedCategories' => 'array',
+            'selectedTags' => ['array'],
+            'selectedTags.*' => ['integer', 'exists:tags,id'],
+            'selectedCategories' => ['array'],
+            'selectedCategories.*' => ['integer', 'exists:categories,id'],
             'isPublished' => 'boolean',
             'published_at' => 'date|nullable',
         ]);
@@ -90,9 +92,9 @@ new class extends Component {
     <flux:heading size="xl">Edit Announcement</flux:heading>
     <form wire:submit.prevent="updateAnnouncement">
         <div class="space-y-6">
-            <flux:input label="Announcement Title" wire:model="announcementTitle" placeholder="Enter the title of the announcement" />
+            <flux:input wire:model="announcementTitle" placeholder="Enter title..." class="bg-transparent text-lg font-semibold" />
 
-            <flux:editor label="Announcement Content" wire:model="announcementContent" />
+            <flux:editor wire:model="announcementContent" class="bg-transparent" style="text-align: justify;" />
 
             <flux:field>
                 <flux:label>Tags</flux:label>
@@ -125,7 +127,19 @@ new class extends Component {
             {{-- <flux:input label="Published At" wire:model="published_at" type="datetime-local" /> --}}
 
             <div class="w-full text-right">
-                <flux:button wire:navigate href="{{ route('acp.index', ['tab' => 'announcement-manager']) }}" class="mx-4">Cancel</flux:button>
+                @if(request('from') === 'acp' || request()->routeIs('acp.*'))
+                    <flux:button wire:navigate href="{{ route('acp.index', ['tab' => 'announcement-manager']) }}" class="mx-4">Cancel</flux:button>
+                @else
+                    <flux:button
+                        onclick="if (document.referrer) { event.preventDefault(); window.history.back(); }"
+                        href="{{ request('from') === 'dashboard' ? route('dashboard') : route('announcements.index') }}"
+                        wire:navigate
+                        variant="primary"
+                        class="mx-4"
+                    >
+                        Cancel
+                    </flux:button>
+                @endif
                 <flux:button wire:click="updateAnnouncement" icon="document-check" variant="primary">Update Announcement</flux:button>
             </div>
         </div>

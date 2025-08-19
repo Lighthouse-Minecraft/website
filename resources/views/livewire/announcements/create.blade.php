@@ -44,8 +44,10 @@ new class extends Component {
         $this->validate([
             'announcementTitle' => 'required|string|max:255',
             'announcementContent' => 'required|string|max:5000',
-            'selectedTags' => 'array',
-            'selectedCategories' => 'array',
+            'selectedTags' => ['array'],
+            'selectedTags.*' => ['integer', 'exists:tags,id'],
+            'selectedCategories' => ['array'],
+            'selectedCategories.*' => ['integer', 'exists:categories,id'],
             'isPublished' => 'boolean',
             'published_at' => 'date|nullable',
         ]);
@@ -58,15 +60,17 @@ new class extends Component {
         $this->isPublished = (bool) $this->isPublished;
         $this->published_at = $this->published_at ? Carbon::parse($this->published_at) : null;
 
-        Announcement::create([
+        $announcement = Announcement::create([
             'title' => $this->announcementTitle,
             'content' => $this->announcementContent,
             'author_id' => auth()->id(),
-            'tags' => $this->selectedTags,
-            'categories' => $this->selectedCategories,
             'is_published' => $this->isPublished,
             'published_at' => $this->isPublished ? ($this->published_at ?? now()) : null,
         ]);
+
+        // Sync pivot relations
+        $announcement->tags()->sync($this->selectedTags);
+        $announcement->categories()->sync($this->selectedCategories);
 
         Flux::toast('Announcement created successfully!', 'Success', variant: 'success');
         return redirect()->route('acp.index', ['tab' => 'announcement-manager']);
@@ -78,9 +82,9 @@ new class extends Component {
     <flux:heading size="xl">Create New Announcement</flux:heading>
     <form wire:submit.prevent="saveAnnouncement">
         <div class="space-y-6">
-            <flux:input label="Announcement Title" wire:model="announcementTitle" placeholder="Enter the title of the announcement" />
+            <flux:input wire:model="announcementTitle" placeholder="Enter title..." class="bg-transparent text-lg font-semibold" />
 
-            <flux:editor label="Announcement Content" wire:model="announcementContent" />
+            <flux:editor wire:model="announcementContent" class="bg-transparent" style="text-align: justify;" />
 
             <flux:field>
                 <flux:label>Tags</flux:label>
@@ -109,8 +113,6 @@ new class extends Component {
             </flux:field>
 
             <flux:checkbox label="Published" wire:model="isPublished" />
-
-            {{-- <flux:input label="Published At" wire:model="published_at" type="datetime-local" /> --}}
 
             <div class="w-full text-right">
                 <flux:button wire:click="saveAnnouncement" icon="document-check" variant="primary">Save Announcement</flux:button>
