@@ -59,8 +59,8 @@ new class extends Component {
             </x-slot>
 
             <flux:modal name="view-announcement-{{ $announcement->id }}" class="w-full md:w-3/4 xl:w-1/2">
-                <flux:heading size="xl" class="mb-4">{{ $announcement->title }}</flux:heading>
-                <div id="editor_content" class="prose max-w-none">
+                <flux:heading size="xl" class="mb-4 text-center">{{ $announcement->title }}</flux:heading>
+                <div class="prose max-w-none whitespace-pre-wrap break-words" style="text-align: justify;">
                     {!!  $announcement->content !!}
                 </div>
 
