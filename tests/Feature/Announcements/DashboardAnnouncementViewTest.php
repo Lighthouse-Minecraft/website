@@ -18,7 +18,6 @@ describe('Dashboard display', function () {
             ->assertSee($announcement->title)
             ->assertSee($announcement->content);
     })->done();
-
 })->done();
 
 describe('Dashboard Display - Acknowledge Announcements', function () {

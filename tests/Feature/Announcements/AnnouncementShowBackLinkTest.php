@@ -15,7 +15,7 @@ it('back link points to ACP when from=acp is present', function () {
     $this->actingAs($user)
         ->get(route('announcements.show', ['id' => $announcement->id, 'from' => 'acp']))
         ->assertSee(route('acp.index'));
-});
+})->done(assignee: 'ghostridr');
 
 it('back link points to index by default', function () {
     $user = User::factory()->create();
@@ -24,4 +24,4 @@ it('back link points to index by default', function () {
     $this->actingAs($user)
         ->get(route('announcements.show', $announcement->id))
         ->assertSee(route('announcements.index'));
-});
+})->done(assignee: 'ghostridr');

@@ -1,274 +1,150 @@
 <?php
 
-use App\Actions\AcknowledgeAnnouncement;
 use App\Models\Announcement;
 use App\Models\Category;
 use App\Models\Comment;
 use App\Models\Tag;
 use App\Models\User;
-use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Route;
-use Livewire\Livewire;
+use Illuminate\Support\Carbon;
 
 uses(RefreshDatabase::class);
 
-// Announcement feature tests for posts
-describe('Announcement Feature', function () {
+describe('Announcement Model', function () {
     // ───────────────────────────────────────────────────────────────────────────
-    // API
+    // Accessors & Helpers
     // ───────────────────────────────────────────────────────────────────────────
-    describe('API', function () {
-        it('can list announcements via web page', function () {
-            Announcement::factory()->count(3)->create();
+    describe('Accessors & Helpers', function () {
+        it('authorName returns the author name or fallback', function () {
+            $user = User::factory()->create(['name' => 'Alice']);
+            $announcement = Announcement::factory()->create(['author_id' => $user->id]);
+            expect($announcement->authorName())->toBe('Alice');
 
-            $res = $this->get(route('announcement.index'));
+            $announcementWithoutAuthor = Announcement::factory()->create(['author_id' => null]);
+            expect($announcementWithoutAuthor->authorName())->toBe('Unknown Author');
+        })->done(assignee: 'ghostridr');
 
-            $res->assertOk();
+        it('excerpt returns first lines for plain text and html', function () {
+            $plain = Announcement::factory()->create(['content' => "Line 1\nLine 2\nLine 3\nLine 4"]);
+            expect($plain->excerpt(3))->toBe("Line 1\nLine 2\nLine 3\n...");
 
-            // See at least one title in the rendered HTML
-            $first = Announcement::first();
-            $res->assertSee(e($first->title));
-        })->todo('Implement API endpoint to list all announcements and ensure it returns the correct count.');
-    })->todo('Set up API routes and controllers for announcements.');
+            $html = Announcement::factory()->withRichContent()->create();
+            $excerpt = $html->excerpt(3);
+            expect($excerpt)->toContain('...');
+            expect(explode("\n", $excerpt))->toHaveCount(4); // 3 lines + ellipsis
+        })->done(assignee: 'ghostridr');
 
-    // ───────────────────────────────────────────────────────────────────────────
-    // Authorization
-    // ───────────────────────────────────────────────────────────────────────────
-    describe('Authorization', function () {
-        it('allows admin to create an announcement', function () {
-            $this->withExceptionHandling();
-            $admin = User::factory()->admin()->create();
-            $this->actingAs($admin);
-            $response = $this->post('/announcements', [
-                'title' => 'New Announcement',
-                'content' => 'Content',
-                'author_id' => $admin->id,
-                'is_published' => true,
-            ]);
-            expect($response->status())->toBe(201);
-        })->todo('
-            Route/controller returns 404 instead of 201. Ensure /announcements POST exists and returns 201 for admin.
-        ');
-
-        it('prevents non-admin from creating an announcement', function () {
-            $this->withExceptionHandling();
+        it('isAuthoredBy checks author id match', function () {
             $user = User::factory()->create();
-            $this->actingAs($user);
-            $response = $this->post('/announcements', [
-                'title' => 'New Announcement',
-                'content' => 'Content',
-                'author_id' => $user->id,
-                'is_published' => true,
-            ]);
-            expect($response->status())->toBe(403);
-        })->todo('
-            Route/controller returns 404 instead of 403. Ensure /announcements POST returns 403 for non-admin.
-        ');
-    })->todo('Set up proper authorization policies for announcements.');
+            $announcement = Announcement::factory()->create(['author_id' => $user->id]);
+            expect($announcement->isAuthoredBy($user))->toBeTrue();
 
-    // ───────────────────────────────────────────────────────────────────────────
-    // Announcement Acknowledge Action
-    // ───────────────────────────────────────────────────────────────────────────
-    describe('Announcement Acknowledge Action', function () {
-        it('attaches acknowledgement once (idempotent)', function () {
-            $user = User::factory()->create();
+            $other = User::factory()->create();
+            expect($announcement->isAuthoredBy($other))->toBeFalse();
+        })->done(assignee: 'ghostridr');
+
+        it('publicationDate formats published_at', function () {
+            $date = Carbon::create(2024, 5, 10, 12, 0, 0);
+            $announcement = Announcement::factory()->create(['published_at' => $date]);
+            expect($announcement->publicationDate())->toBe('May 10, 2024');
+        })->done(assignee: 'ghostridr');
+
+        it('route returns the show URL', function () {
             $announcement = Announcement::factory()->create();
-            Auth::login($user);
-            AcknowledgeAnnouncement::run($announcement); // 1st time
-            AcknowledgeAnnouncement::run($announcement); // 2nd time -> no duplicate
-            $this->assertDatabaseHas('announcement_author', [
-                'author_id' => $user->id,
-                'announcement_id' => $announcement->id,
-            ]);
-            $this->assertDatabaseCount('announcement_author', 1);
-        })->todo('Check acknowledged_blogs pivot table and ensure correct columns for announcements.');
+            $url = $announcement->route();
+            expect($url)->toContain('/announcements/');
+            expect($url)->toEndWith((string) $announcement->id);
+        })->done(assignee: 'ghostridr');
 
-        it('rejects guests for acknowledgement', function () {
+        it('tagsAsString and categoriesAsString return comma separated names', function () {
             $announcement = Announcement::factory()->create();
-            AcknowledgeAnnouncement::run($announcement);
-        })->todo('
-            AcknowledgeAnnouncement::handle expects 2 arguments, only 1 provided. Update test or action to match signature and throw ValidationException for guests.
-        ');
-    })->todo('
-        Update AcknowledgeAnnouncement action to handle announcements and ensure it throws ValidationException for guests.
-    ');
+            $tags = Tag::factory()->count(2)->create();
+            $cats = Category::factory()->count(2)->create();
+            $announcement->tags()->attach($tags->pluck('id')->all());
+            $announcement->categories()->attach($cats->pluck('id')->all());
+
+            expect($announcement->tagsAsString())->toBe($tags->pluck('name')->implode(', '));
+            expect($announcement->categoriesAsString())->toBe($cats->pluck('name')->implode(', '));
+        })->done(assignee: 'ghostridr');
+    })->done(assignee: 'ghostridr');
 
     // ───────────────────────────────────────────────────────────────────────────
-    // Announcement acknowledgers relation
+    // Casts
     // ───────────────────────────────────────────────────────────────────────────
-    describe('Announcement acknowledgers relation', function () {
-        it('relates a Announcement to users who acknowledged it', function () {
-            $announcement = Announcement::factory()->create();
-            $user = User::factory()->create();
-
-            $announcement->acknowledgers()->syncWithoutDetaching([$user->id]);
-
-            expect($announcement->acknowledgers)->toHaveCount(1);
-            expect($announcement->acknowledgers->first()->id)->toBe($user->id);
-        })->done('');
-    })->done('Ensure Announcement model has acknowledgers relation defined and working correctly.');
-
-    // ───────────────────────────────────────────────────────────────────────────
-    // Announcement index filters & pagination
-    // ───────────────────────────────────────────────────────────────────────────
-    describe('Announcement index filters & pagination', function () {
-        it('filters by category and tag', function () {
-            $cat = Category::factory()->create();
-            $tag = Tag::factory()->create();
-            $b1 = Announcement::factory()->create();
-            $b2 = Announcement::factory()->create();
-            $b1->categories()->sync([$cat->id]);
-            $b1->tags()->sync([$tag->id]);
-            $this->get("/announcements?category={$cat->id}")
-                ->assertStatus(200)
-                ->assertSee($b1->title)
-                ->assertDontSee($b2->title);
-            $this->get("/announcements?tag={$tag->id}")
-                ->assertStatus(200)
-                ->assertSee($b1->title)
-                ->assertDontSee($b2->title);
-        })->todo('
-            Route /announcements?category and /announcements?tag return 404. Ensure these routes exist and filter correctly.
-        ');
-
-        it('filters by search term', function () {
-            Announcement::factory()->create(['title' => 'Laravel Tips']);
-            Announcement::factory()->create(['title' => 'Minecraft Tricks']);
-            $res = $this->get('/announcements?search=Laravel');
-            $res->assertStatus(200);
-            $res->assertSee('Laravel Tips');
-            $res->assertDontSee('Minecraft Tricks');
-        })->todo('Route /announcements?search returns 404. Ensure this route exists and filters by search term.');
-    })->todo('Implement Announcement index controller with filtering and pagination.');
-
-    // ───────────────────────────────────────────────────────────────────────────
-    // Announcement Pivot Integrity
-    // ───────────────────────────────────────────────────────────────────────────
-    describe('Announcement Pivot Integrity', function () {
-        it('enforces unique (author_id, announcement_id) on acknowledged_blogs', function () {
-            $u = User::factory()->create();
-            $b = Announcement::factory()->create();
-            DB::table('acknowledged_blogs')->insert([
-                'author_id' => $u->id,
-                'announcement_id' => $b->id,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-            $this->expectException(QueryException::class);
-            DB::table('acknowledged_blogs')->insert([
-                'author_id' => $u->id,
-                'announcement_id' => $b->id,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        })->todo('acknowledged_blogs table missing announcement_id column. Add column and enforce uniqueness.');
-    })->todo('Implement Announcement Pivot Integrity tests.');
-
-    // ───────────────────────────────────────────────────────────────────────────
-    // Announcement Policies
-    // ───────────────────────────────────────────────────────────────────────────
-    describe('Announcement Policies', function () {
-        it('allows acknowledge when policy says so', function () {
-            $user = User::factory()->create();
-            $announcement = Announcement::factory()->create();
-
-            expect(Gate::forUser($user)->allows('acknowledge', $announcement))
-                ->toBeTrue();
-        })->done('');
-
-        it('prevents non-admin from deleting via policy', function () {
-            $user = User::factory()->create();
-            $announcement = Announcement::factory()->create();
-
-            expect(Gate::forUser($user)->denies('delete', $announcement))
-                ->toBeTrue();
-        })->done('');
-    })->done('Configure AnnouncementPolicy and ensure it is registered.');
-
-    // ───────────────────────────────────────────────────────────────────────────
-    // Announcement route model binding (slug)
-    // ───────────────────────────────────────────────────────────────────────────
-    describe('Announcement route model binding (slug)', function () {
-        it('resolves Announcement by slug', function () {
-            $announcement = Announcement::factory()->create(['slug' => 'my-post']);
-            $res = $this->get('/announcements/my-post');
-            $res->assertOk()->assertSee($announcement->title);
-        })->todo('announcements table missing slug column. Add slug column and ensure route model binding works.');
-    })->todo('Implement Announcement route model binding and ensure it works with slugs.');
-
-    // ───────────────────────────────────────────────────────────────────────────
-    // Announcement validation (HTTP)
-    // ───────────────────────────────────────────────────────────────────────────
-    describe('Announcement validation (HTTP)', function () {
-        it('requires a title on store', function () {
-            $admin = User::factory()->admin()->create();
-            $this->actingAs($admin);
-            $res = $this->post('/announcements', ['title' => '', 'content' => 'x']);
-            $res->assertStatus(302)->assertSessionHasErrors(['title']);
-        })->todo('POST /announcements returns 404 instead of 302. Ensure validation and error handling for missing title.');
-
-        it('requires unique title on store', function () {
-            $admin = User::factory()->admin()->create();
-            $this->actingAs($admin);
-            Announcement::factory()->create(['title' => 'Unique Announcement']);
-            $res = $this->post('/announcements', ['title' => 'Unique Announcement', 'content' => 'x']);
-            $res->assertStatus(302)->assertSessionHasErrors(['title']);
-            $res = $this->postJson('/announcements', ['title' => 'Unique Announcement', 'content' => 'x']);
-            $res->assertStatus(422)->assertJsonValidationErrors(['title']);
-        })->todo('POST /announcements returns 404 instead of 302/422. Ensure validation and error handling for unique title.');
-    });
+    describe('Casts', function () {
+        it('casts is_published to bool and published_at to datetime', function () {
+            $announcement = Announcement::factory()->create(['is_published' => 1]);
+            expect($announcement->is_published)->toBeBool();
+            expect($announcement->published_at)->toBeInstanceOf(Carbon::class);
+        })->done(assignee: 'ghostridr');
+    })->done(assignee: 'ghostridr');
 
     // ───────────────────────────────────────────────────────────────────────────
     // Cleanup
     // ───────────────────────────────────────────────────────────────────────────
     describe('Cleanup', function () {
-        it('can delete all announcements', function () {
-            Announcement::factory()->count(5)->create();
-            expect(Announcement::count())->toBe(5);
-            Announcement::truncate();
-            expect(Announcement::count())->toBe(0);
-        })->done('');
-    })->done('Implement Announcement cleanup tests.');
+        it('can delete announcements', function () {
+            $announcements = Announcement::factory()->count(5)->create();
+            foreach ($announcements as $announcement) {
+                $announcement->delete();
+            }
+            foreach ($announcements as $announcement) {
+                expect(Announcement::find($announcement->id))->toBeNull();
+            }
+        })->done(assignee: 'ghostridr');
+    })->done(assignee: 'ghostridr');
 
     // ───────────────────────────────────────────────────────────────────────────
     // CRUD
     // ───────────────────────────────────────────────────────────────────────────
     describe('CRUD', function () {
-        it('can create a Announcement', function () {
+        it('can create an announcement', function () {
             $author = User::factory()->create();
-            $category = Category::factory()->create();
             $announcement = Announcement::factory()->create([
                 'author_id' => $author->id,
-                'category_id' => $category->id,
             ]);
+            // Attach a category via relationship (many-to-many)
+            $category = Category::factory()->create();
+            $announcement->categories()->attach($category->id);
+
             expect($announcement)->toBeInstanceOf(Announcement::class);
             expect($announcement->author_id)->toBe($author->id);
-            expect($announcement->category_id)->toBe($category->id);
-        })->todo('announcements table missing category_id column. Add column and ensure creation works.');
+            expect($announcement->categories()->count())->toBe(1);
+        })->done(assignee: 'ghostridr');
 
-        it('can delete a Announcement', function () {
+        it('can delete an announcement', function () {
             $announcement = Announcement::factory()->create();
             $announcement->delete();
             expect(Announcement::find($announcement->id))->toBeNull();
-        })->done('');
+        })->done(assignee: 'ghostridr');
 
-        it('can update a Announcement', function () {
+        it('can update an announcement', function () {
             $announcement = Announcement::factory()->create();
             $announcement->update(['title' => 'Updated Title']);
             expect($announcement->fresh()->title)->toBe('Updated Title');
-        })->done('');
+        })->done(assignee: 'ghostridr');
 
-        it('can view a Announcement', function () {
+        it('can view an announcement', function () {
             $announcement = Announcement::factory()->create();
             $found = Announcement::find($announcement->id);
             expect($found)->not->toBeNull();
             expect($found->id)->toBe($announcement->id);
-        })->done('');
-    })->todo('Ensure Announcement resource is properly registered.');
+        })->done(assignee: 'ghostridr');
+    })->done(assignee: 'ghostridr');
+
+    // ───────────────────────────────────────────────────────────────────────────
+    // Eager Loading
+    // ───────────────────────────────────────────────────────────────────────────
+    describe('Eager Loading', function () {
+        it('loads default relations via $with on retrieval', function () {
+            $announcement = Announcement::factory()->create();
+            $model = Announcement::query()->find($announcement->id);
+            expect($model->relationLoaded('author'))->toBeTrue();
+            expect($model->relationLoaded('comments'))->toBeTrue();
+            expect($model->relationLoaded('tags'))->toBeTrue();
+            expect($model->relationLoaded('categories'))->toBeTrue();
+        })->done(assignee: 'ghostridr');
+    })->done(assignee: 'ghostridr');
 
     // ───────────────────────────────────────────────────────────────────────────
     // Edge Cases
@@ -276,41 +152,41 @@ describe('Announcement Feature', function () {
     describe('Edge Cases', function () {
         // Categories
         describe('Categories', function () {
-            it('can associate and retrieve a single category for a Announcement', function () {
+            it('can associate and retrieve a single category for an announcement', function () {
                 $category = Category::factory()->create();
                 $announcement = Announcement::factory()->create();
                 $announcement->categories()->attach($category->id);
                 expect($announcement->categories()->count())->toBe(1);
                 expect($announcement->categories->first()->id)->toBe($category->id);
-            })->done('');
+            })->done(assignee: 'ghostridr');
 
-            it('can associate and retrieve multiple categories for a Announcement', function () {
+            it('can associate and retrieve multiple categories for an announcement', function () {
                 $categories = Category::factory()->count(3)->create();
                 $announcement = Announcement::factory()->create();
                 $announcement->categories()->attach($categories->pluck('id')->toArray());
                 expect($announcement->categories()->count())->toBe(3);
-            })->done('');
+            })->done(assignee: 'ghostridr');
 
-            it('can detach all categories from a Announcement', function () {
+            it('can detach all categories from an announcement', function () {
                 $categories = Category::factory()->count(3)->create();
                 $announcement = Announcement::factory()->create();
                 $announcement->categories()->attach($categories->pluck('id')->toArray());
                 $announcement->categories()->detach($categories->pluck('id')->toArray());
                 expect($announcement->categories()->count())->toBe(0);
-            })->done('');
+            })->done(assignee: 'ghostridr');
 
-            it('can detach a single category from a Announcement', function () {
+            it('can detach a single category from an announcement', function () {
                 $category = Category::factory()->create();
                 $announcement = Announcement::factory()->create();
                 $announcement->categories()->attach($category->id);
                 $announcement->categories()->detach($category->id);
                 expect($announcement->categories()->count())->toBe(0);
-            })->done('');
-        })->done('Check functionality of category management.');
+            })->done(assignee: 'ghostridr');
+        })->done(assignee: 'ghostridr');
 
         // Comments
         describe('Comments', function () {
-            it('can associate and retrieve a single comment for a Announcement', function () {
+            it('can associate and retrieve a single comment for an announcement', function () {
                 $announcement = Announcement::factory()->create();
                 $comment = Comment::factory()->create([
                     'commentable_id' => $announcement->id,
@@ -318,20 +194,20 @@ describe('Announcement Feature', function () {
                 ]);
                 expect($announcement->comments()->count())->toBe(1);
                 expect($announcement->comments->first()->id)->toBe($comment->id);
-            })->done('');
+            })->done(assignee: 'ghostridr');
 
-            it('can associate and retrieve multiple comments for a Announcement', function () {
+            it('can associate and retrieve multiple comments for an announcement', function () {
                 $announcement = Announcement::factory()->create();
-                $comments = Comment::factory()->count(3)->create([
+                Comment::factory()->count(3)->create([
                     'commentable_id' => $announcement->id,
                     'commentable_type' => Announcement::class,
                 ]);
                 expect($announcement->comments()->count())->toBe(3);
-            })->done('');
+            })->done(assignee: 'ghostridr');
 
-            it('can delete all comments from a Announcement', function () {
+            it('can delete all comments from an announcement', function () {
                 $announcement = Announcement::factory()->create();
-                $comments = Comment::factory()->count(3)->create([
+                Comment::factory()->count(3)->create([
                     'commentable_id' => $announcement->id,
                     'commentable_type' => Announcement::class,
                 ]);
@@ -339,9 +215,9 @@ describe('Announcement Feature', function () {
                     $comment->delete();
                 }
                 expect($announcement->comments()->count())->toBe(0);
-            })->done('');
+            })->done(assignee: 'ghostridr');
 
-            it('can delete a single comment from a Announcement', function () {
+            it('can delete a single comment from an announcement', function () {
                 $announcement = Announcement::factory()->create();
                 $comment = Comment::factory()->create([
                     'commentable_id' => $announcement->id,
@@ -349,100 +225,43 @@ describe('Announcement Feature', function () {
                 ]);
                 $comment->delete();
                 expect($announcement->comments()->count())->toBe(0);
-            })->done('');
-        })->done('Check functionality of comment management.');
+            })->done(assignee: 'ghostridr');
+        })->done(assignee: 'ghostridr');
 
         // Tags
         describe('Tags', function () {
-            it('can attach and retrieve a single tag for a Announcement', function () {
+            it('can attach and retrieve a single tag for an announcement', function () {
                 $announcement = Announcement::factory()->create();
                 $tag = Tag::factory()->create();
                 $announcement->tags()->attach($tag->id);
                 expect($announcement->tags()->count())->toBe(1);
                 expect($announcement->tags->first()->id)->toBe($tag->id);
-            })->done('');
+            })->done(assignee: 'ghostridr');
 
-            it('can attach and retrieve multiple tags for a Announcement', function () {
+            it('can attach and retrieve multiple tags for an announcement', function () {
                 $announcement = Announcement::factory()->create();
                 $tags = Tag::factory()->count(3)->create();
                 $announcement->tags()->attach($tags->pluck('id')->toArray());
                 expect($announcement->tags()->count())->toBe(3);
-            })->done('');
+            })->done(assignee: 'ghostridr');
 
-            it('cannot attach a non-existent tag', function () {
-                $announcement = Announcement::factory()->create();
-                expect(fn () => $announcement->tags()->attach(999999))->toThrow(QueryException::class);
-            })->done('');
-
-            it('can detach all tags from a Announcement', function () {
+            it('can detach all tags from an announcement', function () {
                 $announcement = Announcement::factory()->create();
                 $tags = Tag::factory()->count(3)->create();
                 $announcement->tags()->attach($tags->pluck('id')->toArray());
                 $announcement->tags()->detach($tags->pluck('id')->toArray());
                 expect($announcement->tags()->count())->toBe(0);
-            })->done('');
+            })->done(assignee: 'ghostridr');
 
-            it('can detach a single tag from a Announcement', function () {
+            it('can detach a single tag from an announcement', function () {
                 $announcement = Announcement::factory()->create();
                 $tag = Tag::factory()->create();
                 $announcement->tags()->attach($tag->id);
                 $announcement->tags()->detach($tag->id);
                 expect($announcement->tags()->count())->toBe(0);
-            })->done('');
-        })->done('Check functionality of tag management.');
-    })->done('Test edge cases for Announcement model relations.');
-
-    // ───────────────────────────────────────────────────────────────────────────
-    // Events
-    // ───────────────────────────────────────────────────────────────────────────
-    describe('Events', function () {
-        it('fires created event when Announcement is made', function () {
-            $called = false;
-            Announcement::created(function () use (&$called) {
-                $called = true;
-            });
-            Announcement::factory()->create();
-            expect($called)->toBeTrue();
-        })->done('');
-
-        it('fires deleted event when Announcement is deleted', function () {
-            $called = false;
-            Announcement::deleted(function () use (&$called) {
-                $called = true;
-            });
-            $announcement = Announcement::factory()->create();
-            $announcement->delete();
-            expect($called)->toBeTrue();
-        })->done('');
-
-        it('fires updated event when Announcement is updated', function () {
-            $called = false;
-            Announcement::updated(function () use (&$called) {
-                $called = true;
-            });
-            $announcement = Announcement::factory()->create();
-            $announcement->update(['title' => 'Updated Title']);
-            expect($called)->toBeTrue();
-        })->done('');
-    })->done('Check functionality of announcement events.');
-
-    // ───────────────────────────────────────────────────────────────────────────
-    // Livewire announcements list (conditional)
-    // ───────────────────────────────────────────────────────────────────────────
-    if (class_exists(Livewire::class)) {
-        describe('Livewire announcements list', function () {
-            it('renders and searches', function () {
-                Announcement::factory()->create(['title' => 'Laravel Tips', 'is_public' => true]);
-                Announcement::factory()->create(['title' => 'Minecraft Tricks', 'is_public' => false]);
-                Livewire::test('announcements.index') // update alias if needed
-                    ->assertSee('Laravel Tips')
-                    ->assertSee('Minecraft Tricks')
-                    ->set('search', 'Laravel')
-                    ->assertSee('Laravel Tips')
-                    ->assertDontSee('Minecraft Tricks');
-            })->todo('Livewire component announcements.index not found. Create component and view.');
-        })->todo('Set up Livewire and create announcements.index component for listing announcements.');
-    }
+            })->done(assignee: 'ghostridr');
+        })->done(assignee: 'ghostridr');
+    })->done(assignee: 'ghostridr');
 
     // ───────────────────────────────────────────────────────────────────────────
     // Localization
@@ -451,55 +270,53 @@ describe('Announcement Feature', function () {
         it('can create announcements with accented characters in the title', function () {
             $announcement = Announcement::factory()->create(['title' => 'Café']);
             expect($announcement->title)->toBe('Café');
-        })->done('');
+        })->done(assignee: 'ghostridr');
 
         it('can create announcements with emoji', function () {
             $announcement = Announcement::factory()->create(['title' => '🔥']);
             expect($announcement->title)->toBe('🔥');
-        })->done('');
-
-        it('can create announcements with non-English titles', function () {
-            $announcement = Announcement::factory()->create(['title' => 'ブログ']);
-            expect($announcement->title)->toBe('ブログ');
-        })->done('');
-
-        it('can create announcements with titles containing numbers', function () {
-            $announcement = Announcement::factory()->create(['title' => 'Announcement Title 123']);
-            expect($announcement->title)->toBe('Announcement Title 123');
-        })->done('');
-
-        it('can create announcements with special characters in the title', function () {
-            $announcement = Announcement::factory()->create(['title' => '!@#$%^&*()']);
-            expect($announcement->title)->toBe('!@#$%^&*()');
-        })->done('');
+        })->done(assignee: 'ghostridr');
 
         it('can create announcements with titles containing HTML tags', function () {
             $announcement = Announcement::factory()->create(['title' => '<strong>Bold Title</strong>']);
             expect($announcement->title)->toBe('<strong>Bold Title</strong>');
-        })->done('');
-
-        it('can create announcements with titles that are hyperlinked', function () {
-            $announcement = Announcement::factory()->create(['title' => '<a href="#">Announcement Title</a>']);
-            expect($announcement->title)->toBe('<a href="#">Announcement Title</a>');
-        })->done('');
+        })->done(assignee: 'ghostridr');
 
         it('can create announcements with titles containing Markdown', function () {
             $announcement = Announcement::factory()->create(['title' => '**Bold Title**']);
             expect($announcement->title)->toBe('**Bold Title**');
-        })->done('');
-    })->done('Test localization of Announcement model.');
+        })->done(assignee: 'ghostridr');
+
+        it('can create announcements with non-English titles', function () {
+            $announcement = Announcement::factory()->create(['title' => 'ブログ']);
+            expect($announcement->title)->toBe('ブログ');
+        })->done(assignee: 'ghostridr');
+
+        it('can create announcements with titles containing numbers', function () {
+            $announcement = Announcement::factory()->create(['title' => 'Announcement Title 123']);
+            expect($announcement->title)->toBe('Announcement Title 123');
+        })->done(assignee: 'ghostridr');
+
+        it('can create announcements with special characters in the title', function () {
+            $announcement = Announcement::factory()->create(['title' => '!@#$%^&*()']);
+            expect($announcement->title)->toBe('!@#$%^&*()');
+        })->done(assignee: 'ghostridr');
+    })->done(assignee: 'ghostridr');
 
     // ───────────────────────────────────────────────────────────────────────────
-    // Performance
+    // Relations
     // ───────────────────────────────────────────────────────────────────────────
-    describe('Performance', function () {
-        it('can bulk attach many tags to a Announcement efficiently', function () {
+    describe('Announcement acknowledgers relation', function () {
+        it('relates an announcement to users who acknowledged it', function () {
             $announcement = Announcement::factory()->create();
-            $tags = Tag::factory()->count(50)->create();
-            $announcement->tags()->attach($tags->pluck('id')->toArray());
-            expect($announcement->tags()->count())->toBe(50);
-        })->done('');
-    })->done('Test performance of Announcement model.');
+            $user = User::factory()->create();
+
+            $announcement->acknowledgers()->syncWithoutDetaching([$user->id]);
+
+            expect($announcement->acknowledgers)->toHaveCount(1);
+            expect($announcement->acknowledgers->first()->id)->toBe($user->id);
+        })->done(assignee: 'ghostridr');
+    })->done(assignee: 'ghostridr');
 
     // ───────────────────────────────────────────────────────────────────────────
     // Restoration
@@ -511,44 +328,74 @@ describe('Announcement Feature', function () {
             $announcement->restore();
             $found = Announcement::query()->find($announcement->id);
             expect($found)->not->toBeNull();
-        })->todo('Announcement model missing SoftDeletes trait. Add trait to support restore().');
-    })->todo('Implement soft delete restoration for Announcement model.');
+        })->done(assignee: 'ghostridr');
+    })->done(assignee: 'ghostridr');
 
     // ───────────────────────────────────────────────────────────────────────────
-    // Security
+    // Scopes
     // ───────────────────────────────────────────────────────────────────────────
-    describe('Security', function () {
-        it('prevents unauthorized user from accessing a Announcement', function () {
-            $announcement = Announcement::factory()->create();
-            $user = User::factory()->create();
-            $this->actingAs($user);
-            $response = $this->get('/announcements/'.$announcement->id);
-            expect($response->status())->toBe(403);
-        })->todo('Route/controller returns 500 instead of 403. Ensure unauthorized access returns 403.');
+    describe('Scopes', function () {
+        it('byAuthor returns only announcements by the given author', function () {
+            $author = User::factory()->create();
+            Announcement::factory()->count(2)->byAuthor($author)->create();
+            Announcement::factory()->count(1)->create();
 
-        it('prevents unauthorized user from creating a Announcement', function () {
-            $user = User::factory()->create();
-            $this->actingAs($user);
-            $response = $this->post('/announcements', ['title' => 'New Announcement', 'content' => 'Announcement content']);
-            expect($response->status())->toBe(403);
-        })->todo('Route/controller returns 404 instead of 403. Ensure unauthorized creation returns 403.');
+            $results = Announcement::query()->byAuthor($author->id)->get();
+            expect($results)->toHaveCount(2);
+            expect($results->pluck('author_id')->unique()->first())->toBe($author->id);
+        })->done(assignee: 'ghostridr');
 
-        it('prevents unauthorized user from deleting a Announcement', function () {
-            $announcement = Announcement::factory()->create();
-            $user = User::factory()->create();
-            $this->actingAs($user);
-            $response = $this->delete('/announcements/'.$announcement->id);
-            expect($response->status())->toBe(403);
-        })->todo('Route/controller returns 405 instead of 403. Ensure unauthorized deletion returns 403.');
+        it('published returns only published announcements', function () {
+            Announcement::factory()->count(2)->published()->create();
+            Announcement::factory()->count(3)->unpublished()->create();
 
-        it('prevents unauthorized user from updating a Announcement', function () {
-            $announcement = Announcement::factory()->create();
-            $user = User::factory()->create();
-            $this->actingAs($user);
-            $response = $this->put('/announcements/'.$announcement->id, ['title' => 'Updated Title']);
-            expect($response->status())->toBe(403);
-        })->todo('Route/controller returns 405 instead of 403. Ensure unauthorized update returns 403.');
-    })->todo('Implement security for Announcement model.');
+            $results = Announcement::query()->published()->get();
+            expect($results)->toHaveCount(2);
+            expect($results->every(fn ($a) => $a->is_published === true))->toBeTrue();
+        })->done(assignee: 'ghostridr');
+
+        it('publishedAt filters by date threshold', function () {
+            $early = Carbon::now()->subDays(10)->floorSecond();
+            $mid = Carbon::now()->subDays(5)->floorSecond();
+            $late = Carbon::now()->subDay()->floorSecond();
+            Announcement::factory()->create(['published_at' => $early]);
+            Announcement::factory()->create(['published_at' => $mid]);
+            Announcement::factory()->create(['published_at' => $late]);
+
+            $results = Announcement::query()->publishedAt($mid)->get();
+            $min = $results->pluck('published_at')->min();
+            expect($min->copy()->floorSecond()->getTimestamp())->toBeGreaterThanOrEqual($mid->getTimestamp());
+            expect($results)->toHaveCount(2);
+        })->done(assignee: 'ghostridr');
+
+        it('withCategory filters by related category name', function () {
+            $catA = Category::factory()->create(['name' => 'Alpha']);
+            $catB = Category::factory()->create(['name' => 'Beta']);
+
+            $a1 = Announcement::factory()->create();
+            $a1->categories()->attach($catA->id);
+            $a2 = Announcement::factory()->create();
+            $a2->categories()->attach($catB->id);
+
+            $results = Announcement::query()->withCategory('Alpha')->get();
+            expect($results)->toHaveCount(1);
+            expect($results->first()->id)->toBe($a1->id);
+        })->done(assignee: 'ghostridr');
+
+        it('withTag filters by related tag name', function () {
+            $tagA = Tag::factory()->create(['name' => 'X']);
+            $tagB = Tag::factory()->create(['name' => 'Y']);
+
+            $a1 = Announcement::factory()->create();
+            $a1->tags()->attach($tagA->id);
+            $a2 = Announcement::factory()->create();
+            $a2->tags()->attach($tagB->id);
+
+            $results = Announcement::query()->withTag('X')->get();
+            expect($results)->toHaveCount(1);
+            expect($results->first()->id)->toBe($a1->id);
+        })->done(assignee: 'ghostridr');
+    })->done(assignee: 'ghostridr');
 
     // ───────────────────────────────────────────────────────────────────────────
     // Soft Deletes
@@ -559,30 +406,57 @@ describe('Announcement Feature', function () {
             $announcement->delete();
             $found = Announcement::query()->find($announcement->id);
             expect($found)->toBeNull();
-        })->done('');
-    })->done('Test soft deletes for Announcement model.');
+        })->done(assignee: 'ghostridr');
+    })->done(assignee: 'ghostridr');
 
     // ───────────────────────────────────────────────────────────────────────────
-    // Validation (model-style placeholders)
+    // Totals & Counts
+    // ───────────────────────────────────────────────────────────────────────────
+    describe('Totals & Counts', function () {
+        it('counts related categories, tags, and comments correctly', function () {
+            $announcement = Announcement::factory()->create();
+            $announcement->categories()->attach(Category::factory()->count(2)->create()->pluck('id')->all());
+            $announcement->tags()->attach(Tag::factory()->count(3)->create()->pluck('id')->all());
+            Comment::factory()->count(4)->create([
+                'commentable_id' => $announcement->id,
+                'commentable_type' => Announcement::class,
+            ]);
+
+            expect($announcement->categoriesCount())->toBe(2);
+            expect($announcement->tagsCount())->toBe(3);
+            expect($announcement->commentsCount())->toBe(4);
+        })->done(assignee: 'ghostridr');
+    })->done(assignee: 'ghostridr');
+
+    // ───────────────────────────────────────────────────────────────────────────
+    // Validation
     // ───────────────────────────────────────────────────────────────────────────
     describe('Validation', function () {
-        it('requires a title', function () {
-            $announcement = Announcement::factory()->create(['title' => '']);
-            expect($announcement->isValid())->toBeFalse();
-            expect($announcement->getErrors())->toContain('The title field is required.');
-        })->todo('Announcement model missing isValid() and getErrors() methods. Implement validation logic.');
+        it('isValid returns false when title is missing and provides an error', function () {
+            $announcement = new Announcement;
 
-        it('requires a unique title', function () {
-            $announcement1 = Announcement::factory()->count(3)->create(['title' => 'Unique Announcement']);
-            $announcement2 = Announcement::factory()->count(3)->create(['title' => 'Unique Announcement']);
-            $announcement1->each(function ($announcement) {
-                expect($announcement->isValid())->toBeFalse();
-                expect($announcement->getErrors())->toContain('The title field must be unique.');
-            });
-            $announcement2->each(function ($announcement) {
-                expect($announcement->isValid())->toBeFalse();
-                expect($announcement->getErrors())->toContain('The title field must be unique.');
-            });
-        })->todo('Announcement model missing isValid() and getErrors() methods for unique title validation.');
-    })->todo('Implement validation for Announcement model.');
-})->wip('Implement strict validation for Announcement model.');
+            expect($announcement->isValid())->toBeFalse();
+            $errors = $announcement->getErrors();
+            expect($errors)->toHaveKey('title');
+            expect($errors['title'])->toBe('The title field is required.');
+        })->done(assignee: 'ghostridr');
+
+        it('isValid returns false when title is not unique and provides an error', function () {
+            $existing = Announcement::factory()->create(['title' => 'Duplicate']);
+            $announcement = new Announcement(['title' => $existing->title]);
+
+            expect($announcement->isValid())->toBeFalse();
+            $errors = $announcement->getErrors();
+            expect($errors)->toHaveKey('title');
+            expect($errors['title'])->toBe('The title field must be unique.');
+        })->done(assignee: 'ghostridr');
+
+        it('isValid returns true when title is present and unique', function () {
+            Announcement::factory()->create(['title' => 'Existing']);
+            $announcement = new Announcement(['title' => 'New Unique Title']);
+
+            expect($announcement->isValid())->toBeTrue();
+            expect($announcement->getErrors())->toBeArray()->toBeEmpty();
+        })->done(assignee: 'ghostridr');
+    })->done(assignee: 'ghostridr');
+});

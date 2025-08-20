@@ -10,6 +10,7 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 
 class AnnouncementController extends Controller
 {
@@ -53,7 +54,10 @@ class AnnouncementController extends Controller
      */
     public function show($id)
     {
-        $announcement = Announcement::with(['author.roles'])->findOrFail($id);
+        $announcement = Announcement::with(['author.roles'])
+            ->where('id', $id)
+            ->orWhere('slug', $id)
+            ->firstOrFail();
 
         if (Auth::check() && Gate::denies('view', $announcement)) {
             abort(403);
@@ -82,7 +86,7 @@ class AnnouncementController extends Controller
     {
         Gate::authorize('create', Announcement::class);
         $validated = $request->validate([
-            'title' => 'required|string|max:255',
+            'title' => 'required|string|max:255|unique:announcements,title',
             'content' => 'required|max:5000',
             'author_id' => 'nullable|exists:users,id',
             'tags' => ['array'],
@@ -91,15 +95,18 @@ class AnnouncementController extends Controller
             'categories.*' => ['integer', 'exists:categories,id'],
             'is_published' => 'boolean',
             'published_at' => 'nullable|date',
+            'is_public' => 'boolean',
         ]);
 
         // Create the announcement
         $announcement = Announcement::create([
             'title' => $validated['title'],
+            'slug' => Str::slug($validated['title']),
             'content' => $validated['content'],
             'author_id' => $validated['author_id'] ?? null,
             'is_published' => $validated['is_published'] ?? false,
             'published_at' => ($validated['is_published'] ?? false) ? now() : null,
+            'is_public' => $request->boolean('is_public', false),
         ]);
 
         // Sync categories and tags via pivot tables
@@ -139,7 +146,7 @@ class AnnouncementController extends Controller
         Gate::authorize('update', $announcement);
 
         $validated = $request->validate([
-            'title' => 'required|string|max:255',
+            'title' => 'required|string|max:255|unique:announcements,title,'.$id,
             'content' => 'required',
             'author_id' => 'nullable|exists:users,id',
             'tags' => ['array'],
@@ -148,6 +155,7 @@ class AnnouncementController extends Controller
             'categories.*' => ['integer', 'exists:categories,id'],
             'is_published' => 'boolean',
             'published_at' => 'nullable|date',
+            'is_public' => 'boolean',
         ]);
 
         $announcement->update([
@@ -156,6 +164,7 @@ class AnnouncementController extends Controller
             'author_id' => $validated['author_id'] ?? null,
             'is_published' => $validated['is_published'] ?? false,
             'published_at' => $validated['published_at'] ?? ($validated['is_published'] ?? false ? now() : null),
+            'is_public' => $request->boolean('is_public', $announcement->is_public ?? false),
         ]);
 
         // Sync categories and tags via pivot tables
