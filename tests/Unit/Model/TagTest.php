@@ -72,10 +72,12 @@ describe('Tag Model', function () {
             expect($tag->getErrors())->toContain('The name field must be unique.');
         })->done(assignee: 'ghostridr');
 
-        it('cannot attach a non-existent tag', function () {
+        it('cannot attach a non-existent tag (announcement)', function () {
             $announcement = Announcement::factory()->create();
             expect(fn () => $announcement->tags()->attach(999999))->toThrow(QueryException::class);
+        })->done(assignee: 'ghostridr');
 
+        it('cannot attach a non-existent tag (blog)', function () {
             $blog = Blog::factory()->create();
             expect(fn () => $blog->tags()->attach(999999))->toThrow(QueryException::class);
         })->done(assignee: 'ghostridr');

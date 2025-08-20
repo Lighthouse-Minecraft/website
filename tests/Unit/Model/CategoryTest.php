@@ -66,10 +66,12 @@ describe('Category Model', function () {
             expect($category->getErrors()['name'] ?? null)->toBe('The name field must be unique.');
         })->done(assignee: 'ghostridr');
 
-        it('cannot attach a non-existent category', function () {
+        it('cannot attach a non-existent category (announcement)', function () {
             $announcement = Announcement::factory()->create();
             expect(fn () => $announcement->categories()->attach(999999))->toThrow(QueryException::class);
+        })->done(assignee: 'ghostridr');
 
+        it('cannot attach a non-existent category (blog)', function () {
             $blog = Blog::factory()->create();
             expect(fn () => $blog->categories()->attach(999999))->toThrow(QueryException::class);
         })->done(assignee: 'ghostridr');
