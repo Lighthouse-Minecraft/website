@@ -75,14 +75,24 @@
             @endif
         </div>
 
+        @php
+            $createdAt = $comment->created_at instanceof \Carbon\CarbonInterface
+                ? $comment->created_at
+                : (\Illuminate\Support\Carbon::parse($comment->created_at));
+        @endphp
         <div class="text-sm text-gray-400">
             <strong>Posted:</strong>
-            {{ $comment->created_at->format('M d, Y H:i') }}
+            <time class="comment-ts" datetime="{{ optional($createdAt)->toIso8601String() }}">{{ optional($createdAt)->format('M d, Y H:i') }}</time>
         </div>
 
-        @if($comment->edited_at)
+        @php
+            $editedAt = $comment->edited_at instanceof \Carbon\CarbonInterface
+                ? $comment->edited_at
+                : ($comment->edited_at ? \Illuminate\Support\Carbon::parse($comment->edited_at) : null);
+        @endphp
+        @if($editedAt)
             <div class="text-xs text-gray-500">
-                <strong>Edited:</strong> {{ $comment->edited_at->format('M d, Y H:i') }}
+                <strong>Edited:</strong> <time class="comment-ts" datetime="{{ $editedAt->toIso8601String() }}">{{ $editedAt->format('M d, Y H:i') }}</time>
             </div>
         @endif
 

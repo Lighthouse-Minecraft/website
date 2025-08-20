@@ -10,6 +10,15 @@ new class extends Component {
     public int $commentable_id = 0;
     public string $commentContent = '';
     public string $commentable_type = '';
+    public Comment $comment;
+
+    public function mount(Comment $comment): void
+    {
+        $this->comment = $comment;
+        $this->commentContent = (string) $comment->content;
+        $this->commentable_id = (int) $comment->commentable_id;
+        $this->commentable_type = (string) $comment->commentable_type;
+    }
 
     public function getBlogOptionsProperty(): array
     {
@@ -35,15 +44,12 @@ new class extends Component {
             'commentable_type' => 'required|in:blog,announcement',
         ]);
 
-        Comment::create([
+        $this->comment->update([
             'content' => $this->commentContent,
-            'author_id' => auth()->id(),
-            'commentable_id' => $this->commentable_id,
-            'commentable_type' => $this->commentable_type,
         ]);
 
         Flux::toast('Comment updated successfully!', 'Success', variant: 'success');
-        return redirect()->route('acp.index', ['tab' => 'comment-manager']);
+            return redirect()->route('acp.index', ['tab' => 'comment-manager']);
     }
 };
 
@@ -151,7 +157,7 @@ new class extends Component {
                                 }
                             }
                         @endphp
-                        
+
                         <flux:button
                             onclick="if (document.referrer) { event.preventDefault(); window.history.back(); }"
                             href="{{ $backUrl }}"

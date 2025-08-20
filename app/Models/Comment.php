@@ -41,6 +41,7 @@ class Comment extends Model
      */
     protected $casts = [
         'reviewed_at' => 'datetime',
+        'edited_at' => 'datetime',
     ];
 
     /**
