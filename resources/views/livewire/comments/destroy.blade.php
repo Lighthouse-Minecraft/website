@@ -5,7 +5,7 @@
                 <strong class="font-semibold text-green-200">Success:</strong>
                 {{ $status }}
             </div>
-            
+
             @if(request('from') === 'acp' || request()->routeIs('acp.*'))
                 <script>
                     setTimeout(function () {
@@ -39,9 +39,7 @@
             <flux:heading size="xl">Comment</flux:heading>
             <div>
                 @can('update', $comment)
-                    <a href="{{ route('acp.comments.edit', $comment->id) }}">
-                        <flux:button size="xs" icon="pencil-square"></flux:button>
-                    </a>
+                    <flux:button href="{{ route('acp.comments.edit', $comment->id) }}" wire:navigate size="xs" icon="pencil-square"></flux:button>
                 @endcan
                 @can('delete', $comment)
                     <form action="{{ route('acp.comments.delete', $comment->id) }}" method="POST" style="display:inline;">

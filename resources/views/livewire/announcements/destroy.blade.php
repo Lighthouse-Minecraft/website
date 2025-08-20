@@ -37,9 +37,7 @@
             <flux:heading size="xl">{{ $announcement->title }}</flux:heading>
             <div>
                 @can('update', $announcement)
-                    <a href="{{ route('acp.announcements.edit', $announcement->id) }}">
-                        <flux:button size="xs" icon="pencil-square"></flux:button>
-                    </a>
+                    <flux:button href="{{ route('acp.announcements.edit', $announcement->id) }}" wire:navigate size="xs" icon="pencil-square"></flux:button>
                 @endcan
 
                 @can('delete', $announcement)

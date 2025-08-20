@@ -37,9 +37,7 @@
             <flux:heading size="xl">{{ $blog->title }}</flux:heading>
             <div>
                 @can('update', $blog)
-                    <a href="{{ route('acp.blogs.edit', $blog->id) }}">
-                        <flux:button size="xs" icon="pencil-square"></flux:button>
-                    </a>
+                    <flux:button href="{{ route('acp.blogs.edit', $blog->id) }}" wire:navigate size="xs" icon="pencil-square"></flux:button>
                 @endcan
                 @can('delete', $blog)
                     <form action="{{ route('acp.blogs.delete', $blog->id) }}" method="POST" style="display:inline;">
