@@ -21,6 +21,7 @@ new class extends Component {
 }; ?>
 
 <flux:card class="w-full">
+    <!-- START OF BLOGS WIDGET -->
     <flux:heading size="md" class="mb-2">Community Blogs</flux:heading>
 
     <flux:table :paginate="$this->blogs">
@@ -34,4 +35,5 @@ new class extends Component {
             @endforeach
         </flux:table.rows>
     </flux:table>
+    <!-- END OF BLOGS WIDGET -->
 </flux:card>

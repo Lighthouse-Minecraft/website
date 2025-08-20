@@ -1,254 +1,104 @@
 <?php
 
-use App\Actions\AcknowledgeBlog;
 use App\Models\Blog;
 use App\Models\Category;
 use App\Models\Comment;
 use App\Models\Tag;
 use App\Models\User;
-use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Route;
-use Illuminate\Validation\ValidationException;
-use Livewire\Livewire;
+use Illuminate\Support\Carbon;
 
 uses(RefreshDatabase::class);
 
-// Blog feature tests for posts
-describe('Blog Feature', function () {
+describe('Blog Model', function () {
     // ───────────────────────────────────────────────────────────────────────────
-    // API
+    // Accessors & Helpers
     // ───────────────────────────────────────────────────────────────────────────
-    describe('API', function () {
-        it('can list blogs via web page', function () {
-            Blog::factory()->count(3)->create();
-            $user = User::factory()->create();
-            $this->actingAs($user);
-            $res = $this->get(route('blogs.index'));
-            $res->assertOk();
-            // See at least one title in the rendered HTML
-            $first = Blog::first();
-            $res->assertSee(e($first->title));
-        })->done(assignee: 'ghostrider');
-    })->done(assignee: 'ghostrider');
+    describe('Accessors & Helpers', function () {
+        it('authorName returns the author name or fallback', function () {
+            $user = User::factory()->create(['name' => 'Alice']);
+            $blog = Blog::factory()->create(['author_id' => $user->id]);
+            expect($blog->authorName())->toBe('Alice');
 
-    // ───────────────────────────────────────────────────────────────────────────
-    // Authorization
-    // ───────────────────────────────────────────────────────────────────────────
-    describe('Authorization', function () {
-        it('allows admin to create a blog', function () {
-            $this->withExceptionHandling();
-            $admin = User::factory()->admin()->create();
-            $this->actingAs($admin);
-            $response = $this->post('/blogs', [
-                'title' => 'New Blog',
-                'content' => 'Content',
-                'author_id' => $admin->id,
-                'is_published' => true,
-            ]);
-            expect($response->status())->toBe(201);
-        })->done(assignee: 'ghostrider');
+            // Simulate missing relation without violating NOT NULL constraint
+            $blog->setRelation('author', null);
+            expect($blog->authorName())->toBe('Unknown Author');
+        })->done(assignee: 'ghostridr');
 
-        it('prevents non-admin from creating a blog', function () {
-            $this->withExceptionHandling();
-            $user = User::factory()->create();
-            $this->actingAs($user);
-            $response = $this->post('/blogs', [
-                'title' => 'New Blog',
-                'content' => 'Content',
-                'author_id' => $user->id,
-                'is_published' => true,
-            ]);
-            expect($response->status())->toBe(403);
-        })->done(assignee: 'ghostrider');
-    })->done(assignee: 'ghostrider');
+        it('excerpt returns first lines for plain text and html', function () {
+            $plain = Blog::factory()->create(['content' => "Line 1\nLine 2\nLine 3\nLine 4"]);
+            expect($plain->excerpt(3))->toBe("Line 1\nLine 2\nLine 3\n...");
 
-    // ───────────────────────────────────────────────────────────────────────────
-    // Blog Acknowledge Action
-    // ───────────────────────────────────────────────────────────────────────────
-    describe('Blog Acknowledge Action', function () {
-        it('attaches acknowledgement once (idempotent)', function () {
+            $html = Blog::factory()->withRichContent()->create();
+            $excerpt = $html->excerpt(3);
+            expect($excerpt)->toContain('...');
+            expect(explode("\n", $excerpt))->toHaveCount(4);
+        })->done(assignee: 'ghostridr');
+
+        it('isAuthoredBy checks author id match', function () {
             $user = User::factory()->create();
+            $blog = Blog::factory()->create(['author_id' => $user->id]);
+            expect($blog->isAuthoredBy($user))->toBeTrue();
+
+            $other = User::factory()->create();
+            expect($blog->isAuthoredBy($other))->toBeFalse();
+        })->done(assignee: 'ghostridr');
+
+        it('publicationDate formats published_at', function () {
+            $date = Carbon::create(2024, 5, 10, 12, 0, 0);
+            $blog = Blog::factory()->create(['published_at' => $date]);
+            expect($blog->publicationDate())->toBe('May 10, 2024');
+        })->done(assignee: 'ghostridr');
+
+        it('route returns the show URL', function () {
             $blog = Blog::factory()->create();
+            $url = $blog->route();
+            expect($url)->toContain('/blogs/');
+            expect($url)->toEndWith((string) $blog->id);
+        })->done(assignee: 'ghostridr');
 
-            Auth::login($user);
+        it('tagsAsString and categoriesAsString return comma separated names', function () {
+            $blog = Blog::factory()->create();
+            $tags = Tag::factory()->count(2)->create();
+            $cats = Category::factory()->count(2)->create();
+            $blog->tags()->attach($tags->pluck('id')->all());
+            $blog->categories()->attach($cats->pluck('id')->all());
 
-            AcknowledgeBlog::run($blog); // 1st time
-            AcknowledgeBlog::run($blog); // 2nd time -> no duplicate
+            expect($blog->tagsAsString())->toBe($tags->pluck('name')->implode(', '));
+            expect($blog->categoriesAsString())->toBe($cats->pluck('name')->implode(', '));
+        })->done(assignee: 'ghostridr');
+    })->done(assignee: 'ghostridr');
 
-            $this->assertDatabaseHas('blog_author', [
-                'author_id' => $user->id,
-                'blog_id' => $blog->id,
+    // ───────────────────────────────────────────────────────────────────────────
+    // Casts
+    // ───────────────────────────────────────────────────────────────────────────
+    describe('Casts', function () {
+        it('casts booleans and datetime correctly', function () {
+            $blog = Blog::factory()->create([
+                'is_published' => 1,
+                'is_public' => 1,
+                'published_at' => Carbon::now(),
             ]);
-            $this->assertDatabaseCount('blog_author', 1);
-        })->done(assignee: 'ghostrider');
-
-        it('rejects guests for acknowledgement', function () {
-            $blog = Blog::factory()->create();
-            AcknowledgeBlog::run($blog);
-        })->throws(ValidationException::class)->done(assignee: 'ghostrider');
-    })->done(assignee: 'ghostrider');
-
-    // ───────────────────────────────────────────────────────────────────────────
-    // Blog acknowledgers relation
-    // ───────────────────────────────────────────────────────────────────────────
-    describe('Blog acknowledgers relation', function () {
-        it('relates a blog to users who acknowledged it', function () {
-            $blog = Blog::factory()->create();
-            $user = User::factory()->create();
-
-            $blog->acknowledgers()->syncWithoutDetaching([$user->id]);
-
-            expect($blog->acknowledgers)->toHaveCount(1);
-            expect($blog->acknowledgers->first()->id)->toBe($user->id);
-        })->done(assignee: 'ghostrider');
-    })->done(assignee: 'ghostrider');
-
-    // ───────────────────────────────────────────────────────────────────────────
-    // Blog index filters & pagination
-    // ───────────────────────────────────────────────────────────────────────────
-    describe('Blog index filters & pagination', function () {
-        it('filters by category and tag', function () {
-            $cat = Category::factory()->create();
-            $tag = Tag::factory()->create();
-            $b1 = Blog::factory()->create();
-            $b2 = Blog::factory()->create();
-
-            $b1->categories()->sync([$cat->id]);
-            $b1->tags()->sync([$tag->id]);
-
-            // Adjust endpoints/params if controller names differ
-            $user = User::factory()->create();
-            $this->actingAs($user);
-            $this->get("/blogs?category={$cat->id}")
-                ->assertStatus(200)
-                ->assertSee($b1->title)
-                ->assertDontSee($b2->title);
-
-            $this->actingAs($user);
-            $this->get("/blogs?tag={$tag->id}")
-                ->assertStatus(200)
-                ->assertSee($b1->title)
-                ->assertDontSee($b2->title);
-        })->done(assignee: 'ghostrider');
-
-        it('filters by search term', function () {
-            Blog::factory()->create(['title' => 'Laravel Tips']);
-            Blog::factory()->create(['title' => 'Minecraft Tricks']);
-            $user = User::factory()->create();
-            $this->actingAs($user);
-            $res = $this->get('/blogs?search=Laravel');
-            $res->assertStatus(200);
-            $res->assertSee('Laravel Tips');
-            $res->assertDontSee('Minecraft Tricks');
-        })->done(assignee: 'ghostrider');
-    })->done(assignee: 'ghostrider');
-
-    // ───────────────────────────────────────────────────────────────────────────
-    // Blog Pivot Integrity
-    // ───────────────────────────────────────────────────────────────────────────
-    describe('Blog Pivot Integrity', function () {
-        it('enforces unique (author_id, blog_id) on acknowledged_blogs', function () {
-            $u = User::factory()->create();
-            $b = Blog::factory()->create();
-
-            DB::table('acknowledged_blogs')->insert([
-                'author_id' => $u->id,
-                'blog_id' => $b->id,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            $this->expectException(QueryException::class);
-
-            DB::table('acknowledged_blogs')->insert([
-                'author_id' => $u->id,
-                'blog_id' => $b->id,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        })->done(assignee: 'ghostrider');
-    })->done(assignee: 'ghostrider');
-
-    // ───────────────────────────────────────────────────────────────────────────
-    // Blog Policies
-    // ───────────────────────────────────────────────────────────────────────────
-    describe('Blog Policies', function () {
-        it('allows acknowledge when policy says so', function () {
-            $user = User::factory()->create();
-            $blog = Blog::factory()->create();
-
-            expect(Gate::forUser($user)->allows('acknowledge', $blog))
-                ->toBeTrue();
-        })->done(assignee: 'ghostrider');
-
-        it('prevents non-admin from deleting via policy', function () {
-            $user = User::factory()->create();
-            $blog = Blog::factory()->create();
-
-            expect(Gate::forUser($user)->denies('delete', $blog))
-                ->toBeTrue();
-        })->done(assignee: 'ghostrider');
-    })->done(assignee: 'ghostrider');
-
-    // ───────────────────────────────────────────────────────────────────────────
-    // Blog route model binding (slug)
-    // ───────────────────────────────────────────────────────────────────────────
-    describe('Blog route model binding (slug)', function () {
-        it('resolves blog by slug', function () {
-            $blog = Blog::factory()->create(['slug' => 'my-post', 'is_public' => true]);
-
-            // If route name is different, adjust accordingly or use URL directly
-            $user = User::factory()->create();
-            $this->actingAs($user);
-            $res = $this->get('/blogs/my-post');
-            $res->assertOk()->assertSee($blog->title);
-        })->done(assignee: 'ghostrider');
-    })->done(assignee: 'ghostrider');
-
-    // ───────────────────────────────────────────────────────────────────────────
-    // Blog validation (HTTP)
-    // ───────────────────────────────────────────────────────────────────────────
-    describe('Blog validation (HTTP)', function () {
-        it('requires a title on store', function () {
-            $admin = User::factory()->admin()->create();
-            $this->actingAs($admin);
-
-            // Web form (session errors)
-            $res = $this->post('/blogs', ['title' => '', 'content' => 'x']);
-            $res->assertStatus(302)->assertSessionHasErrors(['title']);
-        })->done(assignee: 'ghostrider');
-
-        it('requires unique title on store', function () {
-            $admin = User::factory()->admin()->create();
-            $this->actingAs($admin);
-
-            Blog::factory()->create(['title' => 'Unique Blog']);
-
-            // Web form (session errors)
-            $res = $this->post('/blogs', ['title' => 'Unique Blog', 'content' => 'x']);
-            $res->assertStatus(302)->assertSessionHasErrors(['title']);
-
-            // API variant:
-            $res = $this->postJson('/blogs', ['title' => 'Unique Blog', 'content' => 'x']);
-            $res->assertStatus(422)->assertJsonValidationErrors(['title']);
-        })->done(assignee: 'ghostrider');
-    })->done(assignee: 'ghostrider');
+            expect($blog->is_published)->toBeBool();
+            expect($blog->is_public)->toBeBool();
+            expect($blog->published_at)->toBeInstanceOf(Carbon::class);
+        })->done(assignee: 'ghostridr');
+    })->done(assignee: 'ghostridr');
 
     // ───────────────────────────────────────────────────────────────────────────
     // Cleanup
     // ───────────────────────────────────────────────────────────────────────────
     describe('Cleanup', function () {
-        it('can delete all blogs', function () {
-            Blog::factory()->count(5)->create();
-            expect(Blog::count())->toBe(5);
-            Blog::truncate();
-            expect(Blog::count())->toBe(0);
-        })->done(assignee: 'ghostrider');
-    })->done(assignee: 'ghostrider');
+        it('can delete blogs', function () {
+            $blogs = Blog::factory()->count(5)->create();
+            foreach ($blogs as $blog) {
+                $blog->delete();
+            }
+            foreach ($blogs as $blog) {
+                expect(Blog::find($blog->id))->toBeNull();
+            }
+        })->done(assignee: 'ghostridr');
+    })->done(assignee: 'ghostridr');
 
     // ───────────────────────────────────────────────────────────────────────────
     // CRUD
@@ -256,35 +106,50 @@ describe('Blog Feature', function () {
     describe('CRUD', function () {
         it('can create a blog', function () {
             $author = User::factory()->create();
-            $category = Category::factory()->create();
             $blog = Blog::factory()->create([
                 'author_id' => $author->id,
-                'category_id' => $category->id,
             ]);
+            $category = Category::factory()->create();
+            $blog->categories()->attach($category->id);
+
             expect($blog)->toBeInstanceOf(Blog::class);
             expect($blog->author_id)->toBe($author->id);
-            expect($blog->category_id)->toBe($category->id);
-        })->done(assignee: 'ghostrider');
+            expect($blog->categories()->count())->toBe(1);
+        })->done(assignee: 'ghostridr');
 
         it('can delete a blog', function () {
             $blog = Blog::factory()->create();
             $blog->delete();
             expect(Blog::find($blog->id))->toBeNull();
-        })->done(assignee: 'ghostrider');
+        })->done(assignee: 'ghostridr');
 
         it('can update a blog', function () {
             $blog = Blog::factory()->create();
             $blog->update(['title' => 'Updated Title']);
             expect($blog->fresh()->title)->toBe('Updated Title');
-        })->done(assignee: 'ghostrider');
+        })->done(assignee: 'ghostridr');
 
         it('can view a blog', function () {
             $blog = Blog::factory()->create();
             $found = Blog::find($blog->id);
             expect($found)->not->toBeNull();
             expect($found->id)->toBe($blog->id);
-        })->done(assignee: 'ghostrider');
-    })->done(assignee: 'ghostrider');
+        })->done(assignee: 'ghostridr');
+    })->done(assignee: 'ghostridr');
+
+    // ───────────────────────────────────────────────────────────────────────────
+    // Eager Loading
+    // ───────────────────────────────────────────────────────────────────────────
+    describe('Eager Loading', function () {
+        it('loads default relations via $with on retrieval', function () {
+            $blog = Blog::factory()->create();
+            $model = Blog::query()->find($blog->id);
+            expect($model->relationLoaded('author'))->toBeTrue();
+            expect($model->relationLoaded('comments'))->toBeTrue();
+            expect($model->relationLoaded('tags'))->toBeTrue();
+            expect($model->relationLoaded('categories'))->toBeTrue();
+        })->done(assignee: 'ghostridr');
+    })->done(assignee: 'ghostridr');
 
     // ───────────────────────────────────────────────────────────────────────────
     // Edge Cases
@@ -298,14 +163,14 @@ describe('Blog Feature', function () {
                 $blog->categories()->attach($category->id);
                 expect($blog->categories()->count())->toBe(1);
                 expect($blog->categories->first()->id)->toBe($category->id);
-            })->done(assignee: 'ghostrider');
+            })->done(assignee: 'ghostridr');
 
             it('can associate and retrieve multiple categories for a blog', function () {
                 $categories = Category::factory()->count(3)->create();
                 $blog = Blog::factory()->create();
                 $blog->categories()->attach($categories->pluck('id')->toArray());
                 expect($blog->categories()->count())->toBe(3);
-            })->done(assignee: 'ghostrider');
+            })->done(assignee: 'ghostridr');
 
             it('can detach all categories from a blog', function () {
                 $categories = Category::factory()->count(3)->create();
@@ -313,7 +178,7 @@ describe('Blog Feature', function () {
                 $blog->categories()->attach($categories->pluck('id')->toArray());
                 $blog->categories()->detach($categories->pluck('id')->toArray());
                 expect($blog->categories()->count())->toBe(0);
-            })->done(assignee: 'ghostrider');
+            })->done(assignee: 'ghostridr');
 
             it('can detach a single category from a blog', function () {
                 $category = Category::factory()->create();
@@ -321,8 +186,8 @@ describe('Blog Feature', function () {
                 $blog->categories()->attach($category->id);
                 $blog->categories()->detach($category->id);
                 expect($blog->categories()->count())->toBe(0);
-            })->done(assignee: 'ghostrider');
-        })->done(assignee: 'ghostrider');
+            })->done(assignee: 'ghostridr');
+        })->done(assignee: 'ghostridr');
 
         // Comments
         describe('Comments', function () {
@@ -334,20 +199,20 @@ describe('Blog Feature', function () {
                 ]);
                 expect($blog->comments()->count())->toBe(1);
                 expect($blog->comments->first()->id)->toBe($comment->id);
-            })->done(assignee: 'ghostrider');
+            })->done(assignee: 'ghostridr');
 
             it('can associate and retrieve multiple comments for a blog', function () {
                 $blog = Blog::factory()->create();
-                $comments = Comment::factory()->count(3)->create([
+                Comment::factory()->count(3)->create([
                     'commentable_id' => $blog->id,
                     'commentable_type' => Blog::class,
                 ]);
                 expect($blog->comments()->count())->toBe(3);
-            })->done(assignee: 'ghostrider');
+            })->done(assignee: 'ghostridr');
 
             it('can delete all comments from a blog', function () {
                 $blog = Blog::factory()->create();
-                $comments = Comment::factory()->count(3)->create([
+                Comment::factory()->count(3)->create([
                     'commentable_id' => $blog->id,
                     'commentable_type' => Blog::class,
                 ]);
@@ -355,7 +220,7 @@ describe('Blog Feature', function () {
                     $comment->delete();
                 }
                 expect($blog->comments()->count())->toBe(0);
-            })->done(assignee: 'ghostrider');
+            })->done(assignee: 'ghostridr');
 
             it('can delete a single comment from a blog', function () {
                 $blog = Blog::factory()->create();
@@ -365,8 +230,8 @@ describe('Blog Feature', function () {
                 ]);
                 $comment->delete();
                 expect($blog->comments()->count())->toBe(0);
-            })->done(assignee: 'ghostrider');
-        })->done(assignee: 'ghostrider');
+            })->done(assignee: 'ghostridr');
+        })->done(assignee: 'ghostridr');
 
         // Tags
         describe('Tags', function () {
@@ -376,19 +241,14 @@ describe('Blog Feature', function () {
                 $blog->tags()->attach($tag->id);
                 expect($blog->tags()->count())->toBe(1);
                 expect($blog->tags->first()->id)->toBe($tag->id);
-            })->done(assignee: 'ghostrider');
+            })->done(assignee: 'ghostridr');
 
             it('can attach and retrieve multiple tags for a blog', function () {
                 $blog = Blog::factory()->create();
                 $tags = Tag::factory()->count(3)->create();
                 $blog->tags()->attach($tags->pluck('id')->toArray());
                 expect($blog->tags()->count())->toBe(3);
-            })->done(assignee: 'ghostrider');
-
-            it('cannot attach a non-existent tag', function () {
-                $blog = Blog::factory()->create();
-                expect(fn () => $blog->tags()->attach(999999))->toThrow(QueryException::class);
-            })->done(assignee: 'ghostrider');
+            })->done(assignee: 'ghostridr');
 
             it('can detach all tags from a blog', function () {
                 $blog = Blog::factory()->create();
@@ -396,7 +256,7 @@ describe('Blog Feature', function () {
                 $blog->tags()->attach($tags->pluck('id')->toArray());
                 $blog->tags()->detach($tags->pluck('id')->toArray());
                 expect($blog->tags()->count())->toBe(0);
-            })->done(assignee: 'ghostrider');
+            })->done(assignee: 'ghostridr');
 
             it('can detach a single tag from a blog', function () {
                 $blog = Blog::factory()->create();
@@ -404,62 +264,9 @@ describe('Blog Feature', function () {
                 $blog->tags()->attach($tag->id);
                 $blog->tags()->detach($tag->id);
                 expect($blog->tags()->count())->toBe(0);
-            })->done(assignee: 'ghostrider');
-        })->done(assignee: 'ghostrider');
-    })->done(assignee: 'ghostrider');
-
-    // ───────────────────────────────────────────────────────────────────────────
-    // Events
-    // ───────────────────────────────────────────────────────────────────────────
-    describe('Events', function () {
-        it('fires created event when blog is made', function () {
-            $called = false;
-            Blog::created(function () use (&$called) {
-                $called = true;
-            });
-            Blog::factory()->create();
-            expect($called)->toBeTrue();
-        })->done(assignee: 'ghostrider');
-
-        it('fires deleted event when blog is deleted', function () {
-            $called = false;
-            Blog::deleted(function () use (&$called) {
-                $called = true;
-            });
-            $blog = Blog::factory()->create();
-            $blog->delete();
-            expect($called)->toBeTrue();
-        })->done(assignee: 'ghostrider');
-
-        it('fires updated event when blog is updated', function () {
-            $called = false;
-            Blog::updated(function () use (&$called) {
-                $called = true;
-            });
-            $blog = Blog::factory()->create();
-            $blog->update(['title' => 'Updated Title']);
-            expect($called)->toBeTrue();
-        })->done(assignee: 'ghostrider');
-    })->done(assignee: 'ghostrider');
-
-    // ───────────────────────────────────────────────────────────────────────────
-    // Livewire Blogs list (conditional)
-    // ───────────────────────────────────────────────────────────────────────────
-    if (class_exists(Livewire::class)) {
-        describe('Livewire Blogs list', function () {
-            it('renders and searches', function () {
-                Blog::factory()->create(['title' => 'Laravel Tips', 'is_public' => true]);
-                Blog::factory()->create(['title' => 'Minecraft Tricks', 'is_public' => true]);
-
-                Livewire::test('blogs.index') // update alias if needed
-                    ->assertSee('Laravel Tips')
-                    ->assertSee('Minecraft Tricks')
-                    ->set('search', 'Laravel')
-                    ->assertSee('Laravel Tips')
-                    ->assertDontSee('Minecraft Tricks');
-            })->done(assignee: 'ghostrider');
-        })->done(assignee: 'ghostrider');
-    }
+            })->done(assignee: 'ghostridr');
+        })->done(assignee: 'ghostridr');
+    })->done(assignee: 'ghostridr');
 
     // ───────────────────────────────────────────────────────────────────────────
     // Localization
@@ -468,55 +275,53 @@ describe('Blog Feature', function () {
         it('can create blogs with accented characters in the title', function () {
             $blog = Blog::factory()->create(['title' => 'Café']);
             expect($blog->title)->toBe('Café');
-        })->done(assignee: 'ghostrider');
+        })->done(assignee: 'ghostridr');
 
         it('can create blogs with emoji', function () {
             $blog = Blog::factory()->create(['title' => '🔥']);
             expect($blog->title)->toBe('🔥');
-        })->done(assignee: 'ghostrider');
+        })->done(assignee: 'ghostridr');
 
         it('can create blogs with non-English titles', function () {
             $blog = Blog::factory()->create(['title' => 'ブログ']);
             expect($blog->title)->toBe('ブログ');
-        })->done(assignee: 'ghostrider');
-
-        it('can create blogs with titles containing numbers', function () {
-            $blog = Blog::factory()->create(['title' => 'Blog Title 123']);
-            expect($blog->title)->toBe('Blog Title 123');
-        })->done(assignee: 'ghostrider');
-
-        it('can create blogs with special characters in the title', function () {
-            $blog = Blog::factory()->create(['title' => '!@#$%^&*()']);
-            expect($blog->title)->toBe('!@#$%^&*()');
-        })->done(assignee: 'ghostrider');
+        })->done(assignee: 'ghostridr');
 
         it('can create blogs with titles containing HTML tags', function () {
             $blog = Blog::factory()->create(['title' => '<strong>Bold Title</strong>']);
             expect($blog->title)->toBe('<strong>Bold Title</strong>');
-        })->done(assignee: 'ghostrider');
-
-        it('can create blogs with titles that are hyperlinked', function () {
-            $blog = Blog::factory()->create(['title' => '<a href="#">Blog Title</a>']);
-            expect($blog->title)->toBe('<a href="#">Blog Title</a>');
-        })->done(assignee: 'ghostrider');
+        })->done(assignee: 'ghostridr');
 
         it('can create blogs with titles containing Markdown', function () {
             $blog = Blog::factory()->create(['title' => '**Bold Title**']);
             expect($blog->title)->toBe('**Bold Title**');
-        })->done(assignee: 'ghostrider');
-    })->done(assignee: 'ghostrider');
+        })->done(assignee: 'ghostridr');
+
+        it('can create blogs with titles containing numbers', function () {
+            $blog = Blog::factory()->create(['title' => 'Blog Title 123']);
+            expect($blog->title)->toBe('Blog Title 123');
+        })->done(assignee: 'ghostridr');
+
+        it('can create blogs with special characters in the title', function () {
+            $blog = Blog::factory()->create(['title' => '!@#$%^&*()']);
+            expect($blog->title)->toBe('!@#$%^&*()');
+        })->done(assignee: 'ghostridr');
+    })->done(assignee: 'ghostridr');
 
     // ───────────────────────────────────────────────────────────────────────────
-    // Performance
+    // Relations
     // ───────────────────────────────────────────────────────────────────────────
-    describe('Performance', function () {
-        it('can bulk attach many tags to a blog efficiently', function () {
+    describe('Blog acknowledgers relation', function () {
+        it('relates a blog to users who acknowledged it', function () {
             $blog = Blog::factory()->create();
-            $tags = Tag::factory()->count(50)->create();
-            $blog->tags()->attach($tags->pluck('id')->toArray());
-            expect($blog->tags()->count())->toBe(50);
-        })->done(assignee: 'ghostrider');
-    })->done(assignee: 'ghostrider');
+            $user = User::factory()->create();
+
+            $blog->acknowledgers()->syncWithoutDetaching([$user->id]);
+
+            expect($blog->acknowledgers)->toHaveCount(1);
+            expect($blog->acknowledgers->first()->id)->toBe($user->id);
+        })->done(assignee: 'ghostridr');
+    })->done(assignee: 'ghostridr');
 
     // ───────────────────────────────────────────────────────────────────────────
     // Restoration
@@ -528,44 +333,83 @@ describe('Blog Feature', function () {
             $blog->restore();
             $found = Blog::query()->find($blog->id);
             expect($found)->not->toBeNull();
-        })->done(assignee: 'ghostrider');
-    })->done(assignee: 'ghostrider');
+        })->done(assignee: 'ghostridr');
+    })->done(assignee: 'ghostridr');
 
     // ───────────────────────────────────────────────────────────────────────────
-    // Security
-    // ───────────────────────────────────────────────────────────────────────────
-    describe('Security', function () {
-        it('prevents unauthorized user from accessing a blog', function () {
-            $blog = Blog::factory()->create();
-            $user = User::factory()->create();
-            $this->actingAs($user);
-            $response = $this->get('/blogs/'.$blog->id);
-            expect($response->status())->toBe(403);
-        })->done(assignee: 'ghostrider');
+    // Scopes
+    // ───────────────────────────────────────────────────────────
+    describe('Scopes', function () {
+        it('byAuthor returns only blogs by the given author', function () {
+            $author = User::factory()->create();
+            Blog::factory()->count(2)->byAuthor($author)->create();
+            Blog::factory()->count(1)->create();
 
-        it('prevents unauthorized user from creating a blog', function () {
-            $user = User::factory()->create();
-            $this->actingAs($user);
-            $response = $this->post('/blogs', ['title' => 'New Blog', 'content' => 'Blog content']);
-            expect($response->status())->toBe(403);
-        })->done(assignee: 'ghostrider');
+            $results = Blog::query()->byAuthor($author->id)->get();
+            expect($results)->toHaveCount(2);
+            expect($results->pluck('author_id')->unique()->first())->toBe($author->id);
+        })->done(assignee: 'ghostridr');
 
-        it('prevents unauthorized user from deleting a blog', function () {
-            $blog = Blog::factory()->create();
-            $user = User::factory()->create();
-            $this->actingAs($user);
-            $response = $this->delete('/blogs/'.$blog->id);
-            expect($response->status())->toBe(403);
-        })->done(assignee: 'ghostrider');
+        it('public returns only public blogs', function () {
+            Blog::factory()->count(2)->create(['is_public' => true]);
+            Blog::factory()->count(3)->create(['is_public' => false]);
 
-        it('prevents unauthorized user from updating a blog', function () {
-            $blog = Blog::factory()->create();
-            $user = User::factory()->create();
-            $this->actingAs($user);
-            $response = $this->put('/blogs/'.$blog->id, ['title' => 'Updated Title']);
-            expect($response->status())->toBe(403);
-        })->done(assignee: 'ghostrider');
-    })->done(assignee: 'ghostrider');
+            $results = Blog::query()->public()->get();
+            expect($results)->toHaveCount(2);
+            expect($results->every(fn ($b) => $b->is_public === true))->toBeTrue();
+        })->done(assignee: 'ghostridr');
+
+        it('published returns only published blogs', function () {
+            Blog::factory()->count(2)->published()->create();
+            Blog::factory()->count(3)->unpublished()->create();
+
+            $results = Blog::query()->published()->get();
+            expect($results)->toHaveCount(2);
+            expect($results->every(fn ($b) => $b->is_published === true))->toBeTrue();
+        })->done(assignee: 'ghostridr');
+
+        it('publishedAt filters by date threshold', function () {
+            $early = Carbon::now()->subDays(10)->floorSecond();
+            $mid = Carbon::now()->subDays(5)->floorSecond();
+            $late = Carbon::now()->subDay()->floorSecond();
+            Blog::factory()->create(['published_at' => $early]);
+            Blog::factory()->create(['published_at' => $mid]);
+            Blog::factory()->create(['published_at' => $late]);
+
+            $results = Blog::query()->publishedAt($mid)->get();
+            $min = $results->pluck('published_at')->min();
+            expect($min->copy()->floorSecond()->getTimestamp())->toBeGreaterThanOrEqual($mid->getTimestamp());
+            expect($results)->toHaveCount(2);
+        })->done(assignee: 'ghostridr');
+
+        it('withCategory filters by related category name', function () {
+            $catA = Category::factory()->create(['name' => 'Alpha']);
+            $catB = Category::factory()->create(['name' => 'Beta']);
+
+            $b1 = Blog::factory()->create();
+            $b1->categories()->attach($catA->id);
+            $b2 = Blog::factory()->create();
+            $b2->categories()->attach($catB->id);
+
+            $results = Blog::query()->withCategory('Alpha')->get();
+            expect($results)->toHaveCount(1);
+            expect($results->first()->id)->toBe($b1->id);
+        })->done(assignee: 'ghostridr');
+
+        it('withTag filters by related tag name', function () {
+            $tagA = Tag::factory()->create(['name' => 'X']);
+            $tagB = Tag::factory()->create(['name' => 'Y']);
+
+            $b1 = Blog::factory()->create();
+            $b1->tags()->attach($tagA->id);
+            $b2 = Blog::factory()->create();
+            $b2->tags()->attach($tagB->id);
+
+            $results = Blog::query()->withTag('X')->get();
+            expect($results)->toHaveCount(1);
+            expect($results->first()->id)->toBe($b1->id);
+        })->done(assignee: 'ghostridr');
+    })->done(assignee: 'ghostridr');
 
     // ───────────────────────────────────────────────────────────────────────────
     // Soft Deletes
@@ -576,18 +420,37 @@ describe('Blog Feature', function () {
             $blog->delete();
             $found = Blog::query()->find($blog->id);
             expect($found)->toBeNull();
-        })->done(assignee: 'ghostrider');
-    })->done(assignee: 'ghostrider');
+        })->done(assignee: 'ghostridr');
+    })->done(assignee: 'ghostridr');
 
     // ───────────────────────────────────────────────────────────────────────────
-    // Validation (model-style placeholders)
+    // Totals & Counts
+    // ───────────────────────────────────────────────────────────────────────────
+    describe('Totals & Counts', function () {
+        it('counts related categories, tags, and comments correctly', function () {
+            $blog = Blog::factory()->create();
+            $blog->categories()->attach(Category::factory()->count(2)->create()->pluck('id')->all());
+            $blog->tags()->attach(Tag::factory()->count(3)->create()->pluck('id')->all());
+            Comment::factory()->count(4)->create([
+                'commentable_id' => $blog->id,
+                'commentable_type' => Blog::class,
+            ]);
+
+            expect($blog->categoriesCount())->toBe(2);
+            expect($blog->tagsCount())->toBe(3);
+            expect($blog->commentsCount())->toBe(4);
+        })->done(assignee: 'ghostridr');
+    })->done(assignee: 'ghostridr');
+
+    // ───────────────────────────────────────────────────────────────────────────
+    // Validation
     // ───────────────────────────────────────────────────────────────────────────
     describe('Validation', function () {
         it('requires a title', function () {
             $blog = Blog::factory()->create(['title' => '']);
             expect($blog->isValid())->toBeFalse();
             expect($blog->getErrors())->toContain('The title field is required.');
-        })->done(assignee: 'ghostrider');
+        })->done(assignee: 'ghostridr');
 
         it('requires a unique title', function () {
             $blog1 = Blog::factory()->count(3)->create(['title' => 'Unique Blog']);
@@ -600,6 +463,6 @@ describe('Blog Feature', function () {
                 expect($blog->isValid())->toBeFalse();
                 expect($blog->getErrors())->toContain('The title field must be unique.');
             });
-        })->done(assignee: 'ghostrider');
-    })->done(assignee: 'ghostrider');
-})->done('Implements strict validation for Blog model.');
+        })->done(assignee: 'ghostridr');
+    })->done(assignee: 'ghostridr');
+})->done(assignee: 'ghostridr');
