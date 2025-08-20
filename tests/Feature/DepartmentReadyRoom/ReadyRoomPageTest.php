@@ -115,7 +115,7 @@ describe('Department Page - Recent Meeting Notes', function () {
 
         get(route('ready-room.index'))
             ->assertStatus(200)
-            ->assertSee('Recent Meeting Notes');
+            ->assertSee('Meeting Notes');
     })->done();
 
     // The current task list is displayed

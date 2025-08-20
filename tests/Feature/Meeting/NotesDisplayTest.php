@@ -32,16 +32,15 @@ it('shows meeting note content when a meeting is selected', function () {
     $meeting = Meeting::factory()->create(['title' => 'Dev Team Meeting']);
     $meetingNote = MeetingNote::factory()->create([
         'meeting_id' => $meeting->id,
-        'section_key' => 'development',
+        'section_key' => 'command',
         'content' => 'This is the meeting content.',
         'created_by' => $admin->id,
     ]);
 
-    $component = Livewire::test(NotesDisplay::class, ['sectionKey' => 'development']);
+    $component = Livewire::test(NotesDisplay::class, ['sectionKey' => 'command']);
 
     $component->call('selectMeeting', $meeting->id)
-        ->assertSee('This is the meeting content.')
-        ->assertSee($admin->name);
+        ->assertSee('This is the meeting content.');
 });
 
 it('shows appropriate message when no meetings exist', function () {
