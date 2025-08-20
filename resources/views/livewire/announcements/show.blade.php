@@ -22,11 +22,11 @@
         </div>
         <div class="text-sm text-gray-400">
             <strong>Posted:</strong>
-            {{ $announcement->created_at->format('M d, Y H:i') }}
+            <time datetime="{{ $announcement->created_at->toIso8601String() }}">{{ $announcement->created_at->format('M d, Y H:i') }}</time>
         </div>
         @if($announcement->updated_at && $announcement->updated_at != $announcement->created_at)
             <div class="text-xs text-gray-500">
-                <strong>Edited:</strong> {{ $announcement->updated_at->format('M d, Y H:i') }}
+                <strong>Edited:</strong> <time datetime="{{ $announcement->updated_at->toIso8601String() }}">{{ $announcement->updated_at->format('M d, Y H:i') }}</time>
             </div>
         @endif
         <div class="mb-4">

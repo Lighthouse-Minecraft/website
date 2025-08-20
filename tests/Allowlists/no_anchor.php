@@ -39,11 +39,11 @@ declare(strict_types=1);
 |     this anchor is allowed. Useful for class/data attributes, etc.
 |
 | Optional metadata (ignored by the test, for humans):
-| - 'owner' => 'ghostridr'
-| - 'reason' => 'Semantic link to X; anchor required, not button.'
-| - 'ticket' => 'TICKET-456'
-| - 'added' => '2025-08-20'
-| - 'review_on' => '2025-08-20'
+| - 'owner' => 'Team/Name'
+| - 'reason' => 'Explain why this exception is needed'
+| - 'ticket' => 'ticket_id'
+| - 'added' => 'YYY-MM-DD'
+| - 'review_on' => 'YYY-MM-DD'
 |
 | Paths
 | - Use the relative path exactly as the test reports in a failure message,

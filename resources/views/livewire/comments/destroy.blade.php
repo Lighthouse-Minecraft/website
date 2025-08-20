@@ -73,7 +73,7 @@
             @else
                 <span>Unknown</span>
             @endif
-            <span>on {{ $comment->created_at->format('m/d/y') }} @ {{ $comment->created_at->format('H:i') }}</span>
+            <span>on <time class="comment-ts" datetime="{{ $comment->created_at->toIso8601String() }}">{{ $comment->created_at->format('m/d/y @ h:i a') }}</time></span>
         </div>
 
         @php

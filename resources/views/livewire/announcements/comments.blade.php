@@ -80,27 +80,6 @@ new class extends Component {
                   x-init="setInterval(() => { t = new Date() }, 1000)"
                   x-text="t.toLocaleString('en-US', { month: 'short', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })"></span>
         </div>
-        <script>
-            (function () {
-                function formatLocalTimes() {
-                    const formatter = new Intl.DateTimeFormat('en-US', {
-                        month: 'short', day: '2-digit', year: 'numeric',
-                        hour: '2-digit', minute: '2-digit'
-                    });
-                    document.querySelectorAll('time.comment-ts[datetime]')
-                        .forEach(function (el) {
-                            const dt = new Date(el.getAttribute('datetime'));
-                            if (!isNaN(dt.getTime())) {
-                                el.textContent = formatter.format(dt);
-                            }
-                        });
-                }
-                if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', formatLocalTimes);
-                } else {
-                    formatLocalTimes();
-                }
-            })();
-        </script>
+
     </form>
 </div>

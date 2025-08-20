@@ -91,7 +91,7 @@
                 @else
                     <span>Unknown</span>
                 @endif
-                <span>on {{ $announcement->created_at->format('m/d/y') }} @ {{ $announcement->created_at->format('H:i') }}</span>
+                <span>on <time datetime="{{ $announcement->created_at->toIso8601String() }}">{{ $announcement->created_at->format('m/d/y @ h:i a') }}</time></span>
             </div>
 
             <div>
@@ -108,7 +108,7 @@
                                 @else
                                     Unknown
                                 @endif
-                                on {{ $comment->created_at->format('M d, Y H:i') }}
+                                on <time datetime="{{ $comment->created_at->toIso8601String() }}">{{ $comment->created_at->format('M d, Y H:i') }}</time>
                             </div>
                             <br>
                             <div class="prose max-w-none whitespace-pre-wrap break-words [&_pre]:whitespace-pre-wrap [&_pre]:break-words [&_pre]:max-w-full [&_pre]:w-full [&_pre]:overflow-x-auto [&_code]:break-words [&_code]:break-all">

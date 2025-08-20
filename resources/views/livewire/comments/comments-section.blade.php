@@ -35,7 +35,7 @@ use App\Enums\StaffRank;
                                     $reviewedAtIso = $existing->reviewed_at ? $existing->reviewed_at->toIso8601String() : null;
                                 @endphp
                                 <span class="inline-flex items-center rounded-full border border-green-600 bg-green-600/10 text-green-200 text-[11px] px-2 py-0.5">
-                                    Reviewed by @if($reviewerUser)&nbsp;<flux:link href="{{ route('profile.show', ['user' => $reviewerUser]) }}">{{ $reviewer }}</flux:link>@else&nbsp;{{ $reviewer }} @endif @if($reviewedAtIso)&nbsp;on <time class="comment-ts" datetime="{{ $reviewedAtIso }}">{{ $existing->reviewed_at->format('M d, Y H:i') }}</time>@endif
+                                    Reviewed by @if($reviewerUser)&nbsp;<flux:link href="{{ route('profile.show', ['user' => $reviewerUser]) }}">{{ $reviewer }}</flux:link>@else&nbsp;{{ $reviewer }} @endif @if($reviewedAtIso)&nbsp;on <time wire:ignore class="comment-ts" datetime="{{ $reviewedAtIso }}">{{ $existing->reviewed_at->format('M d, Y H:i') }}</time>@endif
                                 </span>
                             @endif
                         </div>
@@ -87,7 +87,7 @@ use App\Enums\StaffRank;
                         @else
                             <span class="text-gray-400">Unknown</span>
                         @endif
-                        on <time class="comment-ts" datetime="{{ $existing->created_at->toIso8601String() }}">{{ $existing->created_at->format('M d, Y H:i') }}</time>
+                        on <time wire:ignore class="comment-ts" datetime="{{ $existing->created_at->toIso8601String() }}">{{ $existing->created_at->format('M d, Y H:i') }}</time>
                     </div>
                 </flux:card>
             </div>
@@ -126,7 +126,7 @@ use App\Enums\StaffRank;
                                 @else
                                     <span class="text-gray-400">Unknown</span>
                                 @endif
-                                on {{ $latestPending->created_at->format('M d, Y H:i') }}
+                                on <time class="comment-ts" datetime="{{ $latestPending->created_at->toIso8601String() }}">{{ $latestPending->created_at->format('M d, Y H:i') }}</time>
                             </div>
                         </div>
                         <div class="mt-2 text-base text-gray-200 whitespace-pre-wrap break-words">{!! $latestPending->content !!}</div>
@@ -169,70 +169,58 @@ use App\Enums\StaffRank;
         @endforeach --}}
     </ul>
 
-    <flux:editor
-        wire:model.defer="content"
-        wire:model="commentContent"
-        label="Add a comment"
-        placeholder="Type your comment..."
-        rows="3"
-        class="
-            mb-1
-            w-full max-w-full overflow-hidden
-            [&_[data-slot=content]_.ProseMirror]:break-words
-            [&_[data-slot=content]_.ProseMirror]:break-all
-            [&_[data-slot=content]_.ProseMirror]:whitespace-pre-wrap
-            [&_[data-slot=content]_.ProseMirror]:w-full
-            [&_[data-slot=content]_.ProseMirror]:max-w-full
-            [&_[data-slot=content]_.ProseMirror]:overflow-x-auto
-            [&_[data-slot=content]]:max-h-[500px]
-            [&_[data-slot=content]]:overflow-y-auto
-            [&_[data-slot=content]_pre]:overflow-x-auto
-            [&_[data-slot=content]_pre]:!whitespace-pre-wrap
-            [&_[data-slot=content]_pre]:max-w-full
-            [&_[data-slot=content]_pre]:w-full
-            [&_[data-slot=content]_pre_code]:!break-words
-            [&_[data-slot=content]_pre_code]:break-all
-            [&_[data-slot=content]_pre]:rounded-md
-            [&_[data-slot=content]_pre]:p-3
-            [&_[data-slot=content]_pre]:my-3
-            [&_[data-slot=content]_pre]:border
-            [&_[data-slot=content]_pre]:bg-black/10
-            [&_[data-slot=content]_pre]:border-black/20
-            dark:[&_[data-slot=content]_pre]:bg-white/10
-            dark:[&_[data-slot=content]_pre]:border-white/20
-            [&_[data-slot=content]_pre]:font-mono
-            [&_[data-slot=content]_pre]:text-sm
-        "
-        required
-    />
+    <form wire:submit.prevent="addComment" class="space-y-2">
+        <flux:editor
+            wire:model.defer="content"
+            label="Add a comment"
+            placeholder="Type your comment..."
+            rows="3"
+            class="
+                mb-1
+                w-full max-w-full overflow-hidden
+                [&_[data-slot=content]_.ProseMirror]:break-words
+                [&_[data-slot=content]_.ProseMirror]:break-all
+                [&_[data-slot=content]_.ProseMirror]:whitespace-pre-wrap
+                [&_[data-slot=content]_.ProseMirror]:w-full
+                [&_[data-slot=content]_.ProseMirror]:max-w-full
+                [&_[data-slot=content]_.ProseMirror]:overflow-x-auto
+                [&_[data-slot=content]]:max-h-[500px]
+                [&_[data-slot=content]]:overflow-y-auto
+                [&_[data-slot=content]_pre]:overflow-x-auto
+                [&_[data-slot=content]_pre]:!whitespace-pre-wrap
+                [&_[data-slot=content]_pre]:max-w-full
+                [&_[data-slot=content]_pre]:w-full
+                [&_[data-slot=content]_pre_code]:!break-words
+                [&_[data-slot=content]_pre_code]:break-all
+                [&_[data-slot=content]_pre]:rounded-md
+                [&_[data-slot=content]_pre]:p-3
+                [&_[data-slot=content]_pre]:my-3
+                [&_[data-slot=content]_pre]:border
+                [&_[data-slot=content]_pre]:bg-black/10
+                [&_[data-slot=content]_pre]:border-black/20
+                dark:[&_[data-slot=content]_pre]:bg-white/10
+                dark:[&_[data-slot=content]_pre]:border-white/20
+                [&_[data-slot=content]_pre]:font-mono
+                [&_[data-slot=content]_pre]:text-sm
+            "
+            required
+        />
 
-    <div class="w-full text-right mt-2">
-        <flux:button type="submit" icon="chat-bubble-left-right" variant="primary">Post Comment</flux:button>
-    </div>
+        @error('content')
+            <div class="text-red-500 text-sm mt-1">{{ $message }}</div>
+        @enderror
 
-    <script>
-        (function () {
-            function formatLocalTimes() {
-                const formatter = new Intl.DateTimeFormat('en-US', {
-                    month: 'short', day: '2-digit', year: 'numeric',
-                    hour: '2-digit', minute: '2-digit'
-                });
-                document.querySelectorAll('time.comment-ts[datetime]')
-                    .forEach(function (el) {
-                        const dt = new Date(el.getAttribute('datetime'));
-                        if (!isNaN(dt.getTime())) {
-                            el.textContent = formatter.format(dt);
-                        }
-                    });
-            }
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', formatLocalTimes);
-            } else {
-                formatLocalTimes();
-            }
-            if (window.Livewire && window.Livewire.hook) {
-                window.Livewire.hook('message.processed', formatLocalTimes);
-            }
-        })();
-    </script>
+        <div class="w-full text-right mt-2">
+            <flux:button
+                type="submit"
+                icon="chat-bubble-left-right"
+                variant="primary"
+                wire:target="addComment"
+                wire:loading.attr="disabled"
+            >
+                <span wire:loading.remove>Post Comment</span>
+                <span wire:loading>Posting...</span>
+            </flux:button>
+        </div>
+    </form>
 </div>

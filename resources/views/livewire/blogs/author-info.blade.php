@@ -26,7 +26,13 @@ new class extends Component {
                         </flux:link>
                     </span>
                 @endif
-                on {{ $blog->created_at ? $blog->created_at->format('m/d/y \@ H:i') : 'N/A' }}
+                on @if($blog->created_at)
+                    <time datetime="{{ $blog->created_at->toIso8601String() }}">
+                        {{ $blog->created_at->format('m/d/y @ h:i a') }}
+                    </time>
+                @else
+                    N/A
+                @endif
             </span>
         </span>
 </flux:text>
