@@ -83,8 +83,7 @@ class BlogFactory extends Factory
             foreach (collect($commentIds) as $id) {
                 $comment = Comment::find($id);
                 if ($comment) {
-                    $comment->commentable_id = $blog->id;
-                    $comment->commentable_type = Blog::class;
+                    $comment->commentable()->associate($blog);
                     $comment->save();
                 }
             }
