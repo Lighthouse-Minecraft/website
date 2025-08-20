@@ -11,7 +11,6 @@ uses(RefreshDatabase::class);
 
 // Category model tests only
 describe('Category Model', function () {
-
     // ───────────────────────────────────────────────────────────────────────────
     // CRUD Operations
     // ───────────────────────────────────────────────────────────────────────────
