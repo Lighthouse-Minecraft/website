@@ -1,5 +1,7 @@
 <?php
 
+use App\Enums\StaffDepartment;
+use App\Enums\StaffRank;
 use App\Models\User;
 use App\Models\Role;
 use Livewire\Volt\Component;
@@ -118,6 +120,10 @@ new class extends Component {
         <flux:table.columns>
             <flux:table.column sortable :sorted="$sortBy === 'name'" :direction="$sortDirection" wire:click="sort('name')">Name</flux:table.column>
             <flux:table.column sortable :sorted="$sortBy === 'email'" :direction="$sortDirection" wire:click="sort('email')">Email</flux:table.column>
+            <flux:table.column sortable :sorted="$sortBy === 'membership_level'" :direction="$sortDirection" wire:click="sort('membership_level')">Level</flux:table.column>
+            <flux:table.column sortable :sorted="$sortBy === 'staff_department'" :direction="$sortDirection" wire:click="sort('staff_department')">Department</flux:table.column>
+            <flux:table.column sortable :sorted="$sortBy === 'staff_rank'" :direction="$sortDirection" wire:click="sort('staff_rank')">Rank</flux:table.column>
+            <flux:table.column>Staff Title</flux:table.column>
             <flux:table.column>Roles</flux:table.column>
             {{-- <flux:table.column sortable :sorted="$sortBy === 'date'" :direction="$sortDirection" wire:click="sort('date')">Date</flux:table.column> --}}
             <flux:table.column>Actions</flux:table.column>
@@ -132,6 +138,10 @@ new class extends Component {
                     </flux:table.cell>
 
                     <flux:table.cell class="whitespace-nowrap">{{ $user->email }}</flux:table.cell>
+                    <flux:table.cell class="whitespace-nowrap">{{ $user->membership_level->label() }}</flux:table.cell>
+                    <flux:table.cell class="whitespace-nowrap">@if ($user->staff_department){{ $user->staff_department->label() }} @endif</flux:table.cell>
+                    <flux:table.cell class="whitespace-nowrap">@if ($user->staff_rank != StaffRank::None)<flux:badge variant="pill" color="{{ $user->staff_rank->color() }}" size="sm">{{ $user->staff_rank->label() }}</flux:badge> @endif</flux:table.cell>
+                    <flux:table.cell class="whitespace-nowrap">{{ $user->staff_title }}</flux:table.cell>
                     <flux:table.cell class="whitespace-nowrap">
                         @foreach ($user->roles as $role)
                             <flux:badge size="xs" color="{{ $role->color }}" icon="{{  $role->icon }}" variant="pill">{{ $role->name }}</flux:badge>

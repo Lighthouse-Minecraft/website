@@ -13,6 +13,6 @@ class ExampleTest extends TestCase
     {
         $response = $this->get('/');
 
-        $response->assertRedirect('/pages/home');
+        $response->assertRedirect('/home');
     }
 }
