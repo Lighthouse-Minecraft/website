@@ -14,8 +14,8 @@ new class extends Component {
 <div class="w-full">
 
     <flux:tab.group>
-        <div class="text-center">
-            <flux:tabs variant="segmented" wire:model="tab">
+        <div class="text-center flex">
+            <flux:tabs variant="pills" wire:model="tab" class="grid grid-cols-2 md:grid-cols-6 gap-2 mb-12 md:mb-2">
                 @can('view-ready-room-command')
                     <flux:tab name="command">Command</flux:tab>
                 @endcan
@@ -37,6 +37,7 @@ new class extends Component {
                 @endcan
             </flux:tabs>
         </div>
+
 
         @can('view-ready-room-command')
             <flux:tab.panel name="command">
