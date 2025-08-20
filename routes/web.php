@@ -208,6 +208,7 @@ Route::prefix('taxonomy')
                 Route::put('{id}', [TaxonomyController::class, 'categoriesUpdate'])->name('update');
                 Route::delete('{id}', [TaxonomyController::class, 'categoriesDestroy'])->name('destroy');
             });
+        Route::get('categories/{id}/announcements', [TaxonomyController::class, 'announcementsByCategory'])->name('categories.announcements');
         Route::get('categories/{id}/blogs', [TaxonomyController::class, 'blogsByCategory'])->name('categories.blogs');
 
         // Tags
@@ -220,6 +221,7 @@ Route::prefix('taxonomy')
                 Route::put('/{id}', [TaxonomyController::class, 'tagsUpdate'])->name('update');
                 Route::delete('/{id}', [TaxonomyController::class, 'tagsDestroy'])->name('destroy');
             });
+        Route::get('tags/{id}/announcements', [TaxonomyController::class, 'announcementsByTag'])->name('tags.announcements');
         Route::get('tags/{id}/blogs', [TaxonomyController::class, 'blogsByTag'])->name('tags.blogs');
     });
 

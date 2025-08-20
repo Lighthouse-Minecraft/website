@@ -16,7 +16,7 @@ class TaxonomyController extends Controller
     public function categoriesIndex(Request $request)
     {
         Gate::authorize('viewAny', Category::class);
-        $categories = Category::latest()->paginate(20);
+        $categories = Category::latest('id')->paginate(20);
 
         return view('taxonomy.categories.index', compact('categories'));
     }
@@ -83,13 +83,39 @@ class TaxonomyController extends Controller
         return redirect()->back()->with('status', 'Selected categories deleted successfully!');
     }
 
+    public function announcementsByCategory($id)
+    {
+        $category = Category::findOrFail($id);
+        Gate::authorize('view', $category);
+
+        $announcements = $category->announcements()->latest('id')->paginate(20);
+
+        return view('taxonomy.categories.announcements', [
+            'category' => $category,
+            'announcements' => $announcements,
+        ]);
+    }
+
+    public function blogsByCategory($id)
+    {
+        $category = Category::findOrFail($id);
+        Gate::authorize('view', $category);
+
+        $blogs = $category->blogs()->latest('id')->paginate(20);
+
+        return view('taxonomy.categories.blogs', [
+            'category' => $category,
+            'blogs' => $blogs,
+        ]);
+    }
+
     /**
      * Tag methods
      */
     public function tagsIndex(Request $request)
     {
         Gate::authorize('viewAny', Tag::class);
-        $tags = Tag::latest()->paginate(20);
+        $tags = Tag::latest('id')->paginate(20);
 
         return view('taxonomy.tags.index', compact('tags'));
     }
@@ -100,6 +126,32 @@ class TaxonomyController extends Controller
         Gate::authorize('view', $tag);
 
         return view('taxonomy.tags.show', compact('tag'));
+    }
+
+    public function blogsByTag($id)
+    {
+        $tag = Tag::findOrFail($id);
+        Gate::authorize('view', $tag);
+
+        $blogs = $tag->blogs()->latest('id')->paginate(20);
+
+        return view('taxonomy.tags.blogs', [
+            'tag' => $tag,
+            'blogs' => $blogs,
+        ]);
+    }
+
+    public function announcementsByTag($id)
+    {
+        $tag = Tag::findOrFail($id);
+        Gate::authorize('view', $tag);
+
+        $announcements = $tag->announcements()->latest('id')->paginate(20);
+
+        return view('taxonomy.tags.announcements', [
+            'tag' => $tag,
+            'announcements' => $announcements,
+        ]);
     }
 
     public function tagsStore(Request $request)
