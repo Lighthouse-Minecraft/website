@@ -14,10 +14,12 @@ return new class extends Migration
         Schema::create('announcements', function (Blueprint $table) {
             $table->id();
             $table->string('title');
+            $table->string('slug')->nullable()->unique()->after('title');
             $table->text('content');
             $table->foreignId('author_id')->nullable()->constrained('users')->onDelete('set null');
             $table->boolean('is_published')->default(false);
             $table->timestamp('published_at')->nullable()->after('is_published');
+            $table->boolean('is_public')->default(false)->after('published_at');
             $table->timestamps();
             $table->softDeletes();
         });
