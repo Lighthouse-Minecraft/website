@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 use App\Models\Announcement;
 use App\Models\Blog;
-use App\Models\Category;
-use App\Models\Tag;
 use App\Models\User;
+use Database\Factories\TaxonomyFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 
@@ -16,16 +15,7 @@ it('deleting a category cleans up pivots and does not delete related models', fu
     $admin = User::factory()->admin()->create();
     $this->actingAs($admin);
 
-    $category = Category::factory()->create();
-    $blogs = Blog::factory()->count(2)->create();
-    $anns = Announcement::factory()->count(2)->create();
-
-    foreach ($blogs as $b) {
-        $b->categories()->attach($category->id);
-    }
-    foreach ($anns as $a) {
-        $a->categories()->attach($category->id);
-    }
+    $category = TaxonomyFactory::createCategory([], blogs: 2, announcements: 2);
 
     $this->delete(route('taxonomy.categories.destroy', $category->id))->assertRedirect();
 
@@ -39,16 +29,7 @@ it('deleting a tag cleans up pivots and does not delete related models', functio
     $admin = User::factory()->admin()->create();
     $this->actingAs($admin);
 
-    $tag = Tag::factory()->create();
-    $blogs = Blog::factory()->count(2)->create();
-    $anns = Announcement::factory()->count(2)->create();
-
-    foreach ($blogs as $b) {
-        $b->tags()->attach($tag->id);
-    }
-    foreach ($anns as $a) {
-        $a->tags()->attach($tag->id);
-    }
+    $tag = TaxonomyFactory::createTag([], blogs: 2, announcements: 2);
 
     $this->delete(route('taxonomy.tags.destroy', $tag->id))->assertRedirect();
 

@@ -2,11 +2,10 @@
 
 declare(strict_types=1);
 
-use App\Models\Announcement;
-use App\Models\Blog;
 use App\Models\Category;
 use App\Models\Tag;
 use App\Models\User;
+use Database\Factories\TaxonomyFactory;
 
 use function Pest\Laravel\get;
 
@@ -53,7 +52,7 @@ describe('Taxonomy Features', function () {
 
     it('lists blogs by category', function () {
         $admin = User::factory()->admin()->create();
-        $category = Category::factory()->withBlogs(2)->create();
+        $category = TaxonomyFactory::createCategory([], blogs: 2);
 
         $this->actingAs($admin);
         $res = get(route('taxonomy.categories.blogs', ['id' => $category->id]));
@@ -65,23 +64,20 @@ describe('Taxonomy Features', function () {
 
     it('lists blogs by tag', function () {
         $admin = User::factory()->admin()->create();
-        $tag = Tag::factory()->create();
-        $blogs = Blog::factory()->count(2)->create();
-        foreach ($blogs as $b) {
-            $b->tags()->attach($tag->id);
-        }
+        $tag = TaxonomyFactory::createTag([], blogs: 2);
 
         $this->actingAs($admin);
         $res = get(route('taxonomy.tags.blogs', ['id' => $tag->id]));
         $res->assertOk();
-        foreach ($blogs as $blog) {
+        $tag->loadMissing('blogs');
+        foreach ($tag->blogs as $blog) {
             $res->assertSee(e($blog->title));
         }
     })->done(assignee: 'ghostridr');
 
     it('lists announcements by category', function () {
         $admin = User::factory()->admin()->create();
-        $category = Category::factory()->withAnnouncements(2)->create();
+        $category = TaxonomyFactory::createCategory([], blogs: 0, announcements: 2);
 
         $this->actingAs($admin);
         $res = get(route('taxonomy.categories.announcements', ['id' => $category->id]));
@@ -93,16 +89,13 @@ describe('Taxonomy Features', function () {
 
     it('lists announcements by tag', function () {
         $admin = User::factory()->admin()->create();
-        $tag = Tag::factory()->create();
-        $announcements = Announcement::factory()->count(2)->create();
-        foreach ($announcements as $a) {
-            $a->tags()->attach($tag->id);
-        }
+        $tag = TaxonomyFactory::createTag([], blogs: 0, announcements: 2);
 
         $this->actingAs($admin);
         $res = get(route('taxonomy.tags.announcements', ['id' => $tag->id]));
         $res->assertOk();
-        foreach ($announcements as $a) {
+        $tag->loadMissing('announcements');
+        foreach ($tag->announcements as $a) {
             $res->assertSee(e($a->title));
         }
     })->done(assignee: 'ghostridr');

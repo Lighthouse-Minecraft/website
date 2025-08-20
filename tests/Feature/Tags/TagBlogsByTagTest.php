@@ -1,8 +1,8 @@
 <?php
 
 use App\Models\Blog;
-use App\Models\Tag;
 use App\Models\User;
+use Database\Factories\TaxonomyFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -11,10 +11,10 @@ it('lists blogs for a given tag', function () {
     $admin = User::factory()->admin()->create();
     $this->actingAs($admin);
 
-    $tag = Tag::factory()->create(['name' => 'Events']);
-    $in = Blog::factory()->create();
+    $tag = TaxonomyFactory::createTag(['name' => 'Events'], blogs: 1);
+    $tag->loadMissing('blogs');
+    $in = $tag->blogs->first();
     $out = Blog::factory()->create();
-    $in->tags()->attach($tag->id);
 
     $res = $this->get(route('taxonomy.tags.blogs', $tag->id));
     $res->assertOk();
