@@ -84,7 +84,7 @@ use App\Models\User;
 - ``mv website lighthouse-website``
 - ``cd lighthouse-website``
 - ``composer install``
-- ``cp .env.example``
+- ``cp .env.example .env``
 - ``php artisan key:generate``
 - ``npm install``
 - ``php artisan migrate``

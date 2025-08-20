@@ -138,7 +138,7 @@ describe('Meeting Create - Functionality', function () {
             ->set('day', '2025-04-04')
             ->set('time', '7:00 PM')
             ->call('CreateMeeting')
-            ->assertRedirect(route('meeting.show', ['meeting' => Meeting::latest()->first()]));
+            ->assertRedirect(route('meeting.edit', ['meeting' => Meeting::latest()->first()]));
     })->done();
 
 })->done(assignee: 'jonzenor', issue: 13);

@@ -24,7 +24,7 @@ class MeetingPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->isAtLeastLevel(MembershipLevel::Resident);
+        return $user->isAtLeastRank(StaffRank::CrewMember) || $user->hasRole('Meeting Secretary');
     }
 
     /**
@@ -32,21 +32,22 @@ class MeetingPolicy
      */
     public function view(User $user, Meeting $meeting): bool
     {
-        if ($meeting->is_public) {
-            return $user->isAtLeastLevel(MembershipLevel::Resident);
-        } else {
-            return $user->isAtLeastRank(StaffRank::Officer);
-        }
+        return $user->isAtLeastRank(StaffRank::CrewMember) || $user->hasRole('Meeting Secretary');
+    }
+
+    public function attend(User $user, Meeting $meeting): bool
+    {
+        return $user->isAtLeastRank(StaffRank::CrewMember) || $user->hasRole('Meeting Secretary');
     }
 
     public function viewAnyPrivate(User $user): bool
     {
-        return $user->isAtLeastRank(StaffRank::Officer);
+        return $user->isAtLeastRank(StaffRank::Officer) || $user->hasRole('Meeting Secretary');
     }
 
     public function viewAnyPublic(User $user): bool
     {
-        return $user->isAtLeastLevel(MembershipLevel::Resident);
+        return $user->isAtLeastLevel(MembershipLevel::Resident) || $user->hasRole('Meeting Secretary');
     }
 
     /**
@@ -70,6 +71,14 @@ class MeetingPolicy
      */
     public function update(User $user, Meeting $meeting): bool
     {
+        if ($user->isAtLeastRank(StaffRank::Officer)) {
+            return true;
+        }
+
+        if ($user->hasRole('Meeting Secretary')) {
+            return true;
+        }
+
         return false;
     }
 
@@ -77,22 +86,6 @@ class MeetingPolicy
      * Determine whether the user can delete the model.
      */
     public function delete(User $user, Meeting $meeting): bool
-    {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can restore the model.
-     */
-    public function restore(User $user, Meeting $meeting): bool
-    {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can permanently delete the model.
-     */
-    public function forceDelete(User $user, Meeting $meeting): bool
     {
         return false;
     }

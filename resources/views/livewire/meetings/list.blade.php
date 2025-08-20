@@ -2,7 +2,7 @@
 
 use Livewire\Volt\Component;
 use App\Models\Meeting;
-use App\Enums\StaffRank;
+use App\Enums\MeetingStatus;
 
 new class extends Component {
     public $meetings;
@@ -10,9 +10,9 @@ new class extends Component {
     public function mount()
     {
         if (Gate::allows('viewAnyPrivate', Meeting::class)) {
-            $this->meetings = Meeting::all();
+            $this->meetings = Meeting::orderBy('created_at', 'desc')->get();
         } elseif (Gate::allows('viewAnyPublic', Meeting::class)) {
-            $this->meetings = Meeting::where('is_public', true)->get();
+            $this->meetings = Meeting::where('is_public', true)->orderBy('created_at', 'desc')->get();
         } else {
             $this->meetings = [];
         }
@@ -28,7 +28,7 @@ new class extends Component {
     <flux:table>
         <flux:table.columns>
                 <flux:table.column>Meeting</flux:table.column>
-                <flux:table.column>Meeting Start</flux:table.column>
+                <flux:table.column>Meeting Status</flux:table.column>
                 <flux:table.column>Summary</flux:table.column>
         </flux:table.columns>
 
@@ -36,10 +36,20 @@ new class extends Component {
             @forelse ($meetings as $meeting)
                 @can('view', $meeting)
                     <flux:table.row>
-                        <flux:table.cell><flux:link href="{{ route('meeting.show', $meeting) }}">{{ $meeting->title }} - {{ $meeting->day }}</flux:link></flux:table.cell>
+                        <flux:table.cell><flux:link href="{{ route('meeting.edit', $meeting) }}">{{ $meeting->title }} - {{ $meeting->day }}</flux:link></flux:table.cell>
                         <flux:table.cell>
-                            {{ $meeting->scheduled_time->setTimezone('America/New_York')->format('F j, Y') }} &nbsp;
-                            {{ $meeting->scheduled_time->setTimezone('America/New_York')->format('g:i A') }}
+                            @if ($meeting->status == MeetingStatus::Pending)
+                                {{ $meeting->scheduled_time->setTimezone('America/New_York')->format('F j, Y') }} &nbsp;
+                                {{ $meeting->scheduled_time->setTimezone('America/New_York')->format('g:i A') }}
+                            @elseif ($meeting->status == MeetingStatus::InProgress)
+                                <flux:badge color="emerald">{{  MeetingStatus::InProgress->label() }}</flux:badge>
+                            @elseif ($meeting->status == MeetingStatus::Completed)
+                                <flux:badge color="blue">{{  MeetingStatus::Completed->label() }}</flux:badge>
+                            @elseif ($meeting->status == MeetingStatus::Cancelled)
+                                <flux:badge color="red">{{  MeetingStatus::Cancelled->label() }}</flux:badge>
+                            @else
+                                <flux:badge color="fuchsia" variant="solid">{{ $meeting->status->label() }}</flux:badge>
+                            @endif
                         </flux:table.cell>
                         <flux:table.cell>{{ $meeting->summary }}</flux:table.cell>
                     </flux:table.row>
