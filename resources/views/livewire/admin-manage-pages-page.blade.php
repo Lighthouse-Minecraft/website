@@ -27,7 +27,7 @@ new class extends Component {
         <flux:table.rows>
             @foreach($this->pages as $page)
                 <flux:table.row>
-                    <flux:table.cell>{{ $page->title }}</flux:table.cell>
+                    <flux:table.cell><flux:link href="{{ route('pages.show', $page) }}">{{ $page->title }}</flux:link></flux:table.cell>
                     <flux:table.cell>{{ $page->slug }}</flux:table.cell>
                     <flux:table.cell>{{ $page->is_published ? 'Yes' : 'No' }}</flux:table.cell>
                     <flux:table.cell>

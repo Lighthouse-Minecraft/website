@@ -5,13 +5,13 @@ use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\MeetingController;
+use App\Http\Controllers\CommunityUpdatesController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\TaxonomyController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
-
-Route::get('/pages/{slug}', [PageController::class, 'show'])->name('pages.show');
 
 Route::get('/', function () {
     return redirect()->route('pages.show', ['slug' => 'home']);
@@ -73,6 +73,9 @@ Route::prefix('acp/announcements')
         Route::post('{announcement}/attachCategory', 'attachCategory')->name('attachCategory');
         Route::post('{announcement}/removeCategory', 'removeCategory')->name('removeCategory');
     });
+
+Route::get('community-updates', [CommunityUpdatesController::class, 'index'])->name('community-updates.index')->middleware('auth');
+Route::get('ready-room', [DashboardController::class, 'readyRoom'])->name('ready-room.index')->middleware('auth');
 
 // This is for non admin announcement links
 Route::prefix('announcements')
@@ -225,11 +228,12 @@ Route::prefix('taxonomy')
         Route::get('tags/{id}/blogs', [TaxonomyController::class, 'blogsByTag'])->name('tags.blogs');
     });
 
-Route::prefix('meetings')
-    ->name('meeting.')
-    ->controller(MeetingController::class)->group(function () {
-        Route::get('/', 'index')->name('index');
-        Route::get('/{meeting}', 'show')->name('show')->middleware('can:view,meeting');
-    });
+Route::prefix('meetings')->name('meeting.')->controller(App\Http\Controllers\MeetingController::class)->group(function () {
+    Route::get('/', 'index')->name('index');
+    Route::get('/{meeting}/manage', 'edit')->name('edit')->middleware('can:update,meeting');
+});
+
 
 require __DIR__.'/auth.php';
+
+Route::get('/{slug}', [PageController::class, 'show'])->name('pages.show');

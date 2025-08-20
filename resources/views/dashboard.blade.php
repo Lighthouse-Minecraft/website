@@ -1,4 +1,6 @@
 <x-layouts.app>
+    <livewire:dashboard.alert-in-progress-meeting />
+
     <div class="flex flex-col space-y-8">
 
     <!-- Top: Announcements & Blogs -->
@@ -24,5 +26,9 @@
         <div class="flex-1 overflow-y-auto max-h-64">
             <livewire:dashboard.blogs-widget />
         </div>
+
+        @can('manage-stowaway-users')
+            <livewire:dashboard.stowaway-users-widget />
+        @endcan
     </div>
 </x-layouts.app>

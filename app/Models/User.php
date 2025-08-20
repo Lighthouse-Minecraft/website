@@ -55,6 +55,7 @@ class User extends Authenticatable // implements MustVerifyEmail
             'membership_level' => MembershipLevel::class,
             'staff_rank' => StaffRank::class,
             'staff_department' => StaffDepartment::class,
+            'rules_accepted_at' => 'datetime',
         ];
     }
 

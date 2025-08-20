@@ -6,6 +6,7 @@ use App\Models\Announcement;
 use App\Models\Blog;
 use App\Models\Category;
 use App\Models\Tag;
+use Illuminate\Support\Facades\Gate;
 
 class DashboardController extends Controller
 {
@@ -33,5 +34,13 @@ class DashboardController extends Controller
         } else {
             abort(404);
         }
+
+class DashboardController extends Controller
+{
+    public function readyRoom()
+    {
+        Gate::authorize('view-ready-room');
+
+        return view('dashboard.ready-room');
     }
 }

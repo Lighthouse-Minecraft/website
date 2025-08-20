@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\MeetingStatus;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -21,9 +22,13 @@ class MeetingFactory extends Factory
             'scheduled_time' => $this->faker->dateTimeBetween('-1 month', '+1 month'),
             'start_time' => $this->faker->dateTimeBetween('-1 month', '+1 month'),
             'end_time' => $this->faker->dateTimeBetween('-1 month', '+1 month'),
-            'summary' => $this->faker->paragraph(),
+            'summary' => $this->faker->text(255),
             'day' => $this->faker->dateTimeBetween('-1 month', '+1 month')->format('Y-m-d'),
             'is_public' => true,
+            'status' => MeetingStatus::Pending,
+            'agenda' => $this->faker->paragraph(),
+            'minutes' => null,
+            'community_minutes' => $this->faker->paragraph(),
         ];
     }
 
@@ -35,6 +40,42 @@ class MeetingFactory extends Factory
         return $this->state(function (array $attributes) {
             return [
                 'is_public' => false,
+            ];
+        });
+    }
+
+    public function withStatus(MeetingStatus $status): Factory
+    {
+        return $this->state(function (array $attributes) use ($status) {
+            return [
+                'status' => $status,
+            ];
+        });
+    }
+
+    public function withAgenda(string $agenda): Factory
+    {
+        return $this->state(function (array $attributes) use ($agenda) {
+            return [
+                'agenda' => $agenda,
+            ];
+        });
+    }
+
+    public function withMinutes(string $minutes): Factory
+    {
+        return $this->state(function (array $attributes) use ($minutes) {
+            return [
+                'minutes' => $minutes,
+            ];
+        });
+    }
+
+    public function withCommunityMinutes(string $communityMinutes): Factory
+    {
+        return $this->state(function (array $attributes) use ($communityMinutes) {
+            return [
+                'community_minutes' => $communityMinutes,
             ];
         });
     }

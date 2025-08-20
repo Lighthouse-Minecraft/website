@@ -38,7 +38,7 @@ new class extends Component {
         // Reset form fields after successful creation
         $this->reset(['title', 'day', 'time']);
 
-        return redirect()->route('meeting.show', ['meeting' => $meeting]);
+        return redirect()->route('meeting.edit', ['meeting' => $meeting]);
     }
 
     protected function scheduledAtUtc(string $tz = 'America/New_York'): CarbonImmutable

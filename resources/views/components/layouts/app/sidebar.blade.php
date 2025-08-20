@@ -27,15 +27,26 @@
                 </flux:navlist.group>
 
                 <flux:navlist.group heading="Platform" class="grid">
-                    <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>Dashboard</flux:navlist.item>
+                    <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate class="mb-2">Dashboard</flux:navlist.item>
+
+                    @can('view-community-updates')
+                        <flux:navlist.item icon="user-group" :href="route('community-updates.index')" :current="request()->routeIs('community-updates.index')" wire:navigate>Community Updates</flux:navlist.item>
+                    @endcan
+
                     <flux:navlist.item icon="megaphone" :href="route('announcements.index')" :current="request()->routeIs('announcements.index')" wire:navigate>Announcement Index</flux:navlist.item>
                     <flux:navlist.item icon="book-open" :href="route('blogs.index')" :current="request()->routeIs('blogs.index')" wire:navigate>Blog Index</flux:navlist.item>
                     @can('viewAny', \App\Models\Comment::class)
                         <flux:navlist.item icon="chat-bubble-left-right" :href="route('comments.index')" :current="request()->routeIs('comments.index')" wire:navigate>Comment Index</flux:navlist.item>
                     @endcan
-                    @can('viewAny', \App\Models\Meeting::class)
-                        <flux:navlist.item icon="users" :href="route('meeting.index')" :current="request()->routeIs('meeting.index')" wire:navigate>Meeting Minutes</flux:navlist.item>
+
+                    @can('view-ready-room')
+                        <flux:navlist.item icon="building-storefront" :href="route('ready-room.index')" :current="request()->routeIs('ready-room.index')" wire:navigate>Staff Ready Room</flux:navlist.item>
                     @endcan
+
+                    @can('viewAny', \App\Models\Meeting::class)
+                        <flux:navlist.item icon="users" :href="route('meeting.index')" :current="request()->routeIs('meeting.index')" wire:navigate>Manage Meetings</flux:navlist.item>
+                    @endcan
+
                     @can('viewACP')
                         <flux:navlist.item icon="home" :href="route('acp.index')" :current="request()->routeIs('acp.index')" wire:navigate>Admin Control Panel</flux:navlist.item>
                     @endcan
