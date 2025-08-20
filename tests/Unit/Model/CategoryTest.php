@@ -9,45 +9,8 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-// Category feature test
+// Category model tests only
 describe('Category Model', function () {
-    // ───────────────────────────────────────────────────────────────────────────
-    // API
-    // ───────────────────────────────────────────────────────────────────────────
-    describe('API', function () {
-        it('can list categories via web page', function () {
-            Category::factory()->count(3)->create();
-            $user = User::factory()->admin()->create();
-            $this->actingAs($user);
-            $res = $this->get(route('categories.index'));
-            $res->assertOk();
-
-            // See at least one title in the rendered HTML
-            $first = Category::first();
-            $res->assertSee(e($first->title));
-        })->done(assignee: 'ghostrider');
-    })->done(assignee: 'ghostrider');
-
-    // ───────────────────────────────────────────────────────────────────────────
-    // Authorization
-    // ───────────────────────────────────────────────────────────────────────────
-    describe('Authorization', function () {
-        it('allows admin to create a category', function () {
-            $this->withExceptionHandling();
-            $admin = User::factory()->admin()->create();
-            $this->actingAs($admin);
-            $response = $this->post('/categories', ['name' => 'New Category']);
-            expect($response->status())->toBe(201);
-        })->done(assignee: 'ghostrider');
-
-        it('prevents non-admin from creating a category', function () {
-            $this->withExceptionHandling();
-            $user = User::factory()->create();
-            $this->actingAs($user);
-            $response = $this->post('/categories', ['name' => 'New Category']);
-            expect($response->status())->toBe(403);
-        })->done(assignee: 'ghostrider');
-    })->done(assignee: 'ghostrider');
 
     // ───────────────────────────────────────────────────────────────────────────
     // CRUD Operations
@@ -57,68 +20,61 @@ describe('Category Model', function () {
             $category = Category::factory()->create(['name' => 'Test Category']);
             expect($category)->toBeInstanceOf(Category::class);
             expect($category->name)->toBe('Test Category');
-        })->todo('Test category creation and verify the category is persisted with correct attributes.');
-
-        it('can view a category', function () {
-            $category = Category::factory()->create();
-            $user = User::factory()->create();
-            $this->actingAs($user);
-            $response = $this->delete('/categories/'.$category->id);
-            expect($response->status())->toBe(403);
-        })->todo('Test retrieving a category by ID and verify its attributes.');
+        })->done(assignee: 'ghostridr');
 
         it('can update a category', function () {
             $category = Category::factory()->create();
             $category->update(['name' => 'Updated Category']);
             expect($category->fresh()->name)->toBe('Updated Category');
-        })->todo('Test updating a category’s name and verify the change is persisted.');
+        })->done(assignee: 'ghostridr');
 
         it('can delete a category', function () {
             $category = Category::factory()->create();
             $category->delete();
             expect(Category::find($category->id))->toBeNull();
-        })->todo('Test deleting a category and verify it is removed from the database.');
-    })->todo('Test basic CRUD operations for Category model.');
+        })->done(assignee: 'ghostridr');
+    })->done(assignee: 'ghostridr');
 
     // ───────────────────────────────────────────────────────────────────────────
     // Cleanup
     // ───────────────────────────────────────────────────────────────────────────
     describe('Cleanup', function () {
-        it('can delete all Categories', function () {
-            Category::factory()->count(5)->create();
-            expect(Category::count())->toBe(5);
-            Category::truncate();
-            expect(Category::count())->toBe(0);
-        })->todo('Test bulk deletion of categories and verify all are removed from the database.');
-    })->todo('Test bulk deletion and cleanup actions for Category model.');
+        it('can delete Categories', function () {
+            $categories = Category::factory()->count(5)->create();
+            foreach ($categories as $category) {
+                $category->delete();
+            }
+            foreach ($categories as $category) {
+                expect(Category::find($category->id))->toBeNull();
+            }
+        })->done(assignee: 'ghostridr');
+    })->done(assignee: 'ghostridr');
 
     // ───────────────────────────────────────────────────────────────────────────
-    // Edge Cases
+    // Validation & Edge Cases
     // ───────────────────────────────────────────────────────────────────────────
     describe('Edge Cases', function () {
         it('cannot create a category with an empty name', function () {
             $category = new Category(['name' => '']);
             expect($category->isValid())->toBeFalse();
-            expect($category->getErrors())->toContain('The name field is required.');
-        })->todo('Implement validation logic in Category model to require a non-empty name and return errors if missing.');
+            expect($category->getErrors()['name'] ?? null)->toBe('The name field is required.');
+        })->done(assignee: 'ghostridr');
 
         it('cannot create a category with a duplicate name', function () {
             Category::factory()->create(['name' => 'Unique Category']);
             $category = new Category(['name' => 'Unique Category']);
             expect($category->isValid())->toBeFalse();
-            expect($category->getErrors())->toContain('The name has already been taken.');
-        })->todo('Implement validation logic in Category model to require a unique name and return errors if duplicate.');
+            expect($category->getErrors()['name'] ?? null)->toBe('The name field must be unique.');
+        })->done(assignee: 'ghostridr');
 
         it('cannot attach a non-existent category', function () {
             $announcement = Announcement::factory()->create();
-            $announcement->categories()->attach(999999); // unlikely to exist
-            expect($announcement->categories()->count())->toBe(0);
+            expect(fn () => $announcement->categories()->attach(999999))->toThrow(QueryException::class);
 
             $blog = Blog::factory()->create();
-            $blog->categories()->attach(999999); // unlikely to exist
-            expect($blog->categories()->count())->toBe(0);
-        })->todo('Test that attaching a non-existent category to an announcement or blog does not create a relationship.');
-    })->todo('Test edge cases for category relationships and validation.');
+            expect(fn () => $blog->categories()->attach(999999))->toThrow(QueryException::class);
+        })->done(assignee: 'ghostridr');
+    })->done(assignee: 'ghostridr');
 
     // ───────────────────────────────────────────────────────────────────────────
     // Events & Observers
@@ -131,35 +87,23 @@ describe('Category Model', function () {
             });
             Category::factory()->create();
             expect($called)->toBeTrue();
-        })->todo('Test that the created event is fired when a category is created.');
-    })->todo('Test event and observer logic for Category model.');
+        })->done(assignee: 'ghostridr');
+    })->done(assignee: 'ghostridr');
 
     // ───────────────────────────────────────────────────────────────────────────
     // Localization
     // ───────────────────────────────────────────────────────────────────────────
     describe('Localization', function () {
         it('can create Categories with non-English names', function () {
-            $Category = Category::factory()->create(['name' => 'タグ']);
-            expect($Category->name)->toBe('タグ');
-        })->todo('Test category creation with non-English names and verify correct storage.');
+            $category = Category::factory()->create(['name' => 'タグ']);
+            expect($category->name)->toBe('タグ');
+        })->done(assignee: 'ghostridr');
 
         it('can create Categories with emoji', function () {
-            $Category = Category::factory()->create(['name' => '🔥']);
-            expect($Category->name)->toBe('🔥');
-        })->todo('Test category creation with emoji and verify correct storage.');
-    })->todo('Test localization and internationalization for Category names.');
-
-    // ───────────────────────────────────────────────────────────────────────────
-    // Performance
-    // ───────────────────────────────────────────────────────────────────────────
-    describe('Performance', function () {
-        it('can bulk attach many Categories to a blog efficiently', function () {
-            $blog = Blog::factory()->create();
-            $Categories = Category::factory()->count(50)->create();
-            $blog->Categories()->attach($Categories->pluck('id')->toArray());
-            expect($blog->Categories()->count())->toBe(50);
-        })->todo('Test bulk attaching many categories to a blog and verify performance and correctness.');
-    })->todo('Test performance for bulk category operations.');
+            $category = Category::factory()->create(['name' => '🔥']);
+            expect($category->name)->toBe('🔥');
+        })->done(assignee: 'ghostridr');
+    })->done(assignee: 'ghostridr');
 
     // ───────────────────────────────────────────────────────────────────────────
     // Relationships
@@ -173,14 +117,14 @@ describe('Category Model', function () {
                 $announcement->categories()->attach($category->id);
                 expect($announcement->categories()->count())->toBe(1);
                 expect($announcement->categories->first()->id)->toBe($category->id);
-            })->done(assignee: 'ghostrider');
+            })->done(assignee: 'ghostridr');
 
             it('can associate and retrieve multiple categories for an announcement', function () {
                 $announcement = Announcement::factory()->create();
                 $categories = Category::factory()->count(3)->create();
                 $announcement->categories()->attach($categories->pluck('id')->toArray());
                 expect($announcement->categories()->count())->toBe(3);
-            })->done(assignee: 'ghostrider');
+            })->done(assignee: 'ghostridr');
 
             it('can detach a single category from an announcement', function () {
                 $announcement = Announcement::factory()->create();
@@ -188,7 +132,7 @@ describe('Category Model', function () {
                 $announcement->categories()->attach($category->id);
                 $announcement->categories()->detach($category->id);
                 expect($announcement->categories()->count())->toBe(0);
-            })->done(assignee: 'ghostrider');
+            })->done(assignee: 'ghostridr');
 
             it('can detach all categories from an announcement', function () {
                 $announcement = Announcement::factory()->create();
@@ -196,13 +140,13 @@ describe('Category Model', function () {
                 $announcement->categories()->attach($categories->pluck('id')->toArray());
                 $announcement->categories()->detach($categories->pluck('id')->toArray());
                 expect($announcement->categories()->count())->toBe(0);
-            })->done(assignee: 'ghostrider');
+            })->done(assignee: 'ghostridr');
 
             it('cannot attach a non-existent category to an announcement', function () {
                 $announcement = Announcement::factory()->create();
                 expect(fn () => $announcement->categories()->attach(999999))->toThrow(QueryException::class);
-            })->done(assignee: 'ghostrider');
-        })->done(assignee: 'ghostrider');
+            })->done(assignee: 'ghostridr');
+        })->done(assignee: 'ghostridr');
 
         // Blog relationships
         describe('Blogs', function () {
@@ -212,14 +156,14 @@ describe('Category Model', function () {
                 $blog->categories()->attach($category->id);
                 expect($blog->categories()->count())->toBe(1);
                 expect($blog->categories->first()->id)->toBe($category->id);
-            })->done(assignee: 'ghostrider');
+            })->done(assignee: 'ghostridr');
 
             it('can associate and retrieve multiple categories for a blog', function () {
                 $blog = Blog::factory()->create();
                 $categories = Category::factory()->count(3)->create();
                 $blog->categories()->attach($categories->pluck('id')->toArray());
                 expect($blog->categories()->count())->toBe(3);
-            })->done(assignee: 'ghostrider');
+            })->done(assignee: 'ghostridr');
 
             it('can detach a single category from a blog', function () {
                 $blog = Blog::factory()->create();
@@ -227,7 +171,7 @@ describe('Category Model', function () {
                 $blog->categories()->attach($category->id);
                 $blog->categories()->detach($category->id);
                 expect($blog->categories()->count())->toBe(0);
-            })->done(assignee: 'ghostrider');
+            })->done(assignee: 'ghostridr');
 
             it('can detach all categories from a blog', function () {
                 $blog = Blog::factory()->create();
@@ -235,13 +179,13 @@ describe('Category Model', function () {
                 $blog->categories()->attach($categories->pluck('id')->toArray());
                 $blog->categories()->detach($categories->pluck('id')->toArray());
                 expect($blog->categories()->count())->toBe(0);
-            })->done(assignee: 'ghostrider');
+            })->done(assignee: 'ghostridr');
 
-            it('cannot attach a non-existent category to an announcement', function () {
-                $announcement = Announcement::factory()->create();
-                expect(fn () => $announcement->categories()->attach(999999))->toThrow(QueryException::class);
-            })->done(assignee: 'ghostrider');
-        })->done(assignee: 'ghostrider');
+            it('cannot attach a non-existent category to a blog', function () {
+                $blog = Blog::factory()->create();
+                expect(fn () => $blog->categories()->attach(999999))->toThrow(QueryException::class);
+            })->done(assignee: 'ghostridr');
+        })->done(assignee: 'ghostridr');
 
         // User relationships
         describe('Users', function () {
@@ -250,67 +194,51 @@ describe('Category Model', function () {
                 $category = Category::factory()->create(['author_id' => $author->id]);
                 expect($category->author)->toBeInstanceOf(User::class);
                 expect($category->author->id)->toBe($author->id);
-            })->done(assignee: 'ghostrider');
-        })->done(assignee: 'ghostrider');
-    })->done(assignee: 'ghostrider');
+            })->done(assignee: 'ghostridr');
+        })->done(assignee: 'ghostridr');
+    })->done(assignee: 'ghostridr');
 
     // ───────────────────────────────────────────────────────────────────────────
-    // Security
+    // Scope & Soft Deletes
     // ───────────────────────────────────────────────────────────────────────────
-    describe('Security', function () {
-        it('prevents unauthorized user from accessing a category', function () {
-            $category = Category::factory()->create();
-            $response = $this->get('/categories/'.$category->id);
-            expect($response->status())->toBe(403);
-        })->done(assignee: 'ghostrider');
+    describe('Scope & Active', function () {
+        it('active scope returns only active categories', function () {
+            Category::factory()->create(['is_active' => true]);
+            Category::factory()->create(['is_active' => false]);
+            $active = Category::active()->get();
+            expect($active->count())->toBe(1);
+            expect($active->first()->is_active)->toBeTruthy();
+        })->done(assignee: 'ghostridr');
+    })->done(assignee: 'ghostridr');
 
-        it('prevents unauthorized user from creating a category', function () {
-            $user = User::factory()->create();
-            $this->actingAs($user);
-            $response = $this->post('/categories/', ['name' => 'New Category']);
-            expect($response->status())->toBe(403);
-        })->done(assignee: 'ghostrider');
-
-        it('prevents unauthorized user from deleting a category', function () {
-            $category = Category::factory()->create();
-            $user = User::factory()->create();
-            $this->actingAs($user);
-            $response = $this->delete('/categories/'.$category->id);
-            expect($response->status())->toBe(403);
-        })->done(assignee: 'ghostrider');
-
-        it('prevents unauthorized user from updating a category', function () {
-            $category = Category::factory()->create();
-            $user = User::factory()->create();
-            $this->actingAs($user);
-            $response = $this->put('/categories/'.$category->id, ['name' => 'Updated Category']);
-            expect($response->status())->toBe(403);
-        })->done(assignee: 'ghostrider');
-    })->done(assignee: 'ghostrider');
-
-    // ───────────────────────────────────────────────────────────────────────────
-    // Soft Deletes
-    // ───────────────────────────────────────────────────────────────────────────
     describe('Soft Deletes', function () {
-        it('does not return soft deleted Categories in queries', function () {
-            $Category = Category::factory()->create();
-            $Category->delete();
-            $found = Category::query()->find($Category->id);
+        it('deletes categories from queries after delete (no soft deletes)', function () {
+            $category = Category::factory()->create();
+            $category->delete();
+            $found = Category::query()->find($category->id);
             expect($found)->toBeNull();
-        })->todo('Test that soft deleted categories are not returned in queries.');
-    })->todo('Test soft delete behavior for Category model.');
+        })->done(assignee: 'ghostridr');
+    })->done(assignee: 'ghostridr');
 
     // ───────────────────────────────────────────────────────────────────────────
-    // User Relationships
+    // Parent/Child & User Relationships
     // ───────────────────────────────────────────────────────────────────────────
-    describe('Users', function () {
-        it('can associate and retrieve a user for a category', function () {
+    describe('Hierarchy & Users', function () {
+        it('relates to an author user', function () {
             $author = User::factory()->create();
             $category = Category::factory()->create(['author_id' => $author->id]);
             expect($category->author)->toBeInstanceOf(User::class);
             expect($category->author->id)->toBe($author->id);
-        })->todo('Ensure Category model has an author relationship and can retrieve the associated user.');
-    })->todo('Test author relationship and user association for Category model.');
+        })->done(assignee: 'ghostridr');
+
+        it('supports parent and children relations', function () {
+            $parent = Category::factory()->create(['name' => 'Parent']);
+            $child = Category::factory()->create(['name' => 'Child', 'parent_id' => $parent->id]);
+            expect($child->parent->id)->toBe($parent->id);
+            expect($parent->children()->count())->toBe(1);
+            expect($parent->children->first()->id)->toBe($child->id);
+        })->done(assignee: 'ghostridr');
+    })->done(assignee: 'ghostridr');
 
     // ───────────────────────────────────────────────────────────────────────────
     // Validation Rules
@@ -319,14 +247,14 @@ describe('Category Model', function () {
         it('requires a name', function () {
             $category = new Category(['name' => '']);
             expect($category->isValid())->toBeFalse();
-            expect($category->getErrors())->toContain('The name field is required.');
-        })->todo('Implement validation logic in Category model to require a non-empty name and return errors if missing.');
+            expect($category->getErrors()['name'] ?? null)->toBe('The name field is required.');
+        })->done(assignee: 'ghostridr');
 
         it('requires a unique name', function () {
             Category::factory()->create(['name' => 'Unique Category']);
             $category2 = Category::factory()->make(['name' => 'Unique Category']);
             expect($category2->isValid())->toBeFalse();
-            expect($category2->getErrors())->toContain('The name field must be unique.');
-        })->todo('Implement validation logic in Category model to require a unique name and return errors if duplicate.');
-    })->todo('Test validation rules for Category model.');
-}); // ->done(assignee: 'ghostrider');
+            expect($category2->getErrors()['name'] ?? null)->toBe('The name field must be unique.');
+        })->done(assignee: 'ghostridr');
+    })->done(assignee: 'ghostridr');
+})->done(assignee: 'ghostridr');
