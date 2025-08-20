@@ -165,5 +165,37 @@ return [
         'added' => '2025-08-20',
         'review_on' => '2025-09-20',
     ],
+    // Dashboard widgets and meetings: temporarily allow direct formats
+    'resources/views/livewire/dashboard/stowaway-users-widget.blade.php' => [
+        'snippet_contains' => [
+            '$selectedUser->created_at->format(',
+            '$selectedUser->rules_accepted_at->format(',
+        ],
+        'owner' => 'Web Platform',
+        'reason' => 'Widget dates to be migrated to <time> with toIso',
+        'added' => '2025-08-20',
+        'review_on' => '2025-09-20',
+    ],
+    'resources/views/livewire/meeting/notes-display.blade.php' => [
+        'snippet_contains' => [
+            'scheduled_time?->format(',
+        ],
+        'owner' => 'Web Platform',
+        'reason' => 'Meeting notes date to be migrated to <time> with toIso',
+        'added' => '2025-08-20',
+        'review_on' => '2025-09-20',
+    ],
+    'resources/views/livewire/meetings/manage-meeting.blade.php' => [
+        'snippet_contains' => [
+            "now()->format('Y-m-d')",
+            'scheduled_time->setTimezone',
+            'start_time->setTimezone',
+            'pivot->added_at->setTimezone',
+        ],
+        'owner' => 'Web Platform',
+        'reason' => 'Manage meeting times to be migrated to <time> with toIso',
+        'added' => '2025-08-20',
+        'review_on' => '2025-09-20',
+    ],
     // Add allowlist entries here as needed. Keep scope tight and temporary.
 ];

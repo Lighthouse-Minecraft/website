@@ -26,7 +26,7 @@ new class extends Component {
 <div>
     <flux:modal.trigger name="view-rules-modal">
         @if (auth()->user()->rules_accepted_at)
-            <flux:button class="mb-4">View Rules</flux:button>
+            <flux:button size="sm">View Rules</flux:button>
         @else
             <flux:button variant="primary">Read & Accept Rules</flux:button>
         @endif

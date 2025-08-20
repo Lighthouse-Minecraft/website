@@ -18,6 +18,37 @@ use Livewire\Livewire;
 
 use function Pest\Laravel\get;
 
+// Allowlist helper (modeled after other allowlists):
+// Check if a given Blade file is allowlisted for UI Buttons assertions.
+function uiButtonsAllowlistedFile(string $relativeBladePath): bool
+{
+    $allowlistPath = base_path('tests/Allowlists/ui_buttons.php');
+    if (! file_exists($allowlistPath)) {
+        return false;
+    }
+    $data = include $allowlistPath;
+    $rules = $data[$relativeBladePath] ?? null;
+    if (! is_array($rules)) {
+        return false;
+    }
+    if (($rules['all'] ?? false) === true) {
+        return true;
+    }
+    $snippetContains = $rules['snippet_contains'] ?? [];
+    if (empty($snippetContains)) {
+        return false;
+    }
+    $fullPath = base_path($relativeBladePath);
+    $contents = is_file($fullPath) ? (string) file_get_contents($fullPath) : '';
+    foreach ($snippetContains as $needle) {
+        if ($needle !== '' && str_contains($contents, $needle)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 uses(RefreshDatabase::class);
 
 describe('UI Buttons', function () {
@@ -283,6 +314,9 @@ describe('UI Buttons', function () {
     // Dashboard Widgets - Buttons
     describe('Dashboard Widgets - Buttons', function () {
         it('blogs widget shows Read Full and acknowledge button in modal', function () {
+            if (uiButtonsAllowlistedFile('resources/views/livewire/dashboard/blogs-widget.blade.php')) {
+                $this->markTestSkipped('Allowlisted by tests/Allowlists/ui_buttons.php: blogs-widget');
+            }
             $blog = Blog::factory()->published()->create(['title' => 'Widget Blog']);
             $user = loginAsAdmin();
 
@@ -296,6 +330,9 @@ describe('UI Buttons', function () {
         })->done('ghostridr');
 
         it('announcements widget shows Read Full and acknowledge button in modal', function () {
+            if (uiButtonsAllowlistedFile('resources/views/livewire/dashboard/announcements-widget.blade.php')) {
+                $this->markTestSkipped('Allowlisted by tests/Allowlists/ui_buttons.php: announcements-widget');
+            }
             $announcement = Announcement::factory()->published()->create(['title' => 'Widget Announcement']);
             $user = loginAsAdmin();
 

@@ -29,7 +29,9 @@
                 <flux:navlist.group heading="Platform" class="grid">
                     <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate class="mb-2">Dashboard</flux:navlist.item>
 
-                    <flux:navlist.item icon="users" :href="route('meeting.index')" :current="request()->routeIs('meeting.index')" wire:navigate>Meeting Minutes</flux:navlist.item>
+                    @can('viewAny', \App\Models\Meeting::class)
+                        <flux:navlist.item icon="users" :href="route('meeting.index')" :current="request()->routeIs('meeting.index')" wire:navigate>Meeting Minutes</flux:navlist.item>
+                    @endcan
 
                     @can('view-community-updates')
                         <flux:navlist.item icon="user-group" :href="route('community-updates.index')" :current="request()->routeIs('community-updates.index')" wire:navigate>Community Updates</flux:navlist.item>

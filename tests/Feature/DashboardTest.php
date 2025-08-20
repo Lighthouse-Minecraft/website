@@ -22,6 +22,7 @@ describe('Dashboard', function () {
             $admin = loginAsAdmin();
 
             $response = $this->get('/dashboard');
+            $response->assertSuccessful();
 
             $response->assertSeeLivewire('dashboard.stowaway-users-widget');
         });
@@ -31,6 +32,7 @@ describe('Dashboard', function () {
             $this->actingAs($user);
 
             $response = $this->get('/dashboard');
+            $response->assertSuccessful();
 
             $response->assertDontSeeLivewire('dashboard.stowaway-users-widget');
         });
@@ -47,6 +49,7 @@ describe('Dashboard', function () {
             ]);
 
             $response = $this->get('/dashboard');
+            $response->assertSuccessful();
 
             $response->assertSee('John Stowaway');
             $response->assertDontSee('Jane Traveler');
@@ -60,6 +63,7 @@ describe('Dashboard', function () {
             User::factory()->withMembershipLevel(MembershipLevel::Citizen)->create();
 
             $response = $this->get('/dashboard');
+            $response->assertSuccessful();
 
             $response->assertSee('No Stowaway users found.');
         });

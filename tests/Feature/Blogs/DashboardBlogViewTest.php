@@ -15,7 +15,7 @@ describe('Dashboard Display', function () {
         loginAsAdmin();
 
         get(route('dashboard'))
-            ->assertSeeLivewire('dashboard.view-blogs')
+            ->assertSeeLivewire('dashboard.notifications')
             ->assertSee($blog->title)
             ->assertSee($blog->content);
     })->done(assignee: 'ghostridr');
@@ -32,7 +32,7 @@ describe('Dashboard Display - Acknowledge Blogs', function () {
         app(AcknowledgeBlog::class)->run($blog, $user);
 
         get(route('dashboard'))
-            ->assertSeeLivewire('dashboard.view-blogs')
+            ->assertSeeLivewire('dashboard.notifications')
             // We can't check for blog title because it will still show up in the widget
             ->assertDontSee($blog->content);
     })->done(assignee: 'ghostridr');
@@ -63,7 +63,7 @@ describe('Dashboard Display - Blogs List', function () {
         loginAsAdmin();
 
         get(route('dashboard'))
-            ->assertSeeLivewire('dashboard.view-blogs')
+            ->assertSeeLivewire('dashboard.blogs-widget')
             ->assertSeeInOrder(['START OF BLOGS WIDGET', $blog1->title, 'END OF BLOGS WIDGET'])
             ->assertSeeInOrder(['START OF BLOGS WIDGET', $blog2->title, 'END OF BLOGS WIDGET']);
     })->done(assignee: 'ghostridr');

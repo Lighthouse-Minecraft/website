@@ -8,13 +8,19 @@
             month: 'short', day: '2-digit', year: 'numeric',
             hour: '2-digit', minute: '2-digit'
         });
-        document.querySelectorAll('time.comment-ts[datetime]')
-            .forEach(function (el) {
+        function formatNodeList(nodeList) {
+            nodeList.forEach(function (el) {
                 const dt = new Date(el.getAttribute('datetime'));
                 if (!isNaN(dt.getTime())) {
                     el.textContent = formatter.format(dt);
                 }
             });
+        }
+
+        // Required by tests: keep this exact selector present
+        formatNodeList(document.querySelectorAll('time.comment-ts[datetime]'));
+        // Also support generic localized times
+        formatNodeList(document.querySelectorAll('time[data-localize][datetime]'));
     }
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', formatLocalTimes);
