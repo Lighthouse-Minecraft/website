@@ -71,7 +71,8 @@ class CategoryFactory extends Factory
             'color' => $this->faker->randomElement($palette),
             'author_id' => fn () => User::factory(),
             'is_active' => $this->faker->boolean(95),
-            'parent_id' => $this->faker->boolean(15) ? fn () => Category::factory() : null, // 15% chance to be a child category
+            // Default to a root category to keep tests deterministic; use an explicit state when a parent/child relationship is needed
+            'parent_id' => null,
             'created_by' => fn () => User::factory(),
             'updated_by' => fn () => User::factory(),
         ];
