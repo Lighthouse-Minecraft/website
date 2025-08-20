@@ -33,7 +33,7 @@ describe('Time Formatting', function () {
 
         expect($content)
             ->toContain("import './timescript.js'");
-    })->done('ghostridr');
+    })->done(assignee: 'ghostridr');
 
     it('has timescript.js with the expected formatter IIFE', function () {
         $file = base_path('resources/js/timescript.js');
