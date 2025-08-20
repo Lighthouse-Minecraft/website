@@ -16,11 +16,13 @@
                     <div class="flex items-center gap-2 self-start shrink-0">
                         <flux:button size="xs" wire:navigate href="{{ route('announcements.show', ['id' => $comment->commentable->id ?? 0, 'from' => 'index']) }}" variant="primary">Read Announcement</flux:button>
                         @can('delete', $comment)
-                            <form method="POST" action="{{ route('comments.destroy', $comment->id) }}">
-                                @csrf
-                                @method('DELETE')
-                                <flux:button size="xs" type="submit" icon="trash" variant="danger">Delete</flux:button>
-                            </form>
+                            <flux:button
+                                    wire:navigate
+                                    href="{{ route('acp.comments.confirmDelete', ['id' => $comment->id]) }}"
+                                    size="xs"
+                                    icon="trash"
+                                    variant="danger"
+                                >Delete</flux:button>
                         @endcan
                     </div>
                 </div>
@@ -44,11 +46,7 @@
                     <div class="flex items-center gap-2 self-start shrink-0">
                         <flux:button size="xs" wire:navigate href="{{ route('blogs.show', ['id' => $comment->commentable->id ?? 0, 'from' => 'index']) }}" variant="primary">Read Blog</flux:button>
                         @can('delete', $comment)
-                            <form method="POST" action="{{ route('comments.destroy', $comment->id) }}">
-                                @csrf
-                                @method('DELETE')
-                                <flux:button size="xs" type="submit" icon="trash" variant="danger">Delete</flux:button>
-                            </form>
+                            <flux:button size="xs" wire:navigate href="{{ route('acp.comments.confirmDelete', ['id' => $comment->id]) }}" icon="trash" variant="danger">Delete</flux:button>
                         @endcan
                     </div>
                 </div>

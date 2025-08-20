@@ -98,14 +98,16 @@
 
         @can('delete', $comment)
             <div class="w-full text-right mt-4">
-                <form action="{{ route('comments.destroy', $comment->id) }}" method="POST" style="display:inline;">
-                    @csrf
-                    @method('DELETE')
-                    <flux:button type="submit" icon="trash" variant="danger">Delete</flux:button>
-                </form>
+                <flux:button
+                    wire:navigate
+                    href="{{ route('acp.comments.confirmDelete', ['id' => $comment->id]) }}"
+                    size="xs"
+                    icon="trash"
+                    variant="danger"
+                >Delete</flux:button>
             </div>
         @endcan
-        
+
         <div class="w-full text-right mt-4">
             @if(request('from') === 'acp' || request()->routeIs('acp.*'))
                 <flux:button wire:navigate href="{{ route('acp.index', ['tab' => 'comment-manager']) }}" variant="primary">Back</flux:button>

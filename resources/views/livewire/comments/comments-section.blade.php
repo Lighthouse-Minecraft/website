@@ -72,11 +72,14 @@ use App\Enums\StaffRank;
                         @endif
 
                         @can('delete', $existing)
-                            <form method="POST" action="{{ route('comments.destroy', $existing->id) }}" onsubmit="return confirm('Delete this comment?');" style="display:inline; margin-left:8px;">
-                                @csrf
-                                @method('DELETE')
-                                <flux:button type="submit" size="xs" icon="trash" variant="danger">Delete</flux:button>
-                            </form>
+                            <flux:button
+                                wire:navigate
+                                href="{{ route('acp.comments.confirmDelete', ['id' => $existing->id]) }}"
+                                size="xs"
+                                icon="trash"
+                                variant="danger"
+                                style="margin-left:8px;"
+                            >Delete</flux:button>
                         @endcan
                     </div>
                     <div class="text-xs text-gray-400">By

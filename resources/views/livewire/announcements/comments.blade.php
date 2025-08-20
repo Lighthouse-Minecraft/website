@@ -40,11 +40,13 @@ new class extends Component {
                             @endif
                         @endcan
                         @can('delete', $comment)
-                            <form method="POST" action="{{ route('comments.destroy', $comment->id) }}" style="display:inline; margin-left:8px;">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" style="color:#ef4444;background:none;border:none;cursor:pointer;">Delete</button>
-                            </form>
+                            <flux:button
+                                    wire:navigate
+                                    href="{{ route('acp.comments.confirmDelete', ['id' => $comment->id]) }}"
+                                    size="xs"
+                                    icon="trash"
+                                    variant="danger"
+                                >Delete</flux:button>
                         @endcan
                     </li>
                 @endforeach
