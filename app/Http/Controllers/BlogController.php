@@ -57,10 +57,13 @@ class BlogController extends Controller
      */
     public function show($id)
     {
-        $blog = Blog::with(['author.roles'])
-            ->where('id', $id)
-            ->orWhere('slug', $id)
-            ->firstOrFail();
+        $query = Blog::with(['author.roles']);
+
+        if (is_string($id) && ctype_digit($id)) {
+            $blog = $query->findOrFail((int) $id);
+        } else {
+            $blog = $query->where('slug', $id)->firstOrFail();
+        }
 
         if (Auth::check() && Gate::denies('view', $blog)) {
             abort(403);
