@@ -292,20 +292,27 @@ describe('Time Formatting', function () {
             $this->fail($message);
         }
         expect($offenders)->toBe([]);
+    })->done(assignee: 'ghostridr');
 
-        // Ensure consolidated allowlist skips are written to STDOUT so test runners capture them.
-        if (! empty($GLOBALS['time_formatting_allowlist_skipped'])) {
-            $out = "Allowlist requested skip:\n";
-            foreach ($GLOBALS['time_formatting_allowlist_skipped'] as $file => $meta) {
-                $line = $meta['line'] ?? 'unknown';
-                $snippet = $meta['snippet'] ?? '';
-                $out .= "\033[33m- skipped {$file}\033[0m\n";
-                $out .= "    \033[31mlocated on line:\033[0m {$line}\n";
-                if ($snippet !== '') {
-                    $out .= "    \033[36msnippet:\033[0m {$snippet}\n";
+    // Allowlist skipped tests
+    describe('Allowlist skipped tests', function () {
+        it('skips allowlisted tests', function () {
+            $this->assertTrue(true);
+
+            // Ensure consolidated allowlist skips are written to STDOUT so test runners capture them.
+            if (! empty($GLOBALS['time_formatting_allowlist_skipped'])) {
+                $out = "Allowlist requested skip:\n";
+                foreach ($GLOBALS['time_formatting_allowlist_skipped'] as $file => $meta) {
+                    $line = $meta['line'] ?? 'unknown';
+                    $snippet = $meta['snippet'] ?? '';
+                    $out .= "\033[33m- skipped {$file}\033[0m\n";
+                    $out .= "    \033[31mlocated on line:\033[0m {$line}\n";
+                    if ($snippet !== '') {
+                        $out .= "    \033[36msnippet:\033[0m {$snippet}\n";
+                    }
                 }
+                fwrite(STDOUT, $out);
             }
-            fwrite(STDOUT, $out);
-        }
+        })->done(assignee: 'ghostridr');
     })->done(assignee: 'ghostridr');
 })->done(assignee: 'ghostridr');

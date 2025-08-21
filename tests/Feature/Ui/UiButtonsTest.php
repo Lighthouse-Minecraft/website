@@ -456,6 +456,13 @@ describe('UI Buttons', function () {
                 ->assertSee('Update Page')
                 ->assertSee(route('acp.index', ['tab' => 'page-manager']))
                 ->assertSee('Cancel');
+        })->done('ghostridr');
+    })->done('ghostridr');
+
+    // Allowlist skipped tests
+    describe('Allowlist skipped tests', function () {
+        it('skips allowlisted tests', function () {
+            $this->assertTrue(true);
 
             // Print consolidated allowlist report for UI Buttons tests if any entries were collected.
             if (! empty($GLOBALS['ui_buttons_allowlist_skipped'])) {
