@@ -208,7 +208,11 @@ new class extends Component {
                                     <flux:link href="{{ route('profile.show', ['user' => $comment->reviewer?->id]) }}">
                                         {{ $comment->reviewer?->name ?? 'Unknown' }}
                                     </flux:link>
-                                    on {{ $comment->reviewed_at ? $comment->reviewed_at->format('M d, Y H:i') : '' }}
+                                    on @if($comment->reviewed_at)
+                                        <time class="comment-ts" datetime="{{ $comment->reviewed_at->toIso8601String() }}">{{ $comment->reviewed_at->format('M j, Y H:i') }}</time>
+                                    @else
+
+                                    @endif
                                 </span>
                             @endif
                         </div>

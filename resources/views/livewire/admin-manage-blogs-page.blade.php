@@ -165,7 +165,13 @@ new class extends Component {
                     </flux:table.cell>
                     <flux:table.cell>{{ $blog->updated_at->diffForHumans() }}</flux:table.cell>
                     <flux:table.cell>{{ $blog->is_published ? 'Yes' : 'No' }}</flux:table.cell>
-                    <flux:table.cell>{{ $blog->published_at ? $blog->published_at->format('F j, Y H:i') : 'N/A' }}</flux:table.cell>
+                    <flux:table.cell>
+                        @if($blog->published_at)
+                            <time datetime="{{ $blog->published_at->toIso8601String() }}">{{ $blog->published_at->format('M j, Y H:i') }}</time>
+                        @else
+                            N/A
+                        @endif
+                    </flux:table.cell>
                     <flux:table.cell>{{ $blog->is_public ? 'Yes' : 'No' }}</flux:table.cell>
                     <flux:table.cell class="flex items-center gap-2">
                         <flux:button wire:navigate href="{{ route('blogs.show', ['id' => $blog->id, 'from' => 'acp']) }}" size="xs" icon="eye" title="View Blog"></flux:button>

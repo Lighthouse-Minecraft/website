@@ -30,6 +30,10 @@ declare(strict_types=1);
 |     Skip ALL time-formatting enforcement in this file. Use sparingly,
 |     typically for legacy or deprecating views.
 |
+| - 'skip' => [ 'logical_key_1', 'logical_key_2', ... ]
+|     Skip specific logical test blocks identified by keys (see UiTimeFormattingTest
+|     for the exact keys used, e.g., 'dashboard.blogs_widget'). Use narrow, temporary entries.
+|
 | - 'inline_all' => true
 |     Allow ALL inline time-formatting scripts in this file. Prefer using
 |     'inline_contains' when possible to keep scope tight.
@@ -57,14 +61,21 @@ declare(strict_types=1);
 |
 | Quick examples
 | return [
-|     // 1) Allow inline time-formatting only when a marker is present
+|     // 1) Skip specific logical blocks by key
+|     'resources/views/livewire/example/special.blade.php' => [
+|         'skip' => [
+|             'dashboard.blogs_widget',
+|         ],
+|     ],
+|
+|     // 2) Allow inline time-formatting only when a marker is present
 |     'resources/views/livewire/example/special.blade.php' => [
 |         'inline_contains' => [
 |             'ALLOW_INLINE_TIME_FOR_EXPERIMENT',
 |         ],
 |     ],
 |
-|     // 2) Skip enforcement for snippets containing a countdown data attr
+|     // 3) Skip enforcement for snippets containing a countdown data attr
 |     'resources/views/livewire/example/countdown.blade.php' => [
 |         'snippet_contains' => [
 |             'data-countdown',
@@ -72,7 +83,7 @@ declare(strict_types=1);
 |         ],
 |     ],
 |
-|     // 3) Skip everything in a legacy/temporary file
+|     // 4) Skip everything in a legacy/temporary file
 |     'resources/views/partials/legacy.blade.php' => [
 |         'all' => true,
 |     ],
@@ -94,20 +105,6 @@ declare(strict_types=1);
 
 return [
     // Admin grids: temporarily allow direct format usage until refactor
-    'resources/views/livewire/admin-manage-announcements-page.blade.php' => [
-        'snippet_contains' => ['<flux:table', 'wire:click="sort('],
-        'owner' => 'Web Platform',
-        'reason' => 'Admin grid formatting to be migrated to <time>',
-        'added' => '2025-08-20',
-        'review_on' => '2025-09-20',
-    ],
-    'resources/views/livewire/admin-manage-blogs-page.blade.php' => [
-        'snippet_contains' => ['<flux:table', 'wire:click="sort('],
-        'owner' => 'Web Platform',
-        'reason' => 'Admin grid formatting to be migrated to <time>',
-        'added' => '2025-08-20',
-        'review_on' => '2025-09-20',
-    ],
     'resources/views/livewire/admin-manage-pages-page.blade.php' => [
         'snippet_contains' => ['<flux:table', 'wire:click="sort('],
         'owner' => 'Web Platform',
@@ -116,20 +113,6 @@ return [
         'review_on' => '2025-09-20',
     ],
     'resources/views/livewire/admin-manage-roles-page.blade.php' => [
-        'snippet_contains' => ['<flux:table', 'wire:click="sort('],
-        'owner' => 'Web Platform',
-        'reason' => 'Admin grid formatting to be migrated to <time>',
-        'added' => '2025-08-20',
-        'review_on' => '2025-09-20',
-    ],
-    'resources/views/livewire/admin-manage-taxonomies-page.blade.php' => [
-        'snippet_contains' => ['<flux:table', 'wire:click="sort('],
-        'owner' => 'Web Platform',
-        'reason' => 'Admin grid formatting to be migrated to <time>',
-        'added' => '2025-08-20',
-        'review_on' => '2025-09-20',
-    ],
-    'resources/views/livewire/admin-manage-comments-page.blade.php' => [
         'snippet_contains' => ['<flux:table', 'wire:click="sort('],
         'owner' => 'Web Platform',
         'reason' => 'Admin grid formatting to be migrated to <time>',

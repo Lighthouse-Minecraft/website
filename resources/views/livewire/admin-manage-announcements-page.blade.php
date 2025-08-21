@@ -164,7 +164,13 @@ new class extends Component {
                     </flux:table.cell>
                     <flux:table.cell>{{ $announcement->updated_at->diffForHumans() }}</flux:table.cell>
                     <flux:table.cell>{{ $announcement->is_published ? 'Yes' : 'No' }}</flux:table.cell>
-                    <flux:table.cell>{{ $announcement->published_at ? $announcement->published_at->format('F j, Y H:i') : 'N/A' }}</flux:table.cell>
+                    <flux:table.cell>
+                        @if($announcement->published_at)
+                            <time datetime="{{ $announcement->published_at->toIso8601String() }}">{{ $announcement->published_at->format('M j, Y H:i') }}</time>
+                        @else
+                            N/A
+                        @endif
+                    </flux:table.cell>
                     <flux:table.cell class="flex items-center gap-2">
                         <flux:button wire:navigate href="{{ route('announcements.show', ['id' => $announcement->id, 'from' => 'acp']) }}" size="xs" icon="eye" title="View Announcement"></flux:button>
                         <flux:button wire:navigate href="{{ route('acp.announcements.edit', $announcement->id) }}" size="xs" icon="pencil-square" variant="primary" color="sky" title="Edit Announcement"></flux:button>
