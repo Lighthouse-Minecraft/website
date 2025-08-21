@@ -8,6 +8,7 @@ use App\Models\Comment;
 use Flux\Flux;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Livewire\Component;
 use Livewire\Features\SupportRedirects\Redirector as LivewireRedirector;
 
@@ -86,7 +87,7 @@ class Edit extends Component
         $from = (string) request()->query('from', '');
         $return = (string) request()->query('return', '');
 
-        if ($from === 'acp' || request()->routeIs('acp.*')) {
+        if ((($from === 'acp') || request()->routeIs('acp.*')) && Gate::allows('viewAny', Comment::class)) {
             return redirect()->route('acp.index', ['tab' => 'comment-manager']);
         }
 
