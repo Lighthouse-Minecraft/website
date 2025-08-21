@@ -56,7 +56,7 @@ describe('Category Model', function () {
         it('cannot create a category with an empty name', function () {
             $category = new Category(['name' => '']);
             expect($category->isValid())->toBeFalse();
-            expect($category->getErrors()['name'])->toContain('The name field is required.');
+            expect($category->getErrors()['name'] ?? null)->toContain('The name field is required.');
         })->done(assignee: 'ghostridr');
 
         it('cannot create a category with a duplicate name', function () {

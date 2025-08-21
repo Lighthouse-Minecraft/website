@@ -23,7 +23,7 @@ describe('Comment Model', function () {
         it('can view a comment', function () {
             $comment = Comment::factory()->create();
             $found = Comment::find($comment->id);
-            expect($found)->not->toBeNull();
+            expect($found)->not()->toBeNull();
             expect($found->id)->toBe($comment->id);
         })->done(assignee: 'ghostridr');
 

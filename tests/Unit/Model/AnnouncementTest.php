@@ -127,7 +127,7 @@ describe('Announcement Model', function () {
         it('can view an announcement', function () {
             $announcement = Announcement::factory()->create();
             $found = Announcement::find($announcement->id);
-            expect($found)->not->toBeNull();
+            expect($found)->not()->toBeNull();
             expect($found->id)->toBe($announcement->id);
         })->done(assignee: 'ghostridr');
     })->done(assignee: 'ghostridr');
@@ -327,7 +327,7 @@ describe('Announcement Model', function () {
             $announcement->delete();
             $announcement->restore();
             $found = Announcement::query()->find($announcement->id);
-            expect($found)->not->toBeNull();
+            expect($found)->not()->toBeNull();
         })->done(assignee: 'ghostridr');
     })->done(assignee: 'ghostridr');
 

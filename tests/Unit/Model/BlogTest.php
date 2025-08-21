@@ -132,7 +132,7 @@ describe('Blog Model', function () {
         it('can view a blog', function () {
             $blog = Blog::factory()->create();
             $found = Blog::find($blog->id);
-            expect($found)->not->toBeNull();
+            expect($found)->not()->toBeNull();
             expect($found->id)->toBe($blog->id);
         })->done(assignee: 'ghostridr');
     })->done(assignee: 'ghostridr');
@@ -332,7 +332,7 @@ describe('Blog Model', function () {
             $blog->delete();
             $blog->restore();
             $found = Blog::query()->find($blog->id);
-            expect($found)->not->toBeNull();
+            expect($found)->not()->toBeNull();
         })->done(assignee: 'ghostridr');
     })->done(assignee: 'ghostridr');
 
