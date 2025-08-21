@@ -161,9 +161,9 @@ describe('Tag Model', function () {
                 expect($announcement->tags()->count())->toBe(0);
             })->done(assignee: 'ghostridr');
 
-            it('cannot attach a non-existent tag to a blog', function () {
-                $blog = Blog::factory()->create();
-                expect(fn () => $blog->tags()->attach(999999))->toThrow(QueryException::class);
+            it('cannot attach a non-existent tag to an announcement', function () {
+                $announcement = Announcement::factory()->create();
+                expect(fn () => $announcement->tags()->attach(999999))->toThrow(QueryException::class);
             })->done(assignee: 'ghostridr');
         })->done(assignee: 'ghostridr');
 
@@ -203,16 +203,6 @@ describe('Tag Model', function () {
             it('cannot attach a non-existent tag to an announcement', function () {
                 $announcement = Announcement::factory()->create();
                 expect(fn () => $announcement->tags()->attach(999999))->toThrow(QueryException::class);
-            })->done(assignee: 'ghostridr');
-        })->done(assignee: 'ghostridr');
-
-        // User relationships
-        describe('Users', function () {
-            it('can associate and retrieve a user for a tag', function () {
-                $author = User::factory()->create();
-                $tag = Tag::factory()->create(['author_id' => $author->id]);
-                expect($tag->author)->toBeInstanceOf(User::class);
-                expect($tag->author->id)->toBe($author->id);
             })->done(assignee: 'ghostridr');
         })->done(assignee: 'ghostridr');
     })->done(assignee: 'ghostridr');

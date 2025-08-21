@@ -453,13 +453,13 @@ describe('Blog Model', function () {
         })->done(assignee: 'ghostridr');
 
         it('requires a unique title', function () {
-            $blog1 = Blog::factory()->count(3)->create(['title' => 'Unique Blog']);
-            $blog2 = Blog::factory()->count(3)->create(['title' => 'Unique Blog']);
-            $blog1->each(function ($blog) {
-                expect($blog->isValid())->toBeFalse();
-                expect($blog->getErrors())->toContain('The title field must be unique.');
-            });
-            $blog2->each(function ($blog) {
+            // Create the first blog with a unique title
+            $firstBlog = Blog::factory()->create(['title' => 'Unique Blog']);
+            expect($firstBlog->isValid())->toBeTrue();
+
+            // Create additional blogs with the same title
+            $duplicateBlogs = Blog::factory()->count(5)->create(['title' => 'Unique Blog']);
+            $duplicateBlogs->each(function ($blog) {
                 expect($blog->isValid())->toBeFalse();
                 expect($blog->getErrors())->toContain('The title field must be unique.');
             });

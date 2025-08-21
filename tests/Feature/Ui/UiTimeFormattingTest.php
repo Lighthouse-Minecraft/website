@@ -301,7 +301,7 @@ describe('Time Formatting', function () {
 
             // Ensure consolidated allowlist skips are written to STDOUT so test runners capture them.
             if (! empty($GLOBALS['time_formatting_allowlist_skipped'])) {
-                $out = "Allowlist requested skip:\n";
+                $out = "UI Time Formatting allowlist requested skip:\n";
                 foreach ($GLOBALS['time_formatting_allowlist_skipped'] as $file => $meta) {
                     $line = $meta['line'] ?? 'unknown';
                     $snippet = $meta['snippet'] ?? '';

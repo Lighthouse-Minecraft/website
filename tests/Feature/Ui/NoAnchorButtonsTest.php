@@ -249,7 +249,7 @@ describe('No Anchor Buttons Test', function () {
 
             // Ensure consolidated allowlist skips are written to STDOUT so test runners capture them.
             if (! empty($GLOBALS['no_anchor_allowlist_skipped'])) {
-                $out = "Allowlist requested skip:\n";
+                $out = "No Anchor Buttons allowlist requested skip:\n";
                 foreach ($GLOBALS['no_anchor_allowlist_skipped'] as $file => $meta) {
                     $line = $meta['line'] ?? 'unknown';
                     $snippet = $meta['snippet'] ?? '';
