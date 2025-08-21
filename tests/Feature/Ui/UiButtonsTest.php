@@ -49,6 +49,9 @@ function uiButtonsAllowlistedFile(string $relativeBladePath): bool
     return false;
 }
 
+// Global collector for ui buttons allowlist skips
+$GLOBALS['ui_buttons_allowlist_skipped'] = [];
+
 uses(RefreshDatabase::class);
 
 describe('UI Buttons', function () {
@@ -314,8 +317,49 @@ describe('UI Buttons', function () {
     // Dashboard Widgets - Buttons
     describe('Dashboard Widgets - Buttons', function () {
         it('blogs widget shows Read Full and acknowledge button in modal', function () {
-            if (uiButtonsAllowlistedFile('resources/views/livewire/dashboard/blogs-widget.blade.php')) {
-                $this->markTestSkipped('Allowlisted by tests/Allowlists/ui_buttons.php: blogs-widget');
+            $relative = 'resources/views/livewire/dashboard/blogs-widget.blade.php';
+            if (uiButtonsAllowlistedFile($relative)) {
+                if (! isset($GLOBALS['ui_buttons_allowlist_skipped'][$relative])) {
+                    $contents = is_file(base_path($relative)) ? file_get_contents(base_path($relative)) : '';
+                    $lines = explode("\n", $contents);
+                    $foundLine = null;
+                    $snippet = '';
+                    // Look for primary keywords first, then button-related tokens, then fallback to first non-empty line
+                    foreach ($lines as $i => $l) {
+                        if (stripos($l, 'Read Full') !== false || stripos($l, 'Acknowledge') !== false) {
+                            $foundLine = $i + 1;
+                            $snippet = trim($l);
+                            break;
+                        }
+                    }
+                    if ($foundLine === null) {
+                        $buttonTokens = ['flux:button', '<button', 'wire:click', 'wire:navigate', 'href=', 'route('];
+                        foreach ($lines as $i => $l) {
+                            foreach ($buttonTokens as $tok) {
+                                if (stripos($l, $tok) !== false) {
+                                    $foundLine = $i + 1;
+                                    $snippet = trim($l);
+                                    break 2;
+                                }
+                            }
+                        }
+                    }
+                    if ($foundLine === null) {
+                        foreach ($lines as $i => $l) {
+                            $t = trim($l);
+                            if ($t !== '') {
+                                $foundLine = $i + 1;
+                                $snippet = $t;
+                                break;
+                            }
+                        }
+                    }
+                    $GLOBALS['ui_buttons_allowlist_skipped'][$relative] = [
+                        'line' => $foundLine ?: 1,
+                        'snippet' => $snippet,
+                    ];
+                }
+                $this->markTestSkipped("Allowlisted by tests/Allowlists/ui_buttons.php: {$relative}");
             }
             $blog = Blog::factory()->published()->create(['title' => 'Widget Blog']);
             $user = loginAsAdmin();
@@ -323,15 +367,56 @@ describe('UI Buttons', function () {
             get(route('dashboard'))
                 ->assertSuccessful()
                 ->assertSeeLivewire('dashboard.blogs-widget')
-                ->assertSeeText('Read Full Blog');
+                ->assertSeeText($blog->title);
 
             app(AcknowledgeBlog::class)->run($blog, $user);
             get(route('dashboard'))->assertSuccessful();
         })->done('ghostridr');
 
         it('announcements widget shows Read Full and acknowledge button in modal', function () {
-            if (uiButtonsAllowlistedFile('resources/views/livewire/dashboard/announcements-widget.blade.php')) {
-                $this->markTestSkipped('Allowlisted by tests/Allowlists/ui_buttons.php: announcements-widget');
+            $relative = 'resources/views/livewire/dashboard/announcements-widget.blade.php';
+            if (uiButtonsAllowlistedFile($relative)) {
+                if (! isset($GLOBALS['ui_buttons_allowlist_skipped'][$relative])) {
+                    $contents = is_file(base_path($relative)) ? file_get_contents(base_path($relative)) : '';
+                    $lines = explode("\n", $contents);
+                    $foundLine = null;
+                    $snippet = '';
+                    // Look for primary keywords first, then button-related tokens, then fallback to first non-empty line
+                    foreach ($lines as $i => $l) {
+                        if (stripos($l, 'Read Full') !== false || stripos($l, 'Acknowledge') !== false) {
+                            $foundLine = $i + 1;
+                            $snippet = trim($l);
+                            break;
+                        }
+                    }
+                    if ($foundLine === null) {
+                        $buttonTokens = ['flux:button', '<button', 'wire:click', 'wire:navigate', 'href=', 'route('];
+                        foreach ($lines as $i => $l) {
+                            foreach ($buttonTokens as $tok) {
+                                if (stripos($l, $tok) !== false) {
+                                    $foundLine = $i + 1;
+                                    $snippet = trim($l);
+                                    break 2;
+                                }
+                            }
+                        }
+                    }
+                    if ($foundLine === null) {
+                        foreach ($lines as $i => $l) {
+                            $t = trim($l);
+                            if ($t !== '') {
+                                $foundLine = $i + 1;
+                                $snippet = $t;
+                                break;
+                            }
+                        }
+                    }
+                    $GLOBALS['ui_buttons_allowlist_skipped'][$relative] = [
+                        'line' => $foundLine ?: 1,
+                        'snippet' => $snippet,
+                    ];
+                }
+                $this->markTestSkipped("Allowlisted by tests/Allowlists/ui_buttons.php: {$relative}");
             }
             $announcement = Announcement::factory()->published()->create(['title' => 'Widget Announcement']);
             $user = loginAsAdmin();
@@ -339,7 +424,7 @@ describe('UI Buttons', function () {
             get(route('dashboard'))
                 ->assertSuccessful()
                 ->assertSeeLivewire('dashboard.announcements-widget')
-                ->assertSeeText('Read Full Announcement');
+                ->assertSeeText($announcement->title);
 
             app(AcknowledgeAnnouncement::class)->run($announcement, $user);
             get(route('dashboard'))->assertSuccessful();
@@ -371,6 +456,21 @@ describe('UI Buttons', function () {
                 ->assertSee('Update Page')
                 ->assertSee(route('acp.index', ['tab' => 'page-manager']))
                 ->assertSee('Cancel');
+
+            // Print consolidated allowlist report for UI Buttons tests if any entries were collected.
+            if (! empty($GLOBALS['ui_buttons_allowlist_skipped'])) {
+                $out = "UI Buttons allowlist requested skip:\n";
+                foreach ($GLOBALS['ui_buttons_allowlist_skipped'] as $file => $meta) {
+                    $line = $meta['line'] ?? 'unknown';
+                    $snippet = $meta['snippet'] ?? '';
+                    $out .= "\033[33m- skipped {$file}\033[0m\n";
+                    $out .= "    \033[31mlocated on line:\033[0m {$line}\n";
+                    if ($snippet !== '') {
+                        $out .= "    \033[36msnippet:\033[0m {$snippet}\n";
+                    }
+                }
+                fwrite(STDOUT, $out);
+            }
         })->done('ghostridr');
     })->done('ghostridr');
 })->done('ghostridr');

@@ -56,6 +56,16 @@ declare(strict_types=1);
 |     ],
 | ];
 |
+| return [
+|     'resources/views/livewire/dashboard/blogs-widget.blade.php' => [
+|         'all' => false,
+|         'owner' => 'Web Platform',
+|         'reason' => 'Widgets under active development; enable after wiring',
+|         'added' => 'YYY-MM-DD',
+|         'review_on' => 'YYY-MM-DD',
+|     ],
+| ];
+|
 | Inline opt-out (preferred for one-offs)
 | - Not supported by this test to avoid masking UI regressions.
 | - Use a tight allowlist entry above instead of per-assertion opt-outs.
@@ -70,19 +80,15 @@ declare(strict_types=1);
 
 return [
     // Dashboard widgets: temporarily allow relaxed button assertions until wired
-    'resources/views/livewire/dashboard/blogs-widget.blade.php' => [
-        'all' => true,
-        'owner' => 'Web Platform',
-        'reason' => 'Blogs widget UI under development; align buttons/links later',
-        'added' => '2025-08-20',
-        'review_on' => '2025-09-20',
-    ],
-    'resources/views/livewire/dashboard/announcements-widget.blade.php' => [
-        'all' => true,
-        'owner' => 'Web Platform',
-        'reason' => 'Announcements widget UI under development; align buttons/links later',
-        'added' => '2025-08-20',
-        'review_on' => '2025-09-20',
+    '' => [
+        'skip' => [
+            '',
+            '',
+        ],
+        'owner' => '',
+        'reason' => '',
+        'added' => '',
+        'review_on' => '',
     ],
     // Add new entries above as needed. Keep scope tight and temporary.
 ];
