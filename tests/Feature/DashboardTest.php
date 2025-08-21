@@ -1,40 +1,42 @@
 <?php
 
+use App\Actions\PromoteUser;
 use App\Enums\MembershipLevel;
+use App\Models\ActivityLog;
 use App\Models\User;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Livewire\Volt\Volt;
 
 describe('Dashboard', function () {
     it('redirects guests to the login page', function () {
-        $response = $this->get('/dashboard');
-        $response->assertRedirect('/login');
+        $response = $this->get('/dashboard')
+            ->assertRedirect('/login');
     });
 
     it('allows authenticated users to visit the dashboard', function () {
         $user = User::factory()->create();
         $this->actingAs($user);
 
-        $response = $this->get('/dashboard');
-        $response->assertStatus(200);
+        $response = $this->get('/dashboard')
+            ->assertStatus(200);
     });
 
     describe('Stowaway Widget', function () {
         it('shows the stowaway widget only for admin users', function () {
             $admin = loginAsAdmin();
 
-            $response = $this->get('/dashboard');
-            $response->assertSuccessful();
-
-            $response->assertSeeLivewire('dashboard.stowaway-users-widget');
+            $response = $this->get('/dashboard')
+                ->assertSuccessful()
+                ->assertSeeLivewire('dashboard.stowaway-users-widget');
         });
 
         it('does not show the stowaway widget for non-admin users', function () {
             $user = User::factory()->create();
             $this->actingAs($user);
 
-            $response = $this->get('/dashboard');
-            $response->assertSuccessful();
-
-            $response->assertDontSeeLivewire('dashboard.stowaway-users-widget');
+            $response = $this->get('/dashboard')
+                ->assertSuccessful()
+                ->assertDontSeeLivewire('dashboard.stowaway-users-widget');
         });
 
         it('displays stowaway users in the widget for admins', function () {
@@ -48,11 +50,10 @@ describe('Dashboard', function () {
                 'name' => 'Jane Traveler',
             ]);
 
-            $response = $this->get('/dashboard');
-            $response->assertSuccessful();
-
-            $response->assertSee('John Stowaway');
-            $response->assertDontSee('Jane Traveler');
+            $response = $this->get('/dashboard')
+                ->assertSuccessful()
+                ->assertSee('John Stowaway')
+                ->assertDontSee('Jane Traveler');
         });
 
         it('shows empty state when no stowaway users exist', function () {
@@ -62,10 +63,9 @@ describe('Dashboard', function () {
             User::factory()->withMembershipLevel(MembershipLevel::Traveler)->create();
             User::factory()->withMembershipLevel(MembershipLevel::Citizen)->create();
 
-            $response = $this->get('/dashboard');
-            $response->assertSuccessful();
-
-            $response->assertSee('No Stowaway users found.');
+            $response = $this->get('/dashboard')
+                ->assertSuccessful()
+                ->assertSee('No Stowaway users found.');
         });
     });
 
@@ -83,7 +83,7 @@ describe('Dashboard', function () {
                 ->assertSee('Test Stowaway');
 
             // Test the Livewire component directly to verify modal functionality
-            \Livewire\Volt\Volt::test('dashboard.stowaway-users-widget')
+            Volt::test('dashboard.stowaway-users-widget')
                 ->call('viewUser', $stowawayUser->id)
                 ->assertSet('selectedUser.id', $stowawayUser->id)
                 ->assertSet('showUserModal', true)
@@ -102,7 +102,7 @@ describe('Dashboard', function () {
             expect($stowawayUser->membership_level)->toBe(MembershipLevel::Stowaway);
 
             // Test promotion through the Livewire component
-            \Livewire\Volt\Volt::test('dashboard.stowaway-users-widget')
+            Volt::test('dashboard.stowaway-users-widget')
                 ->set('selectedUser', $stowawayUser)
                 ->call('promoteToTraveler');
 
@@ -118,7 +118,7 @@ describe('Dashboard', function () {
             $stowawayUser = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create();
 
             // Test that promotion fails for non-admin
-            \Livewire\Volt\Volt::test('dashboard.stowaway-users-widget')
+            Volt::test('dashboard.stowaway-users-widget')
                 ->set('selectedUser', $stowawayUser)
                 ->call('promoteToTraveler');
 
@@ -133,18 +133,18 @@ describe('Dashboard', function () {
             $stowawayUser = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create();
 
             // Check that no promotion activity exists initially
-            expect(\App\Models\ActivityLog::where('subject_type', \App\Models\User::class)
+            expect(ActivityLog::where('subject_type', User::class)
                 ->where('subject_id', $stowawayUser->id)
                 ->where('action', 'user_promoted')
                 ->count())->toBe(0);
 
             // Promote the user
-            \Livewire\Volt\Volt::test('dashboard.stowaway-users-widget')
+            Volt::test('dashboard.stowaway-users-widget')
                 ->set('selectedUser', $stowawayUser)
                 ->call('promoteToTraveler');
 
             // Verify activity was recorded
-            expect(\App\Models\ActivityLog::where('subject_type', \App\Models\User::class)
+            expect(ActivityLog::where('subject_type', User::class)
                 ->where('subject_id', $stowawayUser->id)
                 ->where('action', 'user_promoted')
                 ->count())->toBeGreaterThan(0);
@@ -154,20 +154,20 @@ describe('Dashboard', function () {
             $admin = loginAsAdmin();
 
             // Test promoting without selected user
-            \Livewire\Volt\Volt::test('dashboard.stowaway-users-widget')
+            Volt::test('dashboard.stowaway-users-widget')
                 ->call('promoteToTraveler');
 
             // Test viewing non-existent user (should throw exception)
-            expect(fn () => \Livewire\Volt\Volt::test('dashboard.stowaway-users-widget')
+            expect(fn () => Volt::test('dashboard.stowaway-users-widget')
                 ->call('viewUser', 99999)
-            )->toThrow(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+            )->toThrow(ModelNotFoundException::class);
         });
 
         it('closes modal properly', function () {
             $admin = loginAsAdmin();
             $stowawayUser = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create();
 
-            \Livewire\Volt\Volt::test('dashboard.stowaway-users-widget')
+            Volt::test('dashboard.stowaway-users-widget')
                 ->call('viewUser', $stowawayUser->id)
                 ->assertSet('showUserModal', true)
                 ->call('closeModal')
@@ -183,7 +183,7 @@ describe('Dashboard', function () {
             $stowawayUser = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create();
 
             // Promote through the action directly to ensure it works
-            \App\Actions\PromoteUser::run($stowawayUser, MembershipLevel::Traveler);
+            PromoteUser::run($stowawayUser, MembershipLevel::Traveler);
 
             $stowawayUser->refresh();
             expect($stowawayUser->membership_level)->toBe(MembershipLevel::Traveler);
@@ -195,7 +195,7 @@ describe('Dashboard', function () {
             $stowawayUser = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create();
 
             // The action should promote to Traveler when called without max level
-            \App\Actions\PromoteUser::run($stowawayUser);
+            PromoteUser::run($stowawayUser);
 
             $stowawayUser->refresh();
             expect($stowawayUser->membership_level)->toBe(MembershipLevel::Traveler);

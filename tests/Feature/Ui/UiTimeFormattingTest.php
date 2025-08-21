@@ -161,9 +161,7 @@ describe('Time Formatting', function () {
                 if (str_contains($line, '{{--')) {
                     continue; // skip Blade comments
                 }
-                if (str_contains($line, '{{--')) {
-                    continue; // skip Blade comments
-                }
+                
                 $start = max(0, $lineNumber - 5);
                 $end = min(count($lines) - 1, $lineNumber + 15);
                 $snippet = '';
