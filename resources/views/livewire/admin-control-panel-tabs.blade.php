@@ -31,6 +31,8 @@ new class extends Component {
             @can('viewAny', \App\Models\Announcement::class)
                 <flux:tab name="announcement-manager">Announcements</flux:tab>
             @endcan
+
+            <flux:tab name="meeting-manager">Meetings</flux:tab>
         </flux:tabs>
 
 
@@ -57,6 +59,11 @@ new class extends Component {
                 <livewire:admin-manage-announcements-page />
             @endcan
         </flux:tab.panel>
+
+        <flux:tab.panel name="meeting-manager">
+            <livewire:meetings.list />
+        </flux:tab.panel>
+
     </flux:tab.group>
 
 
