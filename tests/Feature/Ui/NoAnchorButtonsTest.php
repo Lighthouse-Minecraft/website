@@ -239,8 +239,8 @@ describe('No Anchor Buttons Test', function () {
             }
 
             expect($offenders)->toBe([]);
-        })->done('ghostridr');
-    })->done('ghostridr');
+        })->done(assignee: 'ghostridr');
+    })->done(assignee: 'ghostridr');
 
     // Allowlist skipped tests
     describe('Allowlist skipped tests', function () {
@@ -263,4 +263,4 @@ describe('No Anchor Buttons Test', function () {
             }
         })->done(assignee: 'ghostridr');
     })->done(assignee: 'ghostridr');
-})->done('ghostridr');
+})->done(assignee: 'ghostridr');

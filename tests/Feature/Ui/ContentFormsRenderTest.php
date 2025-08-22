@@ -17,7 +17,7 @@ describe('Content Forms Render', function () {
             ->get(route('acp.blogs.create'))
             ->assertSuccessful()
             ->assertSee('Create New Blog');
-    })->done('ghostridr');
+    })->done(assignee: 'ghostridr');
 
     it('renders blog edit form', function () {
         $user = User::factory()->admin()->create();
@@ -27,7 +27,7 @@ describe('Content Forms Render', function () {
             ->get(route('acp.blogs.edit', ['id' => $blog->id]))
             ->assertSuccessful()
             ->assertSee('Edit Blog');
-    })->done('ghostridr');
+    })->done(assignee: 'ghostridr');
 
     it('renders announcement create form', function () {
         $user = User::factory()->admin()->create();
@@ -36,7 +36,7 @@ describe('Content Forms Render', function () {
             ->get(route('acp.announcements.create'))
             ->assertSuccessful()
             ->assertSee('Create New Announcement');
-    })->done('ghostridr');
+    })->done(assignee: 'ghostridr');
 
     it('renders announcement edit form', function () {
         $user = User::factory()->admin()->create();
@@ -46,5 +46,5 @@ describe('Content Forms Render', function () {
             ->get(route('acp.announcements.edit', ['id' => $announcement->id]))
             ->assertSuccessful()
             ->assertSee('Edit Announcement');
-    })->done('ghostridr');
-})->done('ghostridr');
+    })->done(assignee: 'ghostridr');
+})->done(assignee: 'ghostridr');

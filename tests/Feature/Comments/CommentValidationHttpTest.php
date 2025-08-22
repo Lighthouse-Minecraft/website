@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Models\Announcement;
 use App\Models\Blog;
+use App\Models\Comment;
 use App\Models\User;
 
 use function Pest\Laravel\post;
@@ -69,7 +70,7 @@ describe('Comment Validation (HTTP)', function () {
         $commentId = (int) str($res->headers->get('location'))->afterLast('/')->value();
         // Fallback: fetch last comment if location parsing differs
         if ($commentId <= 0) {
-            $commentId = \App\Models\Comment::latest('id')->value('id');
+            $commentId = Comment::latest('id')->value('id');
         }
 
         $update = put(route('comments.update', ['id' => $commentId]), [
