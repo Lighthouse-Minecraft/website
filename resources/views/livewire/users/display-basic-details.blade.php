@@ -1,11 +1,15 @@
 <?php
 
-use Livewire\Volt\Component;
-use App\Models\User;
+use App\Actions\RemoveUsersStaffPosition;
+use App\Actions\SetUsersStaffPosition;
 use App\Enums\MembershipLevel;
+use App\Enums\StaffDepartment;
+use App\Enums\StaffRank;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Flux\Flux;
+use Livewire\Volt\Component;
 
 new class extends Component {
     public User $user;
@@ -22,8 +26,8 @@ new class extends Component {
         $this->currentDepartmentValue = $user->staff_department?->value ?? null;
         $this->currentTitle = $user->staff_title;
         $this->currentRank = $user->staff_rank?->value;
-        $this->departments = \App\Enums\StaffDepartment::cases();
-        $this->ranks = \App\Enums\StaffRank::cases();
+        $this->departments = StaffDepartment::cases();
+        $this->ranks = StaffRank::cases();
     }
 
     public function updateStaffPosition() {
@@ -34,20 +38,20 @@ new class extends Component {
         }
 
         $department = $this->currentDepartmentValue
-            ? \App\Enums\StaffDepartment::tryFrom($this->currentDepartmentValue)
+            ? StaffDepartment::tryFrom($this->currentDepartmentValue)
             : null;
 
         $rank = $this->currentRank !== null
-            ? \App\Enums\StaffRank::tryFrom((int) $this->currentRank)
+            ? StaffRank::tryFrom((int) $this->currentRank)
             : null;
 
         $this->validate([
             'currentTitle' => ['required', 'string', 'max:255'],
-            'currentDepartmentValue' => ['required', Rule::enum((\App\Enums\StaffDepartment::class))],
-            'currentRank' => ['required', Rule::enum((\App\Enums\StaffRank::class))],
+            'currentDepartmentValue' => ['required', Rule::enum((StaffDepartment::class))],
+            'currentRank' => ['required', Rule::enum((StaffRank::class))],
         ]);
 
-        $success = \App\Actions\SetUsersStaffPosition::run(
+        $success = SetUsersStaffPosition::run(
             $this->user,
             $this->currentTitle,
             $department,
@@ -69,7 +73,7 @@ new class extends Component {
             return;
         }
 
-        $success = \App\Actions\RemoveUsersStaffPosition::run($this->user);
+        $success = RemoveUsersStaffPosition::run($this->user);
 
         if ($success) {
             Flux::toast('Staff position removed successfully.', 'Success', 'success');
@@ -83,7 +87,7 @@ new class extends Component {
 }; ?>
 
 <div class="w-full block md:flex md:mr-4">
-    <flux:card class="w-full md:w-1/2 lg:w-1/3 p-6 space-y-2">
+    <flux:card class="w-full md:w-1/2 lg:w-1/3 p-6 space-y-2 mb-6 md:mb-0">
         <flux:heading size="xl" class="mb-4">{{ $user->name }}</flux:heading>
         <flux:text>Member Rank: {{ $user->membership_level->label() }}</flux:text>
         <flux:text>Joined on {{ $user->created_at->format('F j, Y') }}</flux:text>

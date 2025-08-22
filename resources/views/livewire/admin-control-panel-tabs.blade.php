@@ -4,6 +4,7 @@ use App\Models\Announcement;
 use App\Models\Blog;
 use App\Models\Category;
 use App\Models\Comment;
+use App\Models\Meeting;
 use App\Models\Page;
 use App\Models\Role;
 use App\Models\Tag;
@@ -24,21 +25,25 @@ new class extends Component {
 
 <div class="w-full flex">
     <flux:tab.group>
-        <flux:tabs wire:model="tab" variant="pills">
+        <flux:tabs wire:model="tab" variant="segmented" size="sm">
             @can('viewAny', User::class)
-                <flux:tab name="user-manager">User Manager</flux:tab>
+                <flux:tab name="user-manager">Users</flux:tab>
             @endcan
 
             @can('viewAny', Role::class)
-                <flux:tab name="role-manager">Role Manager</flux:tab>
+                <flux:tab name="role-manager">Roles</flux:tab>
             @endcan
 
             @can('viewAny', Page::class)
-                <flux:tab name="page-manager">Page Manager</flux:tab>
+                <flux:tab name="page-manager">Pages</flux:tab>
             @endcan
 
             @can('viewAny', Announcement::class)
-                <flux:tab name="announcement-manager">Announcement Manager</flux:tab>
+                <flux:tab name="announcement-manager">Announcements</flux:tab>
+            @endcan
+
+            @can('viewAny', Meeting::class)
+                <flux:tab name="meeting-manager">Meetings</flux:tab>
             @endcan
 
             @can('viewAny', Blog::class)
