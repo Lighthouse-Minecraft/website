@@ -20,10 +20,7 @@ new class extends Component {
 }; ?>
 
 <div class="space-y-6">
-    <flux:heading size="xl">Meeting Minutes</flux:heading>
-    <flux:text>
-        Here you can find the minutes from the Lighthouse Staff meetings. Click on a meeting to view its details.
-    </flux:text>
+    <flux:heading size="xl">Manage Meetings</flux:heading>
 
     <flux:table>
         <flux:table.columns>

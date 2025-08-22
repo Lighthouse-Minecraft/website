@@ -15,21 +15,25 @@ new class extends Component {
 
 <div class="w-full flex">
     <flux:tab.group>
-        <flux:tabs wire:model="tab" variant="pills">
+        <flux:tabs wire:model="tab" variant="segmented" size="sm">
             @can('viewAny', \App\Models\User::class)
-                <flux:tab name="user-manager">User Manager</flux:tab>
+                <flux:tab name="user-manager">Users</flux:tab>
             @endcan
 
             @can('viewAny', \App\Models\Role::class)
-                <flux:tab name="role-manager">Role Manager</flux:tab>
+                <flux:tab name="role-manager">Roles</flux:tab>
             @endcan
 
             @can('viewAny', \App\Models\Page::class)
-                <flux:tab name="page-manager">Page Manager</flux:tab>
+                <flux:tab name="page-manager">Pages</flux:tab>
             @endcan
 
             @can('viewAny', \App\Models\Announcement::class)
-                <flux:tab name="announcement-manager">Announcement Manager</flux:tab>
+                <flux:tab name="announcement-manager">Announcements</flux:tab>
+            @endcan
+
+            @can('viewAny', \App\Models\Meeting::class)
+                <flux:tab name="meeting-manager">Meetings</flux:tab>
             @endcan
         </flux:tabs>
 
@@ -57,6 +61,13 @@ new class extends Component {
                 <livewire:admin-manage-announcements-page />
             @endcan
         </flux:tab.panel>
+
+        <flux:tab.panel name="meeting-manager">
+            @can('viewAny', \App\Models\Meeting::class)
+                <livewire:meetings.list />
+            @endcan
+        </flux:tab.panel>
+
     </flux:tab.group>
 
 

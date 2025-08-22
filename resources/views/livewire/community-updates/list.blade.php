@@ -20,7 +20,7 @@ new class extends Component {
 
     @foreach($meetings as $meeting)
         <flux:separator text="{{  $meeting->title }} - {{ $meeting->day }}" />
-        <flux:card class="text-left w-full lg:w-1/2 mx-auto mb-24">
+        <flux:card class="text-left w-full mx-auto mb-24">
             {!!  nl2br($meeting->community_minutes) !!}
         </flux:card>
     @endforeach

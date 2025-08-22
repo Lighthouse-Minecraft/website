@@ -37,10 +37,6 @@
                         <flux:navlist.item icon="building-storefront" :href="route('ready-room.index')" :current="request()->routeIs('ready-room.index')" wire:navigate>Staff Ready Room</flux:navlist.item>
                     @endcan
 
-                    @can('viewAny', \App\Models\Meeting::class)
-                        <flux:navlist.item icon="users" :href="route('meeting.index')" :current="request()->routeIs('meeting.index')" wire:navigate>Manage Meetings</flux:navlist.item>
-                    @endcan
-
                     @can('viewACP')
                         <flux:navlist.item icon="home" :href="route('acp.index')" :current="request()->routeIs('acp.index')" wire:navigate>Admin Control Panel</flux:navlist.item>
                     @endcan
@@ -88,6 +84,7 @@
                         <flux:menu.separator />
 
                         <flux:menu.radio.group>
+                            <flux:menu.item href="{{  route('profile.show', auth()->user()) }}" icon="user" wire:navigate>Profile</flux:menu.item>
                             <flux:menu.item href="/settings/profile" icon="cog" wire:navigate>Settings</flux:menu.item>
                         </flux:menu.radio.group>
 
@@ -151,6 +148,7 @@
                         <flux:menu.separator />
 
                         <flux:menu.radio.group>
+                            <flux:menu.item href="{{  route('profile.show', auth()->user()) }}" icon="user" wire:navigate>Profile</flux:menu.item>
                             <flux:menu.item href="/settings/profile" icon="cog" wire:navigate>Settings</flux:menu.item>
                         </flux:menu.radio.group>
 
