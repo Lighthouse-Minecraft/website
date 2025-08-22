@@ -83,7 +83,7 @@ new class extends Component {
 }; ?>
 
 <div class="w-full block md:flex md:mr-4">
-    <flux:card class="w-full md:w-1/2 lg:w-1/3 p-6 space-y-2">
+    <flux:card class="w-full md:w-1/2 lg:w-1/3 p-6 space-y-2 mb-6 md:mb-0">
         <flux:heading size="xl" class="mb-4">{{ $user->name }}</flux:heading>
         <flux:text>Member Rank: {{ $user->membership_level->label() }}</flux:text>
         <flux:text>Joined on {{ $user->created_at->format('F j, Y') }}</flux:text>
