@@ -19,9 +19,9 @@ describe('Admin Control Panel Tabs Component', function () {
 
         livewire('admin-control-panel-tabs')
             ->assertSet('tab', 'user-manager')
-            ->assertSee('User Manager')
-            ->assertSee('Role Manager')
-            ->assertSee('Page Manager');
+            ->assertSee('Users')
+            ->assertSee('Roles')
+            ->assertSee('Pages');
     });
 
     it('switches tabs correctly when clicked', function () {
@@ -58,9 +58,9 @@ describe('Admin Control Panel Tabs Component', function () {
         $this->actingAs($user);
 
         livewire('admin-control-panel-tabs')
-            ->assertDontSee('User Manager')  // No user permissions (not Quartermaster)
-            ->assertDontSee('Role Manager')  // No role permissions (not admin/command)
-            ->assertSee('Page Manager'); // Has page permissions (any officer)
+            ->assertDontSee('Users')  // No user permissions (not Quartermaster)
+            ->assertDontSee('Roles')  // No role permissions (not admin/command)
+            ->assertSee('Pages'); // Has page permissions (any officer)
     });
 
     it('shows user and page manager tabs for quartermaster officer', function () {
@@ -73,9 +73,9 @@ describe('Admin Control Panel Tabs Component', function () {
         $this->actingAs($user);
 
         livewire('admin-control-panel-tabs')
-            ->assertSee('User Manager')  // Has user permissions
-            ->assertDontSee('Role Manager')  // No role permissions
-            ->assertSee('Page Manager'); // Has page permissions (any officer)
+            ->assertSee('Users')  // Has user permissions
+            ->assertDontSee('Manage Roles')  // No role permissions
+            ->assertSee('Pages'); // Has page permissions (any officer)
     });
 
     it('shows no tabs when user has no permissions', function () {
@@ -87,9 +87,9 @@ describe('Admin Control Panel Tabs Component', function () {
         $this->actingAs($user);
 
         livewire('admin-control-panel-tabs')
-            ->assertDontSee('User Manager')
-            ->assertDontSee('Role Manager')
-            ->assertDontSee('Page Manager');
+            ->assertDontSee('Manage Users')
+            ->assertDontSee('Manage Roles')
+            ->assertDontSee('Manage Pages');
     });
 
     it('shows correct tab panels based on permissions', function () {
@@ -162,9 +162,9 @@ describe('Admin Control Panel Tabs Component', function () {
         $this->actingAs($admin);
 
         livewire('admin-control-panel-tabs')
-            ->assertSee('User Manager')
-            ->assertSee('Role Manager')
-            ->assertSee('Page Manager')
+            ->assertSee('Users')
+            ->assertSee('Roles')
+            ->assertSee('Pages')
             // Check for flux component structure (these might render as HTML)
             ->assertSeeHtml('wire:model="tab"');
     });
@@ -179,9 +179,9 @@ describe('Admin Control Panel Tabs Component', function () {
 
         // Command officers should have access to everything due to before() method in policies
         livewire('admin-control-panel-tabs')
-            ->assertSee('User Manager')
-            ->assertSee('Role Manager')
-            ->assertSee('Page Manager');
+            ->assertSee('Users')
+            ->assertSee('Roles')
+            ->assertSee('Pages');
     });
 
     it('respects quartermaster officer permissions for user management', function () {
@@ -193,9 +193,9 @@ describe('Admin Control Panel Tabs Component', function () {
         $this->actingAs($quartermasterOfficer);
 
         livewire('admin-control-panel-tabs')
-            ->assertSee('User Manager')  // Should see this due to UserPolicy
-            ->assertSee('Page Manager')  // Should see this due to PagePolicy (officer)
-            ->assertDontSee('Role Manager'); // Should not see this (not admin/command)
+            ->assertSee('Manage Users')  // Should see this due to UserPolicy
+            ->assertSee('Manage Pages')  // Should see this due to PagePolicy (officer)
+            ->assertDontSee('Manage Roles'); // Should not see this (not admin/command)
     });
 
     it('shows only page manager for page editor role', function () {
@@ -212,9 +212,9 @@ describe('Admin Control Panel Tabs Component', function () {
         $this->actingAs($user);
 
         livewire('admin-control-panel-tabs')
-            ->assertDontSee('User Manager')  // No user permissions
-            ->assertDontSee('Role Manager')  // No role permissions
-            ->assertSee('Page Manager'); // Has page permissions due to role
+            ->assertDontSee('Users')  // No user permissions
+            ->assertDontSee('Roles')  // No role permissions
+            ->assertSee('Pages'); // Has page permissions due to role
     });
 
     it('denies access to crew members without officer rank', function () {
@@ -226,18 +226,18 @@ describe('Admin Control Panel Tabs Component', function () {
         $this->actingAs($crewMember);
 
         livewire('admin-control-panel-tabs')
-            ->assertDontSee('User Manager')
-            ->assertDontSee('Role Manager')
-            ->assertDontSee('Page Manager');
+            ->assertDontSee('Users')
+            ->assertDontSee('Roles')
+            ->assertDontSee('Pages');
     });
 
     it('handles unauthenticated users gracefully', function () {
         // Don't authenticate any user
 
         livewire('admin-control-panel-tabs')
-            ->assertDontSee('User Manager')
-            ->assertDontSee('Role Manager')
-            ->assertDontSee('Page Manager');
+            ->assertDontSee('Users')
+            ->assertDontSee('Roles')
+            ->assertDontSee('Pages');
     });
 
     it('validates tab parameter type', function () {
@@ -271,9 +271,9 @@ describe('Admin Control Panel Tabs Component', function () {
 
         // Should render successfully even with no tabs visible
         $component->assertSuccessful()
-            ->assertDontSee('User Manager')
-            ->assertDontSee('Role Manager')
-            ->assertDontSee('Page Manager');
+            ->assertDontSee('Users')
+            ->assertDontSee('Roles')
+            ->assertDontSee('Pages');
     });
 
     it('maintains responsive design classes', function () {

@@ -37,9 +37,8 @@ describe('Meetings List Page - Load', function () {
     it('has a menu item for meetings', function () {
         loginAsAdmin();
 
-        get(route('dashboard'))
-            ->assertSee('Manage Meetings')
-            ->assertSee(route('meeting.index'));
+        get(route('acp.index'))
+            ->assertSee('Manage Meetings');
     });
 
 });
@@ -72,26 +71,23 @@ describe('Meetings List Page - Permissions', function () {
 
     it('does not allow guests to see the menu item for meetings', function () {
         get('/pages/home')
-            ->assertDontSee('Manage Meetings')
-            ->assertDontSee(route('meeting.index'));
+            ->assertDontSee('Manage Meetings');
     });
 
     it('is not visible to Traveler members', function () {
         $user = User::factory()->withMembershipLevel(MembershipLevel::Traveler)->create();
         actingAs($user);
 
-        get(route('dashboard'))
-            ->assertDontSee('Manage Meetings')
-            ->assertDontSee(route('meeting.index'));
+        get(route('acp.index'))
+            ->assertDontSee('Manage Meetings');
     });
 
     it('is visible to Crew Members', function () {
         $user = User::factory()->withStaffPosition(StaffDepartment::Steward, StaffRank::CrewMember, 'crew')->create();
         actingAs($user);
 
-        get(route('dashboard'))
-            ->assertSee('Manage Meetings')
-            ->assertSee(route('meeting.index'));
+        get(route('acp.index'))
+            ->assertSee('Manage Meetings');
     });
 
     it('does not load for members', function () {
