@@ -84,6 +84,7 @@
                         <flux:menu.separator />
 
                         <flux:menu.radio.group>
+                            <flux:menu.item href="{{  route('profile.show', auth()->user()) }}" icon="user" wire:navigate>Profile</flux:menu.item>
                             <flux:menu.item href="/settings/profile" icon="cog" wire:navigate>Settings</flux:menu.item>
                         </flux:menu.radio.group>
 
@@ -147,6 +148,7 @@
                         <flux:menu.separator />
 
                         <flux:menu.radio.group>
+                            <flux:menu.item href="{{  route('profile.show', auth()->user()) }}" icon="user" wire:navigate>Profile</flux:menu.item>
                             <flux:menu.item href="/settings/profile" icon="cog" wire:navigate>Settings</flux:menu.item>
                         </flux:menu.radio.group>
 
