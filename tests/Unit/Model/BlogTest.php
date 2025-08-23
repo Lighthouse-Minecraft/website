@@ -447,7 +447,7 @@ describe('Blog Model', function () {
     // ───────────────────────────────────────────────────────────────────────────
     describe('Validation', function () {
         it('requires a title', function () {
-            $blog = Blog::factory()->create(['title' => '']);
+            $blog = Blog::factory()->make(['title' => '']);
             expect($blog->isValid())->toBeFalse();
             expect($blog->getErrors())->toContain('The title field is required.');
         })->done(assignee: 'ghostridr');
