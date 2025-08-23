@@ -13,7 +13,7 @@ new class extends Component {
 
 <div class="w-full">
 
-    <flux:tab.group>
+    <flux:tab.group class=" ">
         <div class="text-center flex">
             <flux:tabs variant="segmented" size="xs" wire:model="tab">
                 @can('view-ready-room-command')
