@@ -31,7 +31,7 @@ class PrayerCountryPolicy
      */
     public function view(User $user, PrayerCountry $prayerCountry): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -39,7 +39,7 @@ class PrayerCountryPolicy
      */
     public function create(User $user): bool
     {
-        return false;
+        return $user->isInDepartment(StaffDepartment::Chaplain) && $user->isAtLeastRank(StaffRank::Officer);
     }
 
     /**
@@ -47,30 +47,6 @@ class PrayerCountryPolicy
      */
     public function update(User $user, PrayerCountry $prayerCountry): bool
     {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can delete the model.
-     */
-    public function delete(User $user, PrayerCountry $prayerCountry): bool
-    {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can restore the model.
-     */
-    public function restore(User $user, PrayerCountry $prayerCountry): bool
-    {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can permanently delete the model.
-     */
-    public function forceDelete(User $user, PrayerCountry $prayerCountry): bool
-    {
-        return false;
+        return $user->isInDepartment(StaffDepartment::Chaplain) && $user->isAtLeastRank(StaffRank::Officer);
     }
 }

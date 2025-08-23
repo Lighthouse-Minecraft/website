@@ -74,6 +74,13 @@ new class extends Component {
     }
 
     public function savePrayerData() {
+        // Check if we're creating or updating and authorize accordingly
+        if ($this->prayerCountry) {
+            $this->authorize('update', $this->prayerCountry);
+        } else {
+            $this->authorize('create', PrayerCountry::class);
+        }
+
         // Validate input
         $this->validate([
             'prayerName' => 'required|string|max:255',
@@ -91,6 +98,9 @@ new class extends Component {
             ]
         );
 
+        // Set the prayer country instance for future operations
+        $this->prayerCountry = $prayerCountry;
+
         // Reset the cache for this day
         Cache::forget("prayer_country_{$this->month}_{$this->day}");
 
@@ -105,10 +115,12 @@ new class extends Component {
         $prayerCountry = Cache::flexible($cacheKey, [$cacheTtl, $cacheTtl * 7], fn() => PrayerCountry::where('day', "{$month}-{$day}")->first());
 
         if ($prayerCountry) {
+            $this->prayerCountry = $prayerCountry;
             $this->prayerName = $prayerCountry->name;
             $this->prayerOperationWorldUrl = $prayerCountry->operation_world_url;
             $this->prayerPrayerCastUrl = $prayerCountry->prayer_cast_url;
         } else {
+            $this->prayerCountry = null;
             $this->resetPrayerData();
         }
     }
