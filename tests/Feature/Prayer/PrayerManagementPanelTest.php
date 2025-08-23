@@ -1,6 +1,7 @@
 <?php
 
 use function Pest\Laravel\get;
+use function Pest\Livewire\livewire;
 
 describe('Prayer Management Panel - Display', function () {
     it('should display the Prayer management tab', function () {
@@ -21,14 +22,39 @@ describe('Prayer Management Panel - Display', function () {
 
 })->done(issue: 105, assignee: 'jonzenor');
 
-describe('Prayer Management Panel - Editing', function () {
+describe('Prayer Management Panel - Dates', function () {
     // The component displays a list of months
+    it('should display a list of months', function () {
+        loginAsAdmin();
+
+        livewire('prayer.manage-months')
+            ->assertSee('January')
+            ->assertSee('February')
+            ->assertSee('March')
+            ->assertSee('April')
+            ->assertSee('May')
+            ->assertSee('June')
+            ->assertSee('July')
+            ->assertSee('August')
+            ->assertSee('September')
+            ->assertSee('October')
+            ->assertSee('November')
+            ->assertSee('December');
+    })->done();
 
     // The months open a modal with list of days
+    it('should open a modal with a list of days when a month is clicked', function () {
+        loginAsAdmin();
 
-    // The days open a modal to edit that days info
+        livewire('prayer.manage-months')
+            ->call('openMonthModal', '1')
+            ->assertSee('Manage January');
+    })->done();
+})->done(issue: 105, assignee: 'jonzenor');
 
+describe('Prayer Management Panel - Data', function () {
     // Saving the changes updates the database
+
 })->todo(issue: 105, assignee: 'jonzenor');
 
 describe('Prayer Management Panel - Permissions', function () {
