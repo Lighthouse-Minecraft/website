@@ -10,6 +10,11 @@ new class extends Component {
     public $day;
     public $date;
 
+    public $prayerName;
+    public $prayerDay;
+    public $prayerOperationWorldUrl;
+    public $prayerPrayerCastUrl;
+
     public function mount() {
         $this->year = date('Y');
         $this->month = null;
@@ -22,6 +27,7 @@ new class extends Component {
         $this->monthName = $this->getMonthName($month);
 
         $this->date = "{$this->year}-{$this->month}-{$this->day}";
+        $this->prayerDay = "{$this->month}-{$this->day}";
 
         Flux::modal('month-modal')->show();
     }
@@ -43,6 +49,22 @@ new class extends Component {
         ];
 
         return $months[$month] ?? 'Unknown';
+    }
+
+    public function updatedDate() {
+
+        $dateParts = explode('-', $this->date);
+        if (count($dateParts) === 3) {
+            $this->year = $dateParts[0];
+            $this->month = (int)$dateParts[1];
+            $this->day = (int)$dateParts[2];
+            $this->monthName = $this->getMonthName($this->month);
+
+            $this->prayerDay = "{$this->month}-{$this->day}";
+
+            // Load prayer data for the selected date
+            // $this->loadPrayerData($this->year, $this->month, $this->day);
+        }
     }
 }; ?>
 
@@ -142,6 +164,19 @@ new class extends Component {
     <flux:modal name="month-modal" class="w-full">
         <flux:heading size="lg">Manage {{ $monthName }}</flux:heading>
 
-        <flux:calendar wire:model="date" size="xs"></flux:calendar>
+        <flux:calendar wire:model.live="date" size="xs"></flux:calendar>
+
+        <form wire:submit.prevent="savePrayerData">
+            <div class="space-y-6">
+                <flux:text>Day: {{  $prayerDay }}</flux:text>
+                <flux:input wire:model="prayerName" label="Country Name" />
+                <flux:input wire:model="prayerOperationWorldUrl" label="Operation World URL" />
+                <flux:input wire:model="prayerPrayerCastUrl" label="Prayer Cast URL" />
+
+                <div class="w-full text-right">
+                    <flux:button type="submit">Save Prayer Data</flux:button>
+                </div>
+            </div>
+        </form>
     </flux:modal>
 </div>

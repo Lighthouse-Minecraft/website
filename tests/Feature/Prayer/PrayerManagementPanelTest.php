@@ -53,9 +53,20 @@ describe('Prayer Management Panel - Dates', function () {
 })->done(issue: 105, assignee: 'jonzenor');
 
 describe('Prayer Management Panel - Data', function () {
+    // The date picker shows a new form for if the data doesn't exist for today
+    it('should show a new form for today if no data exists', function () {
+        loginAsAdmin();
+
+        livewire('prayer.manage-months')
+            ->call('openMonthModal', '1')
+            ->assertSee('Save Prayer Data');
+    });
+
+    // The date picker selects the data for today if it exists
+
     // Saving the changes updates the database
 
-})->todo(issue: 105, assignee: 'jonzenor');
+})->wip(issue: 105, assignee: 'jonzenor');
 
 describe('Prayer Management Panel - Permissions', function () {
     // The Command and Chaplain departments can view the panel
