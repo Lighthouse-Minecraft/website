@@ -2,7 +2,9 @@
 
 use App\Models\PrayerCountry;
 use Flux\Flux;
+use Illuminate\Support\Facades\Cache;
 use Livewire\Volt\Component;
+
 
 new class extends Component {
     public $prayerCountry;
@@ -67,7 +69,7 @@ new class extends Component {
             $this->prayerDay = "{$this->month}-{$this->day}";
 
             // Load prayer data for the selected date
-            // $this->loadPrayerData($this->year, $this->month, $this->day);
+            $this->loadPrayerData($this->month, $this->day);
         }
     }
 
@@ -80,7 +82,7 @@ new class extends Component {
         ]);
 
         // Save or update prayer country data
-        $prayerCountry = \App\Models\PrayerCountry::updateOrCreate(
+        $prayerCountry = PrayerCountry::updateOrCreate(
             ['day' => $this->prayerDay],
             [
                 'name' => $this->prayerName,
@@ -89,12 +91,18 @@ new class extends Component {
             ]
         );
 
+        // Reset the cache for this day
+        Cache::forget("prayer_country_{$this->month}_{$this->day}");
+
         // Optionally, you can reset the form or provide feedback
-        session()->flash('message', 'Prayer data saved successfully.');
+        Flux::toast('Prayer data saved successfully.', 'Success', variant: 'success');
     }
 
     public function loadPrayerData($month, $day) {
-        $prayerCountry = PrayerCountry::where('day', "{$month}-{$day}")->first();
+        $cacheKey = "prayer_country_{$month}_{$day}";
+        $cacheTtl = config('lighthouse.prayer_cache_ttl', 60 * 60 * 24); // default to 24 hours
+
+        $prayerCountry = Cache::flexible($cacheKey, [$cacheTtl, $cacheTtl * 7], fn() => PrayerCountry::where('day', "{$month}-{$day}")->first());
 
         if ($prayerCountry) {
             $this->prayerName = $prayerCountry->name;
@@ -218,7 +226,7 @@ new class extends Component {
                 <flux:input wire:model="prayerPrayerCastUrl" label="Prayer Cast URL" />
 
                 <div class="w-full text-right">
-                    <flux:button wire:click="savePrayerData">Save Prayer Data</flux:button>
+                    <flux:button wire:click="savePrayerData" variant="primary">Save Prayer Data</flux:button>
                 </div>
             </div>
         </form>
