@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\PrayerCountry;
+
 use function Pest\Laravel\get;
 use function Pest\Livewire\livewire;
 
@@ -60,13 +62,45 @@ describe('Prayer Management Panel - Data', function () {
         livewire('prayer.manage-months')
             ->call('openMonthModal', '1')
             ->assertSee('Save Prayer Data');
-    });
+    })->done();
 
     // The date picker selects the data for today if it exists
+    it('should load existing data for today if it exists', function () {
+        // Create a prayer country entry for today
+        $country = PrayerCountry::factory()->create();
+        loginAsAdmin();
+        $date = explode('-', $country->day);
+
+        livewire('prayer.manage-months')
+            ->set('day', $date[1])
+            ->call('openMonthModal', $date[0])
+            ->assertSet('prayerName', $country->name)
+            ->assertSet('prayerOperationWorldUrl', $country->operation_world_url)
+            ->assertSet('prayerPrayerCastUrl', $country->prayer_cast_url);
+    })->done();
 
     // Saving the changes updates the database
+    it('should save the changes to the database', function () {
+        loginAsAdmin();
 
-})->wip(issue: 105, assignee: 'jonzenor');
+        livewire('prayer.manage-months')
+            ->call('openMonthModal', '1')
+            ->set('prayerName', 'New Prayer Name')
+            ->set('prayerOperationWorldUrl', 'https://new-url.com')
+            ->set('prayerPrayerCastUrl', 'https://new-url.com')
+            ->call('savePrayerData')
+            ->assertStatus(200);
+
+        // Assert that the data was saved in the database
+        $this->assertDatabaseHas('prayer_countries', [
+            'day' => '1-1',
+            'name' => 'New Prayer Name',
+            'operation_world_url' => 'https://new-url.com',
+            'prayer_cast_url' => 'https://new-url.com',
+        ]);
+    })->done();
+
+})->done(issue: 105, assignee: 'jonzenor');
 
 describe('Prayer Management Panel - Permissions', function () {
     // The Command and Chaplain departments can view the panel

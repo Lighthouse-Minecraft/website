@@ -1,9 +1,11 @@
 <?php
 
+use App\Models\PrayerCountry;
 use Flux\Flux;
 use Livewire\Volt\Component;
 
 new class extends Component {
+    public $prayerCountry;
     public $month;
     public $monthName;
     public $year;
@@ -28,6 +30,8 @@ new class extends Component {
 
         $this->date = "{$this->year}-{$this->month}-{$this->day}";
         $this->prayerDay = "{$this->month}-{$this->day}";
+
+        $this->loadPrayerData($this->month, $this->day);
 
         Flux::modal('month-modal')->show();
     }
@@ -65,6 +69,46 @@ new class extends Component {
             // Load prayer data for the selected date
             // $this->loadPrayerData($this->year, $this->month, $this->day);
         }
+    }
+
+    public function savePrayerData() {
+        // Validate input
+        $this->validate([
+            'prayerName' => 'required|string|max:255',
+            'prayerOperationWorldUrl' => 'nullable|url|max:255',
+            'prayerPrayerCastUrl' => 'nullable|url|max:255',
+        ]);
+
+        // Save or update prayer country data
+        $prayerCountry = \App\Models\PrayerCountry::updateOrCreate(
+            ['day' => $this->prayerDay],
+            [
+                'name' => $this->prayerName,
+                'operation_world_url' => $this->prayerOperationWorldUrl,
+                'prayer_cast_url' => $this->prayerPrayerCastUrl,
+            ]
+        );
+
+        // Optionally, you can reset the form or provide feedback
+        session()->flash('message', 'Prayer data saved successfully.');
+    }
+
+    public function loadPrayerData($month, $day) {
+        $prayerCountry = PrayerCountry::where('day', "{$month}-{$day}")->first();
+
+        if ($prayerCountry) {
+            $this->prayerName = $prayerCountry->name;
+            $this->prayerOperationWorldUrl = $prayerCountry->operation_world_url;
+            $this->prayerPrayerCastUrl = $prayerCountry->prayer_cast_url;
+        } else {
+            $this->resetPrayerData();
+        }
+    }
+
+    private function resetPrayerData() {
+        $this->prayerName = null;
+        $this->prayerOperationWorldUrl = null;
+        $this->prayerPrayerCastUrl = null;
     }
 }; ?>
 
@@ -174,7 +218,7 @@ new class extends Component {
                 <flux:input wire:model="prayerPrayerCastUrl" label="Prayer Cast URL" />
 
                 <div class="w-full text-right">
-                    <flux:button type="submit">Save Prayer Data</flux:button>
+                    <flux:button wire:click="savePrayerData">Save Prayer Data</flux:button>
                 </div>
             </div>
         </form>
