@@ -139,11 +139,11 @@ new class extends Component {
             <flux:table.cell>Month</flux:table.cell>
         </flux:table.columns>
         <flux:table.rows>
-            @foreach($months as $monthNumber => $monthName)
+            @foreach($months as $thisMonthNumber => $thisMonthName)
                 <flux:table.row>
                     <flux:table.cell>
-                        <flux:modal.trigger wire:click="openMonthModal({{ $monthNumber }})">
-                            <flux:link>{{ $monthName }}</flux:link>
+                        <flux:modal.trigger wire:click="openMonthModal({{ $thisMonthNumber }})">
+                            <flux:link>{{ $thisMonthName }}</flux:link>
                         </flux:modal.trigger>
                     </flux:table.cell>
                 </flux:table.row>
