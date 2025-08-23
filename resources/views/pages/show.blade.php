@@ -13,4 +13,5 @@
         @endcan
 
     </div>
+
 </x-layouts.app>

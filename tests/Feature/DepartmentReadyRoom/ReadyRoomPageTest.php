@@ -87,7 +87,7 @@ describe('Department Page - Departments', function () {
     it('allows JrCrew and Crew Members to view their department', function ($user) {
         loginAs($user);
 
-        $departments['command'] = 'Command';
+        $departments['command'] = 'Command Tasks';
         $departments['chaplain'] = 'Chaplain';
         $departments['engineer'] = 'Engineer';
         $departments['quartermaster'] = 'Quartermaster';
