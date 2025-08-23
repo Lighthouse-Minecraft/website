@@ -1,12 +1,12 @@
 <!-- Minecraft Banner & Join Block (Flux UI) -->
-<div class="mt-8 flex flex-col items-center gap-6">
+<div class="flex flex-col items-center my-3">
     <!-- Minecraft Banner clickable -->
     <flux:modal.trigger name="mc-server-modal">
         <button type="button" class="focus:outline-none mx-auto block">
             <img src="/img/mc-banner.png" alt="Minecraft Server Banner" class="rounded shadow-lg w-full max-w-2xl mx-auto cursor-pointer transition hover:scale-105" style="width:80%;height:auto;" />
         </button>
     </flux:modal.trigger>
-    <div class="w-full flex justify-center">
+
         <flux:modal name="mc-server-modal" class="fixed inset-0 flex items-center justify-center z-50">
             <div class="bg-gray-900 bg-opacity-80 absolute inset-0"></div>
             <div class="relative w-full max-w-xs sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl mx-auto bg-white dark:bg-gray-900 rounded-lg shadow-xl p-4 sm:p-8 flex flex-col items-center">
@@ -26,7 +26,7 @@
                     </span>
                     <span class="inline-block align-middle">Join our Discord</span>
                 </flux:button>
-                <flux:text size="xs" variant="primary" color="indigo" class="text-center">Launches Discord app (if installed). Falls back to browser otherwise.</flux:text>
+                <flux:separator class="my-3" variant="subtle" />
 
                 <!-- Minecraft: Bedrock -->
                 <flux:button
@@ -61,6 +61,8 @@
                     <p class="whitespace-wrap ml-12">Add Java server</p>
                 </flux:button>
 
+                <flux:separator class="my-3" variant="subtle" />
+
                 <!-- How to play info -->
                 <flux:button
                     as="a"
@@ -80,7 +82,6 @@
                 </div>
             </div>
         </flux:modal>
-    </div>
 
     <script>
         function showBedrockInfo() {
