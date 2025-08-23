@@ -13,6 +13,7 @@ new class extends Component {
     public $year;
     public $day;
     public $date;
+    public $months;
 
     public $prayerName;
     public $prayerDay;
@@ -24,6 +25,21 @@ new class extends Component {
         $this->month = null;
         $this->monthName = null;
         $this->day = 1;
+
+        $this->months = [
+            1 => 'January',
+            2 => 'February',
+            3 => 'March',
+            4 => 'April',
+            5 => 'May',
+            6 => 'June',
+            7 => 'July',
+            8 => 'August',
+            9 => 'September',
+            10 => 'October',
+            11 => 'November',
+            12 => 'December',
+        ];
     }
 
     public function openMonthModal($month) {
@@ -39,22 +55,7 @@ new class extends Component {
     }
 
     private function getMonthName($month) {
-        $months = [
-            1 => 'January',
-            2 => 'February',
-            3 => 'March',
-            4 => 'April',
-            5 => 'May',
-            6 => 'June',
-            7 => 'July',
-            8 => 'August',
-            9 => 'September',
-            10 => 'October',
-            11 => 'November',
-            12 => 'December',
-        ];
-
-        return $months[$month] ?? 'Unknown';
+        return $this->months[$month] ?? 'Unknown';
     }
 
     public function updatedDate() {
@@ -138,90 +139,15 @@ new class extends Component {
             <flux:table.cell>Month</flux:table.cell>
         </flux:table.columns>
         <flux:table.rows>
-            <flux:table.row>
-                <flux:table.cell>
-                    <flux:modal.trigger wire:click="openMonthModal(1)">
-                        <flux:link>January</flux:link>
-                    </flux:modal.trigger>
-                </flux:table.cell>
-            </flux:table.row>
-            <flux:table.row>
-                <flux:table.cell>
-                    <flux:modal.trigger wire:click="openMonthModal(2)">
-                        <flux:link>February</flux:link>
-                    </flux:modal.trigger>
-                </flux:table.cell>
-            </flux:table.row>
-            <flux:table.row>
-                <flux:table.cell>
-                    <flux:modal.trigger wire:click="openMonthModal(3)">
-                        <flux:link>March</flux:link>
-                    </flux:modal.trigger>
-                </flux:table.cell>
-            </flux:table.row>
-            <flux:table.row>
-                <flux:table.cell>
-                    <flux:modal.trigger wire:click="openMonthModal(4)">
-                        <flux:link>April</flux:link>
-                    </flux:modal.trigger>
-                </flux:table.cell>
-            </flux:table.row>
-            <flux:table.row>
-                <flux:table.cell>
-                    <flux:modal.trigger wire:click="openMonthModal(5)">
-                        <flux:link>May</flux:link>
-                    </flux:modal.trigger>
-                </flux:table.cell>
-            </flux:table.row>
-            <flux:table.row>
-                <flux:table.cell>
-                    <flux:modal.trigger wire:click="openMonthModal(6)">
-                        <flux:link>June</flux:link>
-                    </flux:modal.trigger>
-                </flux:table.cell>
-            </flux:table.row>
-            <flux:table.row>
-                <flux:table.cell>
-                    <flux:modal.trigger wire:click="openMonthModal(7)">
-                        <flux:link>July</flux:link>
-                    </flux:modal.trigger>
-                </flux:table.cell>
-            </flux:table.row>
-            <flux:table.row>
-                <flux:table.cell>
-                    <flux:modal.trigger wire:click="openMonthModal(8)">
-                        <flux:link>August</flux:link>
-                    </flux:modal.trigger>
-                </flux:table.cell>
-            </flux:table.row>
-            <flux:table.row>
-                <flux:table.cell>
-                    <flux:modal.trigger wire:click="openMonthModal(9)">
-                        <flux:link>September</flux:link>
-                    </flux:modal.trigger>
-                </flux:table.cell>
-            </flux:table.row>
-            <flux:table.row>
-                <flux:table.cell>
-                    <flux:modal.trigger wire:click="openMonthModal(10)">
-                        <flux:link>October</flux:link>
-                    </flux:modal.trigger>
-                </flux:table.cell>
-            </flux:table.row>
-            <flux:table.row>
-                <flux:table.cell>
-                    <flux:modal.trigger wire:click="openMonthModal(11)">
-                        <flux:link>November</flux:link>
-                    </flux:modal.trigger>
-                </flux:table.cell>
-            </flux:table.row>
-            <flux:table.row>
-                <flux:table.cell>
-                    <flux:modal.trigger wire:click="openMonthModal(12)">
-                        <flux:link>December</flux:link>
-                    </flux:modal.trigger>
-                </flux:table.cell>
-            </flux:table.row>
+            @foreach($months as $monthNumber => $monthName)
+                <flux:table.row>
+                    <flux:table.cell>
+                        <flux:modal.trigger wire:click="openMonthModal({{ $monthNumber }})">
+                            <flux:link>{{ $monthName }}</flux:link>
+                        </flux:modal.trigger>
+                    </flux:table.cell>
+                </flux:table.row>
+            @endforeach
         </flux:table.rows>
     </flux:table>
 
