@@ -104,7 +104,27 @@ describe('Prayer Management Panel - Data', function () {
 
 describe('Prayer Management Panel - Permissions', function () {
     // The Command and Chaplain departments can view the panel
+    it('should allow Command and Chaplain departments to view the panel', function ($user) {
+        loginAs($user);
+
+        get(route('acp.index'))
+            ->assertStatus(200)
+            ->assertSee('Prayer Nations');
+    })->with([
+        'Officer Command' => fn () => officerCommand(),
+        'Officer Chaplain' => fn () => officerChaplain(),
+    ])->wip();
 
     // The other officer departments cannot view the panel
+    it('should prevent other officer departments from viewing the panel', function ($user) {
+        loginAs($user);
 
-})->todo(issue: 105, assignee: 'jonzenor');
+        get(route('acp.index'))
+            ->assertDontSee('Prayer Nations');
+    })->with([
+        'Officer Engineer' => fn () => officerEngineer(),
+        'Officer Quartermaster' => fn () => officerQuartermaster(),
+        'Officer Steward' => fn () => officerSteward(),
+    ])->wip();
+
+})->wip(issue: 105, assignee: 'jonzenor');

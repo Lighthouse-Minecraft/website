@@ -36,7 +36,9 @@ new class extends Component {
                 <flux:tab name="meeting-manager">Meetings</flux:tab>
             @endcan
 
-            <flux:tab name="prayer-manager">Prayer Nations</flux:tab>
+            @can('viewAny', \App\Models\PrayerCountry::class)
+                <flux:tab name="prayer-manager">Prayer Nations</flux:tab>
+            @endcan
         </flux:tabs>
 
 
@@ -71,7 +73,9 @@ new class extends Component {
         </flux:tab.panel>
 
         <flux:tab.panel name="prayer-manager">
-            <livewire:prayer.manage-months />
+            @can('viewAny', \App\Models\PrayerCountry::class)
+                <livewire:prayer.manage-months />
+            @endcan
         </flux:tab.panel>
 
     </flux:tab.group>
