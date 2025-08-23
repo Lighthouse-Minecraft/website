@@ -1,11 +1,25 @@
 <?php
 
+use function Pest\Laravel\get;
+
 describe('Prayer Management Panel - Display', function () {
-    // There is a Prayer management tab
+    it('should display the Prayer management tab', function () {
+        loginAsAdmin();
+
+        get(route('acp.index'))
+            ->assertStatus(200)
+            ->assertSee('Prayer Nations');
+    })->done();
 
     // The Prayer Management component is displayed
+    it('should display the Prayer Management component', function () {
+        loginAsAdmin();
 
-})->todo(issue: 105, assignee: 'jonzenor');
+        get(route('acp.index'))
+            ->assertSeeLivewire('prayer.manage-months');
+    })->done();
+
+})->done(issue: 105, assignee: 'jonzenor');
 
 describe('Prayer Management Panel - Editing', function () {
     // The component displays a list of months
