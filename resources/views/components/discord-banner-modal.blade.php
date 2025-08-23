@@ -39,8 +39,8 @@
                         <span class="inline-block transform scale-[0.09] max-w-[58px]">
                             @php
                                 $bedrockSvg = file_get_contents(public_path('img/mc-bedrock.svg'));
-                                echo preg_replace('/<svg([^>]*)>/i', '<svg$1 width="24" height="24" viewBox="24 24">', $bedrockSvg);
                             @endphp
+                            {!! str_replace('/<svg([^>]*)>/i', '<svg$1 width="24" height="24" viewBox="24 24">', $bedrockSvg) !!}
                         </span>
                     </p>
                     <p class="ml-23 whitespace-wrap">Add Bedrock server</p>
