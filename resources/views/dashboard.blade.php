@@ -1,8 +1,4 @@
 <x-layouts.app>
-    <div class="w-full flex justify-center mt-4">
-        @include('components.discord-banner-modal')
-    </div>
-
     <livewire:dashboard.alert-in-progress-meeting />
     <livewire:dashboard.view-announcements />
 
