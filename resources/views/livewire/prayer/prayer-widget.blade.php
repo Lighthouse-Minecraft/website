@@ -3,21 +3,67 @@
 use App\Models\PrayerCountry;
 use Livewire\Volt\Component;
 use Flux\Flux;
+use Illuminate\Support\Facades\Cache;
 
 new class extends Component {
     public $day;
     public $prayerCountry;
+    public $hasPrayedToday = false;
 
     public function mount() {
         $this->day = date('n-d');
         $this->loadPrayerData(date('n'), date('j'));
+
+        if ($this->prayerCountry) {
+            $this->hasPrayedToday = $this->checkIfUserHasPrayedThisYear();
+        }
+    }
+
+    private function checkIfUserHasPrayedThisYear(): bool
+    {
+        $currentYear = now()->format('Y');
+        $userId = auth()->id();
+        $prayerCountryId = $this->prayerCountry->id;
+
+        $cacheKey = "user_prayer_{$userId}_{$prayerCountryId}_{$currentYear}";
+        $cacheTtl = config('lighthouse.prayer_cache_ttl', 60 * 60 * 24); // default to 24 hours
+
+        return Cache::flexible($cacheKey, [$cacheTtl, $cacheTtl * 7], function () use ($currentYear, $prayerCountryId) {
+            return auth()->user()
+                ->prayerCountries()
+                ->wherePivot('prayer_country_id', $prayerCountryId)
+                ->wherePivot('year', $currentYear)
+                ->exists();
+        });
     }
 
     public function markAsPrayedToday() {
+        $currentYear = now()->format('Y');
+
+        // Check if user has already prayed for this country this year
+        $hasAlreadyPrayed = auth()->user()
+            ->prayerCountries()
+            ->wherePivot('prayer_country_id', $this->prayerCountry->id)
+            ->wherePivot('year', $currentYear)
+            ->exists();
+
+        if ($hasAlreadyPrayed) {
+            Flux::toast('You have already prayed for this country this year!', 'Info', variant: 'warning');
+            return;
+        }
+
         // Save the prayer record
         auth()->user()->prayerCountries()->attach($this->prayerCountry->id, [
-            'year' => now()->format('Y'),
+            'year' => $currentYear,
         ]);
+
+        // Clear the cache for this user/country/year combination
+        $userId = auth()->id();
+        $cacheKey = "user_prayer_{$userId}_{$this->prayerCountry->id}_{$currentYear}";
+        Cache::forget($cacheKey);
+
+        // Update the state
+        $this->hasPrayedToday = true;
 
         Flux::toast('Thank you for praying today!', 'Success', variant: 'success');
     }
@@ -63,7 +109,14 @@ new class extends Component {
         <flux:link href="{{ config('lighthouse.prayer_list_url') }}" class="text-sm" target="_blank" rel="noopener noreferrer">Lighthouse Prayer List</flux:link>
 
         <div class="w-full text-right mt-6">
-            <flux:button wire:click="markAsPrayedToday" variant="primary">I Prayed Today</flux:button>
+            @if($hasPrayedToday)
+                <flux:button variant="ghost" disabled>
+                    <flux:icon name="check" class="w-4 h-4 mr-1" />
+                    Thank you for Praying
+                </flux:button>
+            @else
+                <flux:button wire:click="markAsPrayedToday" variant="primary">I Prayed Today</flux:button>
+            @endif
         </div>
     </flux:card>
 </div>

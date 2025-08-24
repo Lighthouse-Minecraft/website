@@ -109,7 +109,44 @@ describe('Prayer Dashboard Panel - I Prayed Today Button', function () {
         ]);
     });
 
-    // The buttons turns gray if the user has already prayed today
+    // The buttons turns gray if the user has already prayed this year
+    it('should disable the button if the user has already prayed for this country this year', function () {
+        $user = loginAsAdmin();
+        $today = now()->format('n-d');
+        $prayerNation = PrayerCountry::factory()->withDay($today)->create();
+
+        // First time - should work and show success message
+        livewire('prayer.prayer-widget')
+            ->call('markAsPrayedToday')
+            ->assertOk()
+            ->assertSee('Thank you for Praying');
+
+        // Second attempt should show warning and not create duplicate record
+        livewire('prayer.prayer-widget')
+            ->call('markAsPrayedToday')
+            ->assertOk();
+
+        // Should only have one record for this year
+        $this->assertEquals(1, $user->prayerCountries()->count());
+    });
+
+    // The prayer status is cached for performance
+    it('should cache the users prayer status', function () {
+        $user = loginAsAdmin();
+        $today = now()->format('n-d');
+        $prayerNation = PrayerCountry::factory()->withDay($today)->create();
+
+        // Create a prayer record directly in the database
+        $user->prayerCountries()->attach($prayerNation->id, [
+            'year' => now()->format('Y'),
+        ]);
+
+        // The widget should detect the user has already prayed (from cache)
+        livewire('prayer.prayer-widget')
+            ->assertSet('hasPrayedToday', true)
+            ->assertSee('Thank you for Praying')
+            ->assertDontSee('I Prayed Today');
+    });
 
     // The button records the user's streak on their profile
 
