@@ -131,7 +131,7 @@ class User extends Authenticatable // implements MustVerifyEmail
     {
         return $this->belongsToMany(Blog::class, 'blog_author', 'author_id', 'blog_id')->withTimestamps();
     }
-  
+
     public function prayerCountries()
     {
         return $this->belongsToMany(PrayerCountry::class)->withPivot('year')->withTimestamps();
