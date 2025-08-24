@@ -180,5 +180,15 @@ return [
         'added' => '2025-08-20',
         'review_on' => '2025-09-20',
     ],
+    // Prayer widget: temporarily allow direct format usage for current year
+    'resources/views/livewire/prayer/prayer-widget.blade.php' => [
+        'snippet_contains' => [
+            "now()->format('Y')",
+        ],
+        'owner' => 'Web Platform',
+        'reason' => 'Current year display not critical for <time> markup, will migrate if needed.',
+        'added' => '2025-08-24',
+        'review_on' => '2025-09-24',
+    ],
     // Add allowlist entries here as needed. Keep scope tight and temporary.
 ];
