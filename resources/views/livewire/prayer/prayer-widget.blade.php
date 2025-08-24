@@ -34,9 +34,10 @@ new class extends Component {
 
             <flux:button href="{{ $prayerCountry->operation_world_url }}" size="xs" target="_blank" >Prayer Details</flux:button>
 
-            <flux:button href="{{  $prayerCountry->prayer_cast_url }}" size="xs" target="_blank" >PrayerCast Video</flux:button>
+            @if($prayerCountry->prayer_cast_url)
+                <flux:button href="{{ $prayerCountry->prayer_cast_url }}" size="xs" target="_blank" >PrayerCast Video</flux:button>
+            @endif
         @endif
-
         <flux:separator />
         <flux:link href="{{ config('lighthouse.prayer_list_url') }}" class="text-sm" target="_blank" rel="noopener noreferrer">Lighthouse Prayer List</flux:link>
     </flux:card>

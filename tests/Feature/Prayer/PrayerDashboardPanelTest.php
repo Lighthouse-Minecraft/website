@@ -42,7 +42,21 @@ describe('Prayer Dashboard Panel - Display', function () {
     })->done();
 
     // The dashboard widget does not show the prayercast video if it is null
-})->wip(issue: 106, assignee: 'jonzenor');
+    it('does not show PrayerCast if the URL is null', function () {
+        $today = now()->format('n-d');
+        $prayerNation = PrayerCountry::factory()->withDay($today)->create([
+            'prayer_cast_url' => null,
+        ]);
+        loginAsAdmin();
+
+        get(route('dashboard'))
+            ->assertOk()
+            ->assertSee($prayerNation->name)
+            ->assertSee('Operation World')
+            ->assertSee($prayerNation->operation_world_url)
+            ->assertDontSee('PrayerCast Video');
+    })->done();
+})->done(issue: 106, assignee: 'jonzenor');
 
 describe('Prayer Dashboard Panel - Permissions', function () {
     // The dashboard widget shows for all Stowaway and above
