@@ -15,6 +15,17 @@
         </div>
     </div>
 
+    <div class="w-full bg-zinc-900 p-4 rounded-lg mb-6">
+        <div class="flex mb-4">
+            <flux:heading>Spiritual Discipleship</flux:heading>
+            <flux:spacer />
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <livewire:prayer.prayer-widget />
+        </div>
+    </div>
+
     @if (auth()->user()->isAtLeastRank(App\Enums\StaffRank::Officer) || auth()->user()->isInDepartment(App\Enums\StaffDepartment::Quartermaster) || auth()->user()->isAdmin())
         <div class="w-full bg-zinc-900 p-4 rounded-lg mb-6">
             <div class="flex mb-4">

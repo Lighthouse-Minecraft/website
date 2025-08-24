@@ -2,8 +2,8 @@
 
 namespace Database\Factories;
 
-use App\Models\{Tags, User};
-use Illuminate\Database\Eloquent\Factories\{Factory};
+use App\Models\User;
+use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Tag>

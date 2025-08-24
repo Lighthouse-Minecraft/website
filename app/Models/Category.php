@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\{Model};
-use Illuminate\Database\Eloquent\Factories\{HasFactory};
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class Category extends Model
 {
     use HasFactory;
+
     /**
      * The attributes that are mass assignable.
      */
@@ -29,7 +30,7 @@ class Category extends Model
      */
     public function announcements()
     {
-    return $this->belongsToMany(Announcement::class, 'announcement_category', 'category_id', 'announcement_id');
+        return $this->belongsToMany(Announcement::class, 'announcement_category', 'category_id', 'announcement_id');
     }
 
     /**
