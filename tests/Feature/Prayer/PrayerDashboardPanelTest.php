@@ -196,3 +196,10 @@ describe('Prayer Dashboard Panel - I Prayed Today Button', function () {
             ->assertSee('Prayer Streak: 2');
     });
 })->done(issue: 107, assignee: 'jonzenor');
+
+describe('Prayer Dashboard Panel - Community Stats', function () {
+    // Clicking on the prayed button adds to the daily stats
+
+    // The widget shows how many community members prayed that day
+
+})->wip(issue: 108, assignee: 'jonzenor');
