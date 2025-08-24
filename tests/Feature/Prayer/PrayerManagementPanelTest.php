@@ -113,7 +113,7 @@ describe('Prayer Management Panel - Permissions', function () {
     })->with([
         'Officer Command' => fn () => officerCommand(),
         'Officer Chaplain' => fn () => officerChaplain(),
-    ])->wip();
+    ])->done();
 
     // The other officer departments cannot view the panel
     it('should prevent other officer departments from viewing the panel', function ($user) {
@@ -125,6 +125,6 @@ describe('Prayer Management Panel - Permissions', function () {
         'Officer Engineer' => fn () => officerEngineer(),
         'Officer Quartermaster' => fn () => officerQuartermaster(),
         'Officer Steward' => fn () => officerSteward(),
-    ])->wip();
+    ])->done();
 
-})->wip(issue: 105, assignee: 'jonzenor');
+})->done(issue: 105, assignee: 'jonzenor');
