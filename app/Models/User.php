@@ -56,6 +56,7 @@ class User extends Authenticatable // implements MustVerifyEmail
             'staff_rank' => StaffRank::class,
             'staff_department' => StaffDepartment::class,
             'rules_accepted_at' => 'datetime',
+            'last_prayed_at' => 'datetime',
         ];
     }
 
@@ -116,5 +117,10 @@ class User extends Authenticatable // implements MustVerifyEmail
     public function acknowledgedAnnouncements()
     {
         return $this->belongsToMany(Announcement::class)->withTimestamps();
+    }
+
+    public function prayerCountries()
+    {
+        return $this->belongsToMany(PrayerCountry::class)->withPivot('year')->withTimestamps();
     }
 }

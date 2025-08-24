@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\{Model};
-use Illuminate\Database\Eloquent\Factories\{HasFactory};
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Tag model for categorizing announcements.
@@ -34,6 +34,6 @@ class Tag extends Model
      */
     public function announcements()
     {
-    return $this->belongsToMany(Announcement::class, 'announcement_tag', 'tag_id', 'announcement_id');
+        return $this->belongsToMany(Announcement::class, 'announcement_tag', 'tag_id', 'announcement_id');
     }
 }
