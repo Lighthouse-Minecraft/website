@@ -4,6 +4,7 @@ use App\Models\PrayerCountry;
 use Illuminate\Support\Facades\Config;
 
 use function Pest\Laravel\get;
+use function Pest\Livewire\livewire;
 
 describe('Prayer Dashboard Panel - Display', function () {
     // The dashboard widget displays
@@ -81,14 +82,36 @@ describe('Prayer Dashboard Panel - Permissions', function () {
 })->done(issue: 106, assignee: 'jonzenor');
 
 describe('Prayer Dashboard Panel - I Prayed Today Button', function () {
-
     // There is a button to record that a user has prayed today
+    it('should display a button to mark the prayer as prayed for today', function () {
+        loginAsAdmin();
 
-    // Clicking the button saves an entry in the prayer_user table
+        get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('I Prayed Today');
+    })->done();
+
+    // Clicking the button saves an entry in the prayer_country_user table
+    it('should save an entry in the db when clicked', function () {
+        $user = loginAsAdmin();
+        $today = now()->format('n-d');
+        $year = now()->format('Y');
+        $prayerNation = PrayerCountry::factory()->withDay($today)->create();
+
+        livewire('prayer.prayer-widget')
+            ->call('markAsPrayedToday')
+            ->assertOk();
+
+        $this->assertDatabaseHas('prayer_country_user', [
+            'user_id' => $user->id,
+            'prayer_country_id' => $prayerNation->id,
+            'year' => $year,
+        ]);
+    });
 
     // The buttons turns gray if the user has already prayed today
 
     // The button records the user's streak on their profile
 
     // The dashboard widget shows the users streak
-})->todo(issue: 107, assignee: 'jonzenor');
+})->wip(issue: 107, assignee: 'jonzenor');

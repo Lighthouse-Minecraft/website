@@ -2,6 +2,7 @@
 
 use App\Models\PrayerCountry;
 use Livewire\Volt\Component;
+use Flux\Flux;
 
 new class extends Component {
     public $day;
@@ -9,7 +10,27 @@ new class extends Component {
 
     public function mount() {
         $this->day = date('n-d');
-        $this->prayerCountry = PrayerCountry::where('day', $this->day)->first();
+        $this->loadPrayerData(date('n'), date('j'));
+    }
+
+    public function markAsPrayedToday() {
+        // Save the prayer record
+        auth()->user()->prayerCountries()->attach($this->prayerCountry->id, [
+            'year' => now()->format('Y'),
+        ]);
+
+        Flux::toast('Thank you for praying today!', 'Success', variant: 'success');
+    }
+
+    public function loadPrayerData($month, $day) {
+        $cacheKey = "prayer_country_{$month}_{$day}";
+        $cacheTtl = config('lighthouse.prayer_cache_ttl', 60 * 60 * 24); // default to 24 hours
+
+        $prayerCountry = Cache::flexible($cacheKey, [$cacheTtl, $cacheTtl * 7], fn() => PrayerCountry::where('day', "{$month}-{$day}")->first());
+
+        if ($prayerCountry) {
+            $this->prayerCountry = $prayerCountry;
+        }
     }
 }; ?>
 
@@ -40,5 +61,9 @@ new class extends Component {
         @endif
         <flux:separator />
         <flux:link href="{{ config('lighthouse.prayer_list_url') }}" class="text-sm" target="_blank" rel="noopener noreferrer">Lighthouse Prayer List</flux:link>
+
+        <div class="w-full text-right mt-6">
+            <flux:button wire:click="markAsPrayedToday" variant="primary">I Prayed Today</flux:button>
+        </div>
     </flux:card>
 </div>
