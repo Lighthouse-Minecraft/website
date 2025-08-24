@@ -78,4 +78,17 @@ describe('Prayer Dashboard Panel - Permissions', function () {
         get(route('dashboard'))
             ->assertDontSee('Pray Today');
     })->with('memberAtMostDrifter')->done();
-})->wip(issue: 106, assignee: 'jonzenor');
+})->done(issue: 106, assignee: 'jonzenor');
+
+describe('Prayer Dashboard Panel - I Prayed Today Button', function () {
+
+    // There is a button to record that a user has prayed today
+
+    // Clicking the button saves an entry in the prayer_user table
+
+    // The buttons turns gray if the user has already prayed today
+
+    // The button records the user's streak on their profile
+
+    // The dashboard widget shows the users streak
+})->todo(issue: 107, assignee: 'jonzenor');
