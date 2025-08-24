@@ -22,7 +22,9 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            <livewire:prayer.prayer-widget />
+            @can('viewPrayer', App\Models\PrayerCountry::class)
+                <livewire:prayer.prayer-widget />
+            @endcan
         </div>
     </div>
 

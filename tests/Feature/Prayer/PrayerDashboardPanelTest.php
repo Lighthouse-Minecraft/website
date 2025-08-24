@@ -60,4 +60,22 @@ describe('Prayer Dashboard Panel - Display', function () {
 
 describe('Prayer Dashboard Panel - Permissions', function () {
     // The dashboard widget shows for all Stowaway and above
-})->todo(issue: 106, assignee: 'jonzenor');
+    it('should allow Stowaway and above to view the panel', function ($user) {
+        $today = now()->format('n-d');
+        $prayerNation = PrayerCountry::factory()->withDay($today)->create();
+        loginAs($user);
+
+        get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('Operation World')
+            ->assertSeeLivewire('prayer.prayer-widget');
+    })->with('memberAtLeastStowaway')->done();
+
+    // The dashboard widget is not visible for Drifters
+    it('should not allow Drifters to view the panel', function ($user) {
+        loginAs($user);
+
+        get(route('dashboard'))
+            ->assertDontSee('Pray Today');
+    })->with('memberAtMostDrifter')->done();
+})->wip(issue: 106, assignee: 'jonzenor');
