@@ -149,6 +149,39 @@ describe('Prayer Dashboard Panel - I Prayed Today Button', function () {
     });
 
     // The button records the user's streak on their profile
+    it('should update the users prayer streak on their profile', function () {
+        $user = loginAsAdmin();
+        $today = now()->format('n-d');
+        $prayerNation = PrayerCountry::factory()->withDay($today)->create();
+
+        // First time - should work and show success message
+        livewire('prayer.prayer-widget')
+            ->call('markAsPrayedToday')
+            ->assertOk()
+            ->assertSee('Thank you for Praying');
+
+        $user->refresh();
+        $this->assertEquals(1, $user->prayer_streak);
+    });
+
+    // The prayer streak is reset if the user missed a day
+    it('should reset the users prayer streak if they miss a day', function () {
+        $user = loginAsAdmin();
+        $today = now()->format('n-d');
+        $prayerNation = PrayerCountry::factory()->withDay($today)->create();
+
+        $user->prayer_streak = 5;
+        $user->last_prayed_at = now()->subDays(2);
+        $user->save();
+
+        livewire('prayer.prayer-widget')
+            ->call('markAsPrayedToday')
+            ->assertOk()
+            ->assertSee('Thank you for Praying');
+
+        $user->refresh();
+        $this->assertEquals(1, $user->prayer_streak);
+    });
 
     // The dashboard widget shows the users streak
 })->wip(issue: 107, assignee: 'jonzenor');

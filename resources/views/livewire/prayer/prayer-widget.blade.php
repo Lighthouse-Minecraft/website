@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\PrayerCountry;
+use App\Models\User;
 use Livewire\Volt\Component;
 use Flux\Flux;
 use Illuminate\Support\Facades\Cache;
@@ -39,9 +40,10 @@ new class extends Component {
 
     public function markAsPrayedToday() {
         $currentYear = now()->format('Y');
+        $user = User::find(auth()->id());
 
         // Check if user has already prayed for this country this year
-        $hasAlreadyPrayed = auth()->user()
+        $hasAlreadyPrayed = $user
             ->prayerCountries()
             ->wherePivot('prayer_country_id', $this->prayerCountry->id)
             ->wherePivot('year', $currentYear)
@@ -53,13 +55,21 @@ new class extends Component {
         }
 
         // Save the prayer record
-        auth()->user()->prayerCountries()->attach($this->prayerCountry->id, [
+        $user->prayerCountries()->attach($this->prayerCountry->id, [
             'year' => $currentYear,
         ]);
 
+        if ($user->last_prayed_at && $user->last_prayed_at->isYesterday()) {
+            $user->prayer_streak ++;
+        } else if (!$user->last_prayed_at || !$user->last_prayed_at->isToday()) {
+            $user->prayer_streak = 1; // reset streak if not consecutive
+        }
+
+        $user->last_prayed_at = now();
+        $user->save();
+
         // Clear the cache for this user/country/year combination
-        $userId = auth()->id();
-        $cacheKey = "user_prayer_{$userId}_{$this->prayerCountry->id}_{$currentYear}";
+        $cacheKey = "user_prayer_{$user->id}_{$this->prayerCountry->id}_{$currentYear}";
         Cache::forget($cacheKey);
 
         // Update the state
