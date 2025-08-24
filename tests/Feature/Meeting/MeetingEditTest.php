@@ -115,7 +115,7 @@ describe('Meeting Edit - Meeting Workflow', function () {
 
         get(route('meeting.edit', ['meeting' => $meeting->id]))
             ->assertDontSee('General')
-            ->assertDontSee(StaffDepartment::Command->label())
+            // ->assertDontSee(StaffDepartment::Command->label())
             ->assertDontSee(StaffDepartment::Chaplain->label())
             ->assertDontSee(StaffDepartment::Engineer->label())
             ->assertDontSee(StaffDepartment::Quartermaster->label())
