@@ -11,6 +11,7 @@ new class extends Component {
     public $prayerCountry;
     public $hasPrayedToday = false;
     public $user;
+    public $prayerStats;
 
     public function mount() {
         $this->day = date('n-d');
@@ -41,6 +42,11 @@ new class extends Component {
     }
 
     public function markAsPrayedToday() {
+        if (! $this->prayerCountry) {
+            Flux::toast('No prayer country found for today.', 'Error', variant: 'danger');
+            return;
+        }
+
         $currentYear = now()->format('Y');
 
         // Check if user has already prayed for this country this year
@@ -69,6 +75,9 @@ new class extends Component {
         $this->user->last_prayed_at = now();
         $this->user->save();
 
+        $this->prayerStats->count ++;
+        $this->prayerStats->save();
+
         // Clear the cache for this user/country/year combination
         $cacheKey = "user_prayer_{$this->user->id}_{$this->prayerCountry->id}_{$currentYear}";
         Cache::forget($cacheKey);
@@ -83,10 +92,18 @@ new class extends Component {
         $cacheKey = "prayer_country_{$month}_{$day}";
         $cacheTtl = config('lighthouse.prayer_cache_ttl', 60 * 60 * 24); // default to 24 hours
 
-        $prayerCountry = Cache::flexible($cacheKey, [$cacheTtl, $cacheTtl * 7], fn() => PrayerCountry::where('day', "{$month}-{$day}")->first());
+        $prayerCountry = Cache::flexible($cacheKey, [$cacheTtl, $cacheTtl * 7], fn() => PrayerCountry::where('day', "{$month}-{$day}")->with('stats')->first());
+
 
         if ($prayerCountry) {
             $this->prayerCountry = $prayerCountry;
+
+            $year = now()->year;
+
+            $this->prayerStats = $prayerCountry->stats()->firstOrCreate(
+                ['year' => $year],
+                ['count' => 0],
+            );
         }
     }
 }; ?>
@@ -96,7 +113,20 @@ new class extends Component {
         <div class="flex">
             <flux:heading>Pray Today</flux:heading>
             <flux:spacer />
-            <flux:text class="flex"><flux:icon.bolt variant="solid" class="text-yellow-300 size-4 mx-1" /> Prayer Streak: {{  $user->prayer_streak }}</flux:text>
+            <div class="flex gap-3">
+                <flux:tooltip content="Your Prayer Streak" class="flex">
+                    <flux:icon.bolt variant="solid" class="text-yellow-300 size-4 mx-1" />
+                    <flux:text variant="pill" class="">
+                        {{  $user->prayer_streak }}
+                    </flux:text>
+                </flux:tooltip>
+                @if ($prayerStats)
+                    <flux:tooltip content="How Many Lighthouse Members Prayed Today" class="flex">
+                        <flux:icon.user-group variant="solid" class="text-purple-500 size-4 mx-1" />
+                        <flux:text>{{ $prayerStats->count }}</flux:text>
+                    </flux:tooltip>
+                @endif
+            </div>
         </div>
 
         @if($prayerCountry)
@@ -122,10 +152,13 @@ new class extends Component {
         @endif
         <flux:separator class="my-5"/>
         <flux:link href="{{ config('lighthouse.prayer_list_url') }}" class="text-sm" target="_blank" rel="noopener noreferrer">Lighthouse Prayer List</flux:link>
+
         <flux:separator class="my-5"/>
-        <div class="w-full text-right mt-6">
+        <div class="w-full flex mt-6">
+
+            <flux:spacer />
             @if($hasPrayedToday)
-                <flux:button variant="ghost" disabled>
+                <flux:button variant="ghost" size="xs" disabled>
                     <flux:icon name="check" class="w-4 h-4 mr-1" />
                     Thank you for Praying
                 </flux:button>

@@ -188,11 +188,35 @@ describe('Prayer Dashboard Panel - I Prayed Today Button', function () {
         $user = loginAsAdmin();
         $today = now()->format('n-d');
 
-        $user->prayer_streak = 2;
+        $user->prayer_streak = 200005;
         $user->save();
 
         // First time - should work and show success message
         livewire('prayer.prayer-widget')
-            ->assertSee('Prayer Streak: 2');
+            ->assertSee('Prayer Streak')
+            ->assertSee('200005');
     });
 })->done(issue: 107, assignee: 'jonzenor');
+
+describe('Prayer Dashboard Panel - Community Stats', function () {
+    // Clicking on the prayed button adds to the daily stats
+    it('adds to the stats when clicking I Prayed', function () {
+        $user = loginAsAdmin();
+        $today = now()->format('n-d');
+        $prayerNation = PrayerCountry::factory()->withDay($today)->create();
+
+        livewire('prayer.prayer-widget')
+            ->call('markAsPrayedToday')
+            ->assertOk();
+
+        // Check that the daily stats have been updated
+        $this->assertDatabaseHas('prayer_country_stats', [
+            'year' => now()->format('Y'),
+            'prayer_country_id' => $prayerNation->id,
+            'count' => 1,
+        ]);
+    });
+
+    // The widget shows how many community members prayed that day
+
+})->wip(issue: 108, assignee: 'jonzenor');
