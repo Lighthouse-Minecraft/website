@@ -10,10 +10,12 @@ new class extends Component {
     public $day;
     public $prayerCountry;
     public $hasPrayedToday = false;
+    public $user;
 
     public function mount() {
         $this->day = date('n-d');
         $this->loadPrayerData(date('n'), date('j'));
+        $this->user = auth()->user();
 
         if ($this->prayerCountry) {
             $this->hasPrayedToday = $this->checkIfUserHasPrayedThisYear();
@@ -40,10 +42,9 @@ new class extends Component {
 
     public function markAsPrayedToday() {
         $currentYear = now()->format('Y');
-        $user = User::find(auth()->id());
 
         // Check if user has already prayed for this country this year
-        $hasAlreadyPrayed = $user
+        $hasAlreadyPrayed = $this->user
             ->prayerCountries()
             ->wherePivot('prayer_country_id', $this->prayerCountry->id)
             ->wherePivot('year', $currentYear)
@@ -55,21 +56,21 @@ new class extends Component {
         }
 
         // Save the prayer record
-        $user->prayerCountries()->attach($this->prayerCountry->id, [
+        $this->user->prayerCountries()->attach($this->prayerCountry->id, [
             'year' => $currentYear,
         ]);
 
-        if ($user->last_prayed_at && $user->last_prayed_at->isYesterday()) {
-            $user->prayer_streak ++;
-        } else if (!$user->last_prayed_at || !$user->last_prayed_at->isToday()) {
-            $user->prayer_streak = 1; // reset streak if not consecutive
+        if ($this->user->last_prayed_at && $this->user->last_prayed_at->isYesterday()) {
+            $this->user->prayer_streak ++;
+        } else if (!$this->user->last_prayed_at || !$this->user->last_prayed_at->isToday()) {
+            $this->user->prayer_streak = 1; // reset streak if not consecutive
         }
 
-        $user->last_prayed_at = now();
-        $user->save();
+        $this->user->last_prayed_at = now();
+        $this->user->save();
 
         // Clear the cache for this user/country/year combination
-        $cacheKey = "user_prayer_{$user->id}_{$this->prayerCountry->id}_{$currentYear}";
+        $cacheKey = "user_prayer_{$this->user->id}_{$this->prayerCountry->id}_{$currentYear}";
         Cache::forget($cacheKey);
 
         // Update the state
@@ -92,7 +93,11 @@ new class extends Component {
 
 <div>
     <flux:card class="space-y-3">
-        <flux:heading>Pray Today</flux:heading>
+        <div class="flex">
+            <flux:heading>Pray Today</flux:heading>
+            <flux:spacer />
+            <flux:text class="flex"><flux:icon.bolt variant="solid" class="text-yellow-300 size-4 mx-1" /> Prayer Streak: {{  $user->prayer_streak }}</flux:text>
+        </div>
 
         @if($prayerCountry)
             <flux:separator />
@@ -115,9 +120,9 @@ new class extends Component {
                 <flux:button href="{{ $prayerCountry->prayer_cast_url }}" size="xs" target="_blank" >PrayerCast Video</flux:button>
             @endif
         @endif
-        <flux:separator />
+        <flux:separator class="my-5"/>
         <flux:link href="{{ config('lighthouse.prayer_list_url') }}" class="text-sm" target="_blank" rel="noopener noreferrer">Lighthouse Prayer List</flux:link>
-
+        <flux:separator class="my-5"/>
         <div class="w-full text-right mt-6">
             @if($hasPrayedToday)
                 <flux:button variant="ghost" disabled>

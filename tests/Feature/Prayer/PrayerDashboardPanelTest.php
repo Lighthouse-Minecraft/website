@@ -184,4 +184,15 @@ describe('Prayer Dashboard Panel - I Prayed Today Button', function () {
     });
 
     // The dashboard widget shows the users streak
-})->wip(issue: 107, assignee: 'jonzenor');
+    it('should show the users prayer streak', function () {
+        $user = loginAsAdmin();
+        $today = now()->format('n-d');
+
+        $user->prayer_streak = 2;
+        $user->save();
+
+        // First time - should work and show success message
+        livewire('prayer.prayer-widget')
+            ->assertSee('Prayer Streak: 2');
+    });
+})->done(issue: 107, assignee: 'jonzenor');
