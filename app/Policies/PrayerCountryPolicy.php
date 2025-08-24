@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\MembershipLevel;
 use App\Enums\StaffDepartment;
 use App\Enums\StaffRank;
 use App\Models\PrayerCountry;
@@ -26,12 +27,9 @@ class PrayerCountryPolicy
         return $user->isInDepartment(StaffDepartment::Chaplain) && $user->isAtLeastRank(StaffRank::Officer);
     }
 
-    /**
-     * Determine whether the user can view the model.
-     */
-    public function view(User $user, PrayerCountry $prayerCountry): bool
+    public function viewPrayer(User $user): bool
     {
-        return true;
+        return $user->isAtLeastLevel(MembershipLevel::Stowaway);
     }
 
     /**
