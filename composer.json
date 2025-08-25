@@ -15,6 +15,7 @@
         "laravel/tinker": "^2.10.1",
         "livewire/flux": "^2.0",
         "livewire/flux-pro": "^2.2",
+        "livewire/livewire": "^3.6",
         "livewire/volt": "^1.6.7",
         "lorisleiva/laravel-actions": "^2.9"
     },

@@ -1,10 +1,17 @@
 
 <?php
 
-use App\Models\{Announcement, Category, Tag};
-use Flux\{Flux, Option};
-use Illuminate\Support\{Arr, Str, Carbon, Collection, Facades};
-use Livewire\Volt\{Component};
+use App\Models\Announcement;
+use App\Models\Category;
+use App\Models\Tag;
+use Flux\Flux;
+use Flux\Option;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades;
+use Livewire\Volt\Component;
 
 new class extends Component {
     public string $announcementTitle = '';
@@ -37,8 +44,10 @@ new class extends Component {
         $this->validate([
             'announcementTitle' => 'required|string|max:255',
             'announcementContent' => 'required|string|max:5000',
-            'selectedTags' => 'array',
-            'selectedCategories' => 'array',
+            'selectedTags' => ['array'],
+            'selectedTags.*' => ['integer', 'exists:tags,id'],
+            'selectedCategories' => ['array'],
+            'selectedCategories.*' => ['integer', 'exists:categories,id'],
             'isPublished' => 'boolean',
             'published_at' => 'date|nullable',
         ]);
@@ -51,15 +60,17 @@ new class extends Component {
         $this->isPublished = (bool) $this->isPublished;
         $this->published_at = $this->published_at ? Carbon::parse($this->published_at) : null;
 
-        Announcement::create([
+        $announcement = Announcement::create([
             'title' => $this->announcementTitle,
             'content' => $this->announcementContent,
             'author_id' => auth()->id(),
-            'tags' => $this->selectedTags,
-            'categories' => $this->selectedCategories,
             'is_published' => $this->isPublished,
             'published_at' => $this->isPublished ? ($this->published_at ?? now()) : null,
         ]);
+
+        // Sync pivot relations
+        $announcement->tags()->sync($this->selectedTags);
+        $announcement->categories()->sync($this->selectedCategories);
 
         Flux::toast('Announcement created successfully!', 'Success', variant: 'success');
         return redirect()->route('acp.index', ['tab' => 'announcement-manager']);
@@ -71,27 +82,64 @@ new class extends Component {
     <flux:heading size="xl">Create New Announcement</flux:heading>
     <form wire:submit.prevent="saveAnnouncement">
         <div class="space-y-6">
-            <flux:input label="Announcement Title" wire:model="announcementTitle" placeholder="Enter the title of the announcement" />
+            <flux:input wire:model="announcementTitle" placeholder="Enter title..." class="bg-transparent text-lg font-semibold" />
 
-            <flux:editor label="Announcement Content" wire:model="announcementContent" />
+            <flux:editor
+                wire:model="announcementContent"
+                class="bg-transparent
+                    [&_[data-slot=content]_.ProseMirror]:break-words
+                    [&_[data-slot=content]_.ProseMirror]:whitespace-pre-wrap
+                    [&_[data-slot=content]_.ProseMirror]:max-w-full
+                    [&_[data-slot=content]_.ProseMirror]:overflow-x-auto
+                    [&_[data-slot=content]]:max-h-[500px]
+                    [&_[data-slot=content]]:max-w-full
+                    [&_[data-slot=content]]:overflow-y-auto
+                    [&_[data-slot=content]_pre]:overflow-x-auto
+                    [&_[data-slot=content]_pre]:whitespace-pre-wrap!
+                    [&_[data-slot=content]_pre]:max-w-full
+                    [&_[data-slot=content]_pre]:w-full
+                    [&_[data-slot=content]_pre_code]:break-words!
+                    [&_[data-slot=content]_pre]:rounded-md
+                    [&_[data-slot=content]_pre]:p-3
+                    [&_[data-slot=content]_pre]:my-3
+                    [&_[data-slot=content]_pre]:border
+                    [&_[data-slot=content]_pre]:bg-black/10
+                    [&_[data-slot=content]_pre]:border-black/20
+                    dark:[&_[data-slot=content]_pre]:bg-white/10
+                    dark:[&_[data-slot=content]_pre]:border-white/20
+                    [&_[data-slot=content]_pre]:font-mono
+                    [&_[data-slot=content]_pre]:text-sm
+                "
+                style="text-align: justify;"
+            />
 
-            <select name="tags">
-                <option value="">Select Tags</option>
-                @foreach ($this->getTagOptionsProperty() as $tag)
-                    <option value="{{ $tag['value'] }}">{{ $tag['label'] }}</option>
-                @endforeach
-            </select>
+            <flux:field>
+                <flux:label>Tags</flux:label>
+                <flux:select variant="listbox" multiple searchable indicator="checkbox" wire:model.live="selectedTags">
+                    <x-slot name="button">
+                        <flux:select.button class="w-full max-w-xl" placeholder="Select tags" :invalid="$errors->has('selectedTags')" />
+                    </x-slot>
+                    @foreach ($this->getTagOptionsProperty() as $tag)
+                        <flux:select.option value="{{ $tag['value'] }}">{{ $tag['label'] }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+                <flux:error name="selectedTags" />
+            </flux:field>
 
-            <select name="categories">
-                <option value="">Select Categories</option>
-                @foreach ($this->getCategoryOptionsProperty() as $category)
-                    <option value="{{ $category['value'] }}">{{ $category['label'] }}</option>
-                @endforeach
-            </select>
+            <flux:field>
+                <flux:label>Categories</flux:label>
+                <flux:select variant="listbox" multiple searchable indicator="checkbox" wire:model.live="selectedCategories">
+                    <x-slot name="button">
+                        <flux:select.button class="w-full max-w-xl" placeholder="Select categories" :invalid="$errors->has('selectedCategories')" />
+                    </x-slot>
+                    @foreach ($this->getCategoryOptionsProperty() as $category)
+                        <flux:select.option value="{{ $category['value'] }}">{{ $category['label'] }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+                <flux:error name="selectedCategories" />
+            </flux:field>
 
             <flux:checkbox label="Published" wire:model="isPublished" />
-
-            {{-- <flux:input label="Published At" wire:model="published_at" type="datetime-local" /> --}}
 
             <div class="w-full text-right">
                 <flux:button wire:click="saveAnnouncement" icon="document-check" variant="primary">Save Announcement</flux:button>

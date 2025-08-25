@@ -38,7 +38,7 @@ describe('Meetings List Page - Load', function () {
         loginAsAdmin();
 
         get(route('acp.index'))
-            ->assertSee('Manage Meetings');
+            ->assertSee('Meetings');
     });
 
 });
@@ -71,7 +71,7 @@ describe('Meetings List Page - Permissions', function () {
 
     it('does not allow guests to see the menu item for meetings', function () {
         get('/pages/home')
-            ->assertDontSee('Manage Meetings');
+            ->assertDontSee('Meetings');
     });
 
     it('is not visible to Traveler members', function () {
@@ -79,7 +79,7 @@ describe('Meetings List Page - Permissions', function () {
         actingAs($user);
 
         get(route('acp.index'))
-            ->assertDontSee('Manage Meetings');
+            ->assertDontSee('Meetings');
     });
 
     it('is visible to Crew Members', function () {
@@ -87,7 +87,7 @@ describe('Meetings List Page - Permissions', function () {
         actingAs($user);
 
         get(route('acp.index'))
-            ->assertSee('Manage Meetings');
+            ->assertSee('Meetings');
     });
 
     it('does not load for members', function () {

@@ -1,14 +1,21 @@
 <?php
 
-use App\Models\{Announcement, Category, Comment, Role, Tag, User};
-use Livewire\{WithPagination};
-use Livewire\Volt\{Component};
+use App\Models\Announcement;
+use App\Models\Category;
+use App\Models\Comment;
+use App\Models\Role;
+use App\Models\Tag;
+use App\Models\User;
+use Livewire\WithPagination;
+use Livewire\Volt\Component;
 
 new class extends Component {
     use WithPagination;
 
     public $sortBy = 'created_at';
     public $sortDirection = 'desc';
+    // Bulk selection state
+    public array $selectedAnnouncementIds = [];
 
     public function sort($column)
     {
@@ -31,13 +38,83 @@ new class extends Component {
     {
         $this->announcements = $this->getAnnouncementsProperty();
     }
+
+    // Toggle select all on current page
+    public function toggleAllAnnouncements(bool $checked): void
+    {
+        $ids = collect($this->announcements->items())->pluck('id')->map(fn ($v) => (int) $v)->all();
+        $this->selectedAnnouncementIds = $checked ? $ids : [];
+    }
+
+    // Bulk delete, limited to items visible on current page
+    public function bulkDeleteAnnouncements(): void
+    {
+        $pageIds = collect($this->announcements->items())->pluck('id')->map(fn ($v) => (int) $v)->all();
+        $idsToDelete = array_values(array_intersect($this->selectedAnnouncementIds, $pageIds));
+
+        if (empty($idsToDelete)) {
+            return;
+        }
+
+        $announcements = Announcement::query()->whereIn('id', $idsToDelete)->get();
+        $deletableIds = $announcements->filter(fn ($a) => auth()->user()?->can('delete', $a))->pluck('id')->all();
+
+        if (! empty($deletableIds)) {
+            Announcement::query()->whereIn('id', $deletableIds)->delete();
+        }
+
+        $this->selectedAnnouncementIds = [];
+        $this->resetPage();
+        $this->announcements = $this->getAnnouncementsProperty();
+    }
+
+    // Keep selections scoped to the current page
+    public function updatedPage(): void
+    {
+        $currentPageIds = collect($this->getAnnouncementsProperty()->items())->pluck('id')->map(fn ($v) => (int) $v)->all();
+        $this->selectedAnnouncementIds = array_values(array_intersect($this->selectedAnnouncementIds, $currentPageIds));
+    }
 }; ?>
 
 <div class="space-y-6">
     <flux:heading size="xl">Manage Announcements</flux:heading>
+    <flux:description>
+        Use this page to create, edit, publish, and organize announcements. You can manage announcement content, assign categories and tags, and control publication status. Actions here help keep your community informed and engaged with timely updates and news.
+    </flux:description>
+
+    <div class="flex items-center justify-between">
+        @php
+            $announcementPageIds = collect($this->announcements->items())->pluck('id')->all();
+            $selectedAnnouncementCountOnPage = count(array_intersect($selectedAnnouncementIds, $announcementPageIds));
+        @endphp
+        <div class="text-sm text-gray-400">
+            <span>Selected:</span>
+            <span class="font-semibold text-gray-200">{{ $selectedAnnouncementCountOnPage }}</span>
+        </div>
+        <flux:button type="button"
+                     size="sm"
+                     icon="trash"
+                     variant="danger"
+                     :disabled="$selectedAnnouncementCountOnPage === 0"
+                     x-on:click.prevent="if (confirm('Delete selected announcements on this page?')) { $wire.bulkDeleteAnnouncements() }">
+            Bulk
+        </flux:button>
+    </div>
 
     <flux:table :paginate="$this->announcements">
         <flux:table.columns>
+            <flux:table.column>
+                @php
+                    $announcementPageIds = collect($this->announcements->items())->pluck('id')->all();
+                    $annOnPageSelectedCount = count(array_intersect($selectedAnnouncementIds, $announcementPageIds));
+                    $annAllOnPageSelected = $annOnPageSelectedCount === count($announcementPageIds) && count($announcementPageIds) > 0;
+                @endphp
+                <input type="checkbox"
+                       aria-label="Select all announcements"
+                       wire:key="announcements-header-{{ implode('-', $announcementPageIds) }}-{{ count($selectedAnnouncementIds) }}"
+                       wire:change="toggleAllAnnouncements($event.target.checked)"
+                       @checked($annAllOnPageSelected)>
+            </flux:table.column>
             <flux:table.column sortable :sorted="$sortBy === 'title'" :direction="$sortDirection" wire:click="sort('title')">Title</flux:table.column>
             <flux:table.column sortable :sorted="$sortBy === 'author_id'" :direction="$sortDirection" wire:click="sort('author_id')">Author</flux:table.column>
             <flux:table.column sortable :sorted="$sortBy === 'tags'" :direction="$sortDirection" wire:click="sort('tags')">Tags</flux:table.column>
@@ -53,7 +130,19 @@ new class extends Component {
         <flux:table.rows>
             @forelse($this->announcements as $announcement)
                 <flux:table.row :key="$announcement->id">
-                    <flux:table.cell>{{ $announcement->title }}</flux:table.cell>
+                    <flux:table.cell>
+                        <input class="announcement-checkbox"
+                               type="checkbox"
+                               value="{{ $announcement->id }}"
+                               aria-label="Select announcement {{ $announcement->title }}"
+                               wire:key="announcement-row-{{ $announcement->id }}-{{ in_array($announcement->id, $selectedAnnouncementIds) ? '1' : '0' }}"
+                               wire:model="selectedAnnouncementIds">
+                    </flux:table.cell>
+                    <flux:table.cell class="align-middle">
+                        <div class="truncate" style="max-width: 40ch" title="{{ $announcement->title }}">
+                            {{ $announcement->title }}
+                        </div>
+                    </flux:table.cell>
                     <flux:table.cell class="flex items-center gap-3">
                         @php($author = $announcement->author) {{-- may be null --}}
                         @if($author)
@@ -75,15 +164,22 @@ new class extends Component {
                     </flux:table.cell>
                     <flux:table.cell>{{ $announcement->updated_at->diffForHumans() }}</flux:table.cell>
                     <flux:table.cell>{{ $announcement->is_published ? 'Yes' : 'No' }}</flux:table.cell>
-                    <flux:table.cell>{{ $announcement->published_at ? $announcement->published_at->format('F j, Y H:i') : 'N/A' }}</flux:table.cell>
                     <flux:table.cell>
-                        <flux:button wire:navigate href="{{ route('acp.announcements.edit', $announcement->id) }}" size="xs" icon="pencil-square"></flux:button>
-                        <flux:button wire:navigate href="{{ route('announcements.show', $announcement->id) }}" size="xs" icon="trash" variant="danger"></flux:button>
+                        @if($announcement->published_at)
+                            <time datetime="{{ $announcement->published_at->toIso8601String() }}">{{ $announcement->published_at->format('M j, Y H:i') }}</time>
+                        @else
+                            N/A
+                        @endif
+                    </flux:table.cell>
+                    <flux:table.cell class="flex items-center gap-2">
+                        <flux:button wire:navigate href="{{ route('announcements.show', ['id' => $announcement->id, 'from' => 'acp']) }}" size="xs" icon="eye" title="View Announcement"></flux:button>
+                        <flux:button wire:navigate href="{{ route('acp.announcements.edit', $announcement->id) }}" size="xs" icon="pencil-square" variant="primary" color="sky" title="Edit Announcement"></flux:button>
+                        <flux:button wire:navigate href="{{ route('acp.announcements.confirmDelete', ['id' => $announcement->id, 'from' => 'acp']) }}" size="xs" icon="trash" variant="danger" title="Delete Announcement"></flux:button>
                     </flux:table.cell>
                 </flux:table.row>
             @empty
                 <flux:table.row>
-                    <flux:table.cell colspan="6" class="text-center text-gray-500">No announcements found</flux:table.cell>
+                    <flux:table.cell colspan="8" class="text-center text-gray-500">No announcements found</flux:table.cell>
                 </flux:table.row>
             @endforelse
         </flux:table.rows>

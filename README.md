@@ -90,13 +90,16 @@ use App\Models\User;
 - ``php artisan migrate``
 
 ## Setup git scripts on your system
+
 - ``ln -s ../../.dev-hooks/pre-commit .git/hooks/pre-commit``
 - ``ln -s ../../.dev-hooks/pre-push .git/hooks/pre-push``
 - ``chmod +x .dev-hooks/pre-commit``
 - ``chmod +x .dev-hooks/pre-push``
 
 ## Run Web Server
+
 I recommend running this in a background terminal so you can keep your main terminal available for artisan commands
+
 - ``composer run dev``
 
 To run each component manually instead of the above bundled command:
@@ -106,6 +109,7 @@ To run each component manually instead of the above bundled command:
 - ``npm run build`` // This does a one time build of all css/js assets and will need to be run again if those are updated
 
 ## Automated Testing
+
 - ``php artisan test`` // Run all tests
 - ``php artisan test --filter MyFileTest`` // Run all tests in a single Test file
 
@@ -154,4 +158,4 @@ If you encounter permission issues while accessing certain features or resources
         $msg .= "\nWARNING: Missing permissions: " . implode(', ', $missing) . ".";
     }
     dd($msg);
-    ``` 
+    ```

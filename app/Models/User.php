@@ -62,6 +62,14 @@ class User extends Authenticatable // implements MustVerifyEmail
     }
 
     /**
+     * Determine if the user is authenticated.
+     */
+    public function isAuthenticated(): bool
+    {
+        return $this->exists && ! is_null($this->id);
+    }
+
+    /**
      * Get the user's initials
      */
     public function initials(): string
@@ -118,6 +126,11 @@ class User extends Authenticatable // implements MustVerifyEmail
     public function acknowledgedAnnouncements()
     {
         return $this->belongsToMany(Announcement::class)->withTimestamps();
+    }
+
+    public function acknowledgedBlogs()
+    {
+        return $this->belongsToMany(Blog::class, 'blog_author', 'author_id', 'blog_id')->withTimestamps();
     }
 
     public function prayerCountries()

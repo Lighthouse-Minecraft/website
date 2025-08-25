@@ -14,11 +14,10 @@ describe('Dashboard display', function () {
         loginAsAdmin();
 
         get(route('dashboard'))
-            ->assertSeeLivewire('dashboard.view-announcements')
+            ->assertSeeLivewire('dashboard.notifications')
             ->assertSee($announcement->title)
             ->assertSee($announcement->content);
     })->done();
-
 })->done();
 
 describe('Dashboard Display - Acknowledge Announcements', function () {
@@ -31,7 +30,7 @@ describe('Dashboard Display - Acknowledge Announcements', function () {
         app(AcknowledgeAnnouncement::class)->run($announcement, $user);
 
         get(route('dashboard'))
-            ->assertSeeLivewire('dashboard.view-announcements')
+            ->assertSeeLivewire('dashboard.notifications')
             // We can't check for announcement title because it will still show up in the widget
             ->assertDontSee($announcement->content);
     })->done();
@@ -60,7 +59,7 @@ describe('Dashboard Display - Announcements List', function () {
         loginAsAdmin();
 
         get(route('dashboard'))
-            ->assertSeeLivewire('dashboard.view-announcements')
+            ->assertSeeLivewire('dashboard.announcements-widget')
             ->assertSeeInOrder(['START OF ANNOUNCEMENTS WIDGET', $announcement1->title, 'END OF ANNOUNCEMENTS WIDGET'])
             ->assertSeeInOrder(['START OF ANNOUNCEMENTS WIDGET', $announcement2->title, 'END OF ANNOUNCEMENTS WIDGET']);
     })->wip();

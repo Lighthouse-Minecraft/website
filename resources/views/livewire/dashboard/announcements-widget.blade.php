@@ -30,7 +30,7 @@ new class extends Component {
             @foreach ($this->announcements as $announcement)
                 <flux:table.row>
                     <flux:table.cell>
-                        <flux:link href="{{ route('announcements.show', $announcement->id) }}">{{  $announcement->title }}</flux:link>
+                        <flux:link href="{{ route('announcements.show', ['id' => $announcement->id, 'from' => 'dashboard']) }}">{{  $announcement->title }}</flux:link>
                     </flux:table.cell>
                 </flux:table.row>
             @endforeach

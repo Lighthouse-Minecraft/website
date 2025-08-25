@@ -1,100 +1,67 @@
-<?php
-
-use Livewire\Volt\Component;
-
-new class extends Component {
-    public $announcement;
-
-    public function mount($announcement)
-    {
-        $this->announcement = $announcement;
-    }
-
-}; ?>
-
-<div class="w-full space-y-6">
-    <div class="bg-red-900/30 border-l-4 border-red-500 text-red-300 px-4 py-3 shadow-sm rounded">
-        <strong class="font-semibold text-red-200">Warning:</strong>
-        You are about to delete this announcement.<br>
-        <span class="text-sm text-red-200">Use the buttons on the right-hand side to edit or confirm deletion, or use the back button to go back.</span>
-    </div>
-    <div class="flex items-center justify-between">
-        <flux:heading size="xl">{{ $announcement->title }}</flux:heading>
-        <div>
-            @can('update', $announcement)
-                <a href="{{ route('acp.announcements.edit', $announcement->id) }}">
-                    <flux:button size="xs" icon="pencil-square"></flux:button>
-                </a>
-            @endcan
-            @can('delete', $announcement)
-                <form action="{{ route('acp.announcements.delete', $announcement->id) }}" method="POST" style="display:inline;">
-                    @csrf
-                    @method('DELETE')
-                    <flux:button type="submit" size="xs" icon="trash" variant="danger"></flux:button>
-                </form>
-            @endcan
+<flux:card class="max-w-3xl mx-auto mt-10">
+    <div class="p-8 space-y-6">
+        <flux:heading size="xl" style="font-weight: bold; text-align: center;">Announcement Details</flux:heading>
+        <div class="mb-2 bg-transparent">
+            <h2 class="text-lg font-semibold text-gray-100 text-center">{{ $announcement->title }}</h2>
+        </div>
+        <div class="text-base text-gray-200 mb-2 bg-transparent">
+            <div class="mt-2 prose max-w-none whitespace-pre-wrap break-words [&_pre]:whitespace-pre-wrap [&_pre]:break-words [&_pre]:max-w-full [&_pre]:w-full [&_pre]:overflow-x-auto [&_code]:break-words [&_code]:break-all" style="text-align: justify;">
+                {!! $announcement->content !!}
+            </div>
+        </div>
+        <br>
+        <div class="text-sm text-gray-400">
+            <strong>Author:</strong>
+            @if($announcement->author)
+                <flux:link href="{{ route('profile.show', ['user' => $announcement->author]) }}">
+                    {{ $announcement->author->name }}
+                </flux:link>
+            @else
+                <span class="text-gray-400">Unknown</span>
+            @endif
+        </div>
+        <div class="text-sm text-gray-400">
+            <strong>Posted:</strong>
+            <time data-localize datetime="{{ $announcement->created_at->toIso8601String() }}">{{ $announcement->created_at->format('M d, Y H:i') }}</time>
+        </div>
+        @if($announcement->updated_at && $announcement->updated_at != $announcement->created_at)
+            <div class="text-xs text-gray-500">
+                <strong>Edited:</strong> <time data-localize datetime="{{ $announcement->updated_at->toIso8601String() }}">{{ $announcement->updated_at->format('M d, Y H:i') }}</time>
+            </div>
+        @endif
+        <div class="mb-4">
+            <strong>Categories:</strong>
+            @forelse($announcement->categories as $category)
+                <span class="text-sm inline-block bg-blue-200 text-blue-700 px-2 py-1 rounded mr-1">{{ $category->name }}</span>
+            @empty
+                <span class="text-sm text-gray-400">No categories</span>
+            @endforelse
+        </div>
+        <div class="mb-4">
+            <strong>Tags:</strong>
+            @forelse($announcement->tags as $tag)
+                <span class="text-sm inline-block bg-gray-200 text-gray-700 px-2 py-1 rounded mr-1">{{ $tag->name }}</span>
+            @empty
+                <span class="text-sm text-gray-400">No tags</span>
+            @endforelse
+        </div>
+        <div class="mt-6">
+            <strong>Comments:</strong>
+            <livewire:comments.comments-section :parent="$announcement" />
+        </div>
+        <div class="w-full text-right mt-4">
+            @if(request('from') === 'acp' || request()->routeIs('acp.*'))
+                <flux:button wire:navigate href="{{ route('acp.index', ['tab' => 'announcement-manager']) }}" variant="primary">Back</flux:button>
+            @else
+                    <flux:button
+                        onclick="if (document.referrer) { event.preventDefault(); window.history.back(); }"
+                        href="{{ request('from') === 'dashboard' ? route('dashboard') : route('announcements.index') }}"
+                        wire:navigate
+                        variant="primary"
+                    >
+                    Back
+                </flux:button>
+            @endif
         </div>
     </div>
-
-    <div id="editor_content" class="prose max-w-none">
-        {!! $announcement->content !!}
-    </div>
-    <flux:separator />
-    <livewire:announcements.author-info :announcement="$announcement" />
-    <livewire:announcements.categories :announcement="$announcement" />
-    <livewire:announcements.tags :announcement="$announcement" />
-    <livewire:announcements.comments :announcement="$announcement" />
-
-    <div class="text-sm text-gray-500" style="display: flex; align-items: center; gap: 8px;">
-        @php $author = $announcement->author; @endphp
-        By
-        @if($author)
-            <span style="display: inline-flex; align-items: center;">
-                @if(!empty($author->avatar))
-                    <flux:avatar size="xs" src="{{ $author->avatar }}" style="vertical-align: middle; margin-right: 4px;" />
-                @endif
-                <flux:link href="{{ route('profile.show', ['user' => $author]) }}">
-                    {{ $author->name ?? 'Unknown' }}
-                </flux:link>
-            </span>
-        @else
-            <span>Unknown</span>
-        @endif
-        <span>{{ $announcement->created_at->format('M d, Y') }}</span>
-        @if($announcement->published_at)
-            <span>&middot; Published: {{ $announcement->published_at->format('M d, Y H:i') }}</span>
-        @endif
-    </div>
-
-    <div class="mb-4">
-        <strong>Tags:</strong>
-        @forelse($announcement->tags as $tag)
-            <span class="inline-block bg-gray-200 text-gray-700 px-2 py-1 rounded mr-1">{{ $tag->name }}</span>
-        @empty
-            <span class="text-gray-400">No tags</span>
-        @endforelse
-    </div>
-    <div class="mb-4">
-        <strong>Categories:</strong>
-        @forelse($announcement->categories as $category)
-            <span class="inline-block bg-blue-200 text-blue-700 px-2 py-1 rounded mr-1">{{ $category->name }}</span>
-        @empty
-            <span class="text-gray-400">No categories</span>
-        @endforelse
-    </div>
-    <div class="mt-6">
-        <strong>Comments:</strong>
-        <ul>
-            @forelse($announcement->comments as $comment)
-                <li class="mb-2 border-b pb-2">
-                    <div class="text-xs text-gray-500">By {{ $comment->author->name ?? 'Unknown' }} on {{ $comment->created_at->format('M d, Y H:i') }}</div>
-                    <div>{{ $comment->content }}</div>
-                </li>
-            @empty
-                <li class="text-gray-400">No comments yet.</li>
-            @endforelse
-        </ul>
-    </div>
-
-    <flux:button size="sm" icon="arrow-left" onclick="window.history.back();"></flux:button>
-</div>
+</flux:card>

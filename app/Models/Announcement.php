@@ -4,20 +4,23 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Announcement extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
      */
     protected $fillable = [
         'title',
+        'slug',
         'content',
         'author_id',
         'is_published',
         'published_at',
+        'is_public',
     ];
 
     /**
@@ -42,6 +45,7 @@ class Announcement extends Model
     protected $casts = [
         'is_published' => 'boolean',
         'published_at' => 'datetime',
+        'is_public' => 'boolean',
     ];
 
     /**
@@ -57,7 +61,7 @@ class Announcement extends Model
      */
     public function comments()
     {
-        return $this->hasMany(Comment::class, 'announcement_id');
+        return $this->morphMany(Comment::class, 'commentable');
     }
 
     /**
@@ -194,7 +198,7 @@ class Announcement extends Model
      */
     public function route()
     {
-        return route('announcement.show', $this);
+        return route('announcements.show', $this->slug ?: $this->id);
     }
 
     /**
@@ -258,5 +262,55 @@ class Announcement extends Model
     public function acknowledgers()
     {
         return $this->belongsToMany(User::class)->withTimestamps();
+    }
+
+    // -------------------- Validation --------------------
+    /**
+     * Validate the Announcement model instance.
+     * Checks for required title and unique title.
+     */
+    public function isValid(): bool
+    {
+        // Title is required
+        if (empty($this->title)) {
+            return false;
+        }
+
+        // Title must be unique (excluding current model)
+        $query = Announcement::where('title', $this->title);
+        if ($this->exists) {
+            $query->where('id', '!=', $this->id);
+        }
+
+        if ($query->exists()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Get validation errors for the Announcement model instance.
+     * Returns an array of error messages for title and uniqueness.
+     *
+     * @return array{title?: string}
+     */
+    public function getErrors(): array
+    {
+        $errors = [];
+
+        if (empty($this->title)) {
+            $errors['title'] = 'The title field is required.';
+        } else {
+            $query = Announcement::where('title', $this->title);
+            if ($this->exists) {
+                $query->where('id', '!=', $this->id);
+            }
+            if ($query->exists()) {
+                $errors['title'] = 'The title field must be unique.';
+            }
+        }
+
+        return $errors;
     }
 }
