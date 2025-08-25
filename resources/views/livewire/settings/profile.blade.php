@@ -105,14 +105,13 @@ new class extends Component {
                         @endif
                     </div>
                 @endif
-
-                <flux:select wire:model="timezone" variant="listbox" searchable  label="Your Timezone">
-                    @foreach ($timezones as $tz)
-                        <flux:select.option>{{ $tz }}</flux:select.option>
-                    @endforeach
-                </flux:select>
-
             </div>
+
+            <flux:select wire:model="timezone" variant="listbox" searchable label="Your Timezone">
+                @foreach ($timezones as $tz)
+                    <flux:select.option>{{ $tz }}</flux:select.option>
+                @endforeach
+            </flux:select>
 
             <div class="flex items-center gap-4">
                 <div class="flex items-center justify-end">

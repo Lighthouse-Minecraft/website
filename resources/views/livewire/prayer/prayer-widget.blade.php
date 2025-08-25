@@ -14,9 +14,14 @@ new class extends Component {
     public $prayerStats;
 
     public function mount() {
-        $this->day = date('n-d');
-        $this->loadPrayerData(date('n'), date('j'));
         $this->user = auth()->user();
+        
+        // Get current date in user's timezone (default to America/New_York if not set)
+        $userTimezone = $this->user->timezone ?? 'America/New_York';
+        $currentDate = now()->setTimezone($userTimezone);
+        
+        $this->day = $currentDate->format('n-d');
+        $this->loadPrayerData($currentDate->format('n'), $currentDate->format('j'));
 
         if ($this->prayerCountry) {
             $this->hasPrayedToday = $this->checkIfUserHasPrayedThisYear();
@@ -25,7 +30,10 @@ new class extends Component {
 
     private function checkIfUserHasPrayedThisYear(): bool
     {
-        $currentYear = now()->format('Y');
+        // Get current year in user's timezone
+        $userTimezone = $this->user->timezone ?? 'America/New_York';
+        $currentYear = now()->setTimezone($userTimezone)->format('Y');
+        
         $userId = auth()->id();
         $prayerCountryId = $this->prayerCountry->id;
 
@@ -47,7 +55,9 @@ new class extends Component {
             return;
         }
 
-        $currentYear = now()->format('Y');
+        // Get current year in user's timezone
+        $userTimezone = $this->user->timezone ?? 'America/New_York';
+        $currentYear = now()->setTimezone($userTimezone)->format('Y');
 
         // Check if user has already prayed for this country this year
         $hasAlreadyPrayed = $this->user
@@ -66,13 +76,16 @@ new class extends Component {
             'year' => $currentYear,
         ]);
 
-        if ($this->user->last_prayed_at && $this->user->last_prayed_at->isYesterday()) {
+        // Get current datetime in user's timezone for streak calculations
+        $currentDateTime = now()->setTimezone($userTimezone);
+        
+        if ($this->user->last_prayed_at && $this->user->last_prayed_at->setTimezone($userTimezone)->isYesterday()) {
             $this->user->prayer_streak ++;
-        } else if (!$this->user->last_prayed_at || !$this->user->last_prayed_at->isToday()) {
+        } else if (!$this->user->last_prayed_at || !$this->user->last_prayed_at->setTimezone($userTimezone)->isToday()) {
             $this->user->prayer_streak = 1; // reset streak if not consecutive
         }
 
-        $this->user->last_prayed_at = now();
+        $this->user->last_prayed_at = $currentDateTime;
         $this->user->save();
 
         $this->prayerStats->count ++;
@@ -98,7 +111,9 @@ new class extends Component {
         if ($prayerCountry) {
             $this->prayerCountry = $prayerCountry;
 
-            $year = now()->year;
+            // Get current year in user's timezone
+            $userTimezone = $this->user->timezone ?? 'America/New_York';
+            $year = now()->setTimezone($userTimezone)->year;
 
             $this->prayerStats = $prayerCountry->stats()->firstOrCreate(
                 ['year' => $year],
