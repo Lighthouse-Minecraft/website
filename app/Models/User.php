@@ -30,6 +30,7 @@ class User extends Authenticatable // implements MustVerifyEmail
         'staff_rank',
         'staff_department',
         'staff_title',
+        'timezone',
     ];
 
     /**
