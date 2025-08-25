@@ -9,6 +9,8 @@ use Livewire\Volt\Component;
 new class extends Component {
     public string $name = '';
     public string $email = '';
+    public string $timezone = '';
+    public array $timezones = [];
 
     /**
      * Mount the component.
@@ -17,6 +19,8 @@ new class extends Component {
     {
         $this->name = Auth::user()->name;
         $this->email = Auth::user()->email;
+        $this->timezone = Auth::user()->timezone ?? 'America/New_York';
+        $this->timezones = \DateTimeZone::listIdentifiers();
     }
 
     /**
@@ -37,6 +41,8 @@ new class extends Component {
                 'max:255',
                 Rule::unique(User::class)->ignore($user->id)
             ],
+
+            'timezone' => ['required', 'timezone:all'],
         ]);
 
         $user->fill($validated);
@@ -100,6 +106,12 @@ new class extends Component {
                     </div>
                 @endif
             </div>
+
+            <flux:select wire:model="timezone" variant="listbox" searchable label="Your Timezone">
+                @foreach ($timezones as $tz)
+                    <flux:select.option>{{ $tz }}</flux:select.option>
+                @endforeach
+            </flux:select>
 
             <div class="flex items-center gap-4">
                 <div class="flex items-center justify-end">

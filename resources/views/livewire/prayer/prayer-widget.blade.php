@@ -12,11 +12,20 @@ new class extends Component {
     public $hasPrayedToday = false;
     public $user;
     public $prayerStats;
+    public $userTimezone;
+    public $currentDate;
+    public $currentYear;
 
     public function mount() {
-        $this->day = date('n-d');
-        $this->loadPrayerData(date('n'), date('j'));
         $this->user = auth()->user();
+
+        // Get current date in user's timezone (default to America/New_York if not set)
+        $this->userTimezone = $this->user->timezone ?? 'America/New_York';
+        $this->currentDate = now()->setTimezone($this->userTimezone);
+
+        $this->day = $this->currentDate->format('n-d');
+        $this->currentYear = $this->currentDate->format('Y');
+        $this->loadPrayerData($this->currentDate->format('n'), $this->currentDate->format('j'));
 
         if ($this->prayerCountry) {
             $this->hasPrayedToday = $this->checkIfUserHasPrayedThisYear();
@@ -25,7 +34,10 @@ new class extends Component {
 
     private function checkIfUserHasPrayedThisYear(): bool
     {
-        $currentYear = now()->format('Y');
+        // Get current year in user's timezone
+        $userTimezone = $this->user->timezone ?? 'America/New_York';
+        $currentYear = now()->setTimezone($userTimezone)->format('Y');
+
         $userId = auth()->id();
         $prayerCountryId = $this->prayerCountry->id;
 
@@ -46,14 +58,15 @@ new class extends Component {
             Flux::toast('No prayer country found for today.', 'Error', variant: 'danger');
             return;
         }
-
-        $currentYear = now()->format('Y');
-
+        if ($this->hasPrayedToday) {
+            Flux::toast('You have already marked as prayed today!', 'Info', variant: 'warning');
+            return;
+        }
         // Check if user has already prayed for this country this year
         $hasAlreadyPrayed = $this->user
             ->prayerCountries()
             ->wherePivot('prayer_country_id', $this->prayerCountry->id)
-            ->wherePivot('year', $currentYear)
+            ->wherePivot('year', $this->currentYear)
             ->exists();
 
         if ($hasAlreadyPrayed) {
@@ -63,23 +76,23 @@ new class extends Component {
 
         // Save the prayer record
         $this->user->prayerCountries()->attach($this->prayerCountry->id, [
-            'year' => $currentYear,
+            'year' => $this->currentYear,
         ]);
 
-        if ($this->user->last_prayed_at && $this->user->last_prayed_at->isYesterday()) {
+        if ($this->user->last_prayed_at && $this->user->last_prayed_at->setTimezone($this->userTimezone)->isYesterday()) {
             $this->user->prayer_streak ++;
-        } else if (!$this->user->last_prayed_at || !$this->user->last_prayed_at->isToday()) {
+        } else if (!$this->user->last_prayed_at || !$this->user->last_prayed_at->setTimezone($this->userTimezone)->isToday()) {
             $this->user->prayer_streak = 1; // reset streak if not consecutive
         }
 
-        $this->user->last_prayed_at = now();
+        $this->user->last_prayed_at = $this->currentDate;
         $this->user->save();
 
         $this->prayerStats->count ++;
         $this->prayerStats->save();
 
         // Clear the cache for this user/country/year combination
-        $cacheKey = "user_prayer_{$this->user->id}_{$this->prayerCountry->id}_{$currentYear}";
+        $cacheKey = "user_prayer_{$this->user->id}_{$this->prayerCountry->id}_{$this->currentYear}";
         Cache::forget($cacheKey);
 
         // Update the state
@@ -98,7 +111,9 @@ new class extends Component {
         if ($prayerCountry) {
             $this->prayerCountry = $prayerCountry;
 
-            $year = now()->year;
+            // Get current year in user's timezone
+            $userTimezone = $this->user->timezone ?? 'America/New_York';
+            $year = now()->setTimezone($userTimezone)->year;
 
             $this->prayerStats = $prayerCountry->stats()->firstOrCreate(
                 ['year' => $year],
