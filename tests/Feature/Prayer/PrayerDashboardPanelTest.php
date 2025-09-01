@@ -30,7 +30,7 @@ describe('Prayer Dashboard Panel - Display', function () {
     // The dashboard widget shows todays prayer country
     it('shows a link to Operation World and PrayerCast', function () {
         // Use America/New_York timezone since that's the default for users without timezone
-        $today = now()->setTimezone('America/New_York')->format('n-d');
+        $today = now()->setTimezone('America/New_York')->format('n-j');
         $prayerNation = PrayerCountry::factory()->withDay($today)->create();
         loginAsAdmin();
 
@@ -46,7 +46,7 @@ describe('Prayer Dashboard Panel - Display', function () {
     // The dashboard widget does not show the prayercast video if it is null
     it('does not show PrayerCast if the URL is null', function () {
         // Use America/New_York timezone since that's the default for users without timezone
-        $today = now()->setTimezone('America/New_York')->format('n-d');
+        $today = now()->setTimezone('America/New_York')->format('n-j');
         $prayerNation = PrayerCountry::factory()->withDay($today)->create([
             'prayer_cast_url' => null,
         ]);
@@ -65,7 +65,7 @@ describe('Prayer Dashboard Panel - Permissions', function () {
     // The dashboard widget shows for all Stowaway and above
     it('should allow Stowaway and above to view the panel', function ($user) {
         // Use America/New_York timezone since that's the default for users without timezone
-        $today = now()->setTimezone('America/New_York')->format('n-d');
+        $today = now()->setTimezone('America/New_York')->format('n-j');
         $prayerNation = PrayerCountry::factory()->withDay($today)->create();
         loginAs($user);
 
@@ -98,7 +98,7 @@ describe('Prayer Dashboard Panel - I Prayed Today Button', function () {
     it('should save an entry in the db when clicked', function () {
         $user = loginAsAdmin();
         // Use America/New_York timezone since that's the default for users without timezone
-        $today = now()->setTimezone('America/New_York')->format('n-d');
+        $today = now()->setTimezone('America/New_York')->format('n-j');
         $year = now()->setTimezone('America/New_York')->format('Y');
         $prayerNation = PrayerCountry::factory()->withDay($today)->create();
 
@@ -116,7 +116,7 @@ describe('Prayer Dashboard Panel - I Prayed Today Button', function () {
     // The buttons turns gray if the user has already prayed this year
     it('should disable the button if the user has already prayed for this country this year', function () {
         $user = loginAsAdmin();
-        $today = now()->setTimezone('America/New_York')->format('n-d');
+        $today = now()->setTimezone('America/New_York')->format('n-j');
         $prayerNation = PrayerCountry::factory()->withDay($today)->create();
 
         // First time - should work and show success message
@@ -137,7 +137,7 @@ describe('Prayer Dashboard Panel - I Prayed Today Button', function () {
     // The prayer status is cached for performance
     it('should cache the users prayer status', function () {
         $user = loginAsAdmin();
-        $today = now()->setTimezone('America/New_York')->format('n-d');
+        $today = now()->setTimezone('America/New_York')->format('n-j');
         $prayerNation = PrayerCountry::factory()->withDay($today)->create();
 
         // Create a prayer record directly in the database
@@ -155,7 +155,7 @@ describe('Prayer Dashboard Panel - I Prayed Today Button', function () {
     // The button records the user's streak on their profile
     it('should update the users prayer streak on their profile', function () {
         $user = loginAsAdmin();
-        $today = now()->setTimezone('America/New_York')->format('n-d');
+        $today = now()->setTimezone('America/New_York')->format('n-j');
         $prayerNation = PrayerCountry::factory()->withDay($today)->create();
 
         // First time - should work and show success message
@@ -171,7 +171,7 @@ describe('Prayer Dashboard Panel - I Prayed Today Button', function () {
     // The prayer streak is reset if the user missed a day
     it('should reset the users prayer streak if they miss a day', function () {
         $user = loginAsAdmin();
-        $today = now()->setTimezone('America/New_York')->format('n-d');
+        $today = now()->setTimezone('America/New_York')->format('n-j');
         $prayerNation = PrayerCountry::factory()->withDay($today)->create();
 
         $user->prayer_streak = 5;
@@ -190,7 +190,7 @@ describe('Prayer Dashboard Panel - I Prayed Today Button', function () {
     // The dashboard widget shows the users streak
     it('should show the users prayer streak', function () {
         $user = loginAsAdmin();
-        $today = now()->setTimezone('America/New_York')->format('n-d');
+        $today = now()->setTimezone('America/New_York')->format('n-j');
 
         $user->prayer_streak = 200005;
         $user->save();
@@ -206,7 +206,7 @@ describe('Prayer Dashboard Panel - Community Stats', function () {
     // Clicking on the prayed button adds to the daily stats
     it('adds to the stats when clicking I Prayed', function () {
         $user = loginAsAdmin();
-        $today = now()->setTimezone('America/New_York')->format('n-d');
+        $today = now()->setTimezone('America/New_York')->format('n-j');
         $prayerNation = PrayerCountry::factory()->withDay($today)->create();
 
         livewire('prayer.prayer-widget')
