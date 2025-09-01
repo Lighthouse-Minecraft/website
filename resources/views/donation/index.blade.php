@@ -40,7 +40,7 @@
         publishable-key="{{  config('lighthouse.stripe.donation_pricing_table_key') }}">
     </stripe-pricing-table>
 
-    <flux:callout icon="user-group" class="w-full md:w-1/2 my-6" color="cyan">
+    <flux:callout icon="user-group" class="w-full md:w-1/2 my-6 mx-auto" color="sky">
         <flux:callout.heading>LighthouseMC is built on community support!</flux:callout.heading>
         <flux:callout.text>
             <p class="my-3">Every gift helps us keep Minecraft a safe, fun, and Christ-centered place for kids and teens. Thank you for being part of this mission!</p>
