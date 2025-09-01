@@ -4,6 +4,7 @@ use App\Http\Controllers\AdminControlPanelController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\CommunityUpdatesController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DonationController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -73,6 +74,8 @@ Route::prefix('meetings')->name('meeting.')->controller(App\Http\Controllers\Mee
     Route::get('/', 'index')->name('index');
     Route::get('/{meeting}/manage', 'edit')->name('edit')->middleware('can:update,meeting');
 });
+
+Route::get('/donate', [DonationController::class, 'index'])->name('donate');
 
 require __DIR__.'/auth.php';
 

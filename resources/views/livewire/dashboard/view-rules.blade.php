@@ -20,6 +20,8 @@ new class extends Component {
 
         Flux::modal('view-rules-modal')->close();
         Flux::toast('Rules accepted successfully! Promoted to Stowaway.', 'Success', variant: 'success');
+
+        return redirect()->route('dashboard');
     }
 }; ?>
 

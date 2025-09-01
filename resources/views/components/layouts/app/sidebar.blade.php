@@ -42,6 +42,9 @@
                     @endcan
                 </flux:navlist.group>
 
+                <flux:navlist.group heading="Get Involved" class="grid">
+                    <flux:navlist.item icon="gift" :href="route('donate')" :current="request()->routeIs('donate')" wire:navigate badge="Donate" badge:color="amber">Support Lighthouse</flux:navlist.item>
+                </flux:navlist.group>
             </flux:navlist>
 
             <flux:spacer />
