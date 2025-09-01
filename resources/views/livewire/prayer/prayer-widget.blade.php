@@ -25,7 +25,7 @@ new class extends Component {
 
         $this->day = $this->currentDate->format('n-d');
         $this->currentYear = $this->currentDate->format('Y');
-        $this->loadPrayerData($this->currentDate->format('n'), $this->currentDate->format('j'));
+        $this->loadPrayerData($this->currentDate->format('n'), $this->currentDate->format('d'));
 
         if ($this->prayerCountry) {
             $this->hasPrayedToday = $this->checkIfUserHasPrayedThisYear();
