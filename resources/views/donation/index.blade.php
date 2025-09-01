@@ -25,8 +25,8 @@
 
         @if(config('lighthouse.stripe.one_time_donation_url'))
             <flux:card class="overflow-hidden min-w-[16rem] my-6 w-full md:w-1/4 mx-2">
-                <flux:text>One-Time Donation</flux:text>
-                <flux:heading size="xl" class="mt-2 tabular-nums flex">Make a One-Time Donation</flux:heading>
+                <flux:heading>One-Time Donation</flux:heading>
+                <flux:text class="my-2 tabular-nums flex">Make a One-Time Donation</flux:text>
                 <flux:button href="{{  config('lighthouse.stripe.one_time_donation_url') }}" variant="primary" color="sky">Donate</flux:button>
             </flux:card>
         @endif
