@@ -13,7 +13,7 @@ describe('Prayer Widget - Timezone Handling', function () {
 
         // Create a prayer country for today in New York timezone
         $nyTime = Carbon::now('America/New_York');
-        $today = $nyTime->format('n-d');
+        $today = $nyTime->format('n-j');
         $prayerCountry = PrayerCountry::factory()->withDay($today)->create();
 
         livewire('prayer.prayer-widget')
@@ -27,7 +27,7 @@ describe('Prayer Widget - Timezone Handling', function () {
 
         // Create a prayer country for today in Los Angeles timezone
         $laTime = Carbon::now('America/Los_Angeles');
-        $today = $laTime->format('n-d');
+        $today = $laTime->format('n-j');
         $prayerCountry = PrayerCountry::factory()->withDay($today)->create();
 
         livewire('prayer.prayer-widget')
@@ -41,7 +41,7 @@ describe('Prayer Widget - Timezone Handling', function () {
 
         $laTime = Carbon::now('America/Los_Angeles');
         $expectedYear = $laTime->year;
-        $today = $laTime->format('n-d');
+        $today = $laTime->format('n-j');
         $prayerCountry = PrayerCountry::factory()->withDay($today)->create();
 
         livewire('prayer.prayer-widget')
@@ -63,7 +63,7 @@ describe('Prayer Widget - Timezone Handling', function () {
         expect($user->last_prayed_at)->toBeNull();
 
         // Create prayer country for today
-        $today = Carbon::now('America/Los_Angeles')->format('n-d');
+        $today = Carbon::now('America/Los_Angeles')->format('n-j');
         $prayerCountry = PrayerCountry::factory()->withDay($today)->create();
 
         livewire('prayer.prayer-widget')
@@ -87,7 +87,7 @@ describe('Prayer Widget - Timezone Handling', function () {
         $user->last_prayed_at = $yesterday;
         $user->save();
 
-        $today = Carbon::now('America/Los_Angeles')->format('n-d');
+        $today = Carbon::now('America/Los_Angeles')->format('n-j');
         $prayerCountry = PrayerCountry::factory()->withDay($today)->create();
 
         livewire('prayer.prayer-widget')
@@ -111,7 +111,7 @@ describe('Prayer Widget - Timezone Handling', function () {
         $user->last_prayed_at = $threeDaysAgo;
         $user->save();
 
-        $today = Carbon::now('America/Los_Angeles')->format('n-d');
+        $today = Carbon::now('America/Los_Angeles')->format('n-j');
         $prayerCountry = PrayerCountry::factory()->withDay($today)->create();
 
         livewire('prayer.prayer-widget')
@@ -128,8 +128,8 @@ describe('Prayer Widget - Timezone Handling', function () {
         $nyUser = User::factory()->create(['timezone' => 'America/New_York']);
         $laUser = User::factory()->create(['timezone' => 'America/Los_Angeles']);
 
-        $nyToday = Carbon::now('America/New_York')->format('n-d');
-        $laToday = Carbon::now('America/Los_Angeles')->format('n-d');
+        $nyToday = Carbon::now('America/New_York')->format('n-j');
+        $laToday = Carbon::now('America/Los_Angeles')->format('n-j');
 
         // Create prayer countries for both days (they might be the same)
         $nyPrayerCountry = PrayerCountry::factory()->withDay($nyToday)->create();
