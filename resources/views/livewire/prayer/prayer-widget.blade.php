@@ -23,9 +23,9 @@ new class extends Component {
         $this->userTimezone = $this->user->timezone ?? 'America/New_York';
         $this->currentDate = now()->setTimezone($this->userTimezone);
 
-        $this->day = $this->currentDate->format('n-d');
+        $this->day = $this->currentDate->format('n-j');
         $this->currentYear = $this->currentDate->format('Y');
-        $this->loadPrayerData($this->currentDate->format('n'), $this->currentDate->format('d'));
+        $this->loadPrayerData($this->currentDate->format('n'), $this->currentDate->format('j'));
 
         if ($this->prayerCountry) {
             $this->hasPrayedToday = $this->checkIfUserHasPrayedThisYear();
@@ -106,7 +106,6 @@ new class extends Component {
         $cacheTtl = config('lighthouse.prayer_cache_ttl', 60 * 60 * 24); // default to 24 hours
 
         $prayerCountry = Cache::flexible($cacheKey, [$cacheTtl, $cacheTtl * 7], fn() => PrayerCountry::where('day', "{$month}-{$day}")->with('stats')->first());
-
 
         if ($prayerCountry) {
             $this->prayerCountry = $prayerCountry;
