@@ -36,6 +36,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             @can('viewPrayer', App\Models\PrayerCountry::class)
                 <livewire:prayer.prayer-widget />
+                <livewire:prayer.prayer-graph />
             @endcan
         </div>
     </div>
