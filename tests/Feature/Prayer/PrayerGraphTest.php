@@ -34,4 +34,4 @@ describe('Prayer Graph - Dashboard', function () {
         expect($data)->toHaveCount(8);
     });
 
-});
+})->done(issue: 169, assignee: 'jonzenor');
