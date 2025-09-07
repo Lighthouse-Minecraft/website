@@ -18,7 +18,8 @@ describe('Prayer Graph - Dashboard', function () {
         // Add entries to the prayer_country_stats table for the last 7 days
         foreach (range(0, 6) as $i) {
             $date = now()->subDays($i);
-            $country = \App\Models\PrayerCountry::factory()->create();
+            $day = $date->format('m-d');
+            $country = \App\Models\PrayerCountry::factory()->withDay($day)->create();
 
             \App\Models\PrayerCountryStat::factory()->create([
                 'prayer_country_id' => $country->id,
@@ -28,7 +29,7 @@ describe('Prayer Graph - Dashboard', function () {
         }
         loginAsAdmin();
 
-        // Assert that the livewire variable has the data in an array for the last 7 days
+        // Assert that the livewire variable has the data in an array for the last 7 days (plus today)
         $data = livewire('prayer.prayer-graph')->get('data');
         expect($data)->toBeArray();
         expect($data)->toHaveCount(8);

@@ -16,7 +16,7 @@ new class extends Component {
 }; ?>
 
 <div class="space-y-6">
-    Upcoming Meetings
+    <flux:heading>Upcoming Meetings</flux:heading>
     <ul>
         @foreach($meetings as $meeting)
             <li class="my-4">
