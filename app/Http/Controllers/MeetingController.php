@@ -12,9 +12,7 @@ class MeetingController extends Controller
      */
     public function index()
     {
-        if (Gate::denies('viewAny', Meeting::class)) {
-            abort(403);
-        }
+        Gate::authorize('viewAny', Meeting::class);
 
         return view('meeting.index');
     }
@@ -34,7 +32,8 @@ class MeetingController extends Controller
      */
     public function edit(Meeting $meeting)
     {
-        Gate::authorize('update', $meeting);
+        // The edit page got turned into the main meeting page...
+        Gate::authorize('view', $meeting);
 
         return view('meeting.edit', compact('meeting'));
     }
