@@ -13,7 +13,7 @@ new class extends Component {
 
 }; ?>
 
-<div class="space-y-6">
+<div class="space-y-6 w-full">
     <flux:heading size="xl">Manage Pages</flux:heading>
 
     <flux:table>
