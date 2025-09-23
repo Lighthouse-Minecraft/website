@@ -17,7 +17,7 @@ new class extends Component {
 <div>
     {{-- <flux:heading size="lg" class="mb-4">Department: {{ ucfirst($department) }}</flux:heading> --}}
 
-    <div class="w-full flex">
+    <div class="w-full block md:flex">
         <div class="w-full md:w-1/3 lg:w-1/4">
             <livewire:dashboard.ready-room-upcoming-meetings />
         </div>
