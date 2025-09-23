@@ -4,6 +4,7 @@ use App\Enums\MeetingStatus;
 use App\Enums\StaffDepartment;
 use App\Models\Meeting;
 use App\Models\MeetingNote;
+use App\Models\User;
 
 use function Pest\Laravel\get;
 use function Pest\Livewire\livewire;
@@ -95,8 +96,39 @@ describe('Meeting Edit - Action Items', function () {
 })->todo(assignee: 'jonzenor', issue: 28);
 
 describe('Meeting Edit - Permissions', function () {
-    // Test permissions for the page
-})->todo();
+    it('allows Officers to access the meeting page', function ($user) {
+        $meeting = Meeting::factory()->withStatus(MeetingStatus::InProgress)->create();
+        loginAs($user);
+
+        get(route('meeting.edit', ['meeting' => $this->meeting->id]))
+            ->assertOk()
+            ->assertViewIs('meeting.edit')
+            ->assertSee('Lighthouse Layout', false)
+            ->assertViewHas('meeting', $this->meeting);
+
+        livewire('meetings.manage-meeting', ['meeting' => $meeting])
+            ->assertSuccessful();
+    })
+        ->with('rankAtLeastCrewMembers')
+        ->done();
+
+    it('denies access to non-staff members', function ($user) {
+        $meeting = Meeting::factory()->withStatus(MeetingStatus::InProgress)->create();
+        loginAs($user);
+        get(route('meeting.edit', ['meeting' => $meeting->id]))
+            ->assertForbidden();
+    })
+        ->with('memberAll')
+        ->done();
+
+    it('denies access to guests', function () {
+        $meeting = Meeting::factory()->withStatus(MeetingStatus::InProgress)->create();
+
+        get(route('meeting.edit', ['meeting' => $meeting->id]))
+            ->assertRedirect(route('login'));
+    })->done();
+
+})->done(assignee: 'jonzenor', issue: 187);
 
 describe('Meeting Edit - Meeting Workflow', function () {
     // If the meeting is in a Pending state, show the Agenda editor

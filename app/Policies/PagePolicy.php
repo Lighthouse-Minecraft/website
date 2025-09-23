@@ -39,7 +39,7 @@ class PagePolicy
      */
     public function create(User $user): bool
     {
-        return $user->isAtLeastRank(StaffRank::Officer) && ($user->isInDepartment(StaffDepartment::Steward) || $user->isInDepartment(StaffDepartment::Engineer));
+        return ($user->hasRole('Page Editor') || $user->isAtLeastRank(StaffRank::Officer)) && ($user->isInDepartment(StaffDepartment::Steward) || $user->isInDepartment(StaffDepartment::Engineer));
     }
 
     /**
@@ -47,7 +47,7 @@ class PagePolicy
      */
     public function update(User $user, Page $page): bool
     {
-        return $user->hasRole('Page Editor') || ($user->isAtLeastRank(StaffRank::Officer) && ($user->isInDepartment(StaffDepartment::Steward) || $user->isInDepartment(StaffDepartment::Engineer)));
+        return ($user->hasRole('Page Editor') || $user->isAtLeastRank(StaffRank::Officer)) && ($user->isInDepartment(StaffDepartment::Steward) || $user->isInDepartment(StaffDepartment::Engineer));
     }
 
     /**
@@ -56,7 +56,7 @@ class PagePolicy
     public function delete(User $user, Page $page): bool
     {
         // Only those who can create pages can delete them
-        return $this->create($user);
+        return $this->create($user) || ($user->isAtLeastRank(StaffRank::Officer) && ($user->isInDepartment(StaffDepartment::Command)));
     }
 
     /**

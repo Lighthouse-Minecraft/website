@@ -12,7 +12,7 @@ Gate::define('viewACP', function (?User $user) {
         return false;
     }
 
-    return $user->isAdmin() || $user->isAtLeastRank(StaffRank::Officer);
+    return $user->isAdmin() || $user->isAtLeastRank(StaffRank::Officer) || $user->hasRole('Page Editor');
 });
 
 Route::middleware('guest')->group(function () {

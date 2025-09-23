@@ -64,9 +64,9 @@ describe('Meeting List Page - Livewire Component', function () {
 });
 
 describe('Meetings List Page - Permissions', function () {
-    it('shows a 403 if an unauthorized person views the page', function () {
+    it('redirects unauthorized users', function () {
         get(route('meeting.index'))
-            ->assertStatus(status: 403);
+            ->assertRedirect(route('login'));
     });
 
     it('does not allow guests to see the menu item for meetings', function () {

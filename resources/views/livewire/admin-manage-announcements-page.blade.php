@@ -90,6 +90,8 @@ new class extends Component {
     </flux:table>
 
     <div class="w-full text-right">
-        <flux:button href="{{ route('acp.announcements.create') }}" variant="primary">Create Announcement</flux:button>
+        @can('create', Announcement::class)
+            <flux:button href="{{ route('acp.announcements.create') }}" variant="primary">Create Announcement</flux:button>
+        @endcan
     </div>
 </div>
