@@ -29,7 +29,11 @@ new class extends Component {
     public function updateStaffPosition() {
         // Check if the user has permission to update staff positions
         if (!Auth::user()->can('updateStaffPosition', $this->user)) {
-            Flux::toast('You do not have permission to update staff positions.', 'Error', 'error');
+            Flux::toast(
+                text: 'You do not have permission to update staff positions.',
+                heading: 'Error',
+                variant: 'danger'
+            );
             return;
         }
 
@@ -55,9 +59,17 @@ new class extends Component {
         );
 
         if ($success) {
-            Flux::toast('Staff position updated successfully.', 'Success', 'success');
+            Flux::toast(
+                text: 'Staff position updated successfully.',
+                heading: 'Success',
+                variant: 'success'
+            );
         } else {
-            Flux::toast('Failed to update staff position. Please try again.', 'Error', 'error');
+            Flux::toast(
+                text: 'Failed to update staff position. Please try again.',
+                heading: 'Error',
+                variant: 'danger'
+            );
         }
 
         Flux::modal('manage-users-staff-position')->close();
@@ -65,16 +77,28 @@ new class extends Component {
 
     public function removeStaffPosition() {
         if (!Auth::user()->can('removeStaffPosition', $this->user)) {
-            Flux::toast('You do not have permission to remove staff positions.', 'Error', 'error');
+            Flux::toast(
+                text: 'You do not have permission to remove staff positions.',
+                heading: 'Error',
+                variant: 'danger'
+            );
             return;
         }
 
         $success = \App\Actions\RemoveUsersStaffPosition::run($this->user);
 
         if ($success) {
-            Flux::toast('Staff position removed successfully.', 'Success', 'success');
+            Flux::toast(
+                text: 'Staff position removed successfully.',
+                heading: 'Success',
+                variant: 'success'
+            );
         } else {
-            Flux::toast('Failed to remove staff position. Please try again.', 'Error', 'error');
+            Flux::toast(
+                text: 'Failed to remove staff position. Please try again.',
+                heading: 'Error',
+                variant: 'danger'
+            );
         }
 
         Flux::modal('manage-users-staff-position')->close();
