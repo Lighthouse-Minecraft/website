@@ -2,21 +2,30 @@
 
 use App\Models\PrayerCountry;
 use App\Models\User;
-use Livewire\Volt\Component;
 use Flux\Flux;
 use Illuminate\Support\Facades\Cache;
+use Livewire\Volt\Component;
 
-new class extends Component {
+new class extends Component
+{
     public $day;
+
     public $prayerCountry;
+
     public $hasPrayedToday = false;
+
     public $user;
+
     public $prayerStats;
+
     public $userTimezone;
+
     public $currentDate;
+
     public $currentYear;
 
-    public function mount() {
+    public function mount()
+    {
         $this->user = auth()->user();
 
         // Get current date in user's timezone (default to America/New_York if not set)
@@ -53,13 +62,16 @@ new class extends Component {
         });
     }
 
-    public function markAsPrayedToday() {
+    public function markAsPrayedToday()
+    {
         if (! $this->prayerCountry) {
             Flux::toast('No prayer country found for today.', 'Error', variant: 'danger');
+
             return;
         }
         if ($this->hasPrayedToday) {
             Flux::toast('You have already marked as prayed today!', 'Info', variant: 'warning');
+
             return;
         }
         // Check if user has already prayed for this country this year
@@ -71,6 +83,7 @@ new class extends Component {
 
         if ($hasAlreadyPrayed) {
             Flux::toast('You have already prayed for this country this year!', 'Info', variant: 'warning');
+
             return;
         }
 
@@ -79,16 +92,16 @@ new class extends Component {
             'year' => $this->currentYear,
         ]);
 
-        if ($this->user->last_prayed_at && $this->user->last_prayed_at->isYesterday()) {
-            $this->user->prayer_streak ++;
-        } else if (!$this->user->last_prayed_at || !$this->user->last_prayed_at->isToday()) {
+        if ($this->user->last_prayed_at && $this->user->last_prayed_at->setTimezone($this->userTimezone)->isYesterday()) {
+            $this->user->prayer_streak++;
+        } elseif (! $this->user->last_prayed_at || ! $this->user->last_prayed_at->setTimezone($this->userTimezone)->isToday()) {
             $this->user->prayer_streak = 1; // reset streak if not consecutive
         }
 
         $this->user->last_prayed_at = $this->currentDate;
         $this->user->save();
 
-        $this->prayerStats->count ++;
+        $this->prayerStats->count++;
         $this->prayerStats->save();
 
         // Clear the cache for this user/country/year combination
@@ -101,11 +114,12 @@ new class extends Component {
         Flux::toast('Thank you for praying today!', 'Success', variant: 'success');
     }
 
-    public function loadPrayerData($month, $day) {
+    public function loadPrayerData($month, $day)
+    {
         $cacheKey = "prayer_country_{$month}_{$day}";
         $cacheTtl = config('lighthouse.prayer_cache_ttl', 60 * 60 * 24); // default to 24 hours
 
-        $prayerCountry = Cache::flexible($cacheKey, [$cacheTtl, $cacheTtl * 7], fn() => PrayerCountry::where('day', "{$month}-{$day}")->with('stats')->first());
+        $prayerCountry = Cache::flexible($cacheKey, [$cacheTtl, $cacheTtl * 7], fn () => PrayerCountry::where('day', "{$month}-{$day}")->with('stats')->first());
 
         if ($prayerCountry) {
             $this->prayerCountry = $prayerCountry;
