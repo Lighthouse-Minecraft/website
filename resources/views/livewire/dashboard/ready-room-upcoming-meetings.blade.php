@@ -7,8 +7,7 @@ new class extends Component {
     public $meetings;
 
     public function mount() {
-        $this->meetings = Meeting::where('scheduled_time', '>=', now())
-            ->where('status', 'pending')
+        $this->meetings = Meeting::where('status', 'pending')
             ->orderBy('scheduled_time', 'asc')
             ->take(3)
             ->get();
