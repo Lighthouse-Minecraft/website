@@ -62,6 +62,11 @@ class UserPolicy
         return false;
     }
 
+    public function removeStaffPosition(User $user, User $model): bool
+    {
+        return false;
+    }
+
     /**
      * Determine whether the user can delete the model.
      */
