@@ -40,7 +40,8 @@ describe('Dashboard Display - Acknowledge Announcements', function () {
 describe('Dashboard Display - Announcements List', function () {
 
     it('loads the announcements list component', function () {
-        loginAsAdmin();
+        $user = loginAsAdmin();
+        $user->update(['rules_accepted_at' => now()]);
 
         get(route('dashboard'))
             ->assertSeeLivewire('dashboard.announcements-widget')
@@ -57,7 +58,8 @@ describe('Dashboard Display - Announcements List', function () {
             'title' => 'Second Announcement',
             'content' => 'Content of the second announcement.',
         ]);
-        loginAsAdmin();
+        $user = loginAsAdmin();
+        $user->update(['rules_accepted_at' => now()]);
 
         get(route('dashboard'))
             ->assertSeeLivewire('dashboard.view-announcements')
