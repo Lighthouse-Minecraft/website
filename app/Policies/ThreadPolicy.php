@@ -1,0 +1,135 @@
+<?php
+
+namespace App\Policies;
+
+use App\Enums\StaffDepartment;
+use App\Enums\StaffRank;
+use App\Models\Thread;
+use App\Models\User;
+
+class ThreadPolicy
+{
+    public function before(User $user, string $ability): ?bool
+    {
+        // Admin and Command Officers can do everything
+        if ($user->isAdmin() || ($user->isInDepartment(StaffDepartment::Command) && $user->isAtLeastRank(StaffRank::Officer))) {
+            return true;
+        }
+
+        return null;
+    }
+
+    /**
+     * Determine whether the user can view all tickets
+     */
+    public function viewAll(User $user): bool
+    {
+        // Command can view all (handled in before)
+        return false;
+    }
+
+    /**
+     * Determine whether the user can view their department's tickets
+     */
+    public function viewDepartment(User $user): bool
+    {
+        // Any staff member can view their department's tickets
+        return $user->staff_department !== null && $user->isAtLeastRank(StaffRank::CrewMember);
+    }
+
+    /**
+     * Determine whether the user can view flagged tickets from any department
+     */
+    public function viewFlagged(User $user): bool
+    {
+        // Quartermaster can view flagged tickets
+        return $user->isInDepartment(StaffDepartment::Quartermaster) && $user->isAtLeastRank(StaffRank::CrewMember);
+    }
+
+    /**
+     * Determine whether the user can view a specific thread
+     */
+    public function view(User $user, Thread $thread): bool
+    {
+        return $thread->isVisibleTo($user);
+    }
+
+    /**
+     * Determine whether the user can create threads (tickets)
+     */
+    public function create(User $user): bool
+    {
+        // Any authenticated user can create support tickets
+        return true;
+    }
+
+    /**
+     * Determine whether the user can create admin-action tickets
+     */
+    public function createAsStaff(User $user): bool
+    {
+        // Staff can create admin-action tickets
+        return $user->isAtLeastRank(StaffRank::CrewMember);
+    }
+
+    /**
+     * Determine whether the user can reply to a thread
+     */
+    public function reply(User $user, Thread $thread): bool
+    {
+        // User can reply if they can view the thread
+        return $thread->isVisibleTo($user);
+    }
+
+    /**
+     * Determine whether the user can add internal notes
+     */
+    public function internalNotes(User $user, Thread $thread): bool
+    {
+        // Staff who can view the thread can add internal notes
+        if (! $user->isAtLeastRank(StaffRank::CrewMember)) {
+            return false;
+        }
+
+        return $thread->isVisibleTo($user);
+    }
+
+    /**
+     * Determine whether the user can change the thread status
+     */
+    public function changeStatus(User $user, Thread $thread): bool
+    {
+        // Staff who can view the thread can change status
+        if (! $user->isAtLeastRank(StaffRank::CrewMember)) {
+            return false;
+        }
+
+        return $thread->isVisibleTo($user);
+    }
+
+    /**
+     * Determine whether the user can assign the thread
+     */
+    public function assign(User $user, Thread $thread): bool
+    {
+        // Officers and above who can view the thread can assign
+        if (! $user->isAtLeastRank(StaffRank::Officer)) {
+            return false;
+        }
+
+        return $thread->isVisibleTo($user);
+    }
+
+    /**
+     * Determine whether the user can reroute (change department) of a thread
+     */
+    public function reroute(User $user, Thread $thread): bool
+    {
+        // Officers and above who can view the thread can reroute
+        if (! $user->isAtLeastRank(StaffRank::Officer)) {
+            return false;
+        }
+
+        return $thread->isVisibleTo($user);
+    }
+}
