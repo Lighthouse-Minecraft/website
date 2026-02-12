@@ -20,6 +20,7 @@ describe('PromoteUser Action', function () {
         PromoteUser::run($user);
 
         expect($user->fresh()->membership_level)->toBe(MembershipLevel::Stowaway);
+        expect($user->fresh()->promoted_at)->not->toBeNull();
     });
 
     it('records activity when user is promoted', function () {

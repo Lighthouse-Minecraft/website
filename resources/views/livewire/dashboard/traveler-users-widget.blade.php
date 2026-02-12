@@ -9,10 +9,10 @@ new class extends Component {
     public $selectedUser = null;
     public $showUserModal = false;
 
-    public function getStowawayUsersProperty()
+    public function getTravelerUsersProperty()
     {
-        return User::where('membership_level', MembershipLevel::Stowaway->value)
-            ->orderBy('name')
+        return User::where('membership_level', MembershipLevel::Traveler->value)
+            ->orderBy('promoted_at', 'asc')
             ->get();
     }
 
@@ -28,18 +28,18 @@ new class extends Component {
         $this->showUserModal = false;
     }
 
-    public function promoteToTraveler()
+    public function promoteToResident()
     {
         if (!$this->selectedUser) {
             return;
         }
 
-        $this->authorize('manage-stowaway-users');
+        $this->authorize('manage-traveler-users');
 
         try {
-            \App\Actions\PromoteUser::run($this->selectedUser, MembershipLevel::Traveler);
+            \App\Actions\PromoteUser::run($this->selectedUser, MembershipLevel::Resident);
 
-            Flux::toast("Successfully promoted {$this->selectedUser->name} to Traveler!", 'Success', variant: 'success');
+            Flux::toast("Successfully promoted {$this->selectedUser->name} to Resident!", 'Success', variant: 'success');
 
             // Close modal and refresh the component
             $this->closeModal();
@@ -52,23 +52,23 @@ new class extends Component {
 }; ?>
 
 <flux:card class="w-full">
-    <flux:heading size="md" class="mb-4">Stowaway Users</flux:heading>
-    <flux:text variant="subtle">Stowaway users are those who have agreed to the Lighthouse Rules and are awaiting promotion to Traveler.</flux:text>
+    <flux:heading size="md" class="mb-4">Traveler Users</flux:heading>
+    <flux:text variant="subtle">Traveler users are new members who are just starting out with limited access.</flux:text>
 
-    @if($this->stowawayUsers->count() > 0)
+    @if($this->travelerUsers->count() > 0)
         <flux:table>
             <flux:table.columns>
                 <flux:table.column>Name</flux:table.column>
-                <flux:table.column>Joined</flux:table.column>
+                <flux:table.column>Time as Traveler</flux:table.column>
                 <flux:table.column>Actions</flux:table.column>
             </flux:table.columns>
             <flux:table.rows>
-                @foreach ($this->stowawayUsers as $user)
+                @foreach ($this->travelerUsers as $user)
                     <flux:table.row>
                         <flux:table.cell>
                             <flux:link href="{{ route('profile.show', $user) }}">{{ $user->name }}</flux:link>
                         </flux:table.cell>
-                        <flux:table.cell>{{ $user->created_at->diffForHumans() }}</flux:table.cell>
+                        <flux:table.cell>{{ $user->promoted_at?->diffForHumans() ?? 'N/A' }}</flux:table.cell>
                         <flux:table.cell>
                             <flux:button
                                 wire:click="viewUser({{ $user->id }})"
@@ -82,7 +82,7 @@ new class extends Component {
             </flux:table.rows>
         </flux:table>
     @else
-        <flux:text class="text-center py-4 text-zinc-500">No Stowaway users found.</flux:text>
+        <flux:text class="text-center py-4 text-zinc-500">No Traveler users</flux:text>
     @endif
 
     <!-- User Details Modal -->
@@ -112,10 +112,10 @@ new class extends Component {
                         <flux:text>{{ $selectedUser->created_at->format('F j, Y \a\t g:i A') }}</flux:text>
                     </div>
 
-                    @if($selectedUser->rules_accepted_at)
+                    @if($selectedUser->promoted_at)
                         <div>
-                            <flux:text class="font-medium">Rules Accepted:</flux:text>
-                            <flux:text>{{ $selectedUser->rules_accepted_at->format('F j, Y \a\t g:i A') }}</flux:text>
+                            <flux:text class="font-medium">Promoted to Traveler:</flux:text>
+                            <flux:text>{{ $selectedUser->promoted_at->format('F j, Y \a\t g:i A') }}</flux:text>
                         </div>
                     @endif
                 </div>
@@ -130,12 +130,12 @@ new class extends Component {
                         Cancel
                     </flux:button>
 
-                    @can('manage-stowaway-users')
+                    @can('manage-traveler-users')
                         <flux:button
-                            wire:click="promoteToTraveler"
+                            wire:click="promoteToResident"
                             variant="primary"
                         >
-                            Promote to Traveler
+                            Promote to Resident
                         </flux:button>
                     @endcan
                 </div>

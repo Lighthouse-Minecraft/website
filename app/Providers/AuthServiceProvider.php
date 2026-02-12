@@ -34,6 +34,10 @@ class AuthServiceProvider extends ServiceProvider
             return $user->hasRole('Admin') || $user->isAtLeastRank(StaffRank::Officer) || ($user->isAtLeastRank(StaffRank::CrewMember) && $user->isInDepartment(StaffDepartment::Quartermaster));
         });
 
+        Gate::define('manage-traveler-users', function ($user) {
+            return $user->hasRole('Admin') || $user->isAtLeastRank(StaffRank::Officer);
+        });
+
         Gate::define('view-ready-room', function ($user) {
             return $user->hasRole('Admin') || $user->isAtLeastRank(StaffRank::JrCrew);
         });

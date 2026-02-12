@@ -47,6 +47,7 @@ it('promotes user to admin when user is not admin and role exists', function () 
 
     expect($result)->toBeTrue();
     expect($user->fresh()->roles()->where('name', 'Admin')->exists())->toBeTrue();
+    expect($user->fresh()->promoted_at)->not->toBeNull();
 });
 
 it('returns false when admin role does not exist', function () {
