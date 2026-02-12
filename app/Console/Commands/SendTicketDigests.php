@@ -1,0 +1,105 @@
+<?php
+
+namespace App\Console\Commands;
+
+use App\Enums\EmailDigestFrequency;
+use App\Models\Message;
+use App\Models\Thread;
+use App\Models\User;
+use App\Notifications\TicketDigestNotification;
+use Illuminate\Console\Command;
+
+class SendTicketDigests extends Command
+{
+    /**
+     * The name and signature of the console command.
+     *
+     * @var string
+     */
+    protected $signature = 'tickets:send-digests {frequency : daily or weekly}';
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Send ticket digest notifications to users';
+
+    /**
+     * Execute the console command.
+     */
+    public function handle(): int
+    {
+        $frequency = $this->argument('frequency');
+
+        if (! in_array($frequency, ['daily', 'weekly'])) {
+            $this->error('Frequency must be either "daily" or "weekly"');
+
+            return Command::FAILURE;
+        }
+
+        $digestFrequency = $frequency === 'daily'
+            ? EmailDigestFrequency::Daily
+            : EmailDigestFrequency::Weekly;
+
+        // Get users who want this digest frequency
+        $users = User::where('email_digest_frequency', $digestFrequency)
+            ->whereNotNull('email')
+            ->get();
+
+        $this->info("Processing {$frequency} digests for {$users->count()} users...");
+
+        $sentCount = 0;
+
+        foreach ($users as $user) {
+            // Get threads visible to this user with activity since last read
+            $sinceDate = $user->last_notification_read_at ?? now()->subDays(30);
+
+            // Get tickets this user can access
+            $ticketsQuery = Thread::query();
+
+            if (! $user->can('viewAll', Thread::class)) {
+                $ticketsQuery->where(function ($q) use ($user) {
+                    $q->whereHas('participants', fn ($sq) => $sq->where('user_id', $user->id));
+
+                    if ($user->can('viewDepartment', Thread::class) && $user->staff_department) {
+                        $q->orWhere('department', $user->staff_department);
+                    }
+
+                    if ($user->can('viewFlagged', Thread::class)) {
+                        $q->orWhere('is_flagged', true);
+                    }
+                });
+            }
+
+            $tickets = $ticketsQuery
+                ->where('last_message_at', '>', $sinceDate)
+                ->get();
+
+            if ($tickets->isEmpty()) {
+                continue;
+            }
+
+            // Build ticket summary with reply counts
+            $ticketSummary = $tickets->map(function ($ticket) use ($sinceDate) {
+                $replyCount = Message::where('thread_id', $ticket->id)
+                    ->where('created_at', '>', $sinceDate)
+                    ->count();
+
+                return [
+                    'subject' => $ticket->subject,
+                    'count' => $replyCount,
+                ];
+            })->toArray();
+
+            // Send the digest
+            $user->notify(new TicketDigestNotification($ticketSummary));
+
+            $sentCount++;
+        }
+
+        $this->info("Sent {$sentCount} {$frequency} digest notifications.");
+
+        return Command::SUCCESS;
+    }
+}

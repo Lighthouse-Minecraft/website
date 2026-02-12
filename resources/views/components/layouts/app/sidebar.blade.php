@@ -34,7 +34,40 @@
                     @endcan
 
                     @can('view-ready-room')
-                        <flux:navlist.item icon="building-storefront" :href="route('ready-room.index')" :current="request()->routeIs('ready-room.index')" wire:navigate>Staff Ready Room</flux:navlist.item>
+                        @php
+                            $ticketsQuery = \App\Models\Thread::query()->where('status', \App\Enums\ThreadStatus::Open);
+                            
+                            if (! auth()->user()->can('viewAll', \App\Models\Thread::class)) {
+                                $ticketsQuery->where(function ($q) {
+                                    $user = auth()->user();
+                                    $q->whereHas('participants', fn ($sq) => $sq->where('user_id', $user->id));
+                                    
+                                    if ($user->can('viewDepartment', \App\Models\Thread::class) && $user->staff_department) {
+                                        $q->orWhere('department', $user->staff_department);
+                                    }
+                                    
+                                    if ($user->can('viewFlagged', \App\Models\Thread::class)) {
+                                        $q->orWhere('is_flagged', true);
+                                    }
+                                });
+                            }
+                            
+                            $openTicketsCount = $ticketsQuery->count();
+                            $hasPendingTickets = $ticketsQuery->where('status', \App\Enums\ThreadStatus::Pending)->exists();
+                        @endphp
+                        
+                        <flux:navlist.item 
+                            icon="building-storefront" 
+                            :href="route('ready-room.index')" 
+                            :current="request()->routeIs('ready-room.index')" 
+                            wire:navigate
+                            @if($openTicketsCount > 0)
+                                badge="{{ $openTicketsCount }}"
+                                badge:color="{{ $hasPendingTickets ? 'red' : 'zinc' }}"
+                            @endif
+                        >
+                            Staff Ready Room
+                        </flux:navlist.item>
                     @endcan
 
                     @can('viewACP')

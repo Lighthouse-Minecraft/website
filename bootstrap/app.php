@@ -11,7 +11,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        //
+        $middleware->alias([
+            'track-notification-read' => \App\Http\Middleware\UpdateLastNotificationRead::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
