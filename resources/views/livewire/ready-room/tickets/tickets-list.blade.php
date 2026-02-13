@@ -12,15 +12,16 @@ new class extends Component {
     public string $filter = 'open';
 
     #[Url]
-    public ?string $expandedDepartment = null;
+    public array $expandedDepartments = [];
 
     public function mount(): void
     {
-        Gate::authorize('view-ready-room');
-
-        // Expand user's department by default
-        if (! $this->expandedDepartment && auth()->user()->staff_department) {
-            $this->expandedDepartment = auth()->user()->staff_department->value;
+        // All departments start expanded by default
+        if (empty($this->expandedDepartments)) {
+            $this->expandedDepartments = array_map(
+                fn($dept) => $dept->value,
+                $this->accessibleDepartments
+            );
         }
     }
 
@@ -51,7 +52,9 @@ new class extends Component {
     public function tickets()
     {
         $user = auth()->user();
-        $query = Thread::with(['createdBy', 'assignedTo'])
+        $query = Thread::with(['createdBy', 'assignedTo', 'participants' => function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            }])
             ->orderBy('last_message_at', 'desc');
 
         // Apply visibility filters
@@ -75,7 +78,11 @@ new class extends Component {
         // Apply status filter
         switch ($this->filter) {
             case 'open':
-                $query->where('status', ThreadStatus::Open);
+                // Show all non-closed tickets (Open, Pending, Resolved)
+                $query->where('status', '!=', ThreadStatus::Closed);
+                break;
+            case 'closed':
+                $query->where('status', ThreadStatus::Closed);
                 break;
             case 'assigned-to-me':
                 $query->where('assigned_to_user_id', $user->id);
@@ -141,7 +148,25 @@ new class extends Component {
 
     public function toggleDepartment(string $department): void
     {
-        $this->expandedDepartment = $this->expandedDepartment === $department ? null : $department;
+        if (in_array($department, $this->expandedDepartments)) {
+            $this->expandedDepartments = array_values(array_filter(
+                $this->expandedDepartments,
+                fn($d) => $d !== $department
+            ));
+        } else {
+            $this->expandedDepartments[] = $department;
+        }
+    }
+
+    public function isUnread(Thread $thread): bool
+    {
+        $participant = $thread->participants->first();
+        
+        if (!$participant || !$participant->last_read_at) {
+            return true; // Never read
+        }
+
+        return $thread->last_message_at > $participant->last_read_at;
     }
 }; ?>
 
@@ -150,9 +175,9 @@ new class extends Component {
         <flux:heading size="xl">Tickets</flux:heading>
         <div class="flex items-center gap-2">
             @can('createAsStaff', Thread::class)
-                <flux:button href="/ready-room/tickets/create-admin" variant="ghost">Create Admin Ticket</flux:button>
+                <flux:button href="/tickets/create-admin" variant="ghost">Create Admin Ticket</flux:button>
             @endcan
-            <flux:button href="/ready-room/tickets/create" variant="primary">Create Ticket</flux:button>
+            <flux:button href="/tickets/create" variant="primary">Create Ticket</flux:button>
         </div>
     </div>
 
@@ -164,6 +189,13 @@ new class extends Component {
             size="sm"
         >
             Open
+        </flux:button>
+        <flux:button 
+            wire:click="$set('filter', 'closed')" 
+            variant="{{ $filter === 'closed' ? 'primary' : 'ghost' }}"
+            size="sm"
+        >
+            Closed
         </flux:button>
         <flux:button 
             wire:click="$set('filter', 'assigned-to-me')" 
@@ -190,82 +222,139 @@ new class extends Component {
         @endcan
     </div>
 
-    {{-- Tickets by Department --}}
+    {{-- Tickets by Department (Staff View) or Simple List (Regular Users) --}}
     <div class="space-y-4">
-        @forelse($this->accessibleDepartments as $dept)
-            @php
-                $deptTickets = $this->tickets->get($dept->value, collect());
-                $isExpanded = $this->expandedDepartment === $dept->value;
-            @endphp
+        @if($this->accessibleDepartments)
+            {{-- Staff view with department grouping --}}
+            @foreach($this->accessibleDepartments as $dept)
+                @php
+                    $deptTickets = $this->tickets->get($dept->value, collect());
+                    $isExpanded = in_array($dept->value, $this->expandedDepartments);
+                @endphp
 
-            @if($deptTickets->isNotEmpty() || $isExpanded)
-                <div class="rounded-lg border border-zinc-200 dark:border-zinc-700">
-                    <button 
-                        wire:click="toggleDepartment('{{ $dept->value }}')"
-                        class="w-full flex items-center justify-between p-4 text-left hover:bg-zinc-50 dark:hover:bg-zinc-900 transition"
-                    >
-                        <div class="flex items-center gap-3">
-                            <flux:heading size="lg">{{ $dept->label() }}</flux:heading>
-                            <flux:badge>{{ $deptTickets->count() }}</flux:badge>
-                        </div>
-                        <flux:icon.chevron-down class="size-5 transition {{ $isExpanded ? 'rotate-180' : '' }}" />
-                    </button>
+                @if($deptTickets->isNotEmpty() || $isExpanded)
+                    <div class="rounded-lg border border-zinc-200 dark:border-zinc-700">
+                        <button 
+                            wire:click="toggleDepartment('{{ $dept->value }}')"
+                            class="w-full flex items-center justify-between p-4 text-left hover:bg-zinc-50 dark:hover:bg-zinc-900 transition"
+                        >
+                            <div class="flex items-center gap-3">
+                                <flux:heading size="lg">{{ $dept->label() }}</flux:heading>
+                                <flux:badge>{{ $deptTickets->count() }}</flux:badge>
+                            </div>
+                            <flux:icon.chevron-down class="size-5 transition {{ $isExpanded ? 'rotate-180' : '' }}" />
+                        </button>
 
-                    @if($isExpanded)
-                        <div class="border-t border-zinc-200 dark:border-zinc-700">
-                            @if($deptTickets->isNotEmpty())
-                                <div class="divide-y divide-zinc-200 dark:divide-zinc-700">
-                                    @foreach($deptTickets as $ticket)
-                                        <a 
-                                            href="/ready-room/tickets/{{ $ticket->id }}" 
-                                            wire:navigate
-                                            class="block p-4 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition"
-                                        >
-                                            <div class="flex items-start justify-between">
-                                                <div class="flex-1">
+                        @if($isExpanded)
+                            <div class="border-t border-zinc-200 dark:border-zinc-700">
+                                @if($deptTickets->isNotEmpty())
+                                    <div class="divide-y divide-zinc-200 dark:divide-zinc-700">
+                                        @foreach($deptTickets as $ticket)
+                                            <a 
+                                                href="/tickets/{{ $ticket->id }}" 
+                                                wire:navigate
+                                                class="block p-4 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition"
+                                            >
+                                                <div class="flex items-start justify-between">
+                                                    <div class="flex-1">
+                                                        <div class="flex items-center gap-2">
+                                                            <flux:heading size="sm">{{ $ticket->subject }}</flux:heading>
+                                                            @if($this->isUnread($ticket))
+                                                                <flux:badge color="blue" size="sm">New</flux:badge>
+                                                            @endif
+                                                            @if($ticket->has_open_flags)
+                                                                <flux:badge color="red" size="sm">
+                                                                    <flux:icon.flag class="size-3" />
+                                                                </flux:badge>
+                                                            @endif
+                                                        </div>
+                                                        <div class="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                                                            <span>{{ $ticket->subtype->label() }}</span>
+                                                            <span class="mx-2">•</span>
+                                                            <span>Created by {{ $ticket->createdBy->name }}</span>
+                                                            <span class="mx-2">•</span>
+                                                            <span>{{ $ticket->created_at->diffForHumans() }}</span>
+                                                        </div>
+                                                    </div>
                                                     <div class="flex items-center gap-2">
-                                                        <flux:heading size="sm">{{ $ticket->subject }}</flux:heading>
-                                                        @if($ticket->has_open_flags)
-                                                            <flux:badge color="red" size="sm">
-                                                                <flux:icon.flag class="size-3" />
-                                                            </flux:badge>
+                                                        <flux:badge 
+                                                            color="{{ $ticket->status === \App\Enums\ThreadStatus::Open ? 'green' : ($ticket->status === \App\Enums\ThreadStatus::Pending ? 'amber' : 'zinc') }}"
+                                                        >
+                                                            {{ $ticket->status->label() }}
+                                                        </flux:badge>
+                                                        @if($ticket->assignedTo)
+                                                            <flux:avatar size="sm" :src="null" initials="{{ $ticket->assignedTo->initials() }}" />
                                                         @endif
                                                     </div>
-                                                    <div class="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-                                                        <span>{{ $ticket->subtype->label() }}</span>
-                                                        <span class="mx-2">•</span>
-                                                        <span>Created by {{ $ticket->createdBy->name }}</span>
-                                                        <span class="mx-2">•</span>
-                                                        <span>{{ $ticket->created_at->diffForHumans() }}</span>
-                                                    </div>
                                                 </div>
-                                                <div class="flex items-center gap-2">
-                                                    <flux:badge 
-                                                        color="{{ $ticket->status === \App\Enums\ThreadStatus::Open ? 'green' : ($ticket->status === \App\Enums\ThreadStatus::Pending ? 'amber' : 'zinc') }}"
-                                                    >
-                                                        {{ $ticket->status->label() }}
-                                                    </flux:badge>
-                                                    @if($ticket->assignedTo)
-                                                        <flux:avatar size="sm" :src="null" initials="{{ $ticket->assignedTo->initials() }}" />
-                                                    @endif
-                                                </div>
-                                            </div>
-                                        </a>
-                                    @endforeach
+                                            </a>
+                                        @endforeach
+                                    </div>
+                                @else
+                                    <div class="p-8 text-center text-zinc-500 dark:text-zinc-400">
+                                        No tickets found in this department.
+                                    </div>
+                                @endif
+                            </div>
+                        @endif
+                    </div>
+                @endif
+            @endforeach
+        @else
+            {{-- Regular user view - simple list of all their tickets --}}
+            @php
+                $allTickets = $this->tickets->flatten();
+            @endphp
+
+            @if($allTickets->isNotEmpty())
+                <div class="rounded-lg border border-zinc-200 dark:border-zinc-700 divide-y divide-zinc-200 dark:divide-zinc-700">
+                    @foreach($allTickets as $ticket)
+                        <a 
+                            href="/tickets/{{ $ticket->id }}" 
+                            wire:navigate
+                            class="block p-4 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition"
+                        >
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-2">
+                                        <flux:heading size="sm">{{ $ticket->subject }}</flux:heading>
+                                        @if($this->isUnread($ticket))
+                                            <flux:badge color="blue" size="sm">New</flux:badge>
+                                        @endif
+                                        @if($ticket->has_open_flags)
+                                            <flux:badge color="red" size="sm">
+                                                <flux:icon.flag class="size-3" />
+                                            </flux:badge>
+                                        @endif
+                                    </div>
+                                    <div class="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                                        <span>{{ $ticket->subtype->label() }}</span>
+                                        <span class="mx-2">•</span>
+                                        <span>Created by {{ $ticket->createdBy->name }}</span>
+                                        <span class="mx-2">•</span>
+                                        <span>{{ $ticket->created_at->diffForHumans() }}</span>
+                                    </div>
                                 </div>
-                            @else
-                                <div class="p-8 text-center text-zinc-500 dark:text-zinc-400">
-                                    No tickets found in this department.
+                                <div class="flex items-center gap-2">
+                                    <flux:badge 
+                                        color="{{ $ticket->status === \App\Enums\ThreadStatus::Open ? 'green' : ($ticket->status === \App\Enums\ThreadStatus::Pending ? 'amber' : 'zinc') }}"
+                                    >
+                                        {{ $ticket->status->label() }}
+                                    </flux:badge>
+                                    @if($ticket->assignedTo)
+                                        <flux:avatar size="sm" :src="null" initials="{{ $ticket->assignedTo->initials() }}" />
+                                    @endif
                                 </div>
-                            @endif
-                        </div>
-                    @endif
+                            </div>
+                        </a>
+                    @endforeach
+                </div>
+            @else
+                <div class="text-center py-12">
+                    <flux:heading size="lg" class="text-zinc-500 dark:text-zinc-400">No Tickets</flux:heading>
+                    <flux:text class="mt-2">You don't have any tickets matching the current filter.</flux:text>
                 </div>
             @endif
-        @empty
-            <div class="text-center py-12">
-                <flux:heading size="lg" class="text-zinc-500 dark:text-zinc-400">No accessible departments</flux:heading>
-            </div>
-        @endforelse
+        @endif
     </div>
 </div>

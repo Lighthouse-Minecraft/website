@@ -45,7 +45,7 @@ class MessageFlaggedNotification extends Notification implements ShouldQueue
             ->line('**Original Ticket:** '.$thread->subject)
             ->line('**Flagged by:** '.$this->flag->flaggedBy->name)
             ->line('**Reason:** '.$this->flag->note)
-            ->action('Review Flag', url('/ready-room/tickets/'.$reviewTicket->id))
+            ->action('Review Flag', url('/tickets/'.$reviewTicket->id))
             ->line('Thank you for your service!');
     }
 
@@ -57,7 +57,7 @@ class MessageFlaggedNotification extends Notification implements ShouldQueue
         return [
             'title' => 'Message Flagged',
             'message' => 'A message has been flagged for review',
-            'url' => url('/ready-room/tickets/'.$this->flag->flag_review_ticket_id),
+            'url' => url('/tickets/'.$this->flag->flag_review_ticket_id),
         ];
     }
 }

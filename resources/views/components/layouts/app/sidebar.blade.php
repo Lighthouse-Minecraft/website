@@ -33,7 +33,7 @@
                         <flux:navlist.item icon="user-group" :href="route('community-updates.index')" :current="request()->routeIs('community-updates.index')" wire:navigate>Community Updates</flux:navlist.item>
                     @endcan
 
-                    @can('view-ready-room')
+                    @auth
                         @php
                             $ticketsQuery = \App\Models\Thread::query()->where('status', \App\Enums\ThreadStatus::Open);
                             
@@ -53,18 +53,27 @@
                             }
                             
                             $openTicketsCount = $ticketsQuery->count();
-                            $hasPendingTickets = $ticketsQuery->where('status', \App\Enums\ThreadStatus::Pending)->exists();
+                            $hasPendingTickets = (clone $ticketsQuery)->where('status', \App\Enums\ThreadStatus::Pending)->exists();
                         @endphp
                         
+                        <flux:navlist.item 
+                            icon="inbox" 
+                            :href="route('tickets.index')" 
+                            :current="request()->routeIs('tickets.*')" 
+                            wire:navigate
+                            :badge="$openTicketsCount > 0 ? $openTicketsCount : null"
+                            :badge:color="$hasPendingTickets ? 'red' : 'zinc'"
+                        >
+                            Tickets
+                        </flux:navlist.item>
+                    @endauth
+
+                    @can('view-ready-room')
                         <flux:navlist.item 
                             icon="building-storefront" 
                             :href="route('ready-room.index')" 
                             :current="request()->routeIs('ready-room.index')" 
                             wire:navigate
-                            @if($openTicketsCount > 0)
-                                badge="{{ $openTicketsCount }}"
-                                badge:color="{{ $hasPendingTickets ? 'red' : 'zinc' }}"
-                            @endif
                         >
                             Staff Ready Room
                         </flux:navlist.item>

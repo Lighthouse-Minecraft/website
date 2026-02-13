@@ -11,22 +11,20 @@ use App\Models\User;
 use App\Notifications\NewTicketReplyNotification;
 use App\Notifications\TicketAssignedNotification;
 use App\Services\TicketNotificationService;
+use Illuminate\Support\Facades\Validator;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
-use Livewire\Attributes\Validate;
 use Livewire\Volt\Component;
 
 new class extends Component {
     public Thread $thread;
 
-    #[Validate('required|string|min:1')]
     public string $replyMessage = '';
 
     public bool $isInternalNote = false;
 
     public ?int $flaggingMessageId = null;
 
-    #[Validate('required|string|min:10')]
     public string $flagReason = '';
 
     public ?int $acknowledgingFlagId = null;
@@ -37,6 +35,12 @@ new class extends Component {
     {
         $this->authorize('view', $thread);
         $this->thread = $thread;
+
+        // Mark thread as read for this user
+        $participant = $this->thread->participants()->firstOrCreate([
+            'user_id' => auth()->id(),
+        ]);
+        $participant->update(['last_read_at' => now()]);
     }
 
     #[Computed]
@@ -58,6 +62,16 @@ new class extends Component {
     #[Computed]
     public function canReply(): bool
     {
+        // Can't reply to closed tickets
+        if ($this->thread->status === ThreadStatus::Closed) {
+            return false;
+        }
+
+        // Non-staff can't reply to resolved tickets
+        if ($this->thread->status === ThreadStatus::Resolved && !auth()->user()->isAtLeastRank(\App\Enums\StaffRank::CrewMember)) {
+            return false;
+        }
+
         return auth()->user()->can('reply', $this->thread);
     }
 
@@ -86,6 +100,30 @@ new class extends Component {
     }
 
     #[Computed]
+    public function canClose(): bool
+    {
+        return auth()->user()->can('close', $this->thread)
+            && $this->thread->status !== ThreadStatus::Closed;
+    }
+
+    #[Computed]
+    public function targetUser()
+    {
+        // For admin tickets, find the participant who is NOT the creator
+        if ($this->thread->subtype === \App\Enums\ThreadSubtype::AdminAction) {
+            $participant = $this->thread->participants()
+                ->where('user_id', '!=', $this->thread->created_by_user_id)
+                ->with('user')
+                ->first();
+            
+            return $participant?->user ?? $this->thread->createdBy;
+        }
+        
+        // For regular tickets, it's the creator
+        return $this->thread->createdBy;
+    }
+
+    #[Computed]
     public function staffUsers()
     {
         return User::whereNotNull('staff_rank')
@@ -97,7 +135,16 @@ new class extends Component {
     public function sendReply(): void
     {
         $this->authorize('reply', $this->thread);
-        $this->validate(['replyMessage' => 'required|string|min:1']);
+        
+        $validator = Validator::make(
+            ['replyMessage' => $this->replyMessage],
+            ['replyMessage' => 'required|string|min:1']
+        );
+
+        if ($validator->fails()) {
+            $this->addError('replyMessage', $validator->errors()->first('replyMessage'));
+            return;
+        }
 
         $kind = MessageKind::Message;
 
@@ -144,8 +191,12 @@ new class extends Component {
         unset($this->messages);
     }
 
-    public function changeStatus(string $newStatus): void
+    public function changeStatus(?string $newStatus): void
     {
+        if (!$newStatus) {
+            return;
+        }
+
         $this->authorize('changeStatus', $this->thread);
 
         $oldStatus = $this->thread->status;
@@ -188,6 +239,44 @@ new class extends Component {
         Flux::toast('Ticket assigned successfully!', variant: 'success');
     }
 
+    public function closeTicket(): void
+    {
+        $this->authorize('close', $this->thread);
+
+        $oldStatus = $this->thread->status;
+        
+        // Staff can close directly, regular users mark as resolved
+        $isStaff = auth()->user()->isAtLeastRank(\App\Enums\StaffRank::CrewMember);
+        $newStatus = $isStaff ? ThreadStatus::Closed : ThreadStatus::Resolved;
+        
+        $this->thread->update(['status' => $newStatus]);
+
+        // Create system message
+        $systemMessageBody = $isStaff 
+            ? auth()->user()->name . ' closed this ticket.'
+            : auth()->user()->name . ' marked this ticket as resolved.';
+
+        Message::create([
+            'thread_id' => $this->thread->id,
+            'user_id' => auth()->id(),
+            'body' => $systemMessageBody,
+            'kind' => MessageKind::System,
+        ]);
+
+        $this->thread->update(['last_message_at' => now()]);
+
+        \App\Actions\RecordActivity::run(
+            $this->thread,
+            'status_changed',
+            "Status changed: {$oldStatus->label()} → {$newStatus->label()}"
+        );
+
+        $toastMessage = $isStaff ? 'Ticket closed successfully!' : 'Ticket marked as resolved!';
+        Flux::toast($toastMessage, variant: 'success');
+
+        unset($this->messages);
+    }
+
     public function openFlagModal(int $messageId): void
     {
         $message = Message::findOrFail($messageId);
@@ -201,7 +290,15 @@ new class extends Component {
 
     public function submitFlag(): void
     {
-        $this->validate(['flagReason' => 'required|string|min:10']);
+        $validator = Validator::make(
+            ['flagReason' => $this->flagReason],
+            ['flagReason' => 'required|string|min:10']
+        );
+
+        if ($validator->fails()) {
+            $this->addError('flagReason', $validator->errors()->first('flagReason'));
+            return;
+        }
 
         $message = Message::findOrFail($this->flaggingMessageId);
         $this->authorize('flag', $message);
@@ -257,14 +354,18 @@ new class extends Component {
         <div>
             <flux:heading size="xl">{{ $thread->subject }}</flux:heading>
             <div class="mt-2 flex items-center gap-4 text-sm text-zinc-600 dark:text-zinc-400">
-                <span>{{ $thread->department->label() }}</span>
+                <span>For: <a href="{{ route('profile.show', $this->targetUser) }}" class="text-blue-600 dark:text-blue-400 hover:underline">{{ $this->targetUser->name }}</a></span>
                 <span>•</span>
-                <span>{{ $thread->subtype->label() }}</span>
+                <span>Department: {{ $thread->department->label() }}</span>
+                <span>•</span>
+                <span>Ticket Type: {{ $thread->subtype->label() }}</span>
+                <span>•</span>
+                <span>Status: {{ $thread->status->label() }}</span>
                 <span>•</span>
                 <span>Created {{ $thread->created_at->diffForHumans() }}</span>
             </div>
         </div>
-        <flux:button href="/ready-room/tickets" variant="ghost" size="sm">← Back to Tickets</flux:button>
+        <flux:button href="/tickets" variant="ghost" size="sm">← Back to Tickets</flux:button>
     </div>
 
     {{-- Status & Assignment Controls (Staff Only) --}}
@@ -273,11 +374,11 @@ new class extends Component {
             @if($this->canChangeStatus)
                 <flux:field class="flex-1">
                     <flux:label>Status</flux:label>
-                    <flux:select wire:change="changeStatus($event.target.value)" value="{{ $thread->status->value }}" variant="listbox">
-                        <flux:option value="open">Open</flux:option>
-                        <flux:option value="pending">Pending</flux:option>
-                        <flux:option value="resolved">Resolved</flux:option>
-                        <flux:option value="closed">Closed</flux:option>
+                    <flux:select wire:change="changeStatus($event.target.value)" variant="listbox">
+                        <flux:select.option value="open" :selected="$thread->status->value === 'open'">Open</flux:select.option>
+                        <flux:select.option value="pending" :selected="$thread->status->value === 'pending'">Pending</flux:select.option>
+                        <flux:select.option value="resolved" :selected="$thread->status->value === 'resolved'">Resolved</flux:select.option>
+                        <flux:select.option value="closed" :selected="$thread->status->value === 'closed'">Closed</flux:select.option>
                     </flux:select>
                 </flux:field>
             @endif
@@ -285,10 +386,10 @@ new class extends Component {
             @if($this->canAssign)
                 <flux:field class="flex-1">
                     <flux:label>Assigned To</flux:label>
-                    <flux:select wire:change="assignTo($event.target.value ? parseInt($event.target.value) : null)" value="{{ $thread->assigned_to_user_id }}" variant="listbox">
-                        <flux:option value="">Unassigned</flux:option>
+                    <flux:select wire:change="assignTo($event.target.value ? parseInt($event.target.value) : null)" variant="listbox">
+                        <flux:select.option value="" :selected="!$thread->assigned_to_user_id">Unassigned</flux:select.option>
                         @foreach($this->staffUsers as $staff)
-                            <flux:option value="{{ $staff->id }}">{{ $staff->name }}</flux:option>
+                            <flux:select.option value="{{ $staff->id }}" :selected="$thread->assigned_to_user_id == $staff->id">{{ $staff->name }}</flux:select.option>
                         @endforeach
                     </flux:select>
                 </flux:field>
@@ -299,7 +400,7 @@ new class extends Component {
     {{-- Messages --}}
     <div class="space-y-4">
         @foreach($this->messages as $message)
-            <div class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-4 @if($message->kind === \App\Enums\MessageKind::InternalNote) bg-amber-50 dark:bg-amber-950 border-amber-300 dark:border-amber-700 @elseif($message->kind === \App\Enums\MessageKind::System) bg-zinc-100 dark:bg-zinc-800 @endif">
+            <div class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-4 @if($message->kind === \App\Enums\MessageKind::InternalNote) bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800 @elseif($message->kind === \App\Enums\MessageKind::System) bg-zinc-100 dark:bg-zinc-800 @endif">
                 <div class="flex items-start justify-between">
                     <div class="flex items-start gap-3">
                         <flux:avatar size="sm" :src="null" initials="{{ $message->user->initials() }}" />
@@ -316,15 +417,19 @@ new class extends Component {
                         </div>
                     </div>
 
-                    @if($message->kind === \App\Enums\MessageKind::Message && auth()->user()->can('flag', $message))
+                    @if($message->kind === \App\Enums\MessageKind::Message && $message->user_id !== auth()->id() && auth()->user()->can('flag', $message))
                         <flux:button wire:click="openFlagModal({{ $message->id }})" variant="ghost" size="sm">
                             <flux:icon.flag class="size-4" />
                         </flux:button>
                     @endif
                 </div>
 
-                <div class="mt-3 prose prose-sm dark:prose-invert max-w-none">
-                    {!! nl2br(e($message->body)) !!}
+                <div class="mt-3 prose prose-sm dark:prose-invert max-w-none [&_a]:text-blue-600 dark:[&_a]:text-blue-400 [&_a]:underline [&_a]:font-medium hover:[&_a]:text-blue-700 dark:hover:[&_a]:text-blue-300">
+                    @if($message->kind === \App\Enums\MessageKind::System)
+                        {!! Str::markdown($message->body) !!}
+                    @else
+                        {!! nl2br(e($message->body)) !!}
+                    @endif
                 </div>
 
                 {{-- Show flags for staff with viewFlagged permission --}}
@@ -375,11 +480,21 @@ new class extends Component {
                             <flux:checkbox wire:model="isInternalNote" label="Internal Note (Staff Only)" />
                         @endif
                     </div>
-                    <flux:button type="submit" variant="primary">Send Reply</flux:button>
+                    <div class="flex items-center gap-2">
+                        @if($this->canClose)
+                            <flux:button wire:click="closeTicket" variant="filled">Close Ticket</flux:button>
+                        @endif
+                        <flux:button type="submit" variant="primary">Send Reply</flux:button>
+                    </div>
                 </div>
             </form>
         </div>
     @endif
+
+    {{-- Back to Tickets Button (Bottom) --}}
+    <div class="flex justify-end">
+        <flux:button href="/tickets" variant="ghost" size="sm">← Back to Tickets</flux:button>
+    </div>
 
     {{-- Flag Message Modal --}}
     <flux:modal name="flag-message" class="space-y-6">

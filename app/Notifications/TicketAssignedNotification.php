@@ -47,7 +47,7 @@ class TicketAssignedNotification extends Notification implements ShouldQueue
         }
 
         return $message
-            ->action('View Ticket', url('/ready-room/tickets/'.$this->thread->id))
+            ->action('View Ticket', url('/tickets/'.$this->thread->id))
             ->line('Thank you for your service!');
     }
 
@@ -59,7 +59,7 @@ class TicketAssignedNotification extends Notification implements ShouldQueue
         return [
             'title' => 'Ticket Assigned',
             'message' => $this->thread->subject,
-            'url' => url('/ready-room/tickets/'.$this->thread->id),
+            'url' => url('/tickets/'.$this->thread->id),
         ];
     }
 }

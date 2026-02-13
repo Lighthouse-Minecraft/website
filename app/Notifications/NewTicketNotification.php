@@ -46,7 +46,7 @@ class NewTicketNotification extends Notification implements ShouldQueue
             ->line('**Subject:** '.$this->thread->subject)
             ->line('**Department:** '.$this->thread->department->label())
             ->line('**From:** '.$this->thread->createdBy->name)
-            ->action('View Ticket', url('/ready-room/tickets/'.$this->thread->id))
+            ->action('View Ticket', url('/tickets/'.$this->thread->id))
             ->line('Thank you for your service!');
     }
 
@@ -58,7 +58,7 @@ class NewTicketNotification extends Notification implements ShouldQueue
         return [
             'title' => 'New Ticket',
             'message' => $this->thread->subject,
-            'url' => url('/ready-room/tickets/'.$this->thread->id),
+            'url' => url('/tickets/'.$this->thread->id),
         ];
     }
 }

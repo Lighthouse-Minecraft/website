@@ -62,9 +62,9 @@ Route::get('community-updates', [CommunityUpdatesController::class, 'index'])->n
 Route::get('ready-room', [DashboardController::class, 'readyRoom'])->name('ready-room.index')->middleware('auth');
 
 // Ticket System Routes
-Route::prefix('ready-room/tickets')
+Route::prefix('tickets')
     ->name('tickets.')
-    ->middleware(['auth', 'can:view-ready-room', 'track-notification-read'])
+    ->middleware(['auth', 'track-notification-read'])
     ->group(function () {
         Volt::route('/', 'ready-room.tickets.tickets-list')->name('index');
         Volt::route('/create', 'ready-room.tickets.create-ticket')->name('create');

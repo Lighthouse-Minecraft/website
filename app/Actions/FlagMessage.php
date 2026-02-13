@@ -56,7 +56,7 @@ class FlagMessage
 
             // Create system message in review ticket with flag details
             $flagDetails = "**Flagged Message Review Request**\n\n";
-            $flagDetails .= "**Original Ticket:** [{$thread->subject}](/ready-room/tickets/{$thread->id})\n";
+            $flagDetails .= "**Original Ticket:** [{$thread->subject}](/tickets/{$thread->id})\n";
             $flagDetails .= "**Flagged Message ID:** {$message->id}\n";
             $flagDetails .= "**Flagged By:** {$flaggingUser->name}\n";
             $flagDetails .= '**Timestamp:** '.now()->format('M j, Y g:i A')."\n\n";

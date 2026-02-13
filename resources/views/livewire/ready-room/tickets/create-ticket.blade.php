@@ -70,7 +70,7 @@ new class extends Component {
 
         Flux::toast('Your ticket has been created successfully!', variant: 'success');
 
-        $this->redirect('/ready-room/tickets/'.$thread->id, navigate: true);
+        $this->redirect('/tickets/'.$thread->id, navigate: true);
     }
 }; ?>
 
@@ -83,11 +83,11 @@ new class extends Component {
                 <flux:label>Department <span class="text-red-500">*</span></flux:label>
                 <flux:description>Which department should handle this ticket?</flux:description>
                 <flux:select wire:model="department" variant="listbox">
-                    <flux:option value="{{ StaffDepartment::Command->value }}">{{ StaffDepartment::Command->label() }}</flux:option>
-                    <flux:option value="{{ StaffDepartment::Chaplain->value }}">{{ StaffDepartment::Chaplain->label() }}</flux:option>
-                    <flux:option value="{{ StaffDepartment::Engineer->value }}">{{ StaffDepartment::Engineer->label() }}</flux:option>
-                    <flux:option value="{{ StaffDepartment::Quartermaster->value }}">{{ StaffDepartment::Quartermaster->label() }}</flux:option>
-                    <flux:option value="{{ StaffDepartment::Steward->value }}">{{ StaffDepartment::Steward->label() }}</flux:option>
+                    <flux:select.option value="{{ StaffDepartment::Command->value }}">{{ StaffDepartment::Command->label() }}</flux:select.option>
+                    <flux:select.option value="{{ StaffDepartment::Chaplain->value }}">{{ StaffDepartment::Chaplain->label() }}</flux:select.option>
+                    <flux:select.option value="{{ StaffDepartment::Engineer->value }}">{{ StaffDepartment::Engineer->label() }}</flux:select.option>
+                    <flux:select.option value="{{ StaffDepartment::Quartermaster->value }}">{{ StaffDepartment::Quartermaster->label() }}</flux:select.option>
+                    <flux:select.option value="{{ StaffDepartment::Steward->value }}">{{ StaffDepartment::Steward->label() }}</flux:select.option>
                 </flux:select>
                 <flux:error name="department" />
             </flux:field>
@@ -108,7 +108,7 @@ new class extends Component {
 
             <div class="flex items-center gap-4">
                 <flux:button type="submit" variant="primary">Create Ticket</flux:button>
-                <flux:button href="/ready-room/tickets" variant="ghost">Cancel</flux:button>
+                <flux:button href="/tickets" variant="ghost">Cancel</flux:button>
             </div>
         </div>
     </form>

@@ -50,7 +50,7 @@ class TicketDigestNotification extends Notification implements ShouldQueue
         }
 
         return $message
-            ->action('View All Tickets', url('/ready-room/tickets'))
+            ->action('View All Tickets', url('/tickets'))
             ->line('Thank you for your service!');
     }
 }

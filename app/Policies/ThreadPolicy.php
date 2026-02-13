@@ -132,4 +132,18 @@ class ThreadPolicy
 
         return $thread->isVisibleTo($user);
     }
+
+    /**
+     * Determine whether the user can close a thread
+     */
+    public function close(User $user, Thread $thread): bool
+    {
+        // Staff who can view the thread can close it
+        if ($user->isAtLeastRank(StaffRank::CrewMember) && $thread->isVisibleTo($user)) {
+            return true;
+        }
+
+        // Non-staff users can close their own support tickets
+        return $thread->created_by_user_id === $user->id;
+    }
 }
