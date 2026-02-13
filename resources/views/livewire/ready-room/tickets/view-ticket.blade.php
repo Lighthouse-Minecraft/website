@@ -13,10 +13,10 @@ use App\Notifications\TicketAssignedNotification;
 use App\Services\TicketNotificationService;
 use Illuminate\Support\Facades\Validator;
 use Livewire\Attributes\Computed;
-use Livewire\Attributes\On;
 use Livewire\Volt\Component;
 
-new class extends Component {
+new class extends Component
+{
     public Thread $thread;
 
     public string $replyMessage = '';
@@ -36,11 +36,14 @@ new class extends Component {
         $this->authorize('view', $thread);
         $this->thread = $thread;
 
-        // Mark thread as read for this user
-        $participant = $this->thread->participants()->firstOrCreate([
-            'user_id' => auth()->id(),
-        ]);
-        $participant->update(['last_read_at' => now()]);
+        // Mark thread as read for this user (only if they're already a participant)
+        $participant = $this->thread->participants()
+            ->where('user_id', auth()->id())
+            ->first();
+
+        if ($participant) {
+            $participant->update(['last_read_at' => now()]);
+        }
     }
 
     #[Computed]
@@ -53,7 +56,7 @@ new class extends Component {
 
         // Filter out internal notes for non-staff
         if (! auth()->user()->can('internalNotes', $this->thread)) {
-            $messages = $messages->filter(fn($msg) => $msg->kind !== MessageKind::InternalNote);
+            $messages = $messages->filter(fn ($msg) => $msg->kind !== MessageKind::InternalNote);
         }
 
         return $messages;
@@ -68,7 +71,7 @@ new class extends Component {
         }
 
         // Non-staff can't reply to resolved tickets
-        if ($this->thread->status === ThreadStatus::Resolved && !auth()->user()->isAtLeastRank(\App\Enums\StaffRank::CrewMember)) {
+        if ($this->thread->status === ThreadStatus::Resolved && ! auth()->user()->isAtLeastRank(\App\Enums\StaffRank::CrewMember)) {
             return false;
         }
 
@@ -115,10 +118,10 @@ new class extends Component {
                 ->where('user_id', '!=', $this->thread->created_by_user_id)
                 ->with('user')
                 ->first();
-            
+
             return $participant?->user ?? $this->thread->createdBy;
         }
-        
+
         // For regular tickets, it's the creator
         return $this->thread->createdBy;
     }
@@ -135,7 +138,7 @@ new class extends Component {
     public function sendReply(): void
     {
         $this->authorize('reply', $this->thread);
-        
+
         $validator = Validator::make(
             ['replyMessage' => $this->replyMessage],
             ['replyMessage' => 'required|string|min:1']
@@ -143,6 +146,7 @@ new class extends Component {
 
         if ($validator->fails()) {
             $this->addError('replyMessage', $validator->errors()->first('replyMessage'));
+
             return;
         }
 
@@ -193,7 +197,7 @@ new class extends Component {
 
     public function changeStatus(?string $newStatus): void
     {
-        if (!$newStatus) {
+        if (! $newStatus) {
             return;
         }
 
@@ -222,7 +226,7 @@ new class extends Component {
 
         $description = $oldAssignee
             ? "Assignment changed: {$oldAssignee->name} → ".($newAssignee?->name ?? 'Unassigned')
-            : "Assigned to: ".($newAssignee?->name ?? 'Unassigned');
+            : 'Assigned to: '.($newAssignee?->name ?? 'Unassigned');
 
         \App\Actions\RecordActivity::run($this->thread, 'assignment_changed', $description);
 
@@ -244,17 +248,17 @@ new class extends Component {
         $this->authorize('close', $this->thread);
 
         $oldStatus = $this->thread->status;
-        
+
         // Staff can close directly, regular users mark as resolved
         $isStaff = auth()->user()->isAtLeastRank(\App\Enums\StaffRank::CrewMember);
         $newStatus = $isStaff ? ThreadStatus::Closed : ThreadStatus::Resolved;
-        
+
         $this->thread->update(['status' => $newStatus]);
 
         // Create system message
-        $systemMessageBody = $isStaff 
-            ? auth()->user()->name . ' closed this ticket.'
-            : auth()->user()->name . ' marked this ticket as resolved.';
+        $systemMessageBody = $isStaff
+            ? auth()->user()->name.' closed this ticket.'
+            : auth()->user()->name.' marked this ticket as resolved.';
 
         Message::create([
             'thread_id' => $this->thread->id,
@@ -297,6 +301,7 @@ new class extends Component {
 
         if ($validator->fails()) {
             $this->addError('flagReason', $validator->errors()->first('flagReason'));
+
             return;
         }
 
