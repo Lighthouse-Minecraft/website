@@ -21,7 +21,7 @@ describe('Create Ticket Component', function () {
         actingAs($user);
 
         Volt::test('ready-room.tickets.create-ticket')
-            ->assertSee('Create Support Ticket')
+            ->assertSee('Create New Ticket')
             ->assertSee('Department')
             ->assertSee('Subject')
             ->assertSee('Message');
@@ -33,11 +33,11 @@ describe('Create Ticket Component', function () {
         actingAs($user);
 
         Volt::test('ready-room.tickets.create-ticket')
-            ->set('form.department', '')
-            ->set('form.subject', '')
-            ->set('form.message', '')
-            ->call('create')
-            ->assertHasErrors(['form.department', 'form.subject', 'form.message']);
+            ->set('department', '')
+            ->set('subject', '')
+            ->set('message', '')
+            ->call('createTicket')
+            ->assertHasErrors(['department', 'subject', 'message']);
     })->done();
 
     it('creates support ticket with correct data', function () {
@@ -46,10 +46,10 @@ describe('Create Ticket Component', function () {
         actingAs($user);
 
         Volt::test('ready-room.tickets.create-ticket')
-            ->set('form.department', StaffDepartment::Chaplain->value)
-            ->set('form.subject', 'Need help with prayer request')
-            ->set('form.message', 'I would like to submit a prayer request')
-            ->call('create')
+            ->set('department', StaffDepartment::Chaplain->value)
+            ->set('subject', 'Need help with prayer request')
+            ->set('message', 'I would like to submit a prayer request')
+            ->call('createTicket')
             ->assertHasNoErrors();
 
         $thread = Thread::where('subject', 'Need help with prayer request')->first();
@@ -73,10 +73,10 @@ describe('Create Ticket Component', function () {
         actingAs($user);
 
         Volt::test('ready-room.tickets.create-ticket')
-            ->set('form.department', StaffDepartment::Chaplain->value)
-            ->set('form.subject', 'Test ticket')
-            ->set('form.message', 'Test message')
-            ->call('create');
+            ->set('department', StaffDepartment::Chaplain->value)
+            ->set('subject', 'Test ticket')
+            ->set('message', 'Test message')
+            ->call('createTicket');
 
         $thread = Thread::where('subject', 'Test ticket')->first();
 
@@ -107,12 +107,12 @@ describe('Create Admin Ticket Component', function () {
         actingAs($staff);
 
         Volt::test('ready-room.tickets.create-admin-ticket')
-            ->set('form.target_user_id', null)
-            ->set('form.department', '')
-            ->set('form.subject', '')
-            ->set('form.message', '')
-            ->call('create')
-            ->assertHasErrors(['form.target_user_id', 'form.department', 'form.subject', 'form.message']);
+            ->set('target_user_id', '')
+            ->set('department', '')
+            ->set('subject', '')
+            ->set('message', '')
+            ->call('createAdminTicket')
+            ->assertHasErrors(['target_user_id', 'department', 'subject', 'message']);
     })->done();
 
     it('creates admin action ticket with correct data', function () {
@@ -125,11 +125,11 @@ describe('Create Admin Ticket Component', function () {
         actingAs($staff);
 
         Volt::test('ready-room.tickets.create-admin-ticket')
-            ->set('form.target_user_id', $targetUser->id)
-            ->set('form.department', StaffDepartment::Chaplain->value)
-            ->set('form.subject', 'Account Review')
-            ->set('form.message', 'We need to review your account')
-            ->call('create')
+            ->set('target_user_id', $targetUser->id)
+            ->set('department', StaffDepartment::Chaplain->value)
+            ->set('subject', 'Account Review')
+            ->set('message', 'We need to review your account')
+            ->call('createAdminTicket')
             ->assertHasNoErrors();
 
         $thread = Thread::where('subject', 'Account Review')->first();
@@ -149,11 +149,11 @@ describe('Create Admin Ticket Component', function () {
         actingAs($staff);
 
         Volt::test('ready-room.tickets.create-admin-ticket')
-            ->set('form.target_user_id', $targetUser->id)
-            ->set('form.department', StaffDepartment::Chaplain->value)
-            ->set('form.subject', 'Test admin ticket')
-            ->set('form.message', 'Test message')
-            ->call('create');
+            ->set('target_user_id', $targetUser->id)
+            ->set('department', StaffDepartment::Chaplain->value)
+            ->set('subject', 'Test admin ticket')
+            ->set('message', 'Test message')
+            ->call('createAdminTicket');
 
         $thread = Thread::where('subject', 'Test admin ticket')->first();
 
