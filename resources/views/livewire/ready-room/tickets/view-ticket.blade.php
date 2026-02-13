@@ -297,6 +297,12 @@ new class extends Component
 
         $this->thread->update(['status' => $newStatus]);
 
+        // Get system user for consistent attribution of system messages
+        $systemUser = User::firstOrCreate(
+            ['email' => 'system@lighthouse.local'],
+            ['name' => 'System']
+        );
+
         // Create system message
         $systemMessageBody = $isStaff
             ? auth()->user()->name.' closed this ticket.'
@@ -304,7 +310,7 @@ new class extends Component
 
         Message::create([
             'thread_id' => $this->thread->id,
-            'user_id' => auth()->id(),
+            'user_id' => $systemUser->id,
             'body' => $systemMessageBody,
             'kind' => MessageKind::System,
         ]);
