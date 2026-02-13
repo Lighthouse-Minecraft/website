@@ -227,25 +227,59 @@ new class extends Component
     {
         $this->authorize('assign', $this->thread);
 
+        // Allow unassigning (setting to null)
+        if ($userId === null) {
+            $oldAssignee = $this->thread->assignedTo;
+            $this->thread->update(['assigned_to_user_id' => null]);
+
+            \App\Actions\RecordActivity::run(
+                $this->thread,
+                'assignment_changed',
+                $oldAssignee ? "Assignment removed: {$oldAssignee->name} → Unassigned" : 'Unassigned'
+            );
+
+            Flux::toast('Ticket unassigned successfully!', variant: 'success');
+
+            return;
+        }
+
+        // Validate the user exists
+        $newAssignee = User::find($userId);
+        if (! $newAssignee) {
+            $this->addError('assignee', 'Invalid user selected.');
+
+            return;
+        }
+
+        // Validate the user is staff
+        if (! $newAssignee->staff_rank) {
+            $this->addError('assignee', 'Only staff members can be assigned to tickets.');
+
+            return;
+        }
+
+        // Validate the user is in the correct department
+        if ($newAssignee->staff_department !== $this->thread->department) {
+            $this->addError('assignee', 'Staff member must be in the '.$this->thread->department->label().' department.');
+
+            return;
+        }
+
         $oldAssignee = $this->thread->assignedTo;
         $this->thread->update(['assigned_to_user_id' => $userId]);
 
-        $newAssignee = $userId ? User::find($userId) : null;
-
         $description = $oldAssignee
-            ? "Assignment changed: {$oldAssignee->name} → ".($newAssignee?->name ?? 'Unassigned')
-            : 'Assigned to: '.($newAssignee?->name ?? 'Unassigned');
+            ? "Assignment changed: {$oldAssignee->name} → {$newAssignee->name}"
+            : "Assigned to: {$newAssignee->name}";
 
         \App\Actions\RecordActivity::run($this->thread, 'assignment_changed', $description);
 
         // Notify both the new assignee and the ticket creator
-        if ($newAssignee) {
-            $notificationService = app(TicketNotificationService::class);
-            $notificationService->send($newAssignee, new TicketAssignedNotification($this->thread));
+        $notificationService = app(TicketNotificationService::class);
+        $notificationService->send($newAssignee, new TicketAssignedNotification($this->thread));
 
-            if ($this->thread->createdBy && $this->thread->createdBy->id !== $newAssignee->id) {
-                $notificationService->send($this->thread->createdBy, new TicketAssignedNotification($this->thread));
-            }
+        if ($this->thread->createdBy && $this->thread->createdBy->id !== $newAssignee->id) {
+            $notificationService->send($this->thread->createdBy, new TicketAssignedNotification($this->thread));
         }
 
         Flux::toast('Ticket assigned successfully!', variant: 'success');
