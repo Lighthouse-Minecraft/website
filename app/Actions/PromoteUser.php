@@ -23,6 +23,7 @@ class PromoteUser
         $nextLevel = $levels[$currentIndex + 1] ?? null;
 
         $user->membership_level = $nextLevel;
+        $user->promoted_at = now();
         $user->save();
 
         \App\Actions\RecordActivity::handle($user, 'user_promoted', "Promoted from {$current->label()} to {$nextLevel->label()}.");

@@ -99,5 +99,58 @@ describe('Community Updates List', function () {
             ->assertDontSee($meetingFinalizing->community_minutes);
     });
 
-    // When Livewire 4 releases, make this an infinite scrolling list
+    // Pagination shows 10 meetings per page
+    it('paginates meetings with 10 per page', function () {
+        loginAsAdmin();
+
+        // Create 15 meetings with distinct days to ensure proper ordering
+        $meetings = collect();
+        for ($i = 0; $i < 15; $i++) {
+            $meetings->push(
+                Meeting::factory()
+                    ->withStatus(MeetingStatus::Completed)
+                    ->create(['day' => now()->subDays($i)])
+            );
+        }
+
+        $response = get(route('community-updates.index'))
+            ->assertOk();
+
+        // Should see first 10 meetings (most recent)
+        foreach ($meetings->take(10) as $meeting) {
+            $response->assertSee($meeting->title);
+        }
+
+        // Should not see meetings 11-15 on first page
+        foreach ($meetings->skip(10) as $meeting) {
+            $response->assertDontSee($meeting->title);
+        }
+    });
+
+    // Shows empty state when no meetings exist
+    it('shows empty state when no completed meetings exist', function () {
+        loginAsAdmin();
+
+        get(route('community-updates.index'))
+            ->assertOk()
+            ->assertSee('No community updates available');
+    });
+
+    // First meeting should be expanded by default
+    it('renders accordion with first item expanded', function () {
+        loginAsAdmin();
+        $meetings = Meeting::factory()
+            ->withStatus(MeetingStatus::Completed)
+            ->count(3)
+            ->create();
+
+        $response = get(route('community-updates.index'))
+            ->assertOk();
+
+        // Verify accordion component structure is present
+        $response->assertSee('ui-disclosure-group');
+
+        // First meeting's content should be visible
+        $response->assertSee($meetings->sortByDesc('day')->first()->community_minutes);
+    });
 })->done(issue: 82, assignee: 'jonzenor');

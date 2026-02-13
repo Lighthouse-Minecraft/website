@@ -1,27 +1,46 @@
 <?php
 
 use Livewire\Volt\Component;
+use Livewire\WithPagination;
 use App\Models\Meeting;
 use App\Enums\MeetingStatus;
 
 new class extends Component {
-    public $meetings;
+    use WithPagination;
 
-    public function mount(): void
+    public function with(): array
     {
-        $this->meetings = Meeting::query()
-            ->where('status', MeetingStatus::Completed->value)
-            ->orderBy('day', 'desc')
-            ->get();
+        return [
+            'meetings' => Meeting::query()
+                ->where('status', MeetingStatus::Completed->value)
+                ->orderBy('day', 'desc')
+                ->paginate(10),
+        ];
     }
 }; ?>
 
-<div class="text-center space-y-6">
+<div class="space-y-6">
+    <flux:accordion exclusive>
+        @forelse($meetings as $meeting)
+            <flux:accordion.item 
+                :heading="$meeting->title . ' - ' . $meeting->day" 
+                :expanded="$loop->first" 
+                transition
+            >
+                <flux:card class="text-left">
+                    <div class="prose max-w-none">
+                        {!! nl2br($meeting->community_minutes) !!}
+                    </div>
+                </flux:card>
+            </flux:accordion.item>
+        @empty
+            <p class="text-zinc-500 text-center py-8">No community updates available.</p>
+        @endforelse
+    </flux:accordion>
 
-    @foreach($meetings as $meeting)
-        <flux:separator text="{{  $meeting->title }} - {{ $meeting->day }}" />
-        <flux:card class="text-left w-full mx-auto mb-24">
-            {!!  nl2br($meeting->community_minutes) !!}
-        </flux:card>
-    @endforeach
+    @if($meetings->hasPages())
+        <div class="mt-6">
+            {{ $meetings->links() }}
+        </div>
+    @endif
 </div>
