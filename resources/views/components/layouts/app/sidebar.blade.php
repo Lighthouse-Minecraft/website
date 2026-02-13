@@ -35,7 +35,8 @@
 
                     @auth
                         @php
-                            $ticketsQuery = \App\Models\Thread::query()->where('status', \App\Enums\ThreadStatus::Open);
+                            // Build base query for tickets visible to this user (no status filter)
+                            $ticketsQuery = \App\Models\Thread::query();
                             
                             if (! auth()->user()->can('viewAll', \App\Models\Thread::class)) {
                                 $ticketsQuery->where(function ($q) {
@@ -52,7 +53,8 @@
                                 });
                             }
                             
-                            $openTicketsCount = $ticketsQuery->count();
+                            // Get counts for different statuses
+                            $openTicketsCount = (clone $ticketsQuery)->where('status', \App\Enums\ThreadStatus::Open)->count();
                             $hasPendingTickets = (clone $ticketsQuery)->where('status', \App\Enums\ThreadStatus::Pending)->exists();
                         @endphp
                         
