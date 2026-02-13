@@ -20,9 +20,11 @@ class MessageFlagFactory extends Factory
      */
     public function definition(): array
     {
+        $message = Message::factory()->create();
+
         return [
-            'message_id' => Message::factory(),
-            'thread_id' => Thread::factory(),
+            'message_id' => $message->id,
+            'thread_id' => $message->thread_id,
             'flagged_by_user_id' => User::factory(),
             'note' => $this->faker->paragraph(),
             'status' => MessageFlagStatus::New,
