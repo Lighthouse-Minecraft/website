@@ -52,8 +52,12 @@ class SendTicketDigests extends Command
         $sentCount = 0;
 
         foreach ($users as $user) {
-            // Get threads visible to this user with activity since last read
-            $sinceDate = $user->last_notification_read_at ?? now()->subDays(30);
+            // Get threads visible to this user with activity since last digest
+            // Falls back to last_notification_read_at, then account creation, then 30 days ago
+            $sinceDate = $user->last_ticket_digest_sent_at
+                ?? $user->last_notification_read_at
+                ?? $user->created_at
+                ?? now()->subDays(30);
 
             // Get tickets this user can access
             $ticketsQuery = Thread::query();
@@ -94,6 +98,9 @@ class SendTicketDigests extends Command
 
             // Send the digest
             $user->notify(new TicketDigestNotification($ticketSummary));
+
+            // Update the timestamp to prevent sending duplicates
+            $user->update(['last_ticket_digest_sent_at' => now()]);
 
             $sentCount++;
         }
