@@ -93,9 +93,9 @@ new class extends Component
         ]);
 
         // Check if the user prayed yesterday in their timezone
-        $lastPrayedInUserTz = $this->user->last_prayed_at?->copy()->setTimezone($this->userTimezone);
+        $lastPrayedInUserTz = $this->user->last_prayed_at?->setTimezone($this->userTimezone);
         $todayInUserTz = $this->currentDate->copy()->startOfDay();
-        $yesterdayInUserTz = $todayInUserTz->copy()->subDay();
+        $yesterdayInUserTz = $todayInUserTz->copy()->subDays(1);
         
         if ($lastPrayedInUserTz && $lastPrayedInUserTz->isSameDay($yesterdayInUserTz)) {
             $this->user->prayer_streak++;
