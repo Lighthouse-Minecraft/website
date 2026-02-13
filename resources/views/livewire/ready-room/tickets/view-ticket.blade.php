@@ -203,8 +203,16 @@ new class extends Component
 
         $this->authorize('changeStatus', $this->thread);
 
+        // Validate that the status is a valid ThreadStatus value
+        $status = ThreadStatus::tryFrom($newStatus);
+        if (! $status) {
+            $this->addError('status', 'Invalid status value.');
+
+            return;
+        }
+
         $oldStatus = $this->thread->status;
-        $this->thread->update(['status' => ThreadStatus::from($newStatus)]);
+        $this->thread->update(['status' => $status]);
 
         \App\Actions\RecordActivity::run(
             $this->thread,
