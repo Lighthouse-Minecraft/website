@@ -4,14 +4,19 @@ use App\Enums\EmailDigestFrequency;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Volt\Component;
 
-new class extends Component {
+new class extends Component
+{
     public string $pushover_key = '';
+
     public string $email_digest_frequency = '';
+
     public int $pushover_monthly_count = 0;
+
     public ?string $pushover_count_reset_at = null;
-    
+
     // Notification preferences
     public bool $notify_tickets_email = true;
+
     public bool $notify_tickets_pushover = false;
 
     public function mount(): void
@@ -21,7 +26,7 @@ new class extends Component {
         $this->email_digest_frequency = $user->email_digest_frequency?->value ?? EmailDigestFrequency::Immediate->value;
         $this->pushover_monthly_count = $user->pushover_monthly_count ?? 0;
         $this->pushover_count_reset_at = $user->pushover_count_reset_at?->format('M j, Y');
-        
+
         // Load notification preferences
         $preferences = $user->notification_preferences ?? [];
         $this->notify_tickets_email = $preferences['tickets']['email'] ?? true;
@@ -41,15 +46,15 @@ new class extends Component {
 
         $user->pushover_key = $validated['pushover_key'];
         $user->email_digest_frequency = EmailDigestFrequency::from($validated['email_digest_frequency']);
-        
-        // Save notification preferences
-        $user->notification_preferences = [
-            'tickets' => [
-                'email' => $validated['notify_tickets_email'],
-                'pushover' => $validated['notify_tickets_pushover'],
-            ],
+
+        // Merge notification preferences to preserve other categories
+        $preferences = $user->notification_preferences ?? [];
+        $preferences['tickets'] = [
+            'email' => $validated['notify_tickets_email'],
+            'pushover' => $validated['notify_tickets_pushover'],
         ];
-        
+        $user->notification_preferences = $preferences;
+
         $user->save();
 
         Flux::toast('Notification settings updated successfully!', variant: 'success');
