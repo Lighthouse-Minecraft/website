@@ -92,9 +92,14 @@ new class extends Component
             'year' => $this->currentYear,
         ]);
 
-        if ($this->user->last_prayed_at && $this->user->last_prayed_at->setTimezone($this->userTimezone)->isYesterday()) {
+        // Check if the user prayed yesterday in their timezone
+        $lastPrayedInUserTz = $this->user->last_prayed_at?->copy()->setTimezone($this->userTimezone);
+        $todayInUserTz = $this->currentDate->copy()->startOfDay();
+        $yesterdayInUserTz = $todayInUserTz->copy()->subDay();
+        
+        if ($lastPrayedInUserTz && $lastPrayedInUserTz->isSameDay($yesterdayInUserTz)) {
             $this->user->prayer_streak++;
-        } elseif (! $this->user->last_prayed_at || ! $this->user->last_prayed_at->setTimezone($this->userTimezone)->isToday()) {
+        } elseif (! $lastPrayedInUserTz || ! $lastPrayedInUserTz->isSameDay($todayInUserTz)) {
             $this->user->prayer_streak = 1; // reset streak if not consecutive
         }
 
