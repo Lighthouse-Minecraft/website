@@ -31,6 +31,14 @@ new class extends Component {
     {
         $this->authorize('createAsStaff', Thread::class);
         $this->department = StaffDepartment::Command->value;
+        
+        // Pre-fill user if provided in query string
+        if (request()->has('user_id')) {
+            $userId = request()->get('user_id');
+            if (User::where('id', $userId)->exists()) {
+                $this->target_user_id = $userId;
+            }
+        }
     }
 
     #[Computed]
