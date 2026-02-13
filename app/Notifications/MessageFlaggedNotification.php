@@ -13,9 +13,24 @@ class MessageFlaggedNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
+    protected array $allowedChannels = ['mail'];
+
+    protected ?string $pushoverKey = null;
+
     public function __construct(
         public MessageFlag $flag
     ) {}
+
+    /**
+     * Set which channels are allowed for this notification
+     */
+    public function setChannels(array $channels, ?string $pushoverKey = null): self
+    {
+        $this->allowedChannels = $channels;
+        $this->pushoverKey = $pushoverKey;
+
+        return $this;
+    }
 
     /**
      * Get the notification's delivery channels.
@@ -24,13 +39,11 @@ class MessageFlaggedNotification extends Notification implements ShouldQueue
     {
         $channels = [];
 
-        // Check if email is allowed (set by TicketNotificationService)
-        if (isset($notifiable->_notification_email_allowed) && $notifiable->_notification_email_allowed) {
+        if (in_array('mail', $this->allowedChannels)) {
             $channels[] = 'mail';
         }
 
-        // Check if Pushover is allowed (set by TicketNotificationService)
-        if (isset($notifiable->_notification_pushover_allowed) && $notifiable->_notification_pushover_allowed && $notifiable->pushover_key) {
+        if (in_array('pushover', $this->allowedChannels) && $this->pushoverKey) {
             $channels[] = PushoverChannel::class;
         }
 

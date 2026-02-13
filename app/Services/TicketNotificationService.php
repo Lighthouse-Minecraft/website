@@ -37,36 +37,46 @@ class TicketNotificationService
      */
     public function send(User $user, Notification $notification): void
     {
+        // Build array of allowed channels based on user preferences
+        $channels = $this->determineChannels($user);
+
+        // If user doesn't want any notifications, skip
+        if (empty($channels)) {
+            return;
+        }
+
+        // Increment Pushover count if sending via Pushover
+        if (in_array('pushover', $channels)) {
+            $user->incrementPushoverCount();
+        }
+
+        // Pass channels to notification and send
+        $notification->setChannels($channels, $user->pushover_key);
+        $user->notify($notification);
+    }
+
+    /**
+     * Determine which channels should be used for this user
+     */
+    public function determineChannels(User $user): array
+    {
+        $channels = [];
+
         // Get user's notification preferences
         $preferences = $user->notification_preferences ?? [];
         $ticketPrefs = $preferences['tickets'] ?? ['email' => true, 'pushover' => false];
 
-        // Determine if email should be sent
-        $shouldEmail = $ticketPrefs['email'] && $this->shouldSendImmediate($user);
-
-        // Determine if Pushover should be sent
-        $shouldPushover = $ticketPrefs['pushover'] && $this->canSendPushover($user);
-
-        // If user doesn't want any notifications, skip
-        if (! $shouldEmail && ! $shouldPushover) {
-            return;
+        // Add email if user wants it and should receive immediate notification
+        if ($ticketPrefs['email'] && $this->shouldSendImmediate($user)) {
+            $channels[] = 'mail';
         }
 
-        // Store preferences temporarily so notification can check them
-        $user->_notification_email_allowed = $shouldEmail;
-        $user->_notification_pushover_allowed = $shouldPushover;
-
-        // Increment Pushover count if sending
-        if ($shouldPushover) {
-            $user->incrementPushoverCount();
+        // Add Pushover if user wants it and can receive it
+        if ($ticketPrefs['pushover'] && $this->canSendPushover($user)) {
+            $channels[] = 'pushover';
         }
 
-        // Send notification (notification will check the temporary flags)
-        $user->notify($notification);
-
-        // Clean up temporary flags
-        unset($user->_notification_email_allowed);
-        unset($user->_notification_pushover_allowed);
+        return $channels;
     }
 
     /**
