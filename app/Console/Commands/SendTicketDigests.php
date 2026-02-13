@@ -84,15 +84,19 @@ class SendTicketDigests extends Command
                 continue;
             }
 
-            // Build ticket summary with reply counts
-            $ticketSummary = $tickets->map(function ($ticket) use ($sinceDate) {
-                $replyCount = Message::where('thread_id', $ticket->id)
-                    ->where('created_at', '>', $sinceDate)
-                    ->count();
+            // Get message counts for all tickets in a single query
+            $threadIds = $tickets->pluck('id')->toArray();
+            $messageCounts = Message::whereIn('thread_id', $threadIds)
+                ->where('created_at', '>', $sinceDate)
+                ->selectRaw('thread_id, COUNT(*) as count')
+                ->groupBy('thread_id')
+                ->pluck('count', 'thread_id');
 
+            // Build ticket summary with reply counts
+            $ticketSummary = $tickets->map(function ($ticket) use ($messageCounts) {
                 return [
                     'subject' => $ticket->subject,
-                    'count' => $replyCount,
+                    'count' => $messageCounts[$ticket->id] ?? 0,
                 ];
             })->toArray();
 
