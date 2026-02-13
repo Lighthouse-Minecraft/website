@@ -7,6 +7,7 @@ use App\Enums\StaffDepartment;
 use App\Enums\StaffRank;
 use App\Models\Thread;
 use App\Models\User;
+use App\Notifications\Channels\PushoverChannel;
 use App\Notifications\NewTicketNotification;
 use App\Notifications\TicketAssignedNotification;
 use App\Notifications\TicketDigestNotification;
@@ -111,7 +112,7 @@ describe('Ticket Notifications', function () {
             [$user],
             NewTicketNotification::class,
             function ($notification, $channels) {
-                return ! in_array('pushover', $channels);
+                return ! in_array(PushoverChannel::class, $channels);
             }
         );
     })->done();
