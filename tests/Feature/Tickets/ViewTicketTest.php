@@ -100,8 +100,7 @@ describe('View Ticket Component', function () {
         actingAs($staff);
 
         Volt::test('ready-room.tickets.view-ticket', ['thread' => $thread])
-            ->set('status', ThreadStatus::Resolved->value)
-            ->call('updateStatus')
+            ->call('changeStatus', ThreadStatus::Resolved->value)
             ->assertHasNoErrors();
 
         $thread->refresh();
@@ -122,8 +121,7 @@ describe('View Ticket Component', function () {
         actingAs($officer);
 
         Volt::test('ready-room.tickets.view-ticket', ['thread' => $thread])
-            ->set('assignedTo', $assignee->id)
-            ->call('updateAssignedTo')
+            ->call('assignTo', $assignee->id)
             ->assertHasNoErrors();
 
         $thread->refresh();
@@ -139,7 +137,7 @@ describe('View Ticket Component', function () {
         actingAs($user);
 
         Volt::test('ready-room.tickets.view-ticket', ['thread' => $thread])
-            ->set('newReply', 'This is my reply')
+            ->set('replyMessage', 'This is my reply')
             ->call('sendReply')
             ->assertHasNoErrors();
 
@@ -162,7 +160,7 @@ describe('View Ticket Component', function () {
         actingAs($staff);
 
         Volt::test('ready-room.tickets.view-ticket', ['thread' => $thread])
-            ->set('newReply', 'Internal staff note')
+            ->set('replyMessage', 'Internal staff note')
             ->set('isInternalNote', true)
             ->call('sendReply')
             ->assertHasNoErrors();
@@ -187,7 +185,7 @@ describe('View Ticket Component', function () {
         actingAs($staff);
 
         Volt::test('ready-room.tickets.view-ticket', ['thread' => $thread])
-            ->set('newReply', 'Staff reply')
+            ->set('replyMessage', 'Staff reply')
             ->call('sendReply');
 
         expect($thread->participants()->where('user_id', $staff->id)->exists())->toBeTrue();
@@ -205,7 +203,7 @@ describe('View Ticket Component', function () {
         actingAs($user);
 
         Volt::test('ready-room.tickets.view-ticket', ['thread' => $thread])
-            ->set('flaggingMessage', $message->id)
+            ->set('flaggingMessageId', $message->id)
             ->set('flagReason', 'This is inappropriate')
             ->call('submitFlag')
             ->assertHasNoErrors();
@@ -229,7 +227,7 @@ describe('View Ticket Component', function () {
         $message = Message::factory()->forThread($thread)->byUser($author)->create();
 
         actingAs($flagger);
-        FlagMessage::run($message, 'Inappropriate content');
+        FlagMessage::run($message, $flagger, 'Inappropriate content');
 
         actingAs($quartermaster);
 
@@ -251,16 +249,17 @@ describe('View Ticket Component', function () {
         $message = Message::factory()->forThread($thread)->byUser($author)->create();
 
         actingAs($flagger);
-        FlagMessage::run($message, 'Inappropriate content');
+        FlagMessage::run($message, $flagger, 'Inappropriate content');
 
         $flag = MessageFlag::where('message_id', $message->id)->first();
+        $thread->refresh();
 
         actingAs($quartermaster);
 
         Volt::test('ready-room.tickets.view-ticket', ['thread' => $thread])
-            ->set('acknowledgingFlag', $flag->id)
+            ->set('acknowledgingFlagId', $flag->id)
             ->set('staffNotes', 'Reviewed and handled appropriately')
-            ->call('submitAcknowledgement')
+            ->call('acknowledgeFlag')
             ->assertHasNoErrors();
 
         $flag->refresh();
