@@ -24,6 +24,8 @@ class PromoteUserToAdmin
         }
 
         $user->roles()->attach($adminRole->id);
+        $user->promoted_at = now();
+        $user->save();
 
         RecordActivity::run($user, 'user_promoted_to_admin', 'Promoted to Admin role.');
 

@@ -37,6 +37,7 @@ describe('Dashboard', function () {
 
         it('displays stowaway users in the widget for admins', function () {
             $admin = loginAsAdmin();
+            $admin->update(['rules_accepted_at' => now()]);
 
             // Create some test users
             $stowawayUser = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create([
@@ -49,7 +50,7 @@ describe('Dashboard', function () {
             $response = $this->get('/dashboard');
 
             $response->assertSee('John Stowaway');
-            $response->assertDontSee('Jane Traveler');
+            $response->assertSee('Jane Traveler'); // She appears in Traveler widget
         });
 
         it('shows empty state when no stowaway users exist', function () {

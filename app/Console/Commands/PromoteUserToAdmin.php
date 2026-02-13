@@ -3,7 +3,6 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use Spatie\Permission\Models\Role;
 
 class PromoteUserToAdmin extends Command
 {
@@ -36,21 +35,19 @@ class PromoteUserToAdmin extends Command
             return 1;
         }
 
-        // Assuming the relationship is named 'roles' and Role has a 'name' attribute
         if ($user->roles()->where('name', 'Admin')->exists()) {
             $this->info("User {$user->email} is already an Admin.");
 
             return 0;
         }
 
-        $adminRole = \App\Models\Role::where('name', 'Admin')->first();
-        if (! $adminRole) {
+        $success = \App\Actions\PromoteUserToAdmin::run($user);
+
+        if (! $success) {
             $this->error('Admin role not found.');
 
             return 1;
         }
-
-        $user->roles()->attach($adminRole->id);
 
         $this->info("User {$user->email} has been promoted to Admin.");
 

@@ -7,23 +7,34 @@
         <div class="flex mb-4">
             <flux:heading>Community</flux:heading>
             <flux:spacer />
-            <livewire:dashboard.view-rules />
+            @if (auth()->user()->rules_accepted_at)
+                <livewire:dashboard.view-rules />
+            @endif
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            <livewire:dashboard.announcements-widget />
+        @if (!auth()->user()->rules_accepted_at)
+            <div class="flex flex-col items-center justify-center py-12">
+                <flux:text class="text-center mb-6 text-lg">
+                    Welcome to Lighthouse! Please read and accept our community rules to get started.
+                </flux:text>
+                <livewire:dashboard.view-rules />
+            </div>
+        @else
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                <livewire:dashboard.announcements-widget />
 
-            <flux:card>
-                <flux:heading>Donations</flux:heading>
-                <flux:separator variant="subtle" class="my-2" />
-                <div class="flex mt-4">
-                    <flux:button size="xs" href="{{ route('donate') }}" variant="primary" color="sky">Support Lighthouse</flux:button>
-                    <flux:spacer />
-                    <flux:button href="{{  config('lighthouse.stripe.customer_portal_url') }}" size="xs">Manage Subscription</flux:button>
-                </div>
+                <flux:card>
+                    <flux:heading>Donations</flux:heading>
+                    <flux:separator variant="subtle" class="my-2" />
+                    <div class="flex mt-4">
+                        <flux:button size="xs" href="{{ route('donate') }}" variant="primary" color="sky">Support Lighthouse</flux:button>
+                        <flux:spacer />
+                        <flux:button href="{{  config('lighthouse.stripe.customer_portal_url') }}" size="xs">Manage Subscription</flux:button>
+                    </div>
 
-            </flux:card>
-        </div>
+                </flux:card>
+            </div>
+        @endif
 
     </div>
 
@@ -51,6 +62,10 @@
             <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 @can('manage-stowaway-users')
                     <livewire:dashboard.stowaway-users-widget />
+                @endcan
+
+                @can('manage-traveler-users')
+                    <livewire:dashboard.traveler-users-widget />
                 @endcan
             </div>
         </div>
