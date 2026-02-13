@@ -37,27 +37,36 @@ class TicketNotificationService
      */
     public function send(User $user, Notification $notification): void
     {
-        $channels = [];
-
         // Get user's notification preferences
         $preferences = $user->notification_preferences ?? [];
         $ticketPrefs = $preferences['tickets'] ?? ['email' => true, 'pushover' => false];
 
-        // Determine email channel
-        if ($ticketPrefs['email'] && $this->shouldSendImmediate($user)) {
-            $channels[] = 'mail';
+        // Determine if email should be sent
+        $shouldEmail = $ticketPrefs['email'] && $this->shouldSendImmediate($user);
+
+        // Determine if Pushover should be sent
+        $shouldPushover = $ticketPrefs['pushover'] && $this->canSendPushover($user);
+
+        // If user doesn't want any notifications, skip
+        if (! $shouldEmail && ! $shouldPushover) {
+            return;
         }
 
-        // Add Pushover if available and user wants it
-        if ($ticketPrefs['pushover'] && $this->canSendPushover($user)) {
-            $channels[] = 'pushover';
+        // Store preferences temporarily so notification can check them
+        $user->_notification_email_allowed = $shouldEmail;
+        $user->_notification_pushover_allowed = $shouldPushover;
+
+        // Increment Pushover count if sending
+        if ($shouldPushover) {
             $user->incrementPushoverCount();
         }
 
-        // Send notification
-        if (! empty($channels)) {
-            $user->notify($notification);
-        }
+        // Send notification (notification will check the temporary flags)
+        $user->notify($notification);
+
+        // Clean up temporary flags
+        unset($user->_notification_email_allowed);
+        unset($user->_notification_pushover_allowed);
     }
 
     /**

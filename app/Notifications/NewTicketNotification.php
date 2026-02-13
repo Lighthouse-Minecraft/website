@@ -24,11 +24,13 @@ class NewTicketNotification extends Notification implements ShouldQueue
     {
         $channels = [];
 
-        // Email handled by TicketNotificationService logic
-        $channels[] = 'mail';
+        // Check if email is allowed (set by TicketNotificationService)
+        if (isset($notifiable->_notification_email_allowed) && $notifiable->_notification_email_allowed) {
+            $channels[] = 'mail';
+        }
 
-        // Pushover handled by TicketNotificationService logic
-        if ($notifiable->pushover_key) {
+        // Check if Pushover is allowed (set by TicketNotificationService)
+        if (isset($notifiable->_notification_pushover_allowed) && $notifiable->_notification_pushover_allowed && $notifiable->pushover_key) {
             $channels[] = PushoverChannel::class;
         }
 

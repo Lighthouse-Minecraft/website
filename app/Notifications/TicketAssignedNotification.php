@@ -22,9 +22,15 @@ class TicketAssignedNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        $channels = ['mail'];
+        $channels = [];
 
-        if ($notifiable->pushover_key) {
+        // Check if email is allowed (set by TicketNotificationService)
+        if (isset($notifiable->_notification_email_allowed) && $notifiable->_notification_email_allowed) {
+            $channels[] = 'mail';
+        }
+
+        // Check if Pushover is allowed (set by TicketNotificationService)
+        if (isset($notifiable->_notification_pushover_allowed) && $notifiable->_notification_pushover_allowed && $notifiable->pushover_key) {
             $channels[] = PushoverChannel::class;
         }
 
