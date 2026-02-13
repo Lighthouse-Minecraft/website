@@ -215,25 +215,12 @@ describe('View Ticket Component', function () {
             ->and($flag->note)->toBe('This is inappropriate');
     })->done();
 
-    it('shows acknowledge button for Quartermaster on flagged messages', function () {
+    it('Quartermaster has viewFlagged permission', function () {
         $quartermaster = User::factory()
             ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::Officer)
             ->create();
 
-        $author = User::factory()->create();
-        $flagger = User::factory()->create();
-
-        $thread = Thread::factory()->withDepartment(StaffDepartment::Chaplain)->create();
-        $message = Message::factory()->forThread($thread)->byUser($author)->create();
-
-        actingAs($flagger);
-        FlagMessage::run($message, $flagger, 'Inappropriate content');
-
-        actingAs($quartermaster);
-
-        $component = Volt::test('ready-room.tickets.view-ticket', ['thread' => $thread]);
-
-        // The component should show acknowledge option for Quartermaster
+        // Quartermaster has viewFlagged permission which allows seeing flags
         expect($quartermaster->can('viewFlagged', Thread::class))->toBeTrue();
     })->done();
 
