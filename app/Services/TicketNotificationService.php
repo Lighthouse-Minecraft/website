@@ -39,13 +39,17 @@ class TicketNotificationService
     {
         $channels = [];
 
+        // Get user's notification preferences
+        $preferences = $user->notification_preferences ?? [];
+        $ticketPrefs = $preferences['tickets'] ?? ['email' => true, 'pushover' => false];
+
         // Determine email channel
-        if ($this->shouldSendImmediate($user)) {
+        if ($ticketPrefs['email'] && $this->shouldSendImmediate($user)) {
             $channels[] = 'mail';
         }
 
-        // Add Pushover if available
-        if ($this->canSendPushover($user)) {
+        // Add Pushover if available and user wants it
+        if ($ticketPrefs['pushover'] && $this->canSendPushover($user)) {
             $channels[] = 'pushover';
             $user->incrementPushoverCount();
         }

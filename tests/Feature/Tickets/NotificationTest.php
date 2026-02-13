@@ -21,7 +21,10 @@ describe('Ticket Notifications', function () {
 
         $chaplainStaff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
-            ->create(['email_digest_frequency' => EmailDigestFrequency::Immediate]);
+            ->create([
+                'email_digest_frequency' => EmailDigestFrequency::Immediate,
+                'notification_preferences' => ['tickets' => ['email' => true, 'pushover' => false]],
+            ]);
 
         $thread = Thread::factory()->withDepartment(StaffDepartment::Chaplain)->create();
 
@@ -45,6 +48,7 @@ describe('Ticket Notifications', function () {
             ->create([
                 'email_digest_frequency' => EmailDigestFrequency::Daily,
                 'last_notification_read_at' => now()->subDays(2),
+                'notification_preferences' => ['tickets' => ['email' => true, 'pushover' => false]],
             ]);
 
         $thread = Thread::factory()->withDepartment(StaffDepartment::Chaplain)->create();
@@ -64,6 +68,7 @@ describe('Ticket Notifications', function () {
             ->create([
                 'email_digest_frequency' => EmailDigestFrequency::Daily,
                 'last_notification_read_at' => now()->subMinutes(30),
+                'notification_preferences' => ['tickets' => ['email' => true, 'pushover' => false]],
             ]);
 
         $thread = Thread::factory()->withDepartment(StaffDepartment::Chaplain)->create();
@@ -94,6 +99,7 @@ describe('Ticket Notifications', function () {
             'pushover_monthly_count' => 10500,
             'pushover_count_reset_at' => now()->addDays(10),
             'email_digest_frequency' => EmailDigestFrequency::Immediate,
+            'notification_preferences' => ['tickets' => ['email' => true, 'pushover' => true]],
         ]);
 
         $thread = Thread::factory()->create();
@@ -125,7 +131,10 @@ describe('Ticket Notifications', function () {
 
         $assignee = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
-            ->create(['email_digest_frequency' => EmailDigestFrequency::Immediate]);
+            ->create([
+                'email_digest_frequency' => EmailDigestFrequency::Immediate,
+                'notification_preferences' => ['tickets' => ['email' => true, 'pushover' => false]],
+            ]);
 
         $thread = Thread::factory()->withDepartment(StaffDepartment::Chaplain)->create();
 

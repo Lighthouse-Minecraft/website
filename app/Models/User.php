@@ -34,6 +34,7 @@ class User extends Authenticatable // implements MustVerifyEmail
         'timezone',
         'pushover_key',
         'email_digest_frequency',
+        'notification_preferences',
     ];
 
     /**
@@ -65,6 +66,7 @@ class User extends Authenticatable // implements MustVerifyEmail
             'last_prayed_at' => 'datetime',
             'last_notification_read_at' => 'datetime',
             'pushover_count_reset_at' => 'datetime',
+            'notification_preferences' => 'array',
         ];
     }
 

@@ -56,12 +56,12 @@ class FlagMessage
 
             // Create system message in review ticket with flag details
             $flagDetails = "**Flagged Message Review Request**\n\n";
-            $flagDetails .= "**Original Ticket:** [{$thread->subject}](/tickets/{$thread->id})\n";
-            $flagDetails .= "**Flagged Message ID:** {$message->id}\n";
-            $flagDetails .= "**Flagged By:** {$flaggingUser->name}\n";
+            $flagDetails .= "\n**Original Ticket:** [{$thread->subject}](/tickets/{$thread->id})\n\n";
+            $flagDetails .= "**Flagged Message ID:** {$message->id}\n\n";
+            $flagDetails .= "**Flagged By:** [{$flaggingUser->name}](/profile/{$flaggingUser->id})\n\n";
             $flagDetails .= '**Timestamp:** '.now()->format('M j, Y g:i A')."\n\n";
-            $flagDetails .= "**Reason for Flag:**\n{$note}\n\n";
-            $flagDetails .= "**Original Message:**\n> ".str_replace("\n", "\n> ", $message->body);
+            $flagDetails .= "**Reason for Flag:**\n\n{$note}\n\n";
+            $flagDetails .= "\n**Original Message:**\n\n> ".str_replace("\n", "\n> ", $message->body);
 
             Message::create([
                 'thread_id' => $reviewTicket->id,

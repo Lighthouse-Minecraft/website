@@ -9,6 +9,10 @@ new class extends Component {
     public string $email_digest_frequency = '';
     public int $pushover_monthly_count = 0;
     public ?string $pushover_count_reset_at = null;
+    
+    // Notification preferences
+    public bool $notify_tickets_email = true;
+    public bool $notify_tickets_pushover = false;
 
     public function mount(): void
     {
@@ -17,6 +21,11 @@ new class extends Component {
         $this->email_digest_frequency = $user->email_digest_frequency?->value ?? EmailDigestFrequency::Immediate->value;
         $this->pushover_monthly_count = $user->pushover_monthly_count ?? 0;
         $this->pushover_count_reset_at = $user->pushover_count_reset_at?->format('M j, Y');
+        
+        // Load notification preferences
+        $preferences = $user->notification_preferences ?? [];
+        $this->notify_tickets_email = $preferences['tickets']['email'] ?? true;
+        $this->notify_tickets_pushover = $preferences['tickets']['pushover'] ?? false;
     }
 
     public function updateNotificationSettings(): void
@@ -26,10 +35,21 @@ new class extends Component {
         $validated = $this->validate([
             'pushover_key' => ['nullable', 'string', 'max:255'],
             'email_digest_frequency' => ['required', 'in:immediate,daily,weekly'],
+            'notify_tickets_email' => ['boolean'],
+            'notify_tickets_pushover' => ['boolean'],
         ]);
 
         $user->pushover_key = $validated['pushover_key'];
         $user->email_digest_frequency = EmailDigestFrequency::from($validated['email_digest_frequency']);
+        
+        // Save notification preferences
+        $user->notification_preferences = [
+            'tickets' => [
+                'email' => $validated['notify_tickets_email'],
+                'pushover' => $validated['notify_tickets_pushover'],
+            ],
+        ];
+        
         $user->save();
 
         Flux::toast('Notification settings updated successfully!', variant: 'success');
@@ -75,6 +95,28 @@ new class extends Component {
                     @endif
                 </div>
             @endif
+        </flux:fieldset>
+
+        <flux:fieldset>
+            <flux:legend>Notification Preferences</flux:legend>
+            <flux:description>
+                Choose which types of notifications you want to receive and how.
+            </flux:description>
+
+            <div class="mt-4 space-y-4">
+                <div class="border border-zinc-200 dark:border-zinc-700 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <div>
+                            <div class="font-medium text-sm text-zinc-900 dark:text-white">Ticket Updates</div>
+                            <div class="text-xs text-zinc-600 dark:text-zinc-400">New tickets, replies, and status changes</div>
+                        </div>
+                    </div>
+                    <div class="flex gap-6">
+                        <flux:switch wire:model="notify_tickets_email" label="Email" />
+                        <flux:switch wire:model="notify_tickets_pushover" label="Pushover" />
+                    </div>
+                </div>
+            </div>
         </flux:fieldset>
 
         <div class="flex items-center gap-4">
