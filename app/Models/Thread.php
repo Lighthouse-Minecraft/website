@@ -73,22 +73,28 @@ class Thread extends Model
      *
      * Creates a participant record for the user if one does not already exist.
      * When a new participant is created, the `is_viewer` flag is set according to `$isViewer`.
+     * If a participant already exists as a viewer and $isViewer is false, promotes them to a full participant.
      *
-     * @param User $user The user to ensure is a participant.
-     * @param bool $isViewer Whether to mark the participant as a viewer when creating; defaults to false.
+     * @param  User  $user  The user to ensure is a participant.
+     * @param  bool  $isViewer  Whether to mark the participant as a viewer when creating; defaults to false.
      */
     public function addParticipant(User $user, bool $isViewer = false): void
     {
-        $this->participants()->firstOrCreate(
+        $participant = $this->participants()->firstOrCreate(
             ['user_id' => $user->id],
             ['is_viewer' => $isViewer]
         );
+
+        // Promote viewer to participant if needed
+        if (! $isViewer && $participant->is_viewer) {
+            $participant->update(['is_viewer' => false]);
+        }
     }
 
     /**
      * Adds the given user to the thread as a viewer.
      *
-     * @param User $user The user to add as a viewer participant.
+     * @param  User  $user  The user to add as a viewer participant.
      */
     public function addViewer(User $user): void
     {
@@ -104,7 +110,7 @@ class Thread extends Model
      * - the user has the `viewDepartment` ability and the thread's department matches the user's staff department;
      * - the user is a participant of the thread.
      *
-     * @param \App\Models\User $user The user to check visibility for.
+     * @param  \App\Models\User  $user  The user to check visibility for.
      * @return bool `true` if the user may view the thread, `false` otherwise.
      */
     public function isVisibleTo(User $user): bool
@@ -137,7 +143,7 @@ class Thread extends Model
      *
      * If the user has no participant record for this thread or has never read it, the thread is considered unread.
      *
-     * @param User $user The user to check unread status for.
+     * @param  User  $user  The user to check unread status for.
      * @return bool `true` if the thread has unread messages for the user, `false` otherwise.
      */
     public function isUnreadFor(User $user): bool

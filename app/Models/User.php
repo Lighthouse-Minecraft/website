@@ -200,14 +200,14 @@ class User extends Authenticatable // implements MustVerifyEmail
     }
 
     /**
-         * Determine whether any actionable support tickets exist for this user given their visibility permissions.
-         *
-         * Considers two types of actionable tickets: unassigned tickets with an open status, and tickets assigned to
-         * the user that are not closed and contain unread messages for the user. The check respects the user's visibility
-         * (their own tickets, department tickets if allowed, and flagged tickets if allowed).
-         *
-         * @return bool `true` if at least one actionable ticket exists, `false` otherwise.
-         */
+     * Determine whether any actionable support tickets exist for this user given their visibility permissions.
+     *
+     * Considers two types of actionable tickets: unassigned tickets with an open status, and tickets assigned to
+     * the user that are not closed and contain unread messages for the user. The check respects the user's visibility
+     * (their own tickets, department tickets if allowed, and flagged tickets if allowed).
+     *
+     * @return bool `true` if at least one actionable ticket exists, `false` otherwise.
+     */
     protected function calculateActionableTickets(): bool
     {
         $baseQuery = Thread::query();
@@ -306,16 +306,16 @@ class User extends Authenticatable // implements MustVerifyEmail
     }
 
     /**
-         * Count open ticket threads visible to this user.
-         *
-         * Applies the model's visibility rules: if the user cannot view all threads,
-         * the count is limited to threads where the user is a participant, threads
-         * in the user's department (when the user can view department threads and
-         * has a department), and flagged threads (when the user can view flagged
-         * threads).
-         *
-         * @return int The number of open threads visible to the user.
-         */
+     * Count open ticket threads visible to this user.
+     *
+     * Applies the model's visibility rules: if the user cannot view all threads,
+     * the count is limited to threads where the user is a participant, threads
+     * in the user's department (when the user can view department threads and
+     * has a department), and flagged threads (when the user can view flagged
+     * threads).
+     *
+     * @return int The number of open threads visible to the user.
+     */
     protected function calculateOpenTicketsCount(): int
     {
         $query = Thread::where('status', \App\Enums\ThreadStatus::Open);
