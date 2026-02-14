@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\EmailDigestFrequency;
 use App\Enums\MembershipLevel;
 use App\Enums\StaffDepartment;
 use App\Enums\StaffRank;
@@ -31,6 +32,9 @@ class User extends Authenticatable // implements MustVerifyEmail
         'staff_department',
         'staff_title',
         'timezone',
+        'pushover_key',
+        'email_digest_frequency',
+        'notification_preferences',
     ];
 
     /**
@@ -56,9 +60,14 @@ class User extends Authenticatable // implements MustVerifyEmail
             'membership_level' => MembershipLevel::class,
             'staff_rank' => StaffRank::class,
             'staff_department' => StaffDepartment::class,
+            'email_digest_frequency' => EmailDigestFrequency::class,
             'rules_accepted_at' => 'datetime',
             'promoted_at' => 'datetime',
             'last_prayed_at' => 'datetime',
+            'last_notification_read_at' => 'datetime',
+            'last_ticket_digest_sent_at' => 'datetime',
+            'pushover_count_reset_at' => 'datetime',
+            'notification_preferences' => 'array',
         ];
     }
 
@@ -124,5 +133,27 @@ class User extends Authenticatable // implements MustVerifyEmail
     public function prayerCountries()
     {
         return $this->belongsToMany(PrayerCountry::class)->withPivot('year')->withTimestamps();
+    }
+
+    public function canSendPushover(): bool
+    {
+        if (! $this->pushover_key) {
+            return false;
+        }
+
+        // Reset counter if it's a new month
+        if (! $this->pushover_count_reset_at || $this->pushover_count_reset_at->lt(now()->startOfMonth())) {
+            $this->update([
+                'pushover_monthly_count' => 0,
+                'pushover_count_reset_at' => now()->startOfMonth(),
+            ]);
+        }
+
+        return $this->pushover_monthly_count < 10000;
+    }
+
+    public function incrementPushoverCount(): void
+    {
+        $this->increment('pushover_monthly_count');
     }
 }
