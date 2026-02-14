@@ -134,7 +134,9 @@ new class extends Component
     public function staffUsers()
     {
         return User::whereNotNull('staff_rank')
-            ->where('staff_department', $this->thread->department)
+            ->whereNotNull('staff_department')
+            ->orderBy('staff_department')
+            ->orderBy('staff_rank')
             ->orderBy('name')
             ->get();
     }
@@ -268,13 +270,6 @@ new class extends Component
         // Validate the user is staff
         if (! $newAssignee->staff_rank) {
             $this->addError('assignee', 'Only staff members can be assigned to tickets.');
-
-            return;
-        }
-
-        // Validate the user is in the correct department
-        if ($newAssignee->staff_department !== $this->thread->department) {
-            $this->addError('assignee', 'Staff member must be in the '.$this->thread->department->label().' department.');
 
             return;
         }
@@ -456,7 +451,9 @@ new class extends Component
                     <flux:select wire:change="assignTo($event.target.value ? parseInt($event.target.value) : null)" variant="listbox">
                         <flux:select.option value="" :selected="!$thread->assigned_to_user_id">Unassigned</flux:select.option>
                         @foreach($this->staffUsers as $staff)
-                            <flux:select.option value="{{ $staff->id }}" :selected="$thread->assigned_to_user_id == $staff->id">{{ $staff->name }}</flux:select.option>
+                            <flux:select.option value="{{ $staff->id }}" :selected="$thread->assigned_to_user_id == $staff->id">
+                                {{ $staff->name }} ({{ $staff->staff_department?->label() }} - {{ $staff->staff_rank?->label() }})
+                            </flux:select.option>
                         @endforeach
                     </flux:select>
                 </flux:field>

@@ -129,6 +129,28 @@ describe('View Ticket Component', function () {
         expect($thread->assigned_to_user_id)->toBe($assignee->id);
     })->done();
 
+    it('allows assigning tickets to staff from different departments', function () {
+        $commandOfficer = User::factory()
+            ->withStaffPosition(StaffDepartment::Command, StaffRank::Officer)
+            ->create();
+
+        $engineerStaff = User::factory()
+            ->withStaffPosition(StaffDepartment::Engineer, StaffRank::CrewMember)
+            ->create();
+
+        // Chaplain ticket assigned to Engineer staff
+        $thread = Thread::factory()->withDepartment(StaffDepartment::Chaplain)->create();
+
+        actingAs($commandOfficer);
+
+        Volt::test('ready-room.tickets.view-ticket', ['thread' => $thread])
+            ->call('assignTo', $engineerStaff->id)
+            ->assertHasNoErrors();
+
+        $thread->refresh();
+        expect($thread->assigned_to_user_id)->toBe($engineerStaff->id);
+    })->done();
+
     it('allows participants to reply to tickets', function () {
         $user = User::factory()->create();
 
