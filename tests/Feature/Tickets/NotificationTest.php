@@ -9,6 +9,7 @@ use App\Models\Thread;
 use App\Models\User;
 use App\Notifications\Channels\PushoverChannel;
 use App\Notifications\NewTicketNotification;
+use App\Notifications\NewTicketReplyNotification;
 use App\Notifications\TicketAssignedNotification;
 use App\Notifications\TicketDigestNotification;
 use App\Services\TicketNotificationService;
@@ -170,6 +171,63 @@ describe('Ticket Notifications', function () {
             TicketDigestNotification::class,
             function ($notification, $channels) {
                 return in_array('mail', $channels) && ! in_array('pushover', $channels);
+            }
+        );
+    })->done();
+
+    it('sends reply notification when someone replies to ticket', function () {
+        Notification::fake();
+
+        $user = User::factory()->create([
+            'email_digest_frequency' => EmailDigestFrequency::Immediate,
+            'notification_preferences' => ['tickets' => ['email' => true, 'pushover' => false]],
+        ]);
+
+        $thread = Thread::factory()->create();
+        $message = \App\Models\Message::factory()->create([
+            'thread_id' => $thread->id,
+            'user_id' => User::factory()->create()->id,
+            'body' => 'This is a reply to the ticket',
+        ]);
+
+        $service = new TicketNotificationService;
+        $service->send($user, new NewTicketReplyNotification($message));
+
+        Notification::assertSentTo(
+            [$user],
+            NewTicketReplyNotification::class,
+            function ($notification, $channels) {
+                return in_array('mail', $channels);
+            }
+        );
+    })->done();
+
+    it('sends reply notification via Pushover when configured', function () {
+        Notification::fake();
+
+        $user = User::factory()->create([
+            'pushover_key' => 'test-key',
+            'pushover_monthly_count' => 0,
+            'email_digest_frequency' => EmailDigestFrequency::Immediate,
+            'notification_preferences' => ['tickets' => ['email' => true, 'pushover' => true]],
+        ]);
+
+        $thread = Thread::factory()->create();
+        $message = \App\Models\Message::factory()->create([
+            'thread_id' => $thread->id,
+            'user_id' => User::factory()->create()->id,
+            'body' => 'This is a reply to the ticket',
+        ]);
+
+        $service = new TicketNotificationService;
+        $notification = new NewTicketReplyNotification($message);
+        $service->send($user, $notification);
+
+        Notification::assertSentTo(
+            [$user],
+            NewTicketReplyNotification::class,
+            function ($notification, $channels) {
+                return in_array('mail', $channels) && in_array(PushoverChannel::class, $channels);
             }
         );
     })->done();
