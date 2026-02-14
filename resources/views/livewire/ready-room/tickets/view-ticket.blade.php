@@ -31,12 +31,22 @@ new class extends Component
 
     public string $staffNotes = '';
 
+    /**
+     * Initialize the component for the given thread: authorize access, attach the thread to the component,
+     * register the current user as a viewer for read-tracking, and update the participant's read timestamp when present.
+     *
+     * @param \App\Models\Thread $thread The thread (ticket) to mount into the component.
+     */
     public function mount(Thread $thread): void
     {
         $this->authorize('view', $thread);
         $this->thread = $thread;
 
-        // Mark thread as read for this user (only if they're already a participant)
+        // Add viewer (not participant) so we can track their read status
+        // Viewers can see the ticket but won't get notifications for new messages
+        $this->thread->addViewer(auth()->user());
+
+        // Mark thread as read for this user
         $participant = $this->thread->participants()
             ->where('user_id', auth()->id())
             ->first();
@@ -126,15 +136,27 @@ new class extends Component
         return $this->thread->createdBy;
     }
 
+    /**
+     * Retrieve staff users who have both a staff rank and a staff department, ordered by department, rank, then name.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection|\App\Models\User[] Collection of User models matching the staff criteria, ordered by `staff_department`, `staff_rank`, then `name`.
+     */
     #[Computed]
     public function staffUsers()
     {
         return User::whereNotNull('staff_rank')
-            ->where('staff_department', $this->thread->department)
+            ->whereNotNull('staff_department')
+            ->orderBy('staff_department')
+            ->orderBy('staff_rank')
             ->orderBy('name')
             ->get();
     }
 
+    /**
+     * Sends the current reply for the thread, creating a message or internal note and performing related updates.
+     *
+     * Validates the reply text and authorizes the action (including internal-note permission when requested). Creates a Message on the thread (marked as an internal note when selected), ensures the sender is recorded as a non-viewer participant and updates their read timestamp, updates the thread's last message time, and records activity. For normal replies (not internal notes) notifies other non-viewer participants. Resets reply-related state, shows a success toast, and clears the cached messages list.
+     */
     public function sendReply(): void
     {
         $this->authorize('reply', $this->thread);
@@ -157,6 +179,9 @@ new class extends Component
             $kind = MessageKind::InternalNote;
         }
 
+        // Capture a single timestamp for consistency
+        $now = now();
+
         $message = Message::create([
             'thread_id' => $this->thread->id,
             'user_id' => auth()->id(),
@@ -164,20 +189,40 @@ new class extends Component
             'kind' => $kind,
         ]);
 
-        // Add sender as participant if not already
-        $this->thread->addParticipant(auth()->user());
+        // Add sender as participant (not viewer) if not already
+        // If they were a viewer, convert them to a participant
+        $existingParticipant = $this->thread->participants()
+            ->where('user_id', auth()->id())
+            ->first();
 
-        // Update thread last message time
-        $this->thread->update(['last_message_at' => now()]);
+        if (! $existingParticipant) {
+            // No participant record exists, add them as a participant
+            $this->thread->addParticipant(auth()->user(), isViewer: false);
+            // Refetch to get the created participant record
+            $existingParticipant = $this->thread->participants()
+                ->where('user_id', auth()->id())
+                ->first();
+        } elseif ($existingParticipant->is_viewer) {
+            // They exist as a viewer, convert to participant
+            $existingParticipant->update(['is_viewer' => false]);
+        }
+        // Otherwise they're already a non-viewer participant, do nothing
+
+        // Mark as read for the sender (use same timestamp as last_message_at)
+        $existingParticipant->update(['last_read_at' => $now]);
+
+        // Update thread last message time (use same timestamp as last_read_at)
+        $this->thread->update(['last_message_at' => $now]);
 
         // Record activity
         $activityType = $kind === MessageKind::InternalNote ? 'internal_note_added' : 'message_sent';
         \App\Actions\RecordActivity::run($this->thread, $activityType, 'New message added to thread');
 
-        // Notify participants (except sender and for internal notes)
+        // Notify participants (except sender, viewers, and for internal notes)
         if ($kind !== MessageKind::InternalNote) {
             $participants = $this->thread->participants()
                 ->where('user_id', '!=', auth()->id())
+                ->where('is_viewer', false) // Exclude viewers - they just observe
                 ->with('user')
                 ->get();
 
@@ -223,6 +268,13 @@ new class extends Component
         Flux::toast('Status updated successfully!', variant: 'success');
     }
 
+    /**
+     * Assigns the thread to a staff user or removes the current assignment.
+     *
+     * Authorizes the action, then if `$userId` is `null` unassigns the thread; otherwise validates the target exists and is a staff member, updates the thread's assignee, records an `assignment_changed` activity, and notifies the new assignee and the thread creator (if different). Validation failures add field errors and abort assignment without performing changes.
+     *
+     * @param int|null $userId The ID of the staff user to assign the thread to, or `null` to unassign.
+     */
     public function assignTo(?int $userId): void
     {
         $this->authorize('assign', $this->thread);
@@ -254,13 +306,6 @@ new class extends Component
         // Validate the user is staff
         if (! $newAssignee->staff_rank) {
             $this->addError('assignee', 'Only staff members can be assigned to tickets.');
-
-            return;
-        }
-
-        // Validate the user is in the correct department
-        if ($newAssignee->staff_department !== $this->thread->department) {
-            $this->addError('assignee', 'Staff member must be in the '.$this->thread->department->label().' department.');
 
             return;
         }
@@ -442,7 +487,9 @@ new class extends Component
                     <flux:select wire:change="assignTo($event.target.value ? parseInt($event.target.value) : null)" variant="listbox">
                         <flux:select.option value="" :selected="!$thread->assigned_to_user_id">Unassigned</flux:select.option>
                         @foreach($this->staffUsers as $staff)
-                            <flux:select.option value="{{ $staff->id }}" :selected="$thread->assigned_to_user_id == $staff->id">{{ $staff->name }}</flux:select.option>
+                            <flux:select.option value="{{ $staff->id }}" :selected="$thread->assigned_to_user_id == $staff->id">
+                                {{ $staff->name }} ({{ $staff->staff_department?->label() }} - {{ $staff->staff_rank?->label() }})
+                            </flux:select.option>
                         @endforeach
                     </flux:select>
                 </flux:field>

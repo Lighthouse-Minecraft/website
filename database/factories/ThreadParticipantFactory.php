@@ -12,9 +12,9 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 class ThreadParticipantFactory extends Factory
 {
     /**
-     * Define the model's default state.
+     * Provide the factory's default attributes for a ThreadParticipant model.
      *
-     * @return array<string, mixed>
+     * @return array<string, mixed> The model attributes and their default values.
      */
     public function definition(): array
     {
@@ -22,6 +22,7 @@ class ThreadParticipantFactory extends Factory
             'thread_id' => Thread::factory(),
             'user_id' => User::factory(),
             'last_read_at' => null,
+            'is_viewer' => false,
         ];
     }
 
@@ -39,10 +40,27 @@ class ThreadParticipantFactory extends Factory
         ]);
     }
 
+    /**
+     * Mark the participant as having read the thread by setting `last_read_at` to the current timestamp.
+     *
+     * @return static The factory instance with `last_read_at` set to now().
+     */
     public function read(): static
     {
         return $this->state(fn (array $attributes) => [
             'last_read_at' => now(),
+        ]);
+    }
+
+    /**
+     * Configure the factory state to mark the participant as a viewer.
+     *
+     * @return static The factory instance with `is_viewer` set to `true`.
+     */
+    public function viewer(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_viewer' => true,
         ]);
     }
 }

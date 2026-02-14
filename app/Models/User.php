@@ -152,8 +152,193 @@ class User extends Authenticatable // implements MustVerifyEmail
         return $this->pushover_monthly_count < 10000;
     }
 
+    /**
+     * Increments the stored `pushover_monthly_count` attribute by one.
+     */
     public function incrementPushoverCount(): void
     {
         $this->increment('pushover_monthly_count');
+    }
+
+    /**
+     * Determines whether the user has actionable support tickets.
+     *
+     * Actionable means an unassigned open ticket or a ticket assigned to the user that has unread messages.
+     * The result is cached for 60 minutes and may be refreshed in the background if the cached value is older than 30 minutes.
+     *
+     * @return bool `true` if the user has actionable tickets, `false` otherwise.
+     */
+    public function hasActionableTickets(): bool
+    {
+        $cacheKey = "user.{$this->id}.actionable_tickets";
+        $timestampKey = "user.{$this->id}.actionable_tickets.timestamp";
+
+        // Check if cache needs background refresh (older than 30 minutes)
+        $timestamp = \Illuminate\Support\Facades\Cache::get($timestampKey);
+        if ($timestamp && now()->diffInMinutes($timestamp) > 30) {
+            // Dispatch background refresh
+            \Illuminate\Support\Facades\Cache::put($timestampKey, now(), now()->addMinutes(60));
+            $userId = $this->id;
+            dispatch(static function () use ($cacheKey, $userId) {
+                $user = User::find($userId);
+                if ($user) {
+                    $result = $user->calculateActionableTickets();
+                    \Illuminate\Support\Facades\Cache::put($cacheKey, $result, now()->addMinutes(60));
+                }
+            })->afterResponse();
+        }
+
+        return \Illuminate\Support\Facades\Cache::remember(
+            $cacheKey,
+            now()->addMinutes(60),
+            function () use ($timestampKey) {
+                \Illuminate\Support\Facades\Cache::put($timestampKey, now(), now()->addMinutes(60));
+
+                return $this->calculateActionableTickets();
+            }
+        );
+    }
+
+    /**
+     * Determine whether any actionable support tickets exist for this user given their visibility permissions.
+     *
+     * Considers two types of actionable tickets: unassigned tickets with an open status, and tickets assigned to
+     * the user that are not closed and contain unread messages for the user. The check respects the user's visibility
+     * (their own tickets, department tickets if allowed, and flagged tickets if allowed).
+     *
+     * @return bool `true` if at least one actionable ticket exists, `false` otherwise.
+     */
+    protected function calculateActionableTickets(): bool
+    {
+        $baseQuery = Thread::query();
+
+        // Apply visibility filters
+        if (! $this->can('viewAll', Thread::class)) {
+            $baseQuery->where(function ($q) {
+                // User's tickets (participant or assigned)
+                $q->whereHas('participants', fn ($sq) => $sq->where('user_id', $this->id))
+                    ->orWhere('assigned_to_user_id', $this->id);
+
+                // Department tickets
+                if ($this->can('viewDepartment', Thread::class) && $this->staff_department) {
+                    $q->orWhere('department', $this->staff_department);
+                }
+
+                // Flagged tickets
+                if ($this->can('viewFlagged', Thread::class)) {
+                    $q->orWhere('is_flagged', true);
+                }
+            });
+        }
+
+        // Check for actionable tickets
+        return $baseQuery
+            ->where(function ($q) {
+                // Unassigned tickets that are open
+                $q->where(function ($sq) {
+                    $sq->whereNull('assigned_to_user_id')
+                        ->where('status', \App\Enums\ThreadStatus::Open);
+                })
+                // OR tickets assigned to me with unread messages
+                    ->orWhere(function ($sq) {
+                        $sq->where('assigned_to_user_id', $this->id)
+                            ->where('status', '!=', \App\Enums\ThreadStatus::Closed)
+                            ->where(function ($usq) {
+                                // Consider unread if: no participant row exists OR participant row exists but is unread
+                                $usq->whereNotExists(function ($nesq) {
+                                    $nesq->select(\Illuminate\Support\Facades\DB::raw(1))
+                                        ->from('thread_participants')
+                                        ->whereColumn('thread_participants.thread_id', 'threads.id')
+                                        ->where('thread_participants.user_id', $this->id);
+                                })
+                                    ->orWhereExists(function ($esq) {
+                                        $esq->select(\Illuminate\Support\Facades\DB::raw(1))
+                                            ->from('thread_participants')
+                                            ->whereColumn('thread_participants.thread_id', 'threads.id')
+                                            ->where('thread_participants.user_id', $this->id)
+                                            ->where(function ($rsq) {
+                                                $rsq->whereNull('thread_participants.last_read_at')
+                                                    ->orWhereColumn('threads.last_message_at', '>', 'thread_participants.last_read_at');
+                                            });
+                                    });
+                            });
+                    });
+            })
+            ->exists();
+    }
+
+    /**
+     * Retrieve the number of open tickets visible to the user.
+     *
+     * The value is cached for 60 minutes; if the cached result is older than 30 minutes a background refresh is scheduled while the cached value is returned immediately.
+     *
+     * @return int The count of open tickets visible to this user.
+     */
+    public function openTicketsCount(): int
+    {
+        $cacheKey = "user.{$this->id}.open_tickets_count";
+        $timestampKey = "user.{$this->id}.open_tickets_count.timestamp";
+
+        // Check if cache needs background refresh (older than 30 minutes)
+        $timestamp = \Illuminate\Support\Facades\Cache::get($timestampKey);
+        if ($timestamp && now()->diffInMinutes($timestamp) > 30) {
+            // Dispatch background refresh
+            \Illuminate\Support\Facades\Cache::put($timestampKey, now(), now()->addMinutes(60));
+            $userId = $this->id;
+            dispatch(static function () use ($cacheKey, $userId) {
+                $user = User::find($userId);
+                if ($user) {
+                    $result = $user->calculateOpenTicketsCount();
+                    \Illuminate\Support\Facades\Cache::put($cacheKey, $result, now()->addMinutes(60));
+                }
+            })->afterResponse();
+        }
+
+        return \Illuminate\Support\Facades\Cache::remember(
+            $cacheKey,
+            now()->addMinutes(60),
+            function () use ($timestampKey) {
+                \Illuminate\Support\Facades\Cache::put($timestampKey, now(), now()->addMinutes(60));
+
+                return $this->calculateOpenTicketsCount();
+            }
+        );
+    }
+
+    /**
+     * Count open ticket threads visible to this user.
+     *
+     * Applies the model's visibility rules: if the user cannot view all threads,
+     * the count is limited to threads where the user is a participant, threads
+     * in the user's department (when the user can view department threads and
+     * has a department), and flagged threads (when the user can view flagged
+     * threads).
+     *
+     * @return int The number of open threads visible to the user.
+     */
+    protected function calculateOpenTicketsCount(): int
+    {
+        $query = Thread::where('status', \App\Enums\ThreadStatus::Open);
+
+        // Apply visibility filters
+        if (! $this->can('viewAll', Thread::class)) {
+            $query->where(function ($q) {
+                // User's tickets (participant or assigned)
+                $q->whereHas('participants', fn ($sq) => $sq->where('user_id', $this->id))
+                    ->orWhere('assigned_to_user_id', $this->id);
+
+                // Department tickets
+                if ($this->can('viewDepartment', Thread::class) && $this->staff_department) {
+                    $q->orWhere('department', $this->staff_department);
+                }
+
+                // Flagged tickets
+                if ($this->can('viewFlagged', Thread::class)) {
+                    $q->orWhere('is_flagged', true);
+                }
+            });
+        }
+
+        return $query->count();
     }
 }

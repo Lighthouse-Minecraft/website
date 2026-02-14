@@ -12,6 +12,7 @@ use App\Models\Message;
 use App\Models\MessageFlag;
 use App\Models\Thread;
 use App\Models\User;
+use Illuminate\Support\Facades\Notification;
 use Livewire\Volt\Volt;
 
 use function Pest\Laravel\actingAs;
@@ -126,6 +127,28 @@ describe('View Ticket Component', function () {
 
         $thread->refresh();
         expect($thread->assigned_to_user_id)->toBe($assignee->id);
+    })->done();
+
+    it('allows assigning tickets to staff from different departments', function () {
+        $commandOfficer = User::factory()
+            ->withStaffPosition(StaffDepartment::Command, StaffRank::Officer)
+            ->create();
+
+        $engineerStaff = User::factory()
+            ->withStaffPosition(StaffDepartment::Engineer, StaffRank::CrewMember)
+            ->create();
+
+        // Chaplain ticket assigned to Engineer staff
+        $thread = Thread::factory()->withDepartment(StaffDepartment::Chaplain)->create();
+
+        actingAs($commandOfficer);
+
+        Volt::test('ready-room.tickets.view-ticket', ['thread' => $thread])
+            ->call('assignTo', $engineerStaff->id)
+            ->assertHasNoErrors();
+
+        $thread->refresh();
+        expect($thread->assigned_to_user_id)->toBe($engineerStaff->id);
     })->done();
 
     it('allows participants to reply to tickets', function () {
@@ -254,5 +277,93 @@ describe('View Ticket Component', function () {
         expect($flag->status)->toBe(MessageFlagStatus::Acknowledged)
             ->and($flag->reviewed_by_user_id)->toBe($quartermaster->id)
             ->and($flag->staff_notes)->toBe('Reviewed and handled appropriately');
+    })->done();
+
+    it('adds staff as participant when they view department ticket as observer', function () {
+        $staff = User::factory()
+            ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->create();
+
+        $thread = Thread::factory()->withDepartment(StaffDepartment::Chaplain)->create();
+
+        // Staff is not yet a participant
+        expect($thread->participants()->where('user_id', $staff->id)->exists())->toBeFalse();
+
+        actingAs($staff);
+
+        Volt::test('ready-room.tickets.view-ticket', ['thread' => $thread])
+            ->assertSee($thread->subject);
+
+        // Staff should now be added as a viewer (not a full participant)
+        $participant = $thread->participants()->where('user_id', $staff->id)->first();
+        expect($participant)->not->toBeNull()
+            ->and($participant->is_viewer)->toBeTrue();
+    })->done();
+
+    it('marks ticket as read for observer viewing it', function () {
+        $staff = User::factory()
+            ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->create();
+
+        $thread = Thread::factory()
+            ->withDepartment(StaffDepartment::Chaplain)
+            ->create(['last_message_at' => now()]);
+
+        // Staff is not yet a participant, so ticket appears unread
+        expect($thread->isUnreadFor($staff))->toBeTrue();
+
+        actingAs($staff);
+
+        Volt::test('ready-room.tickets.view-ticket', ['thread' => $thread]);
+
+        // After viewing, should be marked as read
+        $thread->refresh();
+        expect($thread->isUnreadFor($staff))->toBeFalse();
+    })->done();
+
+    it('converts viewer to participant when they reply', function () {
+        $staff = User::factory()
+            ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->create();
+
+        $thread = Thread::factory()->withDepartment(StaffDepartment::Chaplain)->create();
+
+        // Staff views ticket first (becomes a viewer)
+        actingAs($staff);
+        Volt::test('ready-room.tickets.view-ticket', ['thread' => $thread]);
+
+        $participant = $thread->participants()->where('user_id', $staff->id)->first();
+        expect($participant->is_viewer)->toBeTrue();
+
+        // Now staff replies
+        Volt::test('ready-room.tickets.view-ticket', ['thread' => $thread])
+            ->set('replyMessage', 'Staff reply')
+            ->call('sendReply');
+
+        // Should now be a full participant, not a viewer
+        $participant->refresh();
+        expect($participant->is_viewer)->toBeFalse();
+    })->done();
+
+    it('does not notify viewers when new message is posted', function () {
+        Notification::fake();
+
+        $user = User::factory()->create();
+        $viewer = User::factory()
+            ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->create();
+
+        $thread = Thread::factory()->withDepartment(StaffDepartment::Chaplain)->create();
+        $thread->addParticipant($user, isViewer: false); // Real participant
+        $thread->addViewer($viewer); // Just a viewer
+
+        actingAs($user);
+
+        Volt::test('ready-room.tickets.view-ticket', ['thread' => $thread])
+            ->set('replyMessage', 'New message')
+            ->call('sendReply');
+
+        // Viewer should not get notification
+        Notification::assertNothingSentTo($viewer);
     })->done();
 });
