@@ -174,9 +174,13 @@ class User extends Authenticatable // implements MustVerifyEmail
         if ($timestamp && now()->diffInMinutes($timestamp) > 30) {
             // Dispatch background refresh
             \Illuminate\Support\Facades\Cache::put($timestampKey, now(), now()->addMinutes(60));
-            dispatch(function () use ($cacheKey) {
-                $result = $this->calculateActionableTickets();
-                \Illuminate\Support\Facades\Cache::put($cacheKey, $result, now()->addMinutes(60));
+            $userId = $this->id;
+            dispatch(static function () use ($cacheKey, $userId) {
+                $user = User::find($userId);
+                if ($user) {
+                    $result = $user->calculateActionableTickets();
+                    \Illuminate\Support\Facades\Cache::put($cacheKey, $result, now()->addMinutes(60));
+                }
             })->afterResponse();
         }
 
@@ -259,9 +263,13 @@ class User extends Authenticatable // implements MustVerifyEmail
         if ($timestamp && now()->diffInMinutes($timestamp) > 30) {
             // Dispatch background refresh
             \Illuminate\Support\Facades\Cache::put($timestampKey, now(), now()->addMinutes(60));
-            dispatch(function () use ($cacheKey) {
-                $result = $this->calculateOpenTicketsCount();
-                \Illuminate\Support\Facades\Cache::put($cacheKey, $result, now()->addMinutes(60));
+            $userId = $this->id;
+            dispatch(static function () use ($cacheKey, $userId) {
+                $user = User::find($userId);
+                if ($user) {
+                    $result = $user->calculateOpenTicketsCount();
+                    \Illuminate\Support\Facades\Cache::put($cacheKey, $result, now()->addMinutes(60));
+                }
             })->afterResponse();
         }
 
