@@ -10,8 +10,22 @@ echo "🤖 Setting up Copilot agent environment..."
 # These credentials are required for composer install to work properly
 if [ -n "$FLUX_USERNAME" ] && [ -n "$FLUX_LICENSE_KEY" ]; then
     echo "🔐 Configuring Composer authentication for FluxUI..."
-    # Use project-scoped auth to avoid affecting other projects
-    composer config --auth http-basic.composer.fluxui.dev "$FLUX_USERNAME" "$FLUX_LICENSE_KEY"
+    
+    # Create auth.json directly to avoid exposing credentials in process listings
+    cat > auth.json << EOF
+{
+    "http-basic": {
+        "composer.fluxui.dev": {
+            "username": "${FLUX_USERNAME}",
+            "password": "${FLUX_LICENSE_KEY}"
+        }
+    }
+}
+EOF
+    
+    # Ensure auth.json has proper permissions
+    chmod 600 auth.json
+    
     echo "✅ Composer authentication configured successfully"
 else
     echo "⚠️  WARNING: FLUX_USERNAME or FLUX_LICENSE_KEY environment variables not set"
