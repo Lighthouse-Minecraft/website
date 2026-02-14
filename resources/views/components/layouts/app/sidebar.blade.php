@@ -33,8 +33,52 @@
                         <flux:navlist.item icon="user-group" :href="route('community-updates.index')" :current="request()->routeIs('community-updates.index')" wire:navigate>Community Updates</flux:navlist.item>
                     @endcan
 
+                    @auth
+                        @php
+                            // Build base query for tickets visible to this user (no status filter)
+                            $ticketsQuery = \App\Models\Thread::query();
+                            
+                            if (! auth()->user()->can('viewAll', \App\Models\Thread::class)) {
+                                $ticketsQuery->where(function ($q) {
+                                    $user = auth()->user();
+                                    $q->whereHas('participants', fn ($sq) => $sq->where('user_id', $user->id));
+                                    
+                                    if ($user->can('viewDepartment', \App\Models\Thread::class) && $user->staff_department) {
+                                        $q->orWhere('department', $user->staff_department);
+                                    }
+                                    
+                                    if ($user->can('viewFlagged', \App\Models\Thread::class)) {
+                                        $q->orWhere('is_flagged', true);
+                                    }
+                                });
+                            }
+                            
+                            // Get counts for different statuses
+                            $openTicketsCount = (clone $ticketsQuery)->where('status', \App\Enums\ThreadStatus::Open)->count();
+                            $hasPendingTickets = (clone $ticketsQuery)->where('status', \App\Enums\ThreadStatus::Pending)->exists();
+                        @endphp
+                        
+                        <flux:navlist.item 
+                            icon="inbox" 
+                            :href="route('tickets.index')" 
+                            :current="request()->routeIs('tickets.*')" 
+                            wire:navigate
+                            :badge="$openTicketsCount > 0 ? $openTicketsCount : null"
+                            :badge:color="$hasPendingTickets ? 'red' : 'zinc'"
+                        >
+                            Tickets
+                        </flux:navlist.item>
+                    @endauth
+
                     @can('view-ready-room')
-                        <flux:navlist.item icon="building-storefront" :href="route('ready-room.index')" :current="request()->routeIs('ready-room.index')" wire:navigate>Staff Ready Room</flux:navlist.item>
+                        <flux:navlist.item 
+                            icon="building-storefront" 
+                            :href="route('ready-room.index')" 
+                            :current="request()->routeIs('ready-room.index')" 
+                            wire:navigate
+                        >
+                            Staff Ready Room
+                        </flux:navlist.item>
                     @endcan
 
                     @can('viewACP')
