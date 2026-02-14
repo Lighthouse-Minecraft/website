@@ -232,4 +232,90 @@ describe('Tickets List Component', function () {
         // Check that has_open_flags is true for the thread
         expect($flaggedThread->has_open_flags)->toBeTrue();
     })->done();
+
+    it('marks ticket as unread when user has never read it', function () {
+        $user = User::factory()->create();
+
+        $thread = Thread::factory()->create(['subject' => 'Unread Ticket']);
+        $thread->addParticipant($user);
+
+        actingAs($user);
+
+        Volt::test('ready-room.tickets.tickets-list')
+            ->assertSee('Unread Ticket')
+            ->assertSee('New');
+    })->done();
+
+    it('marks ticket as read when user has read it after last message', function () {
+        $user = User::factory()->create();
+
+        $thread = Thread::factory()->create([
+            'subject' => 'Read Ticket',
+            'last_message_at' => now()->subHour(),
+        ]);
+        $thread->addParticipant($user);
+
+        // Mark as read after the last message
+        $participant = $thread->participants()->where('user_id', $user->id)->first();
+        $participant->update(['last_read_at' => now()]);
+
+        actingAs($user);
+
+        Volt::test('ready-room.tickets.tickets-list')
+            ->assertSee('Read Ticket')
+            ->assertDontSee('New');
+    })->done();
+
+    it('marks ticket as unread when new message arrives after user read it', function () {
+        $user = User::factory()->create();
+
+        $thread = Thread::factory()->create(['subject' => 'New Message Ticket']);
+        $thread->addParticipant($user);
+
+        // User read it an hour ago
+        $participant = $thread->participants()->where('user_id', $user->id)->first();
+        $participant->update(['last_read_at' => now()->subHour()]);
+
+        // New message came in 30 minutes ago
+        $thread->update(['last_message_at' => now()->subMinutes(30)]);
+
+        actingAs($user);
+
+        Volt::test('ready-room.tickets.tickets-list')
+            ->assertSee('New Message Ticket')
+            ->assertSee('New');
+    })->done();
+
+    it('shows New badge only for current users participant record', function () {
+        $user1 = User::factory()->create();
+        $user2 = User::factory()->create();
+
+        $thread = Thread::factory()->create([
+            'subject' => 'Multi User Ticket',
+            'last_message_at' => now(),
+        ]);
+
+        $thread->addParticipant($user1);
+        $thread->addParticipant($user2);
+
+        // User 1 has read it
+        $participant1 = $thread->participants()->where('user_id', $user1->id)->first();
+        $participant1->update(['last_read_at' => now()->addMinute()]);
+
+        // User 2 has not read it
+        $participant2 = $thread->participants()->where('user_id', $user2->id)->first();
+        $participant2->update(['last_read_at' => null]);
+
+        // User 1 should NOT see "New" badge
+        actingAs($user1);
+        Volt::test('ready-room.tickets.tickets-list')
+            ->assertSee('Multi User Ticket')
+            ->assertDontSee('New');
+
+        // User 2 should see "New" badge
+        actingAs($user2);
+        Volt::test('ready-room.tickets.tickets-list')
+            ->assertSee('Multi User Ticket')
+            ->assertSee('New');
+    })->done();
 });

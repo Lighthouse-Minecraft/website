@@ -36,7 +36,11 @@ new class extends Component
         $this->authorize('view', $thread);
         $this->thread = $thread;
 
-        // Mark thread as read for this user (only if they're already a participant)
+        // Add viewer (not participant) so we can track their read status
+        // Viewers can see the ticket but won't get notifications for new messages
+        $this->thread->addViewer(auth()->user());
+
+        // Mark thread as read for this user
         $participant = $this->thread->participants()
             ->where('user_id', auth()->id())
             ->first();
@@ -164,8 +168,17 @@ new class extends Component
             'kind' => $kind,
         ]);
 
-        // Add sender as participant if not already
-        $this->thread->addParticipant(auth()->user());
+        // Add sender as participant (not viewer) if not already
+        // If they were a viewer, convert them to a participant
+        $existingParticipant = $this->thread->participants()
+            ->where('user_id', auth()->id())
+            ->first();
+
+        if ($existingParticipant && $existingParticipant->is_viewer) {
+            $existingParticipant->update(['is_viewer' => false]);
+        } else {
+            $this->thread->addParticipant(auth()->user(), isViewer: false);
+        }
 
         // Update thread last message time
         $this->thread->update(['last_message_at' => now()]);
@@ -174,10 +187,11 @@ new class extends Component
         $activityType = $kind === MessageKind::InternalNote ? 'internal_note_added' : 'message_sent';
         \App\Actions\RecordActivity::run($this->thread, $activityType, 'New message added to thread');
 
-        // Notify participants (except sender and for internal notes)
+        // Notify participants (except sender, viewers, and for internal notes)
         if ($kind !== MessageKind::InternalNote) {
             $participants = $this->thread->participants()
                 ->where('user_id', '!=', auth()->id())
+                ->where('is_viewer', false) // Exclude viewers - they just observe
                 ->with('user')
                 ->get();
 

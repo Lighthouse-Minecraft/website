@@ -63,11 +63,17 @@ class Thread extends Model
         return $this->hasMany(MessageFlag::class);
     }
 
-    public function addParticipant(User $user): void
+    public function addParticipant(User $user, bool $isViewer = false): void
     {
-        $this->participants()->firstOrCreate([
-            'user_id' => $user->id,
-        ]);
+        $this->participants()->firstOrCreate(
+            ['user_id' => $user->id],
+            ['is_viewer' => $isViewer]
+        );
+    }
+
+    public function addViewer(User $user): void
+    {
+        $this->addParticipant($user, isViewer: true);
     }
 
     public function isVisibleTo(User $user): bool
@@ -93,5 +99,18 @@ class Thread extends Model
         }
 
         return false;
+    }
+
+    public function isUnreadFor(User $user): bool
+    {
+        $participant = $this->participants()
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (! $participant || ! $participant->last_read_at) {
+            return true; // Never read
+        }
+
+        return $this->last_message_at > $participant->last_read_at;
     }
 }

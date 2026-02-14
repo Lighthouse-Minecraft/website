@@ -55,7 +55,30 @@
                             
                             // Get counts for different statuses
                             $openTicketsCount = (clone $ticketsQuery)->where('status', \App\Enums\ThreadStatus::Open)->count();
-                            $hasPendingTickets = (clone $ticketsQuery)->where('status', \App\Enums\ThreadStatus::Pending)->exists();
+                            
+                            // Check if there are actionable tickets (unassigned or assigned with unread)
+                            $hasActionableTickets = (clone $ticketsQuery)
+                                ->where(function($q) {
+                                    $user = auth()->user();
+                                    // Unassigned tickets that are open
+                                    $q->where(function($sq) {
+                                        $sq->whereNull('assigned_to_user_id')
+                                           ->where('status', \App\Enums\ThreadStatus::Open);
+                                    })
+                                    // OR tickets assigned to me with unread messages
+                                    ->orWhere(function($sq) use ($user) {
+                                        $sq->where('assigned_to_user_id', $user->id)
+                                           ->where('status', '!=', \App\Enums\ThreadStatus::Closed)
+                                           ->whereHas('participants', function($psq) use ($user) {
+                                               $psq->where('user_id', $user->id)
+                                                   ->where(function($rsq) {
+                                                       $rsq->whereNull('last_read_at')
+                                                           ->orWhereColumn('threads.last_message_at', '>', 'thread_participants.last_read_at');
+                                                   });
+                                           });
+                                    });
+                                })
+                                ->exists();
                         @endphp
                         
                         <flux:navlist.item 
@@ -64,7 +87,7 @@
                             :current="request()->routeIs('tickets.*')" 
                             wire:navigate
                             :badge="$openTicketsCount > 0 ? $openTicketsCount : null"
-                            :badge:color="$hasPendingTickets ? 'red' : 'zinc'"
+                            :badge:color="$hasActionableTickets ? 'red' : 'zinc'"
                         >
                             Tickets
                         </flux:navlist.item>

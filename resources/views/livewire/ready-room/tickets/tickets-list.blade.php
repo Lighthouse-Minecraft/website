@@ -160,7 +160,10 @@ new class extends Component {
 
     public function isUnread(Thread $thread): bool
     {
-        $participant = $thread->participants->first();
+        // Get the participant record for the current user
+        $participant = $thread->participants
+            ->where('user_id', auth()->id())
+            ->first();
         
         if (!$participant || !$participant->last_read_at) {
             return true; // Never read

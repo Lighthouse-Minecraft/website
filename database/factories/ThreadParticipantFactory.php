@@ -22,6 +22,7 @@ class ThreadParticipantFactory extends Factory
             'thread_id' => Thread::factory(),
             'user_id' => User::factory(),
             'last_read_at' => null,
+            'is_viewer' => false,
         ];
     }
 
@@ -43,6 +44,13 @@ class ThreadParticipantFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'last_read_at' => now(),
+        ]);
+    }
+
+    public function viewer(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_viewer' => true,
         ]);
     }
 }

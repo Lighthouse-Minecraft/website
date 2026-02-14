@@ -14,10 +14,12 @@ class ThreadParticipant extends Model
         'thread_id',
         'user_id',
         'last_read_at',
+        'is_viewer',
     ];
 
     protected $casts = [
         'last_read_at' => 'datetime',
+        'is_viewer' => 'boolean',
     ];
 
     public function thread(): BelongsTo
