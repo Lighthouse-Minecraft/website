@@ -179,11 +179,18 @@ new class extends Component
         if (! $existingParticipant) {
             // No participant record exists, add them as a participant
             $this->thread->addParticipant(auth()->user(), isViewer: false);
+            // Refetch to get the created participant record
+            $existingParticipant = $this->thread->participants()
+                ->where('user_id', auth()->id())
+                ->first();
         } elseif ($existingParticipant->is_viewer) {
             // They exist as a viewer, convert to participant
             $existingParticipant->update(['is_viewer' => false]);
         }
         // Otherwise they're already a non-viewer participant, do nothing
+
+        // Mark as read for the sender (update last_read_at after message is sent)
+        $existingParticipant->update(['last_read_at' => now()]);
 
         // Update thread last message time
         $this->thread->update(['last_message_at' => now()]);
