@@ -6,13 +6,17 @@ set -e
 
 echo "🤖 Setting up Copilot agent environment..."
 
+# Determine project root (where this script is located)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
 # Authenticate to FluxUI Composer repository
 # These credentials are required for composer install to work properly
 if [ -n "$FLUX_USERNAME" ] && [ -n "$FLUX_LICENSE_KEY" ]; then
     echo "🔐 Configuring Composer authentication for FluxUI..."
     
-    # Create auth.json directly to avoid exposing credentials in process listings
-    cat > auth.json << EOF
+    # Create auth.json in the project root to avoid exposing credentials in process listings
+    cat > "$PROJECT_ROOT/auth.json" << EOF
 {
     "http-basic": {
         "composer.fluxui.dev": {
@@ -24,7 +28,7 @@ if [ -n "$FLUX_USERNAME" ] && [ -n "$FLUX_LICENSE_KEY" ]; then
 EOF
     
     # Ensure auth.json has proper permissions
-    chmod 600 auth.json
+    chmod 600 "$PROJECT_ROOT/auth.json"
     
     echo "✅ Composer authentication configured successfully"
 else
