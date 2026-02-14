@@ -156,4 +156,97 @@ class User extends Authenticatable // implements MustVerifyEmail
     {
         $this->increment('pushover_monthly_count');
     }
+
+    /**
+     * Check if user has actionable tickets (cached for 60 seconds)
+     * Actionable = unassigned open tickets OR assigned tickets with unread messages
+     */
+    public function hasActionableTickets(): bool
+    {
+        return \Illuminate\Support\Facades\Cache::remember(
+            "user.{$this->id}.actionable_tickets",
+            now()->addSeconds(60),
+            function () {
+                $baseQuery = Thread::query();
+
+                // Apply visibility filters
+                if (! $this->can('viewAll', Thread::class)) {
+                    $baseQuery->where(function ($q) {
+                        // User's tickets
+                        $q->whereHas('participants', fn ($sq) => $sq->where('user_id', $this->id));
+
+                        // Department tickets
+                        if ($this->can('viewDepartment', Thread::class) && $this->staff_department) {
+                            $q->orWhere('department', $this->staff_department);
+                        }
+
+                        // Flagged tickets
+                        if ($this->can('viewFlagged', Thread::class)) {
+                            $q->orWhere('is_flagged', true);
+                        }
+                    });
+                }
+
+                // Check for actionable tickets
+                return $baseQuery
+                    ->where(function ($q) {
+                        // Unassigned tickets that are open
+                        $q->where(function ($sq) {
+                            $sq->whereNull('assigned_to_user_id')
+                                ->where('status', \App\Enums\ThreadStatus::Open);
+                        })
+                        // OR tickets assigned to me with unread messages
+                            ->orWhere(function ($sq) {
+                                $sq->where('assigned_to_user_id', $this->id)
+                                    ->where('status', '!=', \App\Enums\ThreadStatus::Closed)
+                                    ->whereExists(function ($esq) {
+                                        $esq->select(\Illuminate\Support\Facades\DB::raw(1))
+                                            ->from('thread_participants')
+                                            ->whereColumn('thread_participants.thread_id', 'threads.id')
+                                            ->where('thread_participants.user_id', $this->id)
+                                            ->where(function ($rsq) {
+                                                $rsq->whereNull('thread_participants.last_read_at')
+                                                    ->orWhereColumn('threads.last_message_at', '>', 'thread_participants.last_read_at');
+                                            });
+                                    });
+                            });
+                    })
+                    ->exists();
+            }
+        );
+    }
+
+    /**
+     * Get count of open tickets visible to user (cached for 60 seconds)
+     */
+    public function openTicketsCount(): int
+    {
+        return \Illuminate\Support\Facades\Cache::remember(
+            "user.{$this->id}.open_tickets_count",
+            now()->addSeconds(60),
+            function () {
+                $query = Thread::where('status', \App\Enums\ThreadStatus::Open);
+
+                // Apply visibility filters
+                if (! $this->can('viewAll', Thread::class)) {
+                    $query->where(function ($q) {
+                        // User's tickets
+                        $q->whereHas('participants', fn ($sq) => $sq->where('user_id', $this->id));
+
+                        // Department tickets
+                        if ($this->can('viewDepartment', Thread::class) && $this->staff_department) {
+                            $q->orWhere('department', $this->staff_department);
+                        }
+
+                        // Flagged tickets
+                        if ($this->can('viewFlagged', Thread::class)) {
+                            $q->orWhere('is_flagged', true);
+                        }
+                    });
+                }
+
+                return $query->count();
+            }
+        );
+    }
 }
