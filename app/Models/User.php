@@ -205,8 +205,9 @@ class User extends Authenticatable // implements MustVerifyEmail
         // Apply visibility filters
         if (! $this->can('viewAll', Thread::class)) {
             $baseQuery->where(function ($q) {
-                // User's tickets
-                $q->whereHas('participants', fn ($sq) => $sq->where('user_id', $this->id));
+                // User's tickets (participant or assigned)
+                $q->whereHas('participants', fn ($sq) => $sq->where('user_id', $this->id))
+                    ->orWhere('assigned_to_user_id', $this->id);
 
                 // Department tickets
                 if ($this->can('viewDepartment', Thread::class) && $this->staff_department) {
@@ -232,14 +233,23 @@ class User extends Authenticatable // implements MustVerifyEmail
                     ->orWhere(function ($sq) {
                         $sq->where('assigned_to_user_id', $this->id)
                             ->where('status', '!=', \App\Enums\ThreadStatus::Closed)
-                            ->whereExists(function ($esq) {
-                                $esq->select(\Illuminate\Support\Facades\DB::raw(1))
-                                    ->from('thread_participants')
-                                    ->whereColumn('thread_participants.thread_id', 'threads.id')
-                                    ->where('thread_participants.user_id', $this->id)
-                                    ->where(function ($rsq) {
-                                        $rsq->whereNull('thread_participants.last_read_at')
-                                            ->orWhereColumn('threads.last_message_at', '>', 'thread_participants.last_read_at');
+                            ->where(function ($usq) {
+                                // Consider unread if: no participant row exists OR participant row exists but is unread
+                                $usq->whereNotExists(function ($nesq) {
+                                    $nesq->select(\Illuminate\Support\Facades\DB::raw(1))
+                                        ->from('thread_participants')
+                                        ->whereColumn('thread_participants.thread_id', 'threads.id')
+                                        ->where('thread_participants.user_id', $this->id);
+                                })
+                                    ->orWhereExists(function ($esq) {
+                                        $esq->select(\Illuminate\Support\Facades\DB::raw(1))
+                                            ->from('thread_participants')
+                                            ->whereColumn('thread_participants.thread_id', 'threads.id')
+                                            ->where('thread_participants.user_id', $this->id)
+                                            ->where(function ($rsq) {
+                                                $rsq->whereNull('thread_participants.last_read_at')
+                                                    ->orWhereColumn('threads.last_message_at', '>', 'thread_participants.last_read_at');
+                                            });
                                     });
                             });
                     });
@@ -294,8 +304,9 @@ class User extends Authenticatable // implements MustVerifyEmail
         // Apply visibility filters
         if (! $this->can('viewAll', Thread::class)) {
             $query->where(function ($q) {
-                // User's tickets
-                $q->whereHas('participants', fn ($sq) => $sq->where('user_id', $this->id));
+                // User's tickets (participant or assigned)
+                $q->whereHas('participants', fn ($sq) => $sq->where('user_id', $this->id))
+                    ->orWhere('assigned_to_user_id', $this->id);
 
                 // Department tickets
                 if ($this->can('viewDepartment', Thread::class) && $this->staff_department) {
