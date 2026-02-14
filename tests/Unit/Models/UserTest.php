@@ -117,6 +117,7 @@ describe('User Model Ticket Methods', function () {
 
         // Clear cache and check again
         \Illuminate\Support\Facades\Cache::forget("user.{$staff->id}.actionable_tickets");
+        \Illuminate\Support\Facades\Cache::forget("user.{$staff->id}.actionable_tickets.timestamp");
         $third = $staff->hasActionableTickets();
         expect($third)->toBeFalse();
     })->done();
@@ -150,6 +151,7 @@ describe('User Model Ticket Methods', function () {
 
         // Clear cache and check again
         \Illuminate\Support\Facades\Cache::forget("user.{$staff->id}.open_tickets_count");
+        \Illuminate\Support\Facades\Cache::forget("user.{$staff->id}.open_tickets_count.timestamp");
         $third = $staff->openTicketsCount();
         expect($third)->toBe(3);
     })->done();
