@@ -142,7 +142,7 @@ it('does not show "and N more" when 10 or fewer tickets', function () {
 
     $hasMoreMessage = false;
     foreach ($mail->introLines as $line) {
-        if (str_contains($line, 'and') && str_contains($line, 'more')) {
+        if (str_contains($line, '...and') && str_contains($line, 'more ticket')) {
             $hasMoreMessage = true;
             break;
         }
