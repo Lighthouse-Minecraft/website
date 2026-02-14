@@ -1,4 +1,20 @@
 <laravel-boost-guidelines>
+=== critical setup ===
+
+# REQUIRED SETUP - READ THIS FIRST
+
+**Before making any changes or running composer commands, you MUST run the setup script:**
+
+```bash
+bash .copilot/setup.sh
+```
+
+This configures authentication for the FluxUI Composer repository, which is required to install private packages. Without this, `composer install` will fail with authentication errors.
+
+The script requires these environment variables:
+- `FLUX_USERNAME` - FluxUI Composer repository username (from repository secrets)
+- `FLUX_LICENSE_KEY` - FluxUI Composer repository license key (from repository secrets)
+
 === foundation rules ===
 
 # Laravel Boost Guidelines
@@ -33,10 +49,12 @@ This application is a Laravel application and its main Laravel ecosystems packag
 - Do not change the application's dependencies without approval.
 
 ## Environment Setup
-- This project requires authentication to the FluxUI Composer repository for private packages.
-- Before running `composer install`, you must configure Composer authentication.
-- Run `.copilot/setup.sh` to configure the environment if FLUX_USERNAME and FLUX_LICENSE_KEY environment variables are available.
-- If you encounter authentication errors with Composer, ensure you've run the setup script first.
+- This project requires authentication to the FluxUI Composer repository for private packages (livewire/flux-pro).
+- **CRITICAL**: Before running `composer install`, you MUST configure Composer authentication by running: `bash .copilot/setup.sh`
+- The setup script requires FLUX_USERNAME and FLUX_LICENSE_KEY environment variables to be available.
+- These secrets should be configured in the repository settings and will be automatically available in GitHub Copilot contexts.
+- If you encounter "Failed to authenticate" or "404 Not Found" errors from composer.fluxui.dev, it means the authentication is missing.
+- **Always run `.copilot/setup.sh` as the first step when starting work on this repository.**
 
 ## Frontend Bundling
 - If the user doesn't see a frontend change reflected in the UI, it could mean they need to run `npm run build`, `npm run dev`, or `composer run dev`. Ask them.
