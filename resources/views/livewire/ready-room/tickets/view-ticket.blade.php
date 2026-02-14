@@ -163,6 +163,9 @@ new class extends Component
             $kind = MessageKind::InternalNote;
         }
 
+        // Capture a single timestamp for consistency
+        $now = now();
+
         $message = Message::create([
             'thread_id' => $this->thread->id,
             'user_id' => auth()->id(),
@@ -189,11 +192,11 @@ new class extends Component
         }
         // Otherwise they're already a non-viewer participant, do nothing
 
-        // Mark as read for the sender (update last_read_at after message is sent)
-        $existingParticipant->update(['last_read_at' => now()]);
+        // Mark as read for the sender (use same timestamp as last_message_at)
+        $existingParticipant->update(['last_read_at' => $now]);
 
-        // Update thread last message time
-        $this->thread->update(['last_message_at' => now()]);
+        // Update thread last message time (use same timestamp as last_read_at)
+        $this->thread->update(['last_message_at' => $now]);
 
         // Record activity
         $activityType = $kind === MessageKind::InternalNote ? 'internal_note_added' : 'message_sent';
