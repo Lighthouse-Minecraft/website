@@ -14,12 +14,6 @@ This script configures the environment for Copilot agents to work properly with 
 **Usage:**
 
 ```bash
-source .copilot/setup.sh
-```
-
-or
-
-```bash
 bash .copilot/setup.sh
 ```
 
