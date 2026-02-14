@@ -22,6 +22,11 @@ class ThreadParticipant extends Model
         'is_viewer' => 'boolean',
     ];
 
+    /**
+     * Get the thread that this participant belongs to.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo The associated Thread model.
+     */
     public function thread(): BelongsTo
     {
         return $this->belongsTo(Thread::class);

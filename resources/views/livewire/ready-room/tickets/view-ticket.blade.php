@@ -31,6 +31,12 @@ new class extends Component
 
     public string $staffNotes = '';
 
+    /**
+     * Initialize the component for the given thread: authorize access, attach the thread to the component,
+     * register the current user as a viewer for read-tracking, and update the participant's read timestamp when present.
+     *
+     * @param \App\Models\Thread $thread The thread (ticket) to mount into the component.
+     */
     public function mount(Thread $thread): void
     {
         $this->authorize('view', $thread);
@@ -130,6 +136,11 @@ new class extends Component
         return $this->thread->createdBy;
     }
 
+    /**
+     * Retrieve staff users who have both a staff rank and a staff department, ordered by department, rank, then name.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection|\App\Models\User[] Collection of User models matching the staff criteria, ordered by `staff_department`, `staff_rank`, then `name`.
+     */
     #[Computed]
     public function staffUsers()
     {
@@ -141,6 +152,11 @@ new class extends Component
             ->get();
     }
 
+    /**
+     * Sends the current reply for the thread, creating a message or internal note and performing related updates.
+     *
+     * Validates the reply text and authorizes the action (including internal-note permission when requested). Creates a Message on the thread (marked as an internal note when selected), ensures the sender is recorded as a non-viewer participant and updates their read timestamp, updates the thread's last message time, and records activity. For normal replies (not internal notes) notifies other non-viewer participants. Resets reply-related state, shows a success toast, and clears the cached messages list.
+     */
     public function sendReply(): void
     {
         $this->authorize('reply', $this->thread);
@@ -249,6 +265,13 @@ new class extends Component
         Flux::toast('Status updated successfully!', variant: 'success');
     }
 
+    /**
+     * Assigns the thread to a staff user or removes the current assignment.
+     *
+     * Authorizes the action, then if `$userId` is `null` unassigns the thread; otherwise validates the target exists and is a staff member, updates the thread's assignee, records an `assignment_changed` activity, and notifies the new assignee and the thread creator (if different). Validation failures add field errors and abort assignment without performing changes.
+     *
+     * @param int|null $userId The ID of the staff user to assign the thread to, or `null` to unassign.
+     */
     public function assignTo(?int $userId): void
     {
         $this->authorize('assign', $this->thread);
