@@ -1,0 +1,41 @@
+{
+  "name": "Lighthouse Minecraft Website",
+  "description": "Laravel application with FluxUI private packages",
+  "setup": {
+    "script": ".copilot/setup.sh",
+    "environmentVariables": {
+      "FLUX_USERNAME": {
+        "description": "FluxUI Composer repository username",
+        "required": true,
+        "secret": true
+      },
+      "FLUX_LICENSE_KEY": {
+        "description": "FluxUI Composer repository license key",
+        "required": true,
+        "secret": true
+      }
+    }
+  },
+  "tasks": {
+    "install": {
+      "description": "Install dependencies",
+      "commands": [
+        "bash .copilot/setup.sh",
+        "composer install --no-interaction --prefer-dist",
+        "npm ci"
+      ]
+    },
+    "test": {
+      "description": "Run tests",
+      "commands": [
+        "php artisan test"
+      ]
+    },
+    "lint": {
+      "description": "Check code formatting",
+      "commands": [
+        "vendor/bin/pint --test --dirty"
+      ]
+    }
+  }
+}
