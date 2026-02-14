@@ -7,7 +7,9 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * Add an `is_viewer` boolean column to the `thread_participants` table.
+     *
+     * The new column defaults to `false` and is placed after the `user_id` column.
      */
     public function up(): void
     {
@@ -17,7 +19,7 @@ return new class extends Migration
     }
 
     /**
-     * Reverse the migrations.
+     * Reverts the schema change by removing the `is_viewer` column from the `thread_participants` table.
      */
     public function down(): void
     {

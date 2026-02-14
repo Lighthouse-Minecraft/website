@@ -152,17 +152,21 @@ class User extends Authenticatable // implements MustVerifyEmail
         return $this->pushover_monthly_count < 10000;
     }
 
+    /**
+     * Increments the stored `pushover_monthly_count` attribute by one.
+     */
     public function incrementPushoverCount(): void
     {
         $this->increment('pushover_monthly_count');
     }
 
     /**
-     * Check if user has actionable tickets (cached for 60 minutes)
-     * Actionable = unassigned open tickets OR assigned tickets with unread messages
+     * Determines whether the user has actionable support tickets.
      *
-     * Uses flexible cache: returns cached value immediately, but refreshes in
-     * background if cache is older than 30 minutes for optimal UX.
+     * Actionable means an unassigned open ticket or a ticket assigned to the user that has unread messages.
+     * The result is cached for 60 minutes and may be refreshed in the background if the cached value is older than 30 minutes.
+     *
+     * @return bool `true` if the user has actionable tickets, `false` otherwise.
      */
     public function hasActionableTickets(): bool
     {
@@ -196,8 +200,14 @@ class User extends Authenticatable // implements MustVerifyEmail
     }
 
     /**
-     * Calculate if user has actionable tickets (internal method)
-     */
+         * Determine whether any actionable support tickets exist for this user given their visibility permissions.
+         *
+         * Considers two types of actionable tickets: unassigned tickets with an open status, and tickets assigned to
+         * the user that are not closed and contain unread messages for the user. The check respects the user's visibility
+         * (their own tickets, department tickets if allowed, and flagged tickets if allowed).
+         *
+         * @return bool `true` if at least one actionable ticket exists, `false` otherwise.
+         */
     protected function calculateActionableTickets(): bool
     {
         $baseQuery = Thread::query();
@@ -258,10 +268,11 @@ class User extends Authenticatable // implements MustVerifyEmail
     }
 
     /**
-     * Get count of open tickets visible to user (cached for 60 minutes)
+     * Retrieve the number of open tickets visible to the user.
      *
-     * Uses flexible cache: returns cached value immediately, but refreshes in
-     * background if cache is older than 30 minutes for optimal UX.
+     * The value is cached for 60 minutes; if the cached result is older than 30 minutes a background refresh is scheduled while the cached value is returned immediately.
+     *
+     * @return int The count of open tickets visible to this user.
      */
     public function openTicketsCount(): int
     {
@@ -295,8 +306,16 @@ class User extends Authenticatable // implements MustVerifyEmail
     }
 
     /**
-     * Calculate open tickets count for user (internal method)
-     */
+         * Count open ticket threads visible to this user.
+         *
+         * Applies the model's visibility rules: if the user cannot view all threads,
+         * the count is limited to threads where the user is a participant, threads
+         * in the user's department (when the user can view department threads and
+         * has a department), and flagged threads (when the user can view flagged
+         * threads).
+         *
+         * @return int The number of open threads visible to the user.
+         */
     protected function calculateOpenTicketsCount(): int
     {
         $query = Thread::where('status', \App\Enums\ThreadStatus::Open);
