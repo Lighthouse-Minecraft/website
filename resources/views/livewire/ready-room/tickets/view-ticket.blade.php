@@ -176,11 +176,14 @@ new class extends Component
             ->where('user_id', auth()->id())
             ->first();
 
-        if ($existingParticipant && $existingParticipant->is_viewer) {
-            $existingParticipant->update(['is_viewer' => false]);
-        } else {
+        if (! $existingParticipant) {
+            // No participant record exists, add them as a participant
             $this->thread->addParticipant(auth()->user(), isViewer: false);
+        } elseif ($existingParticipant->is_viewer) {
+            // They exist as a viewer, convert to participant
+            $existingParticipant->update(['is_viewer' => false]);
         }
+        // Otherwise they're already a non-viewer participant, do nothing
 
         // Update thread last message time
         $this->thread->update(['last_message_at' => now()]);
