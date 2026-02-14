@@ -158,6 +158,16 @@ new class extends Component {
         }
     }
 
+    /**
+     * Determines whether the given thread has unread messages for the current authenticated user.
+     *
+     * Checks the participant record for the authenticated user; if none exists or the participant has no
+     * recorded `last_read_at`, the thread is considered unread. Otherwise compares the thread's
+     * `last_message_at` to the participant's `last_read_at`.
+     *
+     * @param Thread $thread The thread to check.
+     * @return bool `true` if the thread contains messages the current user has not read, `false` otherwise.
+     */
     public function isUnread(Thread $thread): bool
     {
         // Get the participant record for the current user
