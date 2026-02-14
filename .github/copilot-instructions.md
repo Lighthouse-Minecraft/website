@@ -32,6 +32,12 @@ This application is a Laravel application and its main Laravel ecosystems packag
 - Stick to existing directory structure - don't create new base folders without approval.
 - Do not change the application's dependencies without approval.
 
+## Environment Setup
+- This project requires authentication to the FluxUI Composer repository for private packages.
+- Before running `composer install`, you must configure Composer authentication.
+- Run `.copilot/setup.sh` to configure the environment if FLUX_USERNAME and FLUX_LICENSE_KEY environment variables are available.
+- If you encounter authentication errors with Composer, ensure you've run the setup script first.
+
 ## Frontend Bundling
 - If the user doesn't see a frontend change reflected in the UI, it could mean they need to run `npm run build`, `npm run dev`, or `composer run dev`. Ask them.
 
