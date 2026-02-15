@@ -90,13 +90,14 @@ new class extends Component
     #[Computed]
     public function myOpenUnreadCount(): int
     {
-        return Thread::whereHas('participants', fn ($sq) => $sq->where('user_id', auth()->id()))
+        return Thread::whereHas('participants', fn ($sq) => $sq->where('user_id', auth()->id())->where('is_viewer', false))
             ->where('status', '!=', 'closed')
             ->whereExists(function ($esq) {
                 $esq->select(\Illuminate\Support\Facades\DB::raw(1))
                     ->from('thread_participants')
                     ->whereColumn('thread_participants.thread_id', 'threads.id')
                     ->where('thread_participants.user_id', auth()->id())
+                    ->where('is_viewer', false)
                     ->where(function ($rsq) {
                         $rsq->whereNull('thread_participants.last_read_at')
                             ->orWhereColumn('threads.last_message_at', '>', 'thread_participants.last_read_at');
@@ -108,13 +109,14 @@ new class extends Component
     #[Computed]
     public function myClosedUnreadCount(): int
     {
-        return Thread::whereHas('participants', fn ($sq) => $sq->where('user_id', auth()->id()))
+        return Thread::whereHas('participants', fn ($sq) => $sq->where('user_id', auth()->id())->where('is_viewer', false))
             ->where('status', 'closed')
             ->whereExists(function ($esq) {
                 $esq->select(\Illuminate\Support\Facades\DB::raw(1))
                     ->from('thread_participants')
                     ->whereColumn('thread_participants.thread_id', 'threads.id')
                     ->where('thread_participants.user_id', auth()->id())
+                    ->where('is_viewer', false)
                     ->where(function ($rsq) {
                         $rsq->whereNull('thread_participants.last_read_at')
                             ->orWhereColumn('threads.last_message_at', '>', 'thread_participants.last_read_at');
