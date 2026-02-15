@@ -377,38 +377,73 @@ class User extends Authenticatable // implements MustVerifyEmail
     }
 
     /**
-     * Count participant tickets that need attention.
+     * Count tickets that need attention.
      *
-     * Counts tickets where the user is a participant that are:
+     * For regular users: Counts participant tickets that are:
      * - Non-closed (Open, Pending, Resolved), OR
      * - Closed with unread messages
      *
-     * This provides an accurate count for the sidebar badge.
+     * For staff: Also includes department tickets, assigned tickets, and flagged tickets
+     * based on their permissions.
      *
-     * @return int The number of participant tickets needing attention.
+     * @return int The number of tickets needing attention.
      */
     protected function calculateOpenTicketsCount(): int
     {
-        return Thread::whereHas('participants', fn ($sq) => $sq->where('user_id', $this->id))
-            ->where(function ($q) {
-                // Non-closed tickets
-                $q->where('status', '!=', \App\Enums\ThreadStatus::Closed)
-                    // OR closed tickets with unread messages
-                    ->orWhere(function ($sq) {
-                        $sq->where('status', \App\Enums\ThreadStatus::Closed)
-                            ->whereExists(function ($esq) {
-                                $esq->select(\Illuminate\Support\Facades\DB::raw(1))
-                                    ->from('thread_participants')
-                                    ->whereColumn('thread_participants.thread_id', 'threads.id')
-                                    ->where('thread_participants.user_id', $this->id)
-                                    ->where(function ($rsq) {
-                                        $rsq->whereNull('thread_participants.last_read_at')
-                                            ->orWhereColumn('threads.last_message_at', '>', 'thread_participants.last_read_at');
-                                    });
-                            });
+        $query = Thread::query();
+
+        // Apply visibility filters based on permissions
+        if (! $this->can('viewAll', Thread::class)) {
+            $query->where(function ($q) {
+                // User's participant tickets (non-closed or closed with unread)
+                $q->where(function ($sq) {
+                    $sq->whereHas('participants', fn ($psq) => $psq->where('user_id', $this->id))
+                        ->where(function ($statusQuery) {
+                            $statusQuery->where('status', '!=', \App\Enums\ThreadStatus::Closed)
+                                ->orWhere(function ($unreadQuery) {
+                                    $unreadQuery->where('status', \App\Enums\ThreadStatus::Closed)
+                                        ->whereExists(function ($esq) {
+                                            $esq->select(\Illuminate\Support\Facades\DB::raw(1))
+                                                ->from('thread_participants')
+                                                ->whereColumn('thread_participants.thread_id', 'threads.id')
+                                                ->where('thread_participants.user_id', $this->id)
+                                                ->where(function ($rsq) {
+                                                    $rsq->whereNull('thread_participants.last_read_at')
+                                                        ->orWhereColumn('threads.last_message_at', '>', 'thread_participants.last_read_at');
+                                                });
+                                        });
+                                });
+                        });
+                });
+
+                // Assigned tickets (non-closed only)
+                $q->orWhere(function ($sq) {
+                    $sq->where('assigned_to_user_id', $this->id)
+                        ->where('status', '!=', \App\Enums\ThreadStatus::Closed);
+                });
+
+                // Department tickets (non-closed only)
+                if ($this->can('viewDepartment', Thread::class) && $this->staff_department) {
+                    $q->orWhere(function ($sq) {
+                        $sq->where('department', $this->staff_department)
+                            ->where('status', '!=', \App\Enums\ThreadStatus::Closed);
                     });
-            })
-            ->count();
+                }
+
+                // Flagged tickets (non-closed only)
+                if ($this->can('viewFlagged', Thread::class)) {
+                    $q->orWhere(function ($sq) {
+                        $sq->where('is_flagged', true)
+                            ->where('status', '!=', \App\Enums\ThreadStatus::Closed);
+                    });
+                }
+            });
+        } else {
+            // Can view all - just count non-closed
+            $query->where('status', '!=', \App\Enums\ThreadStatus::Closed);
+        }
+
+        return $query->count();
     }
 
     /**
