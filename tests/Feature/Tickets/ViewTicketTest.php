@@ -448,4 +448,30 @@ describe('View Ticket Component', function () {
         expect(\Illuminate\Support\Facades\Cache::has("user.{$user->id}.unread_participant_tickets"))->toBeFalse();
         expect(\Illuminate\Support\Facades\Cache::has("user.{$user->id}.unread_participant_tickets.timestamp"))->toBeFalse();
     })->done();
+
+    it('counts participant tickets correctly - non-closed or unread closed', function () {
+        $user = User::factory()->create();
+
+        // Create non-closed tickets (should be counted)
+        $openThread = Thread::factory()->withStatus(ThreadStatus::Open)->create();
+        $openThread->addParticipant($user);
+        $pendingThread = Thread::factory()->withStatus(ThreadStatus::Pending)->create();
+        $pendingThread->addParticipant($user);
+        $resolvedThread = Thread::factory()->withStatus(ThreadStatus::Resolved)->create();
+        $resolvedThread->addParticipant($user);
+
+        // Create closed ticket with unread message (should be counted)
+        $closedUnreadThread = Thread::factory()->withStatus(ThreadStatus::Closed)->create();
+        $closedUnreadThread->addParticipant($user);
+        // Don't mark as read - should be counted
+
+        // Create closed ticket that's been read (should NOT be counted)
+        $closedReadThread = Thread::factory()->withStatus(ThreadStatus::Closed)->create();
+        $closedReadThread->addParticipant($user);
+        $participant = $closedReadThread->participants()->where('user_id', $user->id)->first();
+        $participant->update(['last_read_at' => now()->addMinute()]); // Mark as read after last message
+
+        // Should count: 3 non-closed + 1 unread closed = 4
+        expect($user->openTicketsCount())->toBe(4);
+    })->done();
 });

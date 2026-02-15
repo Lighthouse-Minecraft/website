@@ -1,12 +1,12 @@
 <?php
 
-use App\Enums\ThreadStatus;
 use App\Models\Thread;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Url;
 use Livewire\Volt\Component;
 
-new class extends Component {
+new class extends Component
+{
     #[Url]
     public string $filter = 'my-open';
 
@@ -15,8 +15,8 @@ new class extends Component {
     {
         $user = auth()->user();
 
-        return $user->can('viewAll', Thread::class) 
-            || $user->can('viewDepartment', Thread::class) 
+        return $user->can('viewAll', Thread::class)
+            || $user->can('viewDepartment', Thread::class)
             || $user->can('viewFlagged', Thread::class);
     }
 
@@ -25,15 +25,15 @@ new class extends Component {
     {
         $user = auth()->user();
         $query = Thread::with(['createdBy', 'assignedTo', 'participants' => function ($q) use ($user) {
-                $q->where('user_id', $user->id);
-            }])
+            $q->where('user_id', $user->id);
+        }])
             ->orderBy('last_message_at', 'desc');
 
         // Handle filter-specific visibility
         if (in_array($this->filter, ['my-open', 'my-closed'])) {
             // Show tickets where user is a participant
-            $query->whereHas('participants', fn($sq) => $sq->where('user_id', $user->id));
-            
+            $query->whereHas('participants', fn ($sq) => $sq->where('user_id', $user->id));
+
             // Apply status filter
             if ($this->filter === 'my-open') {
                 $query->where('status', '!=', 'closed');
@@ -82,7 +82,41 @@ new class extends Component {
         return $query->get();
     }
 
+    #[Computed]
+    public function myOpenUnreadCount(): int
+    {
+        return Thread::whereHas('participants', fn ($sq) => $sq->where('user_id', auth()->id()))
+            ->where('status', '!=', 'closed')
+            ->whereExists(function ($esq) {
+                $esq->select(\Illuminate\Support\Facades\DB::raw(1))
+                    ->from('thread_participants')
+                    ->whereColumn('thread_participants.thread_id', 'threads.id')
+                    ->where('thread_participants.user_id', auth()->id())
+                    ->where(function ($rsq) {
+                        $rsq->whereNull('thread_participants.last_read_at')
+                            ->orWhereColumn('threads.last_message_at', '>', 'thread_participants.last_read_at');
+                    });
+            })
+            ->count();
+    }
 
+    #[Computed]
+    public function myClosedUnreadCount(): int
+    {
+        return Thread::whereHas('participants', fn ($sq) => $sq->where('user_id', auth()->id()))
+            ->where('status', 'closed')
+            ->whereExists(function ($esq) {
+                $esq->select(\Illuminate\Support\Facades\DB::raw(1))
+                    ->from('thread_participants')
+                    ->whereColumn('thread_participants.thread_id', 'threads.id')
+                    ->where('thread_participants.user_id', auth()->id())
+                    ->where(function ($rsq) {
+                        $rsq->whereNull('thread_participants.last_read_at')
+                            ->orWhereColumn('threads.last_message_at', '>', 'thread_participants.last_read_at');
+                    });
+            })
+            ->count();
+    }
 
     /**
      * Determines whether the given thread has unread messages for the current authenticated user.
@@ -91,7 +125,7 @@ new class extends Component {
      * recorded `last_read_at`, the thread is considered unread. Otherwise compares the thread's
      * `last_message_at` to the participant's `last_read_at`.
      *
-     * @param Thread $thread The thread to check.
+     * @param  Thread  $thread  The thread to check.
      * @return bool `true` if the thread contains messages the current user has not read, `false` otherwise.
      */
     public function isUnread(Thread $thread): bool
@@ -100,8 +134,8 @@ new class extends Component {
         $participant = $thread->participants
             ->where('user_id', auth()->id())
             ->first();
-        
-        if (!$participant || !$participant->last_read_at) {
+
+        if (! $participant || ! $participant->last_read_at) {
             return true; // Never read
         }
 
@@ -126,6 +160,8 @@ new class extends Component {
             wire:click="$set('filter', 'my-open')" 
             variant="{{ $filter === 'my-open' ? 'primary' : 'ghost' }}"
             size="sm"
+            :badge="$this->myOpenUnreadCount > 0 ? $this->myOpenUnreadCount : null"
+            badge:color="red"
         >
             My Open Tickets
         </flux:button>
@@ -133,6 +169,8 @@ new class extends Component {
             wire:click="$set('filter', 'my-closed')" 
             variant="{{ $filter === 'my-closed' ? 'primary' : 'ghost' }}"
             size="sm"
+            :badge="$this->myClosedUnreadCount > 0 ? $this->myClosedUnreadCount : null"
+            badge:color="red"
         >
             My Closed Tickets
         </flux:button>
