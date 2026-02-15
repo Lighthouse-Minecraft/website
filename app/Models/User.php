@@ -272,10 +272,47 @@ class User extends Authenticatable // implements MustVerifyEmail
      *
      * This is used to determine whether to show a red badge on the "My Tickets" navigation item.
      * It only checks tickets where the user is a participant (not all actionable tickets).
+     * The value is cached for 60 minutes; if the cached result is older than 30 minutes a background refresh is scheduled.
      *
      * @return bool `true` if the user has unread participant tickets, `false` otherwise.
      */
     public function hasUnreadParticipantTickets(): bool
+    {
+        $cacheKey = "user.{$this->id}.unread_participant_tickets";
+        $timestampKey = "user.{$this->id}.unread_participant_tickets.timestamp";
+
+        // Check if cache needs background refresh (older than 30 minutes)
+        $timestamp = \Illuminate\Support\Facades\Cache::get($timestampKey);
+        if ($timestamp && now()->diffInMinutes($timestamp) > 30) {
+            // Dispatch background refresh
+            \Illuminate\Support\Facades\Cache::put($timestampKey, now(), now()->addMinutes(60));
+            $userId = $this->id;
+            dispatch(static function () use ($cacheKey, $userId) {
+                $user = User::find($userId);
+                if ($user) {
+                    $result = $user->calculateUnreadParticipantTickets();
+                    \Illuminate\Support\Facades\Cache::put($cacheKey, $result, now()->addMinutes(60));
+                }
+            })->afterResponse();
+        }
+
+        return \Illuminate\Support\Facades\Cache::remember(
+            $cacheKey,
+            now()->addMinutes(60),
+            function () use ($timestampKey) {
+                \Illuminate\Support\Facades\Cache::put($timestampKey, now(), now()->addMinutes(60));
+
+                return $this->calculateUnreadParticipantTickets();
+            }
+        );
+    }
+
+    /**
+     * Calculate if the user has unread messages in tickets where they are a participant.
+     *
+     * @return bool `true` if the user has unread participant tickets, `false` otherwise.
+     */
+    protected function calculateUnreadParticipantTickets(): bool
     {
         return Thread::whereHas('participants', fn ($sq) => $sq->where('user_id', $this->id))
             ->where('status', '!=', \App\Enums\ThreadStatus::Closed)
@@ -374,5 +411,27 @@ class User extends Authenticatable // implements MustVerifyEmail
         }
 
         return $query->count();
+    }
+
+    /**
+     * Clear all ticket-related caches for this user.
+     *
+     * Should be called when ticket state changes that might affect cached values
+     * (e.g., new messages, status changes, assignment changes).
+     */
+    public function clearTicketCaches(): void
+    {
+        $cacheKeys = [
+            "user.{$this->id}.actionable_tickets",
+            "user.{$this->id}.actionable_tickets.timestamp",
+            "user.{$this->id}.unread_participant_tickets",
+            "user.{$this->id}.unread_participant_tickets.timestamp",
+            "user.{$this->id}.open_tickets_count",
+            "user.{$this->id}.open_tickets_count.timestamp",
+        ];
+
+        foreach ($cacheKeys as $key) {
+            \Illuminate\Support\Facades\Cache::forget($key);
+        }
     }
 }

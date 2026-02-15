@@ -232,6 +232,12 @@ new class extends Component
             }
         }
 
+        // Clear ticket caches for all participants (including sender)
+        $allParticipants = $this->thread->participants()->with('user')->get();
+        foreach ($allParticipants as $participant) {
+            $participant->user->clearTicketCaches();
+        }
+
         $this->replyMessage = '';
         $this->isInternalNote = false;
 
@@ -265,6 +271,12 @@ new class extends Component
             "Status changed: {$oldStatus->label()} → {$this->thread->status->label()}"
         );
 
+        // Clear ticket caches for all participants
+        $allParticipants = $this->thread->participants()->with('user')->get();
+        foreach ($allParticipants as $participant) {
+            $participant->user->clearTicketCaches();
+        }
+
         Flux::toast('Status updated successfully!', variant: 'success');
     }
 
@@ -289,6 +301,16 @@ new class extends Component
                 'assignment_changed',
                 $oldAssignee ? "Assignment removed: {$oldAssignee->name} → Unassigned" : 'Unassigned'
             );
+
+            // Clear ticket caches for all participants
+            $allParticipants = $this->thread->participants()->with('user')->get();
+            foreach ($allParticipants as $participant) {
+                $participant->user->clearTicketCaches();
+            }
+            // Also clear for old assignee if they existed
+            if ($oldAssignee) {
+                $oldAssignee->clearTicketCaches();
+            }
 
             Flux::toast('Ticket unassigned successfully!', variant: 'success');
 
@@ -326,6 +348,17 @@ new class extends Component
         if ($this->thread->createdBy && $this->thread->createdBy->id !== $newAssignee->id) {
             $notificationService->send($this->thread->createdBy, new TicketAssignedNotification($this->thread));
         }
+
+        // Clear ticket caches for all participants and assignees
+        $allParticipants = $this->thread->participants()->with('user')->get();
+        foreach ($allParticipants as $participant) {
+            $participant->user->clearTicketCaches();
+        }
+        // Also clear for old and new assignees if they exist
+        if ($oldAssignee) {
+            $oldAssignee->clearTicketCaches();
+        }
+        $newAssignee->clearTicketCaches();
 
         Flux::toast('Ticket assigned successfully!', variant: 'success');
     }
@@ -430,6 +463,12 @@ new class extends Component
             'status_changed',
             "Status changed: {$oldStatus->label()} → {$newStatus->label()}"
         );
+
+        // Clear ticket caches for all participants
+        $allParticipants = $this->thread->participants()->with('user')->get();
+        foreach ($allParticipants as $participant) {
+            $participant->user->clearTicketCaches();
+        }
 
         $toastMessage = $isStaff ? 'Ticket closed successfully!' : 'Ticket marked as resolved!';
         Flux::toast($toastMessage, variant: 'success');

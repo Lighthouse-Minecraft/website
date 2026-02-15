@@ -426,4 +426,26 @@ describe('View Ticket Component', function () {
         // Verify the ticket was closed
         expect($thread->fresh()->status)->toBe(ThreadStatus::Closed);
     })->done();
+
+    it('clears ticket caches when reply is sent', function () {
+        $user = User::factory()->create();
+
+        $thread = Thread::factory()->withDepartment(StaffDepartment::Chaplain)->create();
+        $thread->addParticipant($user);
+
+        actingAs($user);
+
+        // Prime the cache
+        $user->hasUnreadParticipantTickets();
+        expect(\Illuminate\Support\Facades\Cache::has("user.{$user->id}.unread_participant_tickets"))->toBeTrue();
+
+        // Send a reply
+        Volt::test('ready-room.tickets.view-ticket', ['thread' => $thread])
+            ->set('replyMessage', 'Test reply')
+            ->call('sendReply');
+
+        // Verify cache was cleared
+        expect(\Illuminate\Support\Facades\Cache::has("user.{$user->id}.unread_participant_tickets"))->toBeFalse();
+        expect(\Illuminate\Support\Facades\Cache::has("user.{$user->id}.unread_participant_tickets.timestamp"))->toBeFalse();
+    })->done();
 });
