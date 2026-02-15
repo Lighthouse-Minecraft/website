@@ -436,8 +436,8 @@ describe('View Ticket Component', function () {
         actingAs($user);
 
         // Prime the cache
-        $user->hasUnreadParticipantTickets();
-        expect(\Illuminate\Support\Facades\Cache::has("user.{$user->id}.unread_participant_tickets"))->toBeTrue();
+        $user->ticketCounts();
+        expect(\Illuminate\Support\Facades\Cache::has("user.{$user->id}.ticket_counts"))->toBeTrue();
 
         // Send a reply
         Volt::test('ready-room.tickets.view-ticket', ['thread' => $thread])
@@ -445,8 +445,7 @@ describe('View Ticket Component', function () {
             ->call('sendReply');
 
         // Verify cache was cleared
-        expect(\Illuminate\Support\Facades\Cache::has("user.{$user->id}.unread_participant_tickets"))->toBeFalse();
-        expect(\Illuminate\Support\Facades\Cache::has("user.{$user->id}.unread_participant_tickets.timestamp"))->toBeFalse();
+        expect(\Illuminate\Support\Facades\Cache::has("user.{$user->id}.ticket_counts"))->toBeFalse();
     })->done();
 
     it('counts participant tickets correctly - non-closed or unread closed', function () {
@@ -472,6 +471,40 @@ describe('View Ticket Component', function () {
         $participant->update(['last_read_at' => now()->addMinute()]); // Mark as read after last message
 
         // Should count: 3 non-closed + 1 unread closed = 4
-        expect($user->openTicketsCount())->toBe(4);
+        $counts = $user->ticketCounts();
+        expect($counts['badge'])->toBe(4);
+    })->done();
+
+    it('preserves filter parameter in back button URL', function () {
+        $user = User::factory()->create();
+        $thread = Thread::factory()->create();
+        $thread->addParticipant($user);
+
+        actingAs($user);
+
+        // Test with filter parameter
+        $component = Volt::test('ready-room.tickets.view-ticket', ['thread' => $thread])
+            ->set('filter', 'my-open');
+
+        expect($component->get('backUrl'))->toBe('/tickets?filter=my-open');
+
+        // Test without filter parameter
+        $componentNoFilter = Volt::test('ready-room.tickets.view-ticket', ['thread' => $thread]);
+        expect($componentNoFilter->get('backUrl'))->toBe('/tickets');
+    })->done();
+
+    it('displays back button with correct filter URL', function () {
+        $user = User::factory()->create();
+        $thread = Thread::factory()->create();
+        $thread->addParticipant($user);
+
+        actingAs($user);
+
+        $component = Volt::test('ready-room.tickets.view-ticket', ['thread' => $thread])
+            ->set('filter', 'my-closed');
+
+        $html = $component->call('$refresh')->html();
+        expect($html)->toContain('href="/tickets?filter=my-closed"')
+            ->toContain('← Back to Tickets');
     })->done();
 });

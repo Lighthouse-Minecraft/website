@@ -39,8 +39,8 @@
                             :href="route('tickets.index')" 
                             :current="request()->routeIs('tickets.*')" 
                             wire:navigate
-                            :badge="auth()->user()->openTicketsCount()"
-                            :badge:color="auth()->user()->hasUnreadParticipantTickets() ? 'red' : 'zinc'"
+                            :badge="auth()->user()->ticketCounts()['badge'] ?: null"
+                            :badge:color="auth()->user()->ticketCounts()['has-unread'] ? 'red' : 'zinc'"
                         >
                             Tickets
                         </flux:navlist.item>

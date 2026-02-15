@@ -13,11 +13,15 @@ use App\Notifications\TicketAssignedNotification;
 use App\Services\TicketNotificationService;
 use Illuminate\Support\Facades\Validator;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Url;
 use Livewire\Volt\Component;
 
 new class extends Component
 {
     public Thread $thread;
+
+    #[Url]
+    public ?string $filter = null;
 
     public string $replyMessage = '';
 
@@ -53,6 +57,8 @@ new class extends Component
 
         if ($participant) {
             $participant->update(['last_read_at' => now()]);
+            // Clear caches so counts update immediately
+            auth()->user()->clearTicketCaches();
         }
     }
 
@@ -104,6 +110,15 @@ new class extends Component
     public function canAssign(): bool
     {
         return auth()->user()->can('assign', $this->thread);
+    }
+
+    #[Computed]
+    public function backUrl(): string
+    {
+        if ($this->filter) {
+            return '/tickets?filter=' . urlencode($this->filter);
+        }
+        return '/tickets';
     }
 
     #[Computed]
@@ -517,7 +532,7 @@ new class extends Component
                 <span>Created {{ $thread->created_at->diffForHumans() }}</span>
             </div>
         </div>
-        <flux:button href="/tickets" variant="ghost" size="sm">← Back to Tickets</flux:button>
+        <flux:button :href="$this->backUrl" variant="ghost" size="sm">← Back to Tickets</flux:button>
     </div>
 
     {{-- Status & Assignment Controls (Staff Only) --}}
@@ -647,7 +662,7 @@ new class extends Component
 
     {{-- Back to Tickets Button (Bottom) --}}
     <div class="flex justify-end">
-        <flux:button href="/tickets" variant="ghost" size="sm">← Back to Tickets</flux:button>
+        <flux:button :href="$this->backUrl" variant="ghost" size="sm">← Back to Tickets</flux:button>
     </div>
 
     {{-- Flag Message Modal --}}

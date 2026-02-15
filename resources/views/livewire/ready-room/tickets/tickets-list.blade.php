@@ -97,41 +97,10 @@ new class extends Component
     }
 
     #[Computed]
-    public function myOpenUnreadCount(): int
+    public function filterCounts(): array
     {
-        return Thread::whereHas('participants', fn ($sq) => $sq->where('user_id', auth()->id())->where('is_viewer', false))
-            ->where('status', '!=', 'closed')
-            ->whereExists(function ($esq) {
-                $esq->select(\Illuminate\Support\Facades\DB::raw(1))
-                    ->from('thread_participants')
-                    ->whereColumn('thread_participants.thread_id', 'threads.id')
-                    ->where('thread_participants.user_id', auth()->id())
-                    ->where('is_viewer', false)
-                    ->where(function ($rsq) {
-                        $rsq->whereNull('thread_participants.last_read_at')
-                            ->orWhereColumn('threads.last_message_at', '>', 'thread_participants.last_read_at');
-                    });
-            })
-            ->count();
-    }
-
-    #[Computed]
-    public function myClosedUnreadCount(): int
-    {
-        return Thread::whereHas('participants', fn ($sq) => $sq->where('user_id', auth()->id())->where('is_viewer', false))
-            ->where('status', 'closed')
-            ->whereExists(function ($esq) {
-                $esq->select(\Illuminate\Support\Facades\DB::raw(1))
-                    ->from('thread_participants')
-                    ->whereColumn('thread_participants.thread_id', 'threads.id')
-                    ->where('thread_participants.user_id', auth()->id())
-                    ->where('is_viewer', false)
-                    ->where(function ($rsq) {
-                        $rsq->whereNull('thread_participants.last_read_at')
-                            ->orWhereColumn('threads.last_message_at', '>', 'thread_participants.last_read_at');
-                    });
-            })
-            ->count();
+        // Use the consolidated ticketCounts method from User model
+        return auth()->user()->ticketCounts();
     }
 
     /**
@@ -171,24 +140,29 @@ new class extends Component
     </div>
 
     {{-- Filters --}}
+    @php
+        $counts = $this->filterCounts;
+    @endphp
     <div class="mb-6 flex items-center gap-2">
         <flux:button 
             wire:click="$set('filter', 'my-open')" 
             variant="{{ $filter === 'my-open' ? 'primary' : 'ghost' }}"
             size="sm"
-            :badge="$this->myOpenUnreadCount > 0 ? $this->myOpenUnreadCount : null"
-            badge:color="red"
         >
             My Open Tickets
+            @if($counts['my-open'] > 0)
+                <flux:badge size="sm" color="{{ $counts['my-open-unread'] > 0 ? 'red' : 'zinc' }}" inset="top bottom">{{ $counts['my-open'] }}</flux:badge>
+            @endif
         </flux:button>
         <flux:button 
             wire:click="$set('filter', 'my-closed')" 
             variant="{{ $filter === 'my-closed' ? 'primary' : 'ghost' }}"
             size="sm"
-            :badge="$this->myClosedUnreadCount > 0 ? $this->myClosedUnreadCount : null"
-            badge:color="red"
         >
             My Closed Tickets
+            @if($counts['my-closed-unread'] > 0)
+                <flux:badge size="sm" color="red" inset="top bottom">{{ $counts['my-closed-unread'] }}</flux:badge>
+            @endif
         </flux:button>
         @if($this->isStaff)
             <flux:button 
@@ -197,6 +171,9 @@ new class extends Component
                 size="sm"
             >
                 All Open
+                @if($counts['open'] > 0)
+                    <flux:badge size="sm" color="zinc" inset="top bottom">{{ $counts['open'] }}</flux:badge>
+                @endif
             </flux:button>
             <flux:button 
                 wire:click="$set('filter', 'closed')" 
@@ -211,6 +188,9 @@ new class extends Component
                 size="sm"
             >
                 Assigned to Me
+                @if($counts['assigned-to-me'] > 0)
+                    <flux:badge size="sm" color="zinc" inset="top bottom">{{ $counts['assigned-to-me'] }}</flux:badge>
+                @endif
             </flux:button>
             <flux:button 
                 wire:click="$set('filter', 'unassigned')" 
@@ -218,6 +198,9 @@ new class extends Component
                 size="sm"
             >
                 Unassigned
+                @if($counts['unassigned'] > 0)
+                    <flux:badge size="sm" color="zinc" inset="top bottom">{{ $counts['unassigned'] }}</flux:badge>
+                @endif
             </flux:button>
             @can('viewFlagged', Thread::class)
                 <flux:button 
@@ -226,6 +209,9 @@ new class extends Component
                     size="sm"
                 >
                     Flagged
+                    @if($counts['flagged'] > 0)
+                        <flux:badge size="sm" color="red" inset="top bottom">{{ $counts['flagged'] }}</flux:badge>
+                    @endif
                 </flux:button>
             @endcan
         @endif
@@ -236,7 +222,7 @@ new class extends Component
         <div class="rounded-lg border border-zinc-200 dark:border-zinc-700 divide-y divide-zinc-200 dark:divide-zinc-700">
             @foreach($this->tickets as $ticket)
                 <a 
-                    href="/tickets/{{ $ticket->id }}" 
+                    href="/tickets/{{ $ticket->id }}?filter={{ urlencode($filter) }}" 
                     wire:navigate
                     wire:key="ticket-{{ $ticket->id }}"
                     class="block p-4 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition"
