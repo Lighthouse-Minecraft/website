@@ -352,7 +352,10 @@ class User extends Authenticatable // implements MustVerifyEmail
                     'open' => $tickets->where('status', '!=', \App\Enums\ThreadStatus::Closed)->count(),
                     'closed' => $tickets->where('status', \App\Enums\ThreadStatus::Closed)->count(),
                     'assigned-to-me' => $tickets->where('assigned_to_user_id', $this->id)->count(),
-                    'unassigned' => $tickets->whereNull('assigned_to_user_id')->count(),
+                    'unassigned' => $tickets
+                        ->whereNull('assigned_to_user_id')
+                        ->where('status', '!=', \App\Enums\ThreadStatus::Closed)
+                        ->count(),
                     'flagged' => $tickets->where('has_open_flags', true)->count(),
                     'has-unread' => $tickets->filter(function ($t) {
                         $participant = $t->participants->first();

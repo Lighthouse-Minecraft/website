@@ -78,7 +78,8 @@ new class extends Component
                     $query->where('assigned_to_user_id', $user->id);
                     break;
                 case 'unassigned':
-                    $query->whereNull('assigned_to_user_id');
+                    $query->whereNull('assigned_to_user_id')
+                        ->where('status', '!=', 'closed');
                     break;
                 case 'flagged':
                     if ($user->can('viewFlagged', Thread::class)) {
