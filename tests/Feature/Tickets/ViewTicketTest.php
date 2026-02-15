@@ -366,4 +366,64 @@ describe('View Ticket Component', function () {
         // Viewer should not get notification
         Notification::assertNothingSentTo($viewer);
     })->done();
+
+    it('posts message and closes ticket when close button clicked with text', function () {
+        $staff = User::factory()
+            ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->create();
+
+        $user = User::factory()->create();
+
+        $thread = Thread::factory()
+            ->withDepartment(StaffDepartment::Chaplain)
+            ->withStatus(ThreadStatus::Open)
+            ->create();
+        $thread->addParticipant($user);
+
+        actingAs($staff);
+
+        Volt::test('ready-room.tickets.view-ticket', ['thread' => $thread])
+            ->set('replyMessage', 'Final response before closing')
+            ->call('closeTicket');
+
+        // Verify the message was posted
+        $messages = $thread->fresh()->messages;
+        expect($messages)->toHaveCount(2); // User's message + system message
+
+        $userMessage = $messages->where('kind', MessageKind::Message)->first();
+        expect($userMessage->body)->toBe('Final response before closing');
+        expect($userMessage->user_id)->toBe($staff->id);
+
+        // Verify the ticket was closed
+        expect($thread->fresh()->status)->toBe(ThreadStatus::Closed);
+
+        // Verify system message was created
+        $systemMessage = $messages->where('kind', MessageKind::System)->first();
+        expect($systemMessage->body)->toContain('closed this ticket');
+    })->done();
+
+    it('closes ticket without posting when close button clicked with empty text', function () {
+        $staff = User::factory()
+            ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->create();
+
+        $thread = Thread::factory()
+            ->withDepartment(StaffDepartment::Chaplain)
+            ->withStatus(ThreadStatus::Open)
+            ->create();
+
+        actingAs($staff);
+
+        Volt::test('ready-room.tickets.view-ticket', ['thread' => $thread])
+            ->set('replyMessage', '')
+            ->call('closeTicket');
+
+        // Verify only system message exists (no user message)
+        $messages = $thread->fresh()->messages;
+        expect($messages)->toHaveCount(1);
+        expect($messages->first()->kind)->toBe(MessageKind::System);
+
+        // Verify the ticket was closed
+        expect($thread->fresh()->status)->toBe(ThreadStatus::Closed);
+    })->done();
 });
