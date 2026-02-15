@@ -153,14 +153,85 @@ new class extends Component
     }
 
     /**
+     * Process a reply by creating a message and performing related updates.
+     *
+     * @param string $body The message body text
+     * @param bool $isInternal Whether this is an internal note
+     * @return void
+     */
+    private function processReply(string $body, bool $isInternal): void
+    {
+        $this->authorize('reply', $this->thread);
+
+        $kind = MessageKind::Message;
+
+        if ($isInternal) {
+            $this->authorize('internalNotes', $this->thread);
+            $kind = MessageKind::InternalNote;
+        }
+
+        // Capture a single timestamp for consistency
+        $now = now();
+
+        $message = Message::create([
+            'thread_id' => $this->thread->id,
+            'user_id' => auth()->id(),
+            'body' => $body,
+            'kind' => $kind,
+        ]);
+
+        // Add sender as participant (not viewer) if not already
+        $existingParticipant = $this->thread->participants()
+            ->where('user_id', auth()->id())
+            ->first();
+
+        if (! $existingParticipant) {
+            $this->thread->addParticipant(auth()->user(), isViewer: false);
+            $existingParticipant = $this->thread->participants()
+                ->where('user_id', auth()->id())
+                ->first();
+        } elseif ($existingParticipant->is_viewer) {
+            $existingParticipant->update(['is_viewer' => false]);
+        }
+
+        // Mark as read for the sender
+        $existingParticipant->update(['last_read_at' => $now]);
+
+        // Update thread last message time
+        $this->thread->update(['last_message_at' => $now]);
+
+        // Record activity
+        $activityType = $kind === MessageKind::InternalNote ? 'internal_note_added' : 'message_sent';
+        \App\Actions\RecordActivity::run($this->thread, $activityType, 'New message added to thread');
+
+        // Notify participants (except sender, viewers, and for internal notes)
+        if ($kind !== MessageKind::InternalNote) {
+            $participants = $this->thread->participants()
+                ->where('user_id', '!=', auth()->id())
+                ->where('is_viewer', false)
+                ->with('user')
+                ->get();
+
+            $notificationService = app(TicketNotificationService::class);
+            foreach ($participants as $participant) {
+                $notificationService->send($participant->user, new NewTicketReplyNotification($message));
+            }
+        }
+
+        // Clear ticket caches for all participants
+        $allParticipants = $this->thread->participants()->with('user')->get();
+        foreach ($allParticipants as $participant) {
+            $participant->user->clearTicketCaches();
+        }
+    }
+
+    /**
      * Sends the current reply for the thread, creating a message or internal note and performing related updates.
      *
      * Validates the reply text and authorizes the action (including internal-note permission when requested). Creates a Message on the thread (marked as an internal note when selected), ensures the sender is recorded as a non-viewer participant and updates their read timestamp, updates the thread's last message time, and records activity. For normal replies (not internal notes) notifies other non-viewer participants. Resets reply-related state, shows a success toast, and clears the cached messages list.
      */
     public function sendReply(): void
     {
-        $this->authorize('reply', $this->thread);
-
         $validator = Validator::make(
             ['replyMessage' => $this->replyMessage],
             ['replyMessage' => 'required|string|min:1']
@@ -172,71 +243,7 @@ new class extends Component
             return;
         }
 
-        $kind = MessageKind::Message;
-
-        if ($this->isInternalNote) {
-            $this->authorize('internalNotes', $this->thread);
-            $kind = MessageKind::InternalNote;
-        }
-
-        // Capture a single timestamp for consistency
-        $now = now();
-
-        $message = Message::create([
-            'thread_id' => $this->thread->id,
-            'user_id' => auth()->id(),
-            'body' => $this->replyMessage,
-            'kind' => $kind,
-        ]);
-
-        // Add sender as participant (not viewer) if not already
-        // If they were a viewer, convert them to a participant
-        $existingParticipant = $this->thread->participants()
-            ->where('user_id', auth()->id())
-            ->first();
-
-        if (! $existingParticipant) {
-            // No participant record exists, add them as a participant
-            $this->thread->addParticipant(auth()->user(), isViewer: false);
-            // Refetch to get the created participant record
-            $existingParticipant = $this->thread->participants()
-                ->where('user_id', auth()->id())
-                ->first();
-        } elseif ($existingParticipant->is_viewer) {
-            // They exist as a viewer, convert to participant
-            $existingParticipant->update(['is_viewer' => false]);
-        }
-        // Otherwise they're already a non-viewer participant, do nothing
-
-        // Mark as read for the sender (use same timestamp as last_message_at)
-        $existingParticipant->update(['last_read_at' => $now]);
-
-        // Update thread last message time (use same timestamp as last_read_at)
-        $this->thread->update(['last_message_at' => $now]);
-
-        // Record activity
-        $activityType = $kind === MessageKind::InternalNote ? 'internal_note_added' : 'message_sent';
-        \App\Actions\RecordActivity::run($this->thread, $activityType, 'New message added to thread');
-
-        // Notify participants (except sender, viewers, and for internal notes)
-        if ($kind !== MessageKind::InternalNote) {
-            $participants = $this->thread->participants()
-                ->where('user_id', '!=', auth()->id())
-                ->where('is_viewer', false) // Exclude viewers - they just observe
-                ->with('user')
-                ->get();
-
-            $notificationService = app(TicketNotificationService::class);
-            foreach ($participants as $participant) {
-                $notificationService->send($participant->user, new NewTicketReplyNotification($message));
-            }
-        }
-
-        // Clear ticket caches for all participants (including sender)
-        $allParticipants = $this->thread->participants()->with('user')->get();
-        foreach ($allParticipants as $participant) {
-            $participant->user->clearTicketCaches();
-        }
+        $this->processReply($this->replyMessage, $this->isInternalNote);
 
         $this->replyMessage = '';
         $this->isInternalNote = false;
@@ -369,62 +376,7 @@ new class extends Component
 
         // If there's a reply message, send it first
         if (! empty(trim($this->replyMessage))) {
-            $this->authorize('reply', $this->thread);
-
-            $kind = MessageKind::Message;
-
-            if ($this->isInternalNote) {
-                $this->authorize('internalNotes', $this->thread);
-                $kind = MessageKind::InternalNote;
-            }
-
-            // Capture a single timestamp for consistency
-            $now = now();
-
-            $message = Message::create([
-                'thread_id' => $this->thread->id,
-                'user_id' => auth()->id(),
-                'body' => $this->replyMessage,
-                'kind' => $kind,
-            ]);
-
-            // Add sender as participant (not viewer) if not already
-            $existingParticipant = $this->thread->participants()
-                ->where('user_id', auth()->id())
-                ->first();
-
-            if (! $existingParticipant) {
-                $this->thread->addParticipant(auth()->user(), isViewer: false);
-                $existingParticipant = $this->thread->participants()
-                    ->where('user_id', auth()->id())
-                    ->first();
-            } elseif ($existingParticipant->is_viewer) {
-                $existingParticipant->update(['is_viewer' => false]);
-            }
-
-            // Mark as read for the sender
-            $existingParticipant->update(['last_read_at' => $now]);
-
-            // Update thread last message time
-            $this->thread->update(['last_message_at' => $now]);
-
-            // Record activity
-            $activityType = $kind === MessageKind::InternalNote ? 'internal_note_added' : 'message_sent';
-            \App\Actions\RecordActivity::run($this->thread, $activityType, 'New message added to thread');
-
-            // Notify participants (except sender, viewers, and for internal notes)
-            if ($kind !== MessageKind::InternalNote) {
-                $participants = $this->thread->participants()
-                    ->where('user_id', '!=', auth()->id())
-                    ->where('is_viewer', false)
-                    ->with('user')
-                    ->get();
-
-                $notificationService = app(TicketNotificationService::class);
-                foreach ($participants as $participant) {
-                    $notificationService->send($participant->user, new NewTicketReplyNotification($message));
-                }
-            }
+            $this->processReply($this->replyMessage, $this->isInternalNote);
 
             $this->replyMessage = '';
             $this->isInternalNote = false;

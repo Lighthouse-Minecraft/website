@@ -31,8 +31,8 @@ new class extends Component
 
         // Handle filter-specific visibility
         if (in_array($this->filter, ['my-open', 'my-closed'])) {
-            // Show tickets where user is a participant
-            $query->whereHas('participants', fn ($sq) => $sq->where('user_id', $user->id));
+            // Show tickets where user is a participant (not viewer)
+            $query->whereHas('participants', fn ($sq) => $sq->where('user_id', $user->id)->where('is_viewer', false));
 
             // Apply status filter
             if ($this->filter === 'my-open') {
@@ -40,7 +40,7 @@ new class extends Component
             } else {
                 $query->where('status', 'closed');
             }
-        } else {
+        } elseif ($user->can('viewAll', Thread::class) || $user->can('viewDepartment', Thread::class) || $user->can('viewFlagged', Thread::class)) {
             // Staff-only filters: apply department/permission visibility
             if (! $user->can('viewAll', Thread::class)) {
                 $query->where(function ($q) use ($user) {
@@ -77,6 +77,11 @@ new class extends Component
                     }
                     break;
             }
+        } else {
+            // Non-staff user trying to access staff filter - normalize to my-open
+            $this->filter = 'my-open';
+            $query->whereHas('participants', fn ($sq) => $sq->where('user_id', $user->id)->where('is_viewer', false))
+                ->where('status', '!=', 'closed');
         }
 
         return $query->get();

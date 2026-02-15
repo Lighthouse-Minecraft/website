@@ -314,27 +314,15 @@ class User extends Authenticatable // implements MustVerifyEmail
      */
     protected function calculateUnreadParticipantTickets(): bool
     {
-        return Thread::whereHas('participants', fn ($sq) => $sq->where('user_id', $this->id))
+        return Thread::whereHas('participants', function ($sq) {
+            $sq->where('user_id', $this->id)
+                ->where('is_viewer', false)
+                ->where(function ($unreadQuery) {
+                    $unreadQuery->whereNull('thread_participants.last_read_at')
+                        ->orWhereColumn('threads.last_message_at', '>', 'thread_participants.last_read_at');
+                });
+        })
             ->where('status', '!=', \App\Enums\ThreadStatus::Closed)
-            ->where(function ($q) {
-                // Consider unread if: no participant row exists OR participant row exists but is unread
-                $q->whereNotExists(function ($nesq) {
-                    $nesq->select(\Illuminate\Support\Facades\DB::raw(1))
-                        ->from('thread_participants')
-                        ->whereColumn('thread_participants.thread_id', 'threads.id')
-                        ->where('thread_participants.user_id', $this->id);
-                })
-                    ->orWhereExists(function ($esq) {
-                        $esq->select(\Illuminate\Support\Facades\DB::raw(1))
-                            ->from('thread_participants')
-                            ->whereColumn('thread_participants.thread_id', 'threads.id')
-                            ->where('thread_participants.user_id', $this->id)
-                            ->where(function ($rsq) {
-                                $rsq->whereNull('thread_participants.last_read_at')
-                                    ->orWhereColumn('threads.last_message_at', '>', 'thread_participants.last_read_at');
-                            });
-                    });
-            })
             ->exists();
     }
 
@@ -397,7 +385,7 @@ class User extends Authenticatable // implements MustVerifyEmail
             $query->where(function ($q) {
                 // User's participant tickets (non-closed or closed with unread)
                 $q->where(function ($sq) {
-                    $sq->whereHas('participants', fn ($psq) => $psq->where('user_id', $this->id))
+                    $sq->whereHas('participants', fn ($psq) => $psq->where('user_id', $this->id)->where('is_viewer', false))
                         ->where(function ($statusQuery) {
                             $statusQuery->where('status', '!=', \App\Enums\ThreadStatus::Closed)
                                 ->orWhere(function ($unreadQuery) {
@@ -407,6 +395,7 @@ class User extends Authenticatable // implements MustVerifyEmail
                                                 ->from('thread_participants')
                                                 ->whereColumn('thread_participants.thread_id', 'threads.id')
                                                 ->where('thread_participants.user_id', $this->id)
+                                                ->where('is_viewer', false)
                                                 ->where(function ($rsq) {
                                                     $rsq->whereNull('thread_participants.last_read_at')
                                                         ->orWhereColumn('threads.last_message_at', '>', 'thread_participants.last_read_at');
