@@ -43,17 +43,26 @@ new class extends Component
         } elseif ($user->can('viewAll', Thread::class) || $user->can('viewDepartment', Thread::class) || $user->can('viewFlagged', Thread::class)) {
             // Staff-only filters: apply department/permission visibility
             if (! $user->can('viewAll', Thread::class)) {
-                $query->where(function ($q) use ($user) {
-                    // Department tickets
-                    if ($user->can('viewDepartment', Thread::class) && $user->staff_department) {
-                        $q->where('department', $user->staff_department);
-                    }
+                // Only apply visibility constraints if at least one condition will be met
+                $hasDepartmentAccess = $user->can('viewDepartment', Thread::class) && $user->staff_department;
+                $hasFlaggedAccess = $user->can('viewFlagged', Thread::class);
 
-                    // Flagged tickets
-                    if ($user->can('viewFlagged', Thread::class)) {
-                        $q->orWhere('is_flagged', true);
-                    }
-                });
+                if ($hasDepartmentAccess || $hasFlaggedAccess) {
+                    $query->where(function ($q) use ($user, $hasDepartmentAccess, $hasFlaggedAccess) {
+                        // Department tickets
+                        if ($hasDepartmentAccess) {
+                            $q->where('department', $user->staff_department);
+                        }
+
+                        // Flagged tickets
+                        if ($hasFlaggedAccess) {
+                            $q->orWhere('is_flagged', true);
+                        }
+                    });
+                } else {
+                    // No valid visibility constraints - restrict to no rows
+                    $query->whereRaw('1 = 0');
+                }
             }
 
             // Apply status-based filters
