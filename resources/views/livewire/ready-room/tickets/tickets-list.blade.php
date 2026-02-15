@@ -142,14 +142,14 @@ new class extends Component {
                 variant="{{ $filter === 'open' ? 'primary' : 'ghost' }}"
                 size="sm"
             >
-                Open
+                All Open
             </flux:button>
             <flux:button 
                 wire:click="$set('filter', 'closed')" 
                 variant="{{ $filter === 'closed' ? 'primary' : 'ghost' }}"
                 size="sm"
             >
-                Closed
+                All Closed
             </flux:button>
             <flux:button 
                 wire:click="$set('filter', 'assigned-to-me')" 

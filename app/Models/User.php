@@ -268,6 +268,40 @@ class User extends Authenticatable // implements MustVerifyEmail
     }
 
     /**
+     * Check if the user has unread messages in tickets where they are a participant.
+     *
+     * This is used to determine whether to show a red badge on the "My Tickets" navigation item.
+     * It only checks tickets where the user is a participant (not all actionable tickets).
+     *
+     * @return bool `true` if the user has unread participant tickets, `false` otherwise.
+     */
+    public function hasUnreadParticipantTickets(): bool
+    {
+        return Thread::whereHas('participants', fn ($sq) => $sq->where('user_id', $this->id))
+            ->where('status', '!=', \App\Enums\ThreadStatus::Closed)
+            ->where(function ($q) {
+                // Consider unread if: no participant row exists OR participant row exists but is unread
+                $q->whereNotExists(function ($nesq) {
+                    $nesq->select(\Illuminate\Support\Facades\DB::raw(1))
+                        ->from('thread_participants')
+                        ->whereColumn('thread_participants.thread_id', 'threads.id')
+                        ->where('thread_participants.user_id', $this->id);
+                })
+                    ->orWhereExists(function ($esq) {
+                        $esq->select(\Illuminate\Support\Facades\DB::raw(1))
+                            ->from('thread_participants')
+                            ->whereColumn('thread_participants.thread_id', 'threads.id')
+                            ->where('thread_participants.user_id', $this->id)
+                            ->where(function ($rsq) {
+                                $rsq->whereNull('thread_participants.last_read_at')
+                                    ->orWhereColumn('threads.last_message_at', '>', 'thread_participants.last_read_at');
+                            });
+                    });
+            })
+            ->exists();
+    }
+
+    /**
      * Retrieve the number of open tickets visible to the user.
      *
      * The value is cached for 60 minutes; if the cached result is older than 30 minutes a background refresh is scheduled while the cached value is returned immediately.
