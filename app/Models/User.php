@@ -268,6 +268,65 @@ class User extends Authenticatable // implements MustVerifyEmail
     }
 
     /**
+     * Check if the user has unread messages in tickets where they are a participant.
+     *
+     * This is used to determine whether to show a red badge on the "My Tickets" navigation item.
+     * It only checks tickets where the user is a participant (not all actionable tickets).
+     * The value is cached for 60 minutes; if the cached result is older than 30 minutes a background refresh is scheduled.
+     *
+     * @return bool `true` if the user has unread participant tickets, `false` otherwise.
+     */
+    public function hasUnreadParticipantTickets(): bool
+    {
+        $cacheKey = "user.{$this->id}.unread_participant_tickets";
+        $timestampKey = "user.{$this->id}.unread_participant_tickets.timestamp";
+
+        // Check if cache needs background refresh (older than 30 minutes)
+        $timestamp = \Illuminate\Support\Facades\Cache::get($timestampKey);
+        if ($timestamp && now()->diffInMinutes($timestamp) > 30) {
+            // Dispatch background refresh
+            \Illuminate\Support\Facades\Cache::put($timestampKey, now(), now()->addMinutes(60));
+            $userId = $this->id;
+            dispatch(static function () use ($cacheKey, $userId) {
+                $user = User::find($userId);
+                if ($user) {
+                    $result = $user->calculateUnreadParticipantTickets();
+                    \Illuminate\Support\Facades\Cache::put($cacheKey, $result, now()->addMinutes(60));
+                }
+            })->afterResponse();
+        }
+
+        return \Illuminate\Support\Facades\Cache::remember(
+            $cacheKey,
+            now()->addMinutes(60),
+            function () use ($timestampKey) {
+                \Illuminate\Support\Facades\Cache::put($timestampKey, now(), now()->addMinutes(60));
+
+                return $this->calculateUnreadParticipantTickets();
+            }
+        );
+    }
+
+    /**
+     * Calculate if the user has unread messages in tickets where they are a participant.
+     *
+     * @return bool `true` if the user has unread participant tickets, `false` otherwise.
+     */
+    protected function calculateUnreadParticipantTickets(): bool
+    {
+        return Thread::whereHas('participants', function ($sq) {
+            $sq->where('user_id', $this->id)
+                ->where('is_viewer', false)
+                ->where(function ($unreadQuery) {
+                    $unreadQuery->whereNull('thread_participants.last_read_at')
+                        ->orWhereColumn('threads.last_message_at', '>', 'thread_participants.last_read_at');
+                });
+        })
+            ->where('status', '!=', \App\Enums\ThreadStatus::Closed)
+            ->exists();
+    }
+
+    /**
      * Retrieve the number of open tickets visible to the user.
      *
      * The value is cached for 60 minutes; if the cached result is older than 30 minutes a background refresh is scheduled while the cached value is returned immediately.
@@ -306,39 +365,95 @@ class User extends Authenticatable // implements MustVerifyEmail
     }
 
     /**
-     * Count open ticket threads visible to this user.
+     * Count tickets that need attention.
      *
-     * Applies the model's visibility rules: if the user cannot view all threads,
-     * the count is limited to threads where the user is a participant, threads
-     * in the user's department (when the user can view department threads and
-     * has a department), and flagged threads (when the user can view flagged
-     * threads).
+     * For regular users: Counts participant tickets that are:
+     * - Non-closed (Open, Pending, Resolved), OR
+     * - Closed with unread messages
      *
-     * @return int The number of open threads visible to the user.
+     * For staff: Also includes department tickets, assigned tickets, and flagged tickets
+     * based on their permissions.
+     *
+     * @return int The number of tickets needing attention.
      */
     protected function calculateOpenTicketsCount(): int
     {
-        $query = Thread::where('status', \App\Enums\ThreadStatus::Open);
+        $query = Thread::query();
 
-        // Apply visibility filters
+        // Apply visibility filters based on permissions
         if (! $this->can('viewAll', Thread::class)) {
             $query->where(function ($q) {
-                // User's tickets (participant or assigned)
-                $q->whereHas('participants', fn ($sq) => $sq->where('user_id', $this->id))
-                    ->orWhere('assigned_to_user_id', $this->id);
+                // User's participant tickets (non-closed or closed with unread)
+                $q->where(function ($sq) {
+                    $sq->whereHas('participants', fn ($psq) => $psq->where('user_id', $this->id)->where('is_viewer', false))
+                        ->where(function ($statusQuery) {
+                            $statusQuery->where('status', '!=', \App\Enums\ThreadStatus::Closed)
+                                ->orWhere(function ($unreadQuery) {
+                                    $unreadQuery->where('status', \App\Enums\ThreadStatus::Closed)
+                                        ->whereExists(function ($esq) {
+                                            $esq->select(\Illuminate\Support\Facades\DB::raw(1))
+                                                ->from('thread_participants')
+                                                ->whereColumn('thread_participants.thread_id', 'threads.id')
+                                                ->where('thread_participants.user_id', $this->id)
+                                                ->where('is_viewer', false)
+                                                ->where(function ($rsq) {
+                                                    $rsq->whereNull('thread_participants.last_read_at')
+                                                        ->orWhereColumn('threads.last_message_at', '>', 'thread_participants.last_read_at');
+                                                });
+                                        });
+                                });
+                        });
+                });
 
-                // Department tickets
+                // Assigned tickets (non-closed only)
+                $q->orWhere(function ($sq) {
+                    $sq->where('assigned_to_user_id', $this->id)
+                        ->where('status', '!=', \App\Enums\ThreadStatus::Closed);
+                });
+
+                // Department tickets (non-closed only)
                 if ($this->can('viewDepartment', Thread::class) && $this->staff_department) {
-                    $q->orWhere('department', $this->staff_department);
+                    $q->orWhere(function ($sq) {
+                        $sq->where('department', $this->staff_department)
+                            ->where('status', '!=', \App\Enums\ThreadStatus::Closed);
+                    });
                 }
 
-                // Flagged tickets
+                // Flagged tickets (non-closed only)
                 if ($this->can('viewFlagged', Thread::class)) {
-                    $q->orWhere('is_flagged', true);
+                    $q->orWhere(function ($sq) {
+                        $sq->where('is_flagged', true)
+                            ->where('status', '!=', \App\Enums\ThreadStatus::Closed);
+                    });
                 }
             });
+        } else {
+            // Can view all - just count non-closed
+            $query->where('status', '!=', \App\Enums\ThreadStatus::Closed);
         }
 
         return $query->count();
+    }
+
+    /**
+     * Clear all ticket-related caches for this user.
+     *
+     * Should be called when ticket state changes that might affect cached values
+     * (e.g., new messages, status changes, assignment changes).
+     */
+    public function clearTicketCaches(): void
+    {
+        $cacheKeys = [
+            "user.{$this->id}.actionable_tickets",
+            "user.{$this->id}.actionable_tickets.timestamp",
+            "user.{$this->id}.unread_participant_tickets",
+            "user.{$this->id}.unread_participant_tickets.timestamp",
+            "user.{$this->id}.open_tickets_count",
+            "user.{$this->id}.open_tickets_count.timestamp",
+        ];
+
+        foreach ($cacheKeys as $key) {
+            \Illuminate\Support\Facades\Cache::forget($key);
+        }
     }
 }
