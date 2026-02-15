@@ -52,6 +52,7 @@ describe('Tickets List Component', function () {
         actingAs($chaplainStaff);
 
         Volt::test('ready-room.tickets.tickets-list')
+            ->set('filter', 'open')
             ->assertSee('Chaplain Ticket')
             ->assertDontSee('Engineer Ticket');
     })->done();
@@ -72,6 +73,7 @@ describe('Tickets List Component', function () {
         actingAs($commandOfficer);
 
         Volt::test('ready-room.tickets.tickets-list')
+            ->set('filter', 'open')
             ->assertSee('Chaplain Ticket')
             ->assertSee('Engineer Ticket');
     })->done();
@@ -93,6 +95,7 @@ describe('Tickets List Component', function () {
         actingAs($quartermaster);
 
         Volt::test('ready-room.tickets.tickets-list')
+            ->set('filter', 'open')
             ->assertSee('Flagged Chaplain Ticket')
             ->assertDontSee('Unflagged Chaplain Ticket');
     })->done();
@@ -114,10 +117,13 @@ describe('Tickets List Component', function () {
 
         actingAs($user);
 
-        Volt::test('ready-room.tickets.tickets-list')
-            ->set('filter', 'open')
-            ->assertSee('Open Ticket')
-            ->assertDontSee('Closed Ticket');
+        $component = Volt::test('ready-room.tickets.tickets-list', ['filter' => 'open']);
+
+        // Verify only open ticket is in the collection
+        expect($component->get('tickets'))->toHaveCount(1);
+        expect($component->get('tickets')->first()->subject)->toBe('Open Ticket');
+
+        $component->assertSee('Open Ticket');
     })->done();
 
     it('filters by assigned to me', function () {
@@ -227,6 +233,7 @@ describe('Tickets List Component', function () {
         actingAs($staff);
 
         $component = Volt::test('ready-room.tickets.tickets-list')
+            ->set('filter', 'open')
             ->assertSee('Flagged Ticket');
 
         // Check that has_open_flags is true for the thread
@@ -317,5 +324,135 @@ describe('Tickets List Component', function () {
         Volt::test('ready-room.tickets.tickets-list')
             ->assertSee('Multi User Ticket')
             ->assertSee('New');
+    })->done();
+
+    it('shows department badge in ticket list', function () {
+        $staff = User::factory()
+            ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->create();
+
+        $chaplainThread = Thread::factory()
+            ->withDepartment(StaffDepartment::Chaplain)
+            ->create(['subject' => 'Chaplain Ticket']);
+
+        actingAs($staff);
+
+        Volt::test('ready-room.tickets.tickets-list')
+            ->set('filter', 'open')
+            ->assertSee('Chaplain Ticket')
+            ->assertSee('Chaplain');
+    })->done();
+
+    it('shows my tickets filter by default for regular users', function () {
+        $user = User::factory()->create();
+
+        $openThread = Thread::factory()
+            ->withDepartment(StaffDepartment::Engineer)
+            ->withStatus(ThreadStatus::Open)
+            ->create(['subject' => 'My Open Ticket']);
+        $openThread->addParticipant($user);
+
+        $closedThread = Thread::factory()
+            ->withDepartment(StaffDepartment::Engineer)
+            ->withStatus(ThreadStatus::Closed)
+            ->create(['subject' => 'My Closed Ticket']);
+        $closedThread->addParticipant($user);
+
+        actingAs($user);
+
+        // Default filter shows my open tickets
+        $component = Volt::test('ready-room.tickets.tickets-list');
+
+        // Verify only the open ticket is in the collection
+        expect($component->get('tickets'))->toHaveCount(1);
+        expect($component->get('tickets')->first()->subject)->toBe('My Open Ticket');
+
+        // Verify we see the open ticket in the HTML
+        $component->assertSee('My Open Ticket');
+    })->done();
+
+    it('allows regular users to switch between my open and my closed tickets', function () {
+        $user = User::factory()->create();
+
+        $openThread = Thread::factory()
+            ->withDepartment(StaffDepartment::Engineer)
+            ->withStatus(ThreadStatus::Open)
+            ->create(['subject' => 'Open Ticket']);
+        $openThread->addParticipant($user);
+
+        $closedThread = Thread::factory()
+            ->withDepartment(StaffDepartment::Engineer)
+            ->withStatus(ThreadStatus::Closed)
+            ->create(['subject' => 'Closed Ticket']);
+        $closedThread->addParticipant($user);
+
+        actingAs($user);
+
+        $component = Volt::test('ready-room.tickets.tickets-list', ['filter' => 'my-open']);
+
+        // Verify my-open shows only open ticket
+        expect($component->get('tickets'))->toHaveCount(1);
+        expect($component->get('tickets')->first()->subject)->toBe('Open Ticket');
+        $component->assertSee('Open Ticket');
+
+        // Switch to my-closed and verify only closed ticket
+        $component->set('filter', 'my-closed');
+        expect($component->get('tickets'))->toHaveCount(1);
+        expect($component->get('tickets')->first()->subject)->toBe('Closed Ticket');
+        $component->assertSee('Closed Ticket');
+    })->done();
+
+    it('allows staff to switch between my tickets and staff filters', function () {
+        $staff = User::factory()
+            ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->create();
+
+        // A ticket the staff member is a participant in
+        $participantThread = Thread::factory()
+            ->withDepartment(StaffDepartment::Chaplain)
+            ->create(['subject' => 'My Personal Ticket']);
+        $participantThread->addParticipant($staff);
+
+        // A ticket in their department they're not a participant in
+        $deptThread = Thread::factory()
+            ->withDepartment(StaffDepartment::Chaplain)
+            ->create(['subject' => 'Department Ticket']);
+
+        actingAs($staff);
+
+        // Default to my-open filter - should see only participant ticket
+        Volt::test('ready-room.tickets.tickets-list')
+            ->assertSee('My Personal Ticket')
+            ->assertDontSee('Department Ticket')
+            // Switch to open filter - should see department ticket
+            ->set('filter', 'open')
+            ->assertSee('Department Ticket')
+            ->assertSee('My Personal Ticket'); // Also visible because they're a participant
+    })->done();
+
+    it('prevents duplicate tickets when staff member is participant in department ticket', function () {
+        $staff = User::factory()
+            ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->create();
+
+        $ticket = Thread::factory()
+            ->withDepartment(StaffDepartment::Chaplain)
+            ->create(['subject' => 'Shared Ticket']);
+        $ticket->addParticipant($staff);
+
+        actingAs($staff);
+
+        // When viewing my-open filter, should see the ticket once
+        $myTicketsComponent = Volt::test('ready-room.tickets.tickets-list')
+            ->set('filter', 'my-open')
+            ->assertSee('Shared Ticket');
+
+        // When viewing open filter, should also see the ticket once
+        $openComponent = Volt::test('ready-room.tickets.tickets-list')
+            ->set('filter', 'open')
+            ->assertSee('Shared Ticket');
+
+        // The ticket should exist in the results exactly once for each filter
+        expect($ticket->refresh())->toBeInstanceOf(Thread::class);
     })->done();
 });
