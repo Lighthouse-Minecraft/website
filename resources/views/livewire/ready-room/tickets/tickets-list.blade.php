@@ -229,6 +229,7 @@ new class extends Component
                 <a 
                     href="/tickets/{{ $ticket->id }}" 
                     wire:navigate
+                    wire:key="ticket-{{ $ticket->id }}"
                     class="block p-4 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition"
                 >
                     <div class="flex items-start justify-between">
@@ -248,7 +249,7 @@ new class extends Component
                             <div class="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
                                 <span>{{ $ticket->subtype->label() }}</span>
                                 <span class="mx-2">•</span>
-                                <span>Created by {{ $ticket->createdBy->name }}</span>
+                                <span>Created by {{ $ticket->createdBy?->name ?? 'Unknown' }}</span>
                                 <span class="mx-2">•</span>
                                 <span>{{ $ticket->created_at->diffForHumans() }}</span>
                             </div>
