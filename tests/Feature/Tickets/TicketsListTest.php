@@ -455,4 +455,93 @@ describe('Tickets List Component', function () {
         // The ticket should exist in the results exactly once for each filter
         expect($ticket->refresh())->toBeInstanceOf(Thread::class);
     })->done();
+
+    it('preserves filter parameter when navigating to ticket', function () {
+        $user = User::factory()->create();
+        $ticket = Thread::factory()->create(['subject' => 'Test Ticket']);
+        $ticket->addParticipant($user);
+
+        actingAs($user);
+
+        $component = Volt::test('ready-room.tickets.tickets-list')
+            ->set('filter', 'my-open');
+
+        // Verify the ticket link includes the filter parameter
+        $html = $component->call('$refresh')->html();
+        expect($html)->toContain('/tickets/'.$ticket->id.'?filter=my-open');
+    })->done();
+
+    it('displays filter counts for all filter categories', function () {
+        $staff = User::factory()
+            ->withStaffPosition(StaffDepartment::Engineer, StaffRank::CrewMember)
+            ->create();
+
+        // Create tickets for different filters
+        $myOpenTicket = Thread::factory()->create();
+        $myOpenTicket->addParticipant($staff);
+
+        $myClosedTicket = Thread::factory()->create(['status' => ThreadStatus::Closed]);
+        $myClosedTicket->addParticipant($staff);
+
+        $otherOpenTicket = Thread::factory()
+            ->withDepartment(StaffDepartment::Engineer)
+            ->create();
+
+        $unassignedTicket = Thread::factory()
+            ->withDepartment(StaffDepartment::Engineer)
+            ->create(['assigned_to_user_id' => null]);
+
+        actingAs($staff);
+
+        $component = Volt::test('ready-room.tickets.tickets-list');
+
+        // Verify counts are calculated
+        $filterCounts = $component->get('filterCounts');
+
+        expect($filterCounts['my-open'])->toBeGreaterThanOrEqual(1);
+        expect($filterCounts['my-closed'])->toBeGreaterThanOrEqual(1);
+        expect($filterCounts['open'])->toBeGreaterThanOrEqual(2);
+        expect($filterCounts['unassigned'])->toBeGreaterThanOrEqual(1);
+    })->done();
+
+    it('caches filter counts for performance', function () {
+        $user = User::factory()->create();
+        $ticket = Thread::factory()->create();
+        $ticket->addParticipant($user);
+
+        actingAs($user);
+
+        // First call should calculate and cache
+        $component1 = Volt::test('ready-room.tickets.tickets-list');
+        $counts1 = $component1->get('filterCounts');
+
+        // Second call should use cache (we can verify by checking cache key exists)
+        $cacheKey = "user.{$user->id}.ticket_counts";
+        expect(\Illuminate\Support\Facades\Cache::has($cacheKey))->toBeTrue();
+
+        // Verify counts are consistent
+        $component2 = Volt::test('ready-room.tickets.tickets-list');
+        $counts2 = $component2->get('filterCounts');
+
+        expect($counts1)->toBe($counts2);
+    })->done();
+
+    it('clears filter count cache when ticket state changes', function () {
+        $user = User::factory()->create();
+        $ticket = Thread::factory()->create();
+        $ticket->addParticipant($user);
+
+        actingAs($user);
+
+        // Build cache
+        Volt::test('ready-room.tickets.tickets-list');
+        $cacheKey = "user.{$user->id}.ticket_counts";
+        expect(\Illuminate\Support\Facades\Cache::has($cacheKey))->toBeTrue();
+
+        // Clear caches
+        $user->clearTicketCaches();
+
+        // Verify cache was cleared
+        expect(\Illuminate\Support\Facades\Cache::has($cacheKey))->toBeFalse();
+    })->done();
 });

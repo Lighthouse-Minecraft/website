@@ -69,7 +69,7 @@ describe('User Model Ticket Methods', function () {
         expect($staff->hasActionableTickets())->toBeFalse();
     })->done();
 
-    it('returns correct openTicketsCount for user', function () {
+    it('returns correct ticket counts for user', function () {
         $staff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
             ->create();
@@ -89,7 +89,8 @@ describe('User Model Ticket Methods', function () {
 
         $this->actingAs($staff);
 
-        expect($staff->openTicketsCount())->toBe(3);
+        $counts = $staff->ticketCounts();
+        expect($counts['open'])->toBe(3);
     })->done();
 
     it('caches hasActionableTickets result', function () {
@@ -122,7 +123,7 @@ describe('User Model Ticket Methods', function () {
         expect($third)->toBeFalse();
     })->done();
 
-    it('caches openTicketsCount result', function () {
+    it('caches ticketCounts result', function () {
         $staff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
             ->create();
@@ -136,8 +137,8 @@ describe('User Model Ticket Methods', function () {
         $this->actingAs($staff);
 
         // First call
-        $first = $staff->openTicketsCount();
-        expect($first)->toBe(2);
+        $first = $staff->ticketCounts();
+        expect($first['open'])->toBe(2);
 
         // Add another ticket
         Thread::factory()
@@ -146,13 +147,12 @@ describe('User Model Ticket Methods', function () {
             ->create();
 
         // Second call should still return 2 due to cache
-        $second = $staff->openTicketsCount();
-        expect($second)->toBe(2);
+        $second = $staff->ticketCounts();
+        expect($second['open'])->toBe(2);
 
         // Clear cache and check again
-        \Illuminate\Support\Facades\Cache::forget("user.{$staff->id}.open_tickets_count");
-        \Illuminate\Support\Facades\Cache::forget("user.{$staff->id}.open_tickets_count.timestamp");
-        $third = $staff->openTicketsCount();
-        expect($third)->toBe(3);
+        \Illuminate\Support\Facades\Cache::forget("user.{$staff->id}.ticket_counts");
+        $third = $staff->ticketCounts();
+        expect($third['open'])->toBe(3);
     })->done();
 });
