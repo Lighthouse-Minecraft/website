@@ -205,8 +205,12 @@ new class extends Component
             $existingParticipant = $this->thread->participants()
                 ->where('user_id', auth()->id())
                 ->first();
+            // Log when a user joins a ticket
+            \App\Actions\RecordActivity::run($this->thread, 'ticket_joined', 'Joined ticket: ' . $this->thread->subject);
         } elseif ($existingParticipant->is_viewer) {
             $existingParticipant->update(['is_viewer' => false]);
+            // Log when a viewer becomes a participant
+            \App\Actions\RecordActivity::run($this->thread, 'ticket_joined', 'Joined ticket: ' . $this->thread->subject);
         }
 
         // Mark as read for the sender
@@ -214,10 +218,6 @@ new class extends Component
 
         // Update thread last message time
         $this->thread->update(['last_message_at' => $now]);
-
-        // Record activity
-        $activityType = $kind === MessageKind::InternalNote ? 'internal_note_added' : 'message_sent';
-        \App\Actions\RecordActivity::run($this->thread, $activityType, 'New message added to thread');
 
         // Notify participants (except sender, viewers, and for internal notes)
         if ($kind !== MessageKind::InternalNote) {
