@@ -3,18 +3,21 @@
 use Livewire\Volt\Component;
 use App\Models\User;
 use App\Models\ActivityLog;
+use Livewire\WithPagination;
 
 new class extends Component {
+    use WithPagination;
+    
     public User $user;
-    public $activities;
 
-    public function mount(User $user) {
-        $this->user = $user;
-
-        $this->activities = ActivityLog::relevantTo($user)
-            ->with(['causer', 'subject'])
-            ->latest()
-            ->get();
+    public function with(): array
+    {
+        return [
+            'activities' => ActivityLog::relevantTo($this->user)
+                ->with(['causer', 'subject'])
+                ->latest()
+                ->paginate(25),
+        ];
     }
 }; ?>
 
@@ -41,6 +44,10 @@ new class extends Component {
                         @if ($subject instanceof \App\Models\User)
                             <flux:link href="{{ route('profile.show', $subject) }}">
                                 {{ $subject->name }}
+                            </flux:link>
+                        @elseif ($subject instanceof \App\Models\Thread)
+                            <flux:link href="/tickets/{{ $subject->id }}">
+                                {{ $subject->subject }}
                             </flux:link>
                         @else
                             {{ class_basename($activity->subject_type) }} #{{ $activity->subject_id }}
@@ -71,4 +78,8 @@ new class extends Component {
             @endforeach
         </flux:table.rows>
     </flux:table>
+
+    <div class="mt-4">
+        {{ $activities->links() }}
+    </div>
 </div>

@@ -55,7 +55,7 @@ new class extends Component {
         ]);
 
         // Record activity
-        \App\Actions\RecordActivity::run($thread, 'ticket_created', "Ticket created: {$this->subject}");
+        \App\Actions\RecordActivity::run($thread, 'ticket_opened', "Opened ticket: {$this->subject}");
 
         // Notify department staff
         $departmentStaff = User::where('staff_department', $this->department)

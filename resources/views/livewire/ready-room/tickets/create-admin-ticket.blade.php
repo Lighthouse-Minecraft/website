@@ -81,8 +81,8 @@ new class extends Component {
         // Record activity
         \App\Actions\RecordActivity::run(
             $thread,
-            'admin_ticket_created',
-            "Admin action ticket created for {$targetUser->name}: {$this->subject}"
+            'ticket_opened',
+            "Opened ticket: {$this->subject}"
         );
 
         // Notify target user
