@@ -106,37 +106,46 @@ new class extends Component {
 
 }; ?>
 
-<div class="w-full block md:flex md:mr-4">
-    <flux:card class="w-full md:w-1/2 lg:w-1/3 p-6 space-y-2 mb-6 md:mb-0">
-        <flux:heading size="xl" class="mb-4">{{ $user->name }}</flux:heading>
-        <flux:text>Member Rank: {{ $user->membership_level->label() }}</flux:text>
-        <flux:text>Joined on {{ $user->created_at->format('F j, Y') }}</flux:text>
-    </flux:card>
-
-    @if($user->staff_department)
-        <flux:card class="w-full md:w-1/2 lg:w-1/3 md:mx-4">
-            <flux:heading size="xl">{{  $user->staff_title }}</flux:heading>
-            <flux:text>Department: {{  $user->staff_department->label() }}</flux:text>
-            <flux:text>Rank: {{  $user->staff_rank->label() }}</flux:text>
-
-            @if (Auth::user()->isAdmin())
-            <div class="mt-6 text-center">
-                <flux:modal.trigger name="manage-users-staff-position">
-                    <flux:button>Manage Staff Position</flux:button>
-                </flux:modal.trigger>
-            </div>
-            @endif
+<div>
+    <div class="w-full block md:flex md:mr-4">
+        <flux:card class="w-full md:w-1/2 lg:w-1/3 p-6 space-y-2 mb-6 md:mb-0">
+            <flux:heading size="xl" class="mb-4">{{ $user->name }}</flux:heading>
+            <flux:text>Member Rank: {{ $user->membership_level->label() }}</flux:text>
+            <flux:text>Joined on {{ $user->created_at->format('F j, Y') }}</flux:text>
         </flux:card>
-    @elseif (Auth::user()->isAdmin())
-        <flux:card class="w-full md:w-1/4 md:mx-4">
-            <flux:heading size="xl">Staff Config</flux:heading>
-            <div class="mt-6 text-center">
-                <flux:modal.trigger name="manage-users-staff-position">
-                    <flux:button>Manage Staff Position</flux:button>
-                </flux:modal.trigger>
-            </div>
-        </flux:card>
-    @endif
+
+        @if($user->staff_department)
+            <flux:card class="w-full md:w-1/2 lg:w-1/3 md:mx-4 mb-6 md:mb-0">
+                <flux:heading size="xl">{{  $user->staff_title }}</flux:heading>
+                <flux:text>Department: {{  $user->staff_department->label() }}</flux:text>
+                <flux:text>Rank: {{  $user->staff_rank->label() }}</flux:text>
+
+                @if (Auth::user()->isAdmin())
+                <div class="mt-6 text-center">
+                    <flux:modal.trigger name="manage-users-staff-position">
+                        <flux:button>Manage Staff Position</flux:button>
+                    </flux:modal.trigger>
+                </div>
+                @endif
+            </flux:card>
+        @elseif (Auth::user()->isAdmin())
+            <flux:card class="w-full md:w-1/4 md:mx-4 mb-6 md:mb-0">
+                <flux:heading size="xl">Staff Config</flux:heading>
+                <div class="mt-6 text-center">
+                    <flux:modal.trigger name="manage-users-staff-position">
+                        <flux:button>Manage Staff Position</flux:button>
+                    </flux:modal.trigger>
+                </div>
+            </flux:card>
+        @endif
+
+        @can('viewPii', $user)
+            <flux:card class="w-full md:w-1/2 lg:w-1/3 {{ $user->staff_department ? 'md:ml-4' : 'md:mx-4' }} p-6 space-y-2">
+                <flux:heading size="xl" class="mb-4">Contact Information</flux:heading>
+                <flux:text>Email: {{ $user->email }}</flux:text>
+            </flux:card>
+        @endcan
+    </div>
 
     <flux:modal name="manage-users-staff-position" class="w-full md:w-1/2 xl:w-1/3">
         <div class="space-y-6">

@@ -94,7 +94,9 @@ new class extends Component {
                 <div class="space-y-4">
                     <div>
                         <flux:text class="font-medium">Name:</flux:text>
-                        <flux:text>{{ $selectedUser->name }}</flux:text>
+                        <a href="{{ route('profile.show', $selectedUser) }}" class="text-blue-600 dark:text-blue-400 hover:underline font-medium">
+                            {{ $selectedUser->name }}
+                        </a>
                     </div>
 
                     <div>
@@ -121,6 +123,15 @@ new class extends Component {
                 </div>
 
                 <div class="flex gap-2 pt-4">
+                    <flux:button
+                        href="/tickets/create-admin?user_id={{ $selectedUser->id }}"
+                        variant="ghost"
+                        icon="inbox"
+                        title="Create Admin Ticket"
+                    >
+                        Create Ticket
+                    </flux:button>
+
                     <flux:spacer />
 
                     <flux:button

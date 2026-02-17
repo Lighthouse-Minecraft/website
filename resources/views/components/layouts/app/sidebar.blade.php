@@ -33,8 +33,28 @@
                         <flux:navlist.item icon="user-group" :href="route('community-updates.index')" :current="request()->routeIs('community-updates.index')" wire:navigate>Community Updates</flux:navlist.item>
                     @endcan
 
+                    @auth
+                        <flux:navlist.item 
+                            icon="inbox" 
+                            :href="route('tickets.index')" 
+                            :current="request()->routeIs('tickets.*')" 
+                            wire:navigate
+                            :badge="auth()->user()->ticketCounts()['badge'] ?: null"
+                            :badge:color="auth()->user()->ticketCounts()['has-unread'] ? 'red' : 'zinc'"
+                        >
+                            Tickets
+                        </flux:navlist.item>
+                    @endauth
+
                     @can('view-ready-room')
-                        <flux:navlist.item icon="building-storefront" :href="route('ready-room.index')" :current="request()->routeIs('ready-room.index')" wire:navigate>Staff Ready Room</flux:navlist.item>
+                        <flux:navlist.item 
+                            icon="building-storefront" 
+                            :href="route('ready-room.index')" 
+                            :current="request()->routeIs('ready-room.index')" 
+                            wire:navigate
+                        >
+                            Staff Ready Room
+                        </flux:navlist.item>
                     @endcan
 
                     @can('viewACP')

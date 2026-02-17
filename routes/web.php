@@ -24,6 +24,7 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('settings/profile', 'settings.profile')->name('settings.profile');
     Volt::route('settings/password', 'settings.password')->name('settings.password');
     Volt::route('settings/appearance', 'settings.appearance')->name('settings.appearance');
+    Volt::route('settings/notifications', 'settings.notifications')->name('settings.notifications');
 });
 
 Route::get('/profile/{user}', [UserController::class, 'show'])
@@ -59,6 +60,19 @@ Route::prefix('acp/announcements')
 
 Route::get('community-updates', [CommunityUpdatesController::class, 'index'])->name('community-updates.index')->middleware('auth');
 Route::get('ready-room', [DashboardController::class, 'readyRoom'])->name('ready-room.index')->middleware('auth');
+
+// Ticket System Routes
+Route::prefix('tickets')
+    ->name('tickets.')
+    ->middleware(['auth', 'track-notification-read'])
+    ->group(function () {
+        Volt::route('/', 'ready-room.tickets.tickets-list')->name('index');
+        Volt::route('/create', 'ready-room.tickets.create-ticket')->name('create');
+        Volt::route('/create-admin', 'ready-room.tickets.create-admin-ticket')
+            ->name('create-admin')
+            ->middleware('can:createAsStaff,App\Models\Thread');
+        Volt::route('/{thread}', 'ready-room.tickets.view-ticket')->name('show');
+    });
 
 // This is for non admin announcement links
 Route::prefix('announcements')

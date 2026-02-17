@@ -41,6 +41,14 @@ class UserPolicy
         return $user->id == $model->id || $user->isInDepartment(StaffDepartment::Quartermaster) || $user->isAtLeastRank(StaffRank::Officer);
     }
 
+    public function viewPii(User $user, User $model): bool
+    {
+        // Admin, Command Staff, and Quartermaster can view PII
+        return $user->isAdmin()
+            || $user->isInDepartment(StaffDepartment::Command)
+            || $user->isInDepartment(StaffDepartment::Quartermaster);
+    }
+
     /**
      * Determine whether the user can create models.
      */
