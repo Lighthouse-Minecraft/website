@@ -30,13 +30,13 @@ test('requires authentication', function () {
 test('displays linked accounts', function () {
     MinecraftAccount::factory()->count(2)->for($this->user)->create();
 
-    Volt::test('pages.settings.minecraft-accounts')
+    Volt::test('settings.minecraft-accounts')
         ->assertSee('Minecraft Accounts')
         ->assertSee('Linked Accounts');
 });
 
 test('shows verification form when no active verification', function () {
-    Volt::test('pages.settings.minecraft-accounts')
+    Volt::test('settings.minecraft-accounts')
         ->assertSee('Add Minecraft Account')
         ->assertSee('Minecraft Username');
 });
@@ -44,9 +44,9 @@ test('shows verification form when no active verification', function () {
 test('generates verification code', function () {
     Http::fake(['api.mojang.com/*' => Http::response(['id' => str_repeat('a', 32), 'name' => 'TestPlayer'])]);
 
-    Volt::test('pages.settings.minecraft-accounts')
-        ->set('form.username', 'TestPlayer')
-        ->set('form.account_type', 'java')
+    Volt::test('settings.minecraft-accounts')
+        ->set('username', 'TestPlayer')
+        ->set('accountType', 'java')
         ->call('generateCode')
         ->assertHasNoErrors()
         ->assertSee('Your Verification Code');
@@ -57,31 +57,31 @@ test('displays active verification code', function () {
         'code' => 'ABC123',
     ]);
 
-    Volt::test('pages.settings.minecraft-accounts')
+    Volt::test('settings.minecraft-accounts')
         ->assertSee('ABC123')
         ->assertSee('Waiting for verification');
 });
 
 test('validates username required', function () {
-    Volt::test('pages.settings.minecraft-accounts')
-        ->set('form.username', '')
-        ->set('form.account_type', 'java')
+    Volt::test('settings.minecraft-accounts')
+        ->set('username', '')
+        ->set('accountType', 'java')
         ->call('generateCode')
-        ->assertHasErrors(['form.username' => 'required']);
+        ->assertHasErrors(['username' => 'required']);
 });
 
 test('validates account type required', function () {
-    Volt::test('pages.settings.minecraft-accounts')
-        ->set('form.username', 'TestPlayer')
-        ->set('form.account_type', null)
+    Volt::test('settings.minecraft-accounts')
+        ->set('username', 'TestPlayer')
+        ->set('accountType', null)
         ->call('generateCode')
-        ->assertHasErrors(['form.account_type' => 'required']);
+        ->assertHasErrors(['accountType' => 'required']);
 });
 
 test('removes linked account', function () {
     $account = MinecraftAccount::factory()->for($this->user)->create();
 
-    Volt::test('pages.settings.minecraft-accounts')
+    Volt::test('settings.minecraft-accounts')
         ->call('remove', $account->id)
         ->assertHasNoErrors();
 
@@ -94,7 +94,7 @@ test('cannot remove another users account', function () {
     $otherUser = User::factory()->create();
     $account = MinecraftAccount::factory()->for($otherUser)->create();
 
-    Volt::test('pages.settings.minecraft-accounts')
+    Volt::test('settings.minecraft-accounts')
         ->call('remove', $account->id)
         ->assertForbidden();
 
@@ -106,21 +106,21 @@ test('cannot remove another users account', function () {
 test('shows remaining account slots', function () {
     MinecraftAccount::factory()->for($this->user)->create();
 
-    Volt::test('pages.settings.minecraft-accounts')
+    Volt::test('settings.minecraft-accounts')
         ->assertSee('1 slot remaining');
 });
 
 test('shows max accounts reached', function () {
     MinecraftAccount::factory()->count(2)->for($this->user)->create();
 
-    Volt::test('pages.settings.minecraft-accounts')
+    Volt::test('settings.minecraft-accounts')
         ->assertSee('maximum');
 });
 
 test('polls for verification completion', function () {
     $verification = MinecraftVerification::factory()->for($this->user)->pending()->create();
 
-    $component = Volt::test('pages.settings.minecraft-accounts');
+    $component = Volt::test('settings.minecraft-accounts');
 
     // Simulate completion
     $verification->update(['status' => 'completed']);
