@@ -102,7 +102,7 @@ class GenerateVerificationCode
 
         // Check if UUID is already linked to the current user
         $userExistingAccount = \App\Models\MinecraftAccount::where('user_id', $user->id)
-            ->whereRaw('REPLACE(uuid, "-", "") = ?', [$normalizedUuid])
+            ->whereRaw("REPLACE(uuid, '-', '') = ?", [$normalizedUuid])
             ->first();
 
         if ($userExistingAccount) {
@@ -115,7 +115,7 @@ class GenerateVerificationCode
         }
 
         // Check if UUID is already linked to another user
-        $existingAccount = \App\Models\MinecraftAccount::whereRaw('REPLACE(uuid, "-", "") = ?', [$normalizedUuid])->first();
+        $existingAccount = \App\Models\MinecraftAccount::whereRaw("REPLACE(uuid, '-', '') = ?", [$normalizedUuid])->first();
         if ($existingAccount && $existingAccount->user_id !== $user->id) {
             return [
                 'success' => false,
