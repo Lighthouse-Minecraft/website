@@ -15,16 +15,16 @@ beforeEach(function () {
 test('completes verification with valid token', function () {
     $verification = MinecraftVerification::factory()->for($this->user)->pending()->create([
         'code' => 'ABC123',
-        'username' => 'TestPlayer',
-        'uuid' => null,
+        'minecraft_username' => 'TestPlayer',
+        'minecraft_uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
         'account_type' => MinecraftAccountType::Java,
     ]);
 
     $response = $this->postJson('/api/minecraft/verify', [
         'server_token' => 'test-server-token',
         'code' => 'ABC123',
-        'username' => 'TestPlayer',
-        'uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
+        'minecraft_username' => 'TestPlayer',
+        'minecraft_uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
     ]);
 
     $response->assertSuccessful()
@@ -50,8 +50,8 @@ test('rejects invalid server token', function () {
     $response = $this->postJson('/api/minecraft/verify', [
         'server_token' => 'wrong-token',
         'code' => 'ABC123',
-        'username' => 'TestPlayer',
-        'uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
+        'minecraft_username' => 'TestPlayer',
+        'minecraft_uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
     ]);
 
     $response->assertUnauthorized()
@@ -62,18 +62,20 @@ test('rejects invalid server token', function () {
 });
 
 test('validates required fields', function () {
-    $response = $this->postJson('/api/minecraft/verify', []);
+    $response = $this->postJson('/api/minecraft/verify', [
+        'server_token' => 'test-server-token',
+    ]);
 
     $response->assertUnprocessable()
-        ->assertJsonValidationErrors(['server_token', 'code', 'username', 'uuid']);
+        ->assertJsonValidationErrors(['code', 'minecraft_username', 'minecraft_uuid']);
 });
 
 test('rejects non-existent verification code', function () {
     $response = $this->postJson('/api/minecraft/verify', [
         'server_token' => 'test-server-token',
-        'code' => 'NONEXIST',
-        'username' => 'TestPlayer',
-        'uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
+        'code' => 'ABCDEF',
+        'minecraft_username' => 'TestPlayer',
+        'minecraft_uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
     ]);
 
     $response->assertNotFound()
@@ -85,14 +87,14 @@ test('rejects non-existent verification code', function () {
 
 test('rejects expired verification code', function () {
     MinecraftVerification::factory()->for($this->user)->expired()->create([
-        'code' => 'EXPIRED',
+        'code' => 'EXPIRE',
     ]);
 
     $response = $this->postJson('/api/minecraft/verify', [
         'server_token' => 'test-server-token',
-        'code' => 'EXPIRED',
-        'username' => 'TestPlayer',
-        'uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
+        'code' => 'EXPIRE',
+        'minecraft_username' => 'TestPlayer',
+        'minecraft_uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
     ]);
 
     $response->assertStatus(410)
@@ -104,14 +106,14 @@ test('rejects expired verification code', function () {
 
 test('rejects already completed verification', function () {
     MinecraftVerification::factory()->for($this->user)->completed()->create([
-        'code' => 'COMPLETED',
+        'code' => 'COMPLT',
     ]);
 
     $response = $this->postJson('/api/minecraft/verify', [
         'server_token' => 'test-server-token',
-        'code' => 'COMPLETED',
-        'username' => 'TestPlayer',
-        'uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
+        'code' => 'COMPLT',
+        'minecraft_username' => 'TestPlayer',
+        'minecraft_uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
     ]);
 
     $response->assertNotFound()
@@ -134,8 +136,8 @@ test('rejects duplicate uuid', function () {
     $response = $this->postJson('/api/minecraft/verify', [
         'server_token' => 'test-server-token',
         'code' => 'ABC123',
-        'username' => 'TestPlayer',
-        'uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
+        'minecraft_username' => 'TestPlayer',
+        'minecraft_uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
     ]);
 
     $response->assertStatus(409)
@@ -153,8 +155,8 @@ test('accepts uuid with or without dashes', function () {
     $response = $this->postJson('/api/minecraft/verify', [
         'server_token' => 'test-server-token',
         'code' => 'ABC123',
-        'username' => 'TestPlayer',
-        'uuid' => '069a79f444e94726a5befca90e38aaf5', // No dashes
+        'minecraft_username' => 'TestPlayer',
+        'minecraft_uuid' => '069a79f444e94726a5befca90e38aaf5', // No dashes
     ]);
 
     $response->assertSuccessful();
@@ -168,9 +170,9 @@ test('rate limits requests', function () {
     for ($i = 0; $i < 31; $i++) {
         $response = $this->postJson('/api/minecraft/verify', [
             'server_token' => 'test-server-token',
-            'code' => 'TEST',
-            'username' => 'Test',
-            'uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
+            'code' => 'TESTRT',
+            'minecraft_username' => 'Test',
+            'minecraft_uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
         ]);
     }
 
@@ -185,8 +187,8 @@ test('case insensitive code matching', function () {
     $response = $this->postJson('/api/minecraft/verify', [
         'server_token' => 'test-server-token',
         'code' => 'abc123', // lowercase
-        'username' => 'TestPlayer',
-        'uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
+        'minecraft_username' => 'TestPlayer',
+        'minecraft_uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
     ]);
 
     $response->assertSuccessful();
@@ -200,8 +202,8 @@ test('records activity log on successful verification', function () {
     $this->postJson('/api/minecraft/verify', [
         'server_token' => 'test-server-token',
         'code' => 'ABC123',
-        'username' => 'TestPlayer',
-        'uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
+        'minecraft_username' => 'TestPlayer',
+        'minecraft_uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
     ]);
 
     $this->assertDatabaseHas('activity_log', [

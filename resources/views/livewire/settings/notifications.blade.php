@@ -61,6 +61,7 @@ new class extends Component
     }
 }; ?>
 
+<x-settings.layout>
 <section class="w-full">
     @include('partials.settings-heading')
 
@@ -129,3 +130,4 @@ new class extends Component
         </div>
     </form>
 </section>
+</x-settings.layout>
