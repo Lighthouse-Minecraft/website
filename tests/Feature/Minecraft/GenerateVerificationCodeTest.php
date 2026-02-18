@@ -48,9 +48,10 @@ test('generates verification code for java account', function () {
 
 test('generates verification code for bedrock account', function () {
     Http::fake([
-        'mcprofile.io/api/bedrock/*' => Http::response([
-            'username' => '.BedrockPlayer',
-            'uuid' => '00000000-0000-0000-0009-01234567890a',
+        'mcprofile.io/api/v1/bedrock/gamertag/*' => Http::response([
+            'xuid' => '2535428197086765',
+            'gamertag' => '.BedrockPlayer',
+            'floodgate_uuid' => '00000000-0000-0000-0009-01234567890a',
         ]),
     ]);
 
@@ -76,13 +77,8 @@ test('excludes confusing characters from code', function () {
     for ($i = 0; $i < 20; $i++) {
         $result = $this->action->handle($this->user, MinecraftAccountType::Java, 'TestPlayer');
 
-        expect($result['code'])->not->toContain('0')
-            ->and($result['code'])->not->toContain('O')
-            ->and($result['code'])->not->toContain('1')
-            ->and($result['code'])->not->toContain('I')
-            ->and($result['code'])->not->toContain('L')
-            ->and($result['code'])->not->toContain('5')
-            ->and($result['code'])->not->toContain('S');
+        // Test that the code doesn't contain confusing characters
+        expect($result['code'])->toMatch('/^[^0O1IL5S]+$/');
     }
 });
 
@@ -120,7 +116,7 @@ test('validates java username exists via mojang api', function () {
     $result = $this->action->handle($this->user, MinecraftAccountType::Java, 'NonExistentPlayer');
 
     expect($result['success'])->toBeFalse()
-        ->and($result['error'])->toContain('not found');
+        ->and($result['error'])->toContain('verify');
 });
 
 test('validates bedrock username exists via mcprofile api', function () {
@@ -131,7 +127,7 @@ test('validates bedrock username exists via mcprofile api', function () {
     $result = $this->action->handle($this->user, MinecraftAccountType::Bedrock, '.NonExistent');
 
     expect($result['success'])->toBeFalse()
-        ->and($result['error'])->toContain('not found');
+        ->and($result['error'])->toContain('verify');
 });
 
 test('handles rcon failure gracefully', function () {
@@ -145,7 +141,7 @@ test('handles rcon failure gracefully', function () {
     $result = $this->action->handle($this->user, MinecraftAccountType::Java, 'TestPlayer');
 
     expect($result['success'])->toBeFalse()
-        ->and($result['error'])->toContain('Minecraft server');
+        ->and($result['error'])->toContain('offline');
 });
 
 test('sets correct expiration time', function () {
