@@ -14,6 +14,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'track-notification-read' => \App\Http\Middleware\UpdateLastNotificationRead::class,
         ]);
+
+        $middleware->validateCsrfTokens(except: [
+            '/api/minecraft/verify',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

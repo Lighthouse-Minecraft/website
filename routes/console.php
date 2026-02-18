@@ -17,3 +17,13 @@ Schedule::command('tickets:send-digests daily')
 Schedule::command('tickets:send-digests weekly')
     ->weeklyOn(1, '08:00')
     ->runInBackground();
+
+// Cleanup expired Minecraft verifications every 5 minutes
+Schedule::command('minecraft:cleanup-expired')
+    ->everyFiveMinutes()
+    ->runInBackground();
+
+// Refresh Minecraft usernames daily at 3am (30-day staggered cycle)
+Schedule::command('minecraft:refresh-usernames')
+    ->dailyAt('03:00')
+    ->runInBackground();

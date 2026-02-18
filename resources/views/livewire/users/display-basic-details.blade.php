@@ -104,6 +104,35 @@ new class extends Component {
         Flux::modal('manage-users-staff-position')->close();
     }
 
+    public function revokeMinecraftAccount(int $accountId) {
+        if (!Auth::user()->isAdmin()) {
+            Flux::toast(
+                text: 'You do not have permission to revoke Minecraft accounts.',
+                heading: 'Error',
+                variant: 'danger'
+            );
+            return;
+        }
+
+        $account = \App\Models\MinecraftAccount::findOrFail($accountId);
+        $result = \App\Actions\RevokeMinecraftAccount::run($account, Auth::user());
+
+        if ($result['success']) {
+            Flux::toast(
+                text: $result['message'],
+                heading: 'Success',
+                variant: 'success'
+            );
+            $this->user->refresh();
+        } else {
+            Flux::toast(
+                text: $result['message'],
+                heading: 'Error',
+                variant: 'danger'
+            );
+        }
+    }
+
 }; ?>
 
 <div>
@@ -135,6 +164,31 @@ new class extends Component {
                     <flux:modal.trigger name="manage-users-staff-position">
                         <flux:button>Manage Staff Position</flux:button>
                     </flux:modal.trigger>
+                </div>
+            </flux:card>
+        @endif
+
+        @if($user->minecraftAccounts->isNotEmpty())
+            <flux:card class="w-full md:w-1/2 lg:w-1/3 {{ $user->staff_department ? 'md:mr-4' : 'md:mx-4' }} mb-6 md:mb-0 p-6">
+                <flux:heading size="xl" class="mb-4">Minecraft Accounts</flux:heading>
+                <div class="space-y-2">
+                    @foreach($user->minecraftAccounts as $account)
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <flux:text class="font-semibold">{{ $account->username }}</flux:text>
+                                <flux:text class="text-sm text-zinc-500">{{ $account->account_type->label() }}</flux:text>
+                            </div>
+                            @if(Auth::user()->isAdmin())
+                                <flux:button
+                                    wire:click="revokeMinecraftAccount({{ $account->id }})"
+                                    variant="danger"
+                                    size="sm"
+                                    wire:confirm="Are you sure you want to revoke this Minecraft account from {{ $user->name }}?">
+                                    Revoke
+                                </flux:button>
+                            @endif
+                        </div>
+                    @endforeach
                 </div>
             </flux:card>
         @endif

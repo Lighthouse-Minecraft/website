@@ -5,6 +5,7 @@
             <flux:navlist.item href="{{ route('settings.password') }}" wire:navigate>Password</flux:navlist.item>
             <flux:navlist.item href="{{ route('settings.appearance') }}" wire:navigate>Appearance</flux:navlist.item>
             <flux:navlist.item href="{{ route('settings.notifications') }}" wire:navigate>Notifications</flux:navlist.item>
+            <flux:navlist.item href="{{ route('settings.minecraft-accounts') }}" wire:navigate>Minecraft</flux:navlist.item>
         </flux:navlist>
     </div>
 

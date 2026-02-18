@@ -65,6 +65,7 @@ class User extends Authenticatable // implements MustVerifyEmail
             'promoted_at' => 'datetime',
             'last_prayed_at' => 'datetime',
             'last_notification_read_at' => 'datetime',
+            'last_login_at' => 'datetime',
             'last_ticket_digest_sent_at' => 'datetime',
             'pushover_count_reset_at' => 'datetime',
             'notification_preferences' => 'array',
@@ -133,6 +134,11 @@ class User extends Authenticatable // implements MustVerifyEmail
     public function prayerCountries()
     {
         return $this->belongsToMany(PrayerCountry::class)->withPivot('year')->withTimestamps();
+    }
+
+    public function minecraftAccounts()
+    {
+        return $this->hasMany(MinecraftAccount::class);
     }
 
     public function canSendPushover(): bool

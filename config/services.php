@@ -39,4 +39,11 @@ return [
         'token' => env('PUSHOVER_TOKEN'),
     ],
 
+    'minecraft' => [
+        'rcon_host' => env('MINECRAFT_RCON_HOST', 'localhost'),
+        'rcon_port' => env('MINECRAFT_RCON_PORT', 25575),
+        'rcon_password' => env('MINECRAFT_RCON_PASSWORD'),
+        'verification_token' => env('MINECRAFT_VERIFICATION_TOKEN'),
+    ],
+
 ];

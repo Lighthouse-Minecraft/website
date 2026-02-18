@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "80104831b770c2dd5e72d4b4698f02a9",
+    "content-hash": "e9b5cda1359cbd3ca8daa0acdb84f62b",
     "packages": [
         {
             "name": "brick/math",
@@ -6309,6 +6309,49 @@
                 }
             ],
             "time": "2025-10-27T20:36:44+00:00"
+        },
+        {
+            "name": "thedudeguy/rcon",
+            "version": "v1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/thedudeguy/PHP-Minecraft-Rcon.git",
+                "reference": "ada4eb08304dfe9562192978444fbfc21a08a9ca"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/thedudeguy/PHP-Minecraft-Rcon/zipball/ada4eb08304dfe9562192978444fbfc21a08a9ca",
+                "reference": "ada4eb08304dfe9562192978444fbfc21a08a9ca",
+                "shasum": ""
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Thedudeguy\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Chris Churchwell",
+                    "email": "chris@chrischurchwell.com",
+                    "homepage": "http://chrischurchwell.com"
+                }
+            ],
+            "description": "Simple Rcon class for php.",
+            "homepage": "https://github.com/thedudeguy/PHP-Minecraft-Rcon",
+            "keywords": [
+                "minecraft",
+                "rcon"
+            ],
+            "support": {
+                "issues": "https://github.com/thedudeguy/PHP-Minecraft-Rcon/issues",
+                "source": "https://github.com/thedudeguy/PHP-Minecraft-Rcon/tree/master"
+            },
+            "time": "2017-05-25T06:50:00+00:00"
         },
         {
             "name": "tijsverkoyen/css-to-inline-styles",
