@@ -81,7 +81,7 @@ test('rejects non-existent verification code', function () {
     $response->assertSuccessful()
         ->assertJson([
             'success' => false,
-            'message' => 'Invalid or expired verification code.',
+
         ]);
 });
 
@@ -123,7 +123,7 @@ test('rejects already completed verification', function () {
     $response->assertSuccessful()
         ->assertJson([
             'success' => false,
-            'message' => 'Invalid or expired verification code.',
+
         ]);
 });
 

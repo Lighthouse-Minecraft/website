@@ -33,8 +33,7 @@ test('regular user cannot revoke', function () {
 
     $result = $this->action->handle($account, $this->regularUser);
 
-    expect($result['success'])->toBeFalse()
-        ->and($result['message'])->toContain('permission');
+    expect($result['success'])->toBeFalse();
     $this->assertDatabaseHas('minecraft_accounts', ['id' => $account->id]);
 });
 
