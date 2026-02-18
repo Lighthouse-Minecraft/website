@@ -27,7 +27,6 @@ class AppServiceProvider extends ServiceProvider
         );
 
         // Register custom notification channel
-        \Illuminate\Notifications\Channels\DatabaseChannel::class;
         app()->bind('minecraft', function () {
             return new \App\Channels\MinecraftChannel;
         });

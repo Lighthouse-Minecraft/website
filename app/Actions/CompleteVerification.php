@@ -58,7 +58,7 @@ class CompleteVerification
         }
 
         // Check if UUID is already linked to another user (normalize for comparison)
-        $existingAccount = MinecraftAccount::whereRaw('REPLACE(uuid, "-", "") = ?', [$normalizedUuid])->first();
+        $existingAccount = MinecraftAccount::whereRaw("REPLACE(uuid, '-', '') = ?", [$normalizedUuid])->first();
         if ($existingAccount && $existingAccount->user_id !== $verification->user_id) {
             return [
                 'success' => false,
