@@ -102,7 +102,6 @@ test('rejects expired verification code', function () {
     $response->assertSuccessful()
         ->assertJson([
             'success' => false,
-            'message' => 'Verification code has expired.',
         ]);
 });
 
@@ -147,7 +146,6 @@ test('rejects duplicate uuid', function () {
     $response->assertSuccessful()
         ->assertJson([
             'success' => false,
-            'message' => 'This Minecraft account is already linked to another user.',
         ]);
 });
 

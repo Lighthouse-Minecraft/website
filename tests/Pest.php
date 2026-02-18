@@ -21,6 +21,10 @@ pest()->project()->github('Lighthouse-Minecraft/website');
 
 pest()->extend(Tests\TestCase::class)
     ->use(Illuminate\Foundation\Testing\RefreshDatabase::class)
+    ->beforeEach(function () {
+        // Fake all notifications to prevent "Driver [minecraft] not supported" errors
+        \Illuminate\Support\Facades\Notification::fake();
+    })
     ->in('Feature');
 
 pest()->extend(Tests\TestCase::class)

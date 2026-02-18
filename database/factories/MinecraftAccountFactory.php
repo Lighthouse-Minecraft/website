@@ -20,7 +20,7 @@ class MinecraftAccountFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
-            'username' => fake()->userName(),
+            'username' => 'Player'.fake()->numberBetween(100, 9999),
             'uuid' => fake()->uuid(),
             'account_type' => fake()->randomElement([MinecraftAccountType::Java, MinecraftAccountType::Bedrock]),
             'verified_at' => now(),
@@ -45,7 +45,7 @@ class MinecraftAccountFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'account_type' => MinecraftAccountType::Bedrock,
-            'username' => '.'.fake()->userName(),
+            'username' => '.Player'.fake()->numberBetween(100, 9999),
         ]);
     }
 }

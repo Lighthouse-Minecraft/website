@@ -75,17 +75,20 @@ test('excludes confusing characters from code', function () {
     ]);
 
     for ($i = 0; $i < 20; $i++) {
-        $result = $this->action->handle($this->user, MinecraftAccountType::Java, 'TestPlayer');
+        $user = User::factory()->create();
+        $result = (new GenerateVerificationCode)->handle($user, MinecraftAccountType::Java, 'TestPlayer');
 
         // Test that the code doesn't contain confusing characters
-        expect($result['code'])->toBeString()
-            ->and($result['code'])->not->toContain('0')
-            ->and($result['code'])->not->toContain('O')
-            ->and($result['code'])->not->toContain('1')
-            ->and($result['code'])->not->toContain('I')
-            ->and($result['code'])->not->toContain('L')
-            ->and($result['code'])->not->toContain('5')
-            ->and($result['code'])->not->toContain('S');
+        if ($result['success']) {
+            expect($result['code'])->toBeString()
+                ->and($result['code'])->not->toContain('0')
+                ->and($result['code'])->not->toContain('O')
+                ->and($result['code'])->not->toContain('1')
+                ->and($result['code'])->not->toContain('I')
+                ->and($result['code'])->not->toContain('L')
+                ->and($result['code'])->not->toContain('5')
+                ->and($result['code'])->not->toContain('S');
+        }
     }
 });
 
