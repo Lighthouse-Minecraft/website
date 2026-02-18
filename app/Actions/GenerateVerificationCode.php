@@ -125,11 +125,30 @@ class GenerateVerificationCode
             ];
         }
 
-        // Generate unique 6-character code (excluding confusing characters: 0, O, 1, I, l, 5, S)
+        // Generate unique 6-character code (excluding confusing characters: 0, O, 1, I, L, 5, S)
+        $allowedCharacters = '2346789ABCDEFGHJKMNPQRTUVWXYZ';
+        $codeLength = 6;
+        $maxAttempts = 100;
+        $attempts = 0;
+
         do {
-            $code = strtoupper(Str::random(6));
-            // Replace confusing characters
-            $code = str_replace(['0', 'O', '1', 'I', 'L', '5', 'S'], ['2', '3', '4', '6', '7', '8', '9'], $code);
+            $code = '';
+
+            for ($i = 0; $i < $codeLength; $i++) {
+                $index = random_int(0, strlen($allowedCharacters) - 1);
+                $code .= $allowedCharacters[$index];
+            }
+
+            $attempts++;
+
+            if ($attempts >= $maxAttempts && MinecraftVerification::where('code', $code)->exists()) {
+                return [
+                    'success' => false,
+                    'code' => null,
+                    'expires_at' => null,
+                    'error' => 'Unable to generate a verification code at this time. Please try again later.',
+                ];
+            }
         } while (MinecraftVerification::where('code', $code)->exists());
 
         // Calculate expiry time based on grace period

@@ -44,7 +44,7 @@ class RefreshMinecraftUsernames extends Command
         $accounts = MinecraftAccount::query()
             ->join('users', 'minecraft_accounts.user_id', '=', 'users.id')
             ->select('minecraft_accounts.*')
-            ->orderBy('users.last_login_at', 'desc')
+            ->orderByRaw('users.last_login_at IS NULL, users.last_login_at DESC')
             ->orderBy('minecraft_accounts.last_username_check_at', 'asc')
             ->limit($dailyBatchSize)
             ->get();
@@ -74,7 +74,8 @@ class RefreshMinecraftUsernames extends Command
                 // No change, just update check timestamp
                 $account->update(['last_username_check_at' => now()]);
             } else {
-                // API failed, skip this account for now
+                // API failed, update check timestamp to avoid blocking future batches
+                $account->update(['last_username_check_at' => now()]);
                 $this->warn("Failed to refresh username for {$account->username}");
                 $failed++;
             }
