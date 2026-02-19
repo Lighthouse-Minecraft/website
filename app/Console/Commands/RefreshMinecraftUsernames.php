@@ -41,9 +41,14 @@ class RefreshMinecraftUsernames extends Command
         $dailyBatchSize = max(1, ceil($totalAccounts / 30));
 
         // Select accounts prioritizing active users (by last_login_at) then oldest checks
+        // Skip accounts checked within the last 30 days
         $accounts = MinecraftAccount::query()
             ->join('users', 'minecraft_accounts.user_id', '=', 'users.id')
             ->select('minecraft_accounts.*')
+            ->where(function ($query) {
+                $query->whereNull('minecraft_accounts.last_username_check_at')
+                    ->orWhere('minecraft_accounts.last_username_check_at', '<', now()->subDays(30));
+            })
             ->orderByRaw('users.last_login_at IS NULL, users.last_login_at DESC')
             ->orderBy('minecraft_accounts.last_username_check_at', 'asc')
             ->limit($dailyBatchSize)
