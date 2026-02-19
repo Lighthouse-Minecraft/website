@@ -120,7 +120,7 @@ new class extends Component {
 
     {{-- Linked Accounts --}}
     @if($linkedAccounts->isNotEmpty())
-        <div class="space-y-3">
+        <div class="flex flex-col gap-3">
             <flux:heading size="lg">Your Linked Accounts</flux:heading>
 
             @foreach($linkedAccounts as $account)
@@ -177,7 +177,7 @@ new class extends Component {
 
                 <div class="space-y-2">
                     <flux:text class="font-semibold">Instructions:</flux:text>
-                    <ol class="list-decimal list-inside space-y-1 text-sm text-zinc-700 dark:text-zinc-300">
+                    <ol class="flex flex-col gap-1 list-decimal list-inside text-sm text-zinc-700 dark:text-zinc-300">
                         <li>Join the Minecraft server</li>
                         <li>Type in chat: <code class="px-2 py-1 bg-zinc-200 dark:bg-zinc-700 rounded">/verify {{ $verificationCode }}</code></li>
                         <li>Wait for confirmation (this page will update automatically)</li>

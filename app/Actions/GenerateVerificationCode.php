@@ -40,6 +40,7 @@ class GenerateVerificationCode
         $rateLimit = config('lighthouse.minecraft_verification_rate_limit_per_hour');
         $recentVerifications = MinecraftVerification::where('user_id', $user->id)
             ->where('created_at', '>=', now()->subHour())
+            ->pending()
             ->count();
 
         if ($recentVerifications >= $rateLimit) {
@@ -97,23 +98,19 @@ class GenerateVerificationCode
             }
         }
 
-        // Check if UUID is already linked to the current user
-        $userExistingAccount = MinecraftAccount::whereNormalizedUuid($uuid)
-            ->where('user_id', $user->id)
-            ->first();
-
-        if ($userExistingAccount) {
-            return [
-                'success' => false,
-                'code' => null,
-                'expires_at' => null,
-                'error' => 'You have already verified this Minecraft account.',
-            ];
-        }
-
-        // Check if UUID is already linked to another user
+        // Check if UUID is already linked (to this user or another)
         $existingAccount = MinecraftAccount::whereNormalizedUuid($uuid)->first();
-        if ($existingAccount && $existingAccount->user_id !== $user->id) {
+
+        if ($existingAccount) {
+            if ($existingAccount->user_id === $user->id) {
+                return [
+                    'success' => false,
+                    'code' => null,
+                    'expires_at' => null,
+                    'error' => 'You have already verified this Minecraft account.',
+                ];
+            }
+
             return [
                 'success' => false,
                 'code' => null,
@@ -171,17 +168,34 @@ class GenerateVerificationCode
             ];
         }
 
-        // Create verification record
-        MinecraftVerification::create([
-            'user_id' => $user->id,
-            'code' => $code,
-            'account_type' => $accountType,
-            'minecraft_username' => $verifiedUsername,
-            'minecraft_uuid' => $uuid,
-            'status' => 'pending',
-            'expires_at' => $expiresAt,
-            'whitelisted_at' => now(),
-        ]);
+        // Create verification record; undo whitelist on failure
+        try {
+            MinecraftVerification::create([
+                'user_id' => $user->id,
+                'code' => $code,
+                'account_type' => $accountType,
+                'minecraft_username' => $verifiedUsername,
+                'minecraft_uuid' => $uuid,
+                'status' => 'pending',
+                'expires_at' => $expiresAt,
+                'whitelisted_at' => now(),
+            ]);
+        } catch (\Exception $e) {
+            $rconService->executeCommand(
+                "whitelist remove {$verifiedUsername}",
+                'whitelist',
+                $verifiedUsername,
+                $user,
+                ['action' => 'cleanup_failed_verification']
+            );
+
+            return [
+                'success' => false,
+                'code' => null,
+                'expires_at' => null,
+                'error' => 'An error occurred. Please try again later.',
+            ];
+        }
 
         // Record activity
         RecordActivity::handle(

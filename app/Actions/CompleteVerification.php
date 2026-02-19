@@ -27,7 +27,7 @@ class CompleteVerification
 
         // Find pending verification by code
         $verification = MinecraftVerification::where('code', $code)
-            ->where('status', 'pending')
+            ->pending()
             ->first();
 
         if (! $verification) {
@@ -58,17 +58,17 @@ class CompleteVerification
             ];
         }
 
-        // Check if UUID is already linked to another user (normalize for comparison)
-        $existingAccount = MinecraftAccount::whereNormalizedUuid($uuid)->first();
-        if ($existingAccount && $existingAccount->user_id !== $verification->user_id) {
-            return [
-                'success' => false,
-                'message' => 'This Minecraft account is already linked to another user.',
-            ];
-        }
-
         try {
-            DB::transaction(function () use ($verification) {
+            DB::transaction(function () use ($verification, $uuid) {
+                // Re-check UUID uniqueness under lock to prevent race conditions
+                $existingAccount = MinecraftAccount::whereNormalizedUuid($uuid)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($existingAccount && $existingAccount->user_id !== $verification->user_id) {
+                    throw new \DomainException('This Minecraft account is already linked to another user.');
+                }
+
                 // Create permanent MinecraftAccount record
                 MinecraftAccount::create([
                     'user_id' => $verification->user_id,
@@ -93,6 +93,11 @@ class CompleteVerification
             return [
                 'success' => true,
                 'message' => 'Minecraft account successfully linked!',
+            ];
+        } catch (\DomainException $e) {
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
             ];
         } catch (\Exception $e) {
             Log::error('Minecraft verification completion failed', [

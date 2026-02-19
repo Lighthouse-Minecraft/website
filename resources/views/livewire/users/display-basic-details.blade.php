@@ -18,6 +18,7 @@ new class extends Component {
 
     public function mount(User $user) {
         $this->user = $user;
+        $this->user->load('minecraftAccounts');
         $this->currentDepartment = $user->staff_department?->name ?? 'None';
         $this->currentDepartmentValue = $user->staff_department?->value ?? null;
         $this->currentTitle = $user->staff_title;
