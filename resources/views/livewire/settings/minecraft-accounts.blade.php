@@ -124,7 +124,7 @@ new class extends Component {
             <flux:heading size="lg">Your Linked Accounts</flux:heading>
 
             @foreach($linkedAccounts as $account)
-                <flux:card class="p-4">
+                <flux:card wire:key="{{ $account->id }}" class="p-4">
                     <div class="flex items-center justify-between">
                         <div>
                             <flux:text class="font-semibold">{{ $account->username }}</flux:text>

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class McProfileService
 {
@@ -15,7 +16,7 @@ class McProfileService
     {
         try {
             $response = Http::timeout(5)->get(
-                "https://mcprofile.io/api/v1/bedrock/gamertag/{$gamertag}"
+                'https://mcprofile.io/api/v1/bedrock/gamertag/'.urlencode($gamertag)
             );
 
             if ($response->successful() && $response->json()) {
@@ -24,7 +25,7 @@ class McProfileService
 
             return null;
         } catch (\Exception $e) {
-            \Log::error('MCProfile API error', [
+            Log::error('MCProfile API error', [
                 'gamertag' => $gamertag,
                 'error' => $e->getMessage(),
             ]);
@@ -49,7 +50,7 @@ class McProfileService
 
             return null;
         } catch (\Exception $e) {
-            \Log::error('MCProfile API error', [
+            Log::error('MCProfile API error', [
                 'floodgate_uuid' => $floodgateUuid,
                 'error' => $e->getMessage(),
             ]);

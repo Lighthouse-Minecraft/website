@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class MojangApiService
 {
@@ -24,7 +25,7 @@ class MojangApiService
 
             return null;
         } catch (\Exception $e) {
-            \Log::error('Mojang API error', [
+            Log::error('Mojang API error', [
                 'username' => $username,
                 'error' => $e->getMessage(),
             ]);
@@ -49,7 +50,7 @@ class MojangApiService
 
             return null;
         } catch (\Exception $e) {
-            \Log::error('Mojang API error', [
+            Log::error('Mojang API error', [
                 'uuid' => $uuid,
                 'error' => $e->getMessage(),
             ]);

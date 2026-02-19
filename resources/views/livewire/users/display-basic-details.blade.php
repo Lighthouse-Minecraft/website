@@ -173,7 +173,7 @@ new class extends Component {
                 <flux:heading size="xl" class="mb-4">Minecraft Accounts</flux:heading>
                 <div class="space-y-2">
                     @foreach($user->minecraftAccounts as $account)
-                        <div class="flex items-center justify-between">
+                        <div wire:key="{{ $account->id }}" class="flex items-center justify-between">
                             <div>
                                 <flux:text class="font-semibold">{{ $account->username }}</flux:text>
                                 <flux:text class="text-sm text-zinc-500">{{ $account->account_type->label() }}</flux:text>

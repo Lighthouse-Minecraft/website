@@ -37,10 +37,6 @@ test('regular user cannot revoke', function () {
 });
 
 test('records activity for both admin and affected user', function () {
-    $account = MinecraftAccount::factory()->for($this->regularUser)->create();
-
-    $this->action->handle($account, $this->admin);
-
     // TODO: Enable when activity_log table is created
     // $this->assertDatabaseHas('activity_log', [
     //     'user_id' => $this->admin->id,
@@ -51,8 +47,7 @@ test('records activity for both admin and affected user', function () {
     //     'user_id' => $this->regularUser->id,
     //     'action' => 'minecraft_account_revoked',
     // ]);
-    expect(true)->toBeTrue(); // Placeholder
-});
+})->skip('Requires activity_log table to be created');
 
 test('sends sync whitelist remove command', function () {
     $account = MinecraftAccount::factory()->for($this->regularUser)->create([

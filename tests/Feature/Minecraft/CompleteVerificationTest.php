@@ -106,6 +106,8 @@ test('uses database transaction', function () {
         $this->action->handle('ABC123', 'TestPlayer', '069a79f4-44e9-4726-a5be-fca90e38aaf5');
     } catch (\Exception $e) {
         // Expected
+    } finally {
+        MinecraftAccount::flushEventListeners();
     }
 
     // Verification should not be marked complete due to rollback
@@ -116,21 +118,12 @@ test('uses database transaction', function () {
 });
 
 test('records activity log', function () {
-    $verification = MinecraftVerification::factory()->for($this->user)->pending()->create([
-        'code' => 'ABC123',
-        'minecraft_username' => 'TestPlayer',
-        'minecraft_uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
-    ]);
-
-    $this->action->handle('ABC123', 'TestPlayer', '069a79f4-44e9-4726-a5be-fca90e38aaf5');
-
     // TODO: Enable when activity_log table is created
     // $this->assertDatabaseHas('activity_log', [
     //     'user_id' => $this->user->id,
     //     'action' => 'minecraft_account_linked',
     // ]);
-    expect(true)->toBeTrue(); // Placeholder
-});
+})->skip('Requires activity_log table to be created');
 
 test('normalizes uuid with dashes', function () {
     $verification = MinecraftVerification::factory()->for($this->user)->pending()->create([

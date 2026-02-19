@@ -29,6 +29,7 @@ class CleanupExpiredVerifications extends Command
     {
         $expiredVerifications = MinecraftVerification::pending()
             ->expired()
+            ->with('user')
             ->get();
 
         if ($expiredVerifications->isEmpty()) {

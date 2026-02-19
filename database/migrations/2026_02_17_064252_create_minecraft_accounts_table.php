@@ -21,7 +21,6 @@ return new class extends Migration
             $table->timestamp('last_username_check_at')->nullable();
             $table->timestamps();
 
-            $table->index('user_id');
             $table->index('last_username_check_at');
         });
     }

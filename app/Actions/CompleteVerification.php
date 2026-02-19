@@ -5,6 +5,7 @@ namespace App\Actions;
 use App\Models\MinecraftAccount;
 use App\Models\MinecraftVerification;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class CompleteVerification
@@ -94,7 +95,7 @@ class CompleteVerification
                 'message' => 'Minecraft account successfully linked!',
             ];
         } catch (\Exception $e) {
-            \Log::error('Minecraft verification completion failed', [
+            Log::error('Minecraft verification completion failed', [
                 'code' => $code,
                 'error' => $e->getMessage(),
             ]);

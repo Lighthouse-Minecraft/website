@@ -39,7 +39,7 @@ test('cleanup command sends async whitelist remove', function () {
 })->skip('Queue/notification testing requires additional infrastructure setup');
 
 test('cleanup command runs successfully', function () {
-    MinecraftVerification::factory()->count(3)->expired()->create();
+    MinecraftVerification::factory()->count(3)->expired()->pending()->create();
 
     $exitCode = Artisan::call('minecraft:cleanup-expired');
 

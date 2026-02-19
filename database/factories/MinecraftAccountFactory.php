@@ -33,7 +33,7 @@ class MinecraftAccountFactory extends Factory
      */
     public function java(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn () => [
             'account_type' => MinecraftAccountType::Java,
         ]);
     }
@@ -43,7 +43,7 @@ class MinecraftAccountFactory extends Factory
      */
     public function bedrock(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn () => [
             'account_type' => MinecraftAccountType::Bedrock,
             'username' => '.Player'.fake()->numberBetween(100, 9999),
         ]);

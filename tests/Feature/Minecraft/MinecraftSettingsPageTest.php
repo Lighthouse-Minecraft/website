@@ -104,7 +104,7 @@ test('shows remaining account slots', function () {
 })->skip('Layout wrapper interferes with Volt component testing');
 
 test('shows max accounts reached', function () {
-    MinecraftAccount::factory()->count(2)->for($this->user)->create();
+    MinecraftAccount::factory()->count(config('lighthouse.max_minecraft_accounts'))->for($this->user)->create();
 
     Volt::test('settings.minecraft-accounts')
         ->assertSee('maximum');

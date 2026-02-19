@@ -69,11 +69,12 @@ class RefreshMinecraftUsernames extends Command
             }
 
             if ($newUsername && $newUsername !== $account->username) {
+                $oldUsername = $account->username;
                 $account->update([
                     'username' => $newUsername,
                     'last_username_check_at' => now(),
                 ]);
-                $this->info("Updated {$account->username} -> {$newUsername}");
+                $this->info("Updated {$oldUsername} -> {$newUsername}");
                 $updated++;
             } elseif ($newUsername) {
                 // No change, just update check timestamp

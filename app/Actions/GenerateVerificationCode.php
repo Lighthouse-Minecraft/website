@@ -8,7 +8,6 @@ use App\Models\User;
 use App\Services\McProfileService;
 use App\Services\MinecraftRconService;
 use App\Services\MojangApiService;
-use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class GenerateVerificationCode
@@ -175,7 +174,7 @@ class GenerateVerificationCode
         }
 
         // Create verification record
-        $verification = MinecraftVerification::create([
+        MinecraftVerification::create([
             'user_id' => $user->id,
             'code' => $code,
             'account_type' => $accountType,
