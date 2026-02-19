@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\MinecraftAccountType;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -32,5 +33,11 @@ class MinecraftAccount extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function scopeWhereNormalizedUuid(Builder $query, string $uuid): void
+    {
+        $normalized = str_replace('-', '', $uuid);
+        $query->whereRaw("REPLACE(uuid, '-', '') = ?", [$normalized]);
     }
 }

@@ -201,7 +201,7 @@ new class extends Component {
 
                 <flux:field>
                     <flux:label>Account Type</flux:label>
-                    <flux:radio.group wire:model="accountType">
+                    <flux:radio.group wire:model.live="accountType">
                         <flux:radio value="java" label="Java Edition" />
                         <flux:radio value="bedrock" label="Bedrock Edition" />
                     </flux:radio.group>

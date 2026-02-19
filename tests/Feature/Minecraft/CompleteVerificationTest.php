@@ -132,7 +132,9 @@ test('normalizes uuid with dashes', function () {
         'minecraft_uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
     ]);
 
-    $this->action->handle('ABC123', 'TestPlayer', '069a79f444e94726a5befca90e38aaf5');
+    $result = $this->action->handle('ABC123', 'TestPlayer', '069a79f444e94726a5befca90e38aaf5');
+
+    expect($result['success'])->toBeTrue();
 
     $this->assertDatabaseHas('minecraft_accounts', [
         'uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',

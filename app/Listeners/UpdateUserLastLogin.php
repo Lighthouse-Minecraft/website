@@ -13,9 +13,7 @@ class UpdateUserLastLogin
     public function handle(Login $event): void
     {
         if ($event->user instanceof Model) {
-            $event->user->update([
-                'last_login_at' => now(),
-            ]);
+            $event->user->forceFill(['last_login_at' => now()])->saveQuietly();
         }
     }
 }

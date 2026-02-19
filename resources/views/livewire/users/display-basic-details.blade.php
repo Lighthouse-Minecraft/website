@@ -171,7 +171,7 @@ new class extends Component {
         @if($user->minecraftAccounts->isNotEmpty())
             <flux:card class="w-full md:w-1/2 lg:w-1/3 {{ $user->staff_department ? 'md:mr-4' : 'md:mx-4' }} mb-6 md:mb-0 p-6">
                 <flux:heading size="xl" class="mb-4">Minecraft Accounts</flux:heading>
-                <div class="space-y-2">
+                <div class="flex flex-col gap-2">
                     @foreach($user->minecraftAccounts as $account)
                         <div wire:key="{{ $account->id }}" class="flex items-center justify-between">
                             <div>

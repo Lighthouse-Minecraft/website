@@ -3,6 +3,7 @@
 namespace App\Actions;
 
 use App\Enums\MinecraftAccountType;
+use App\Models\MinecraftAccount;
 use App\Models\MinecraftVerification;
 use App\Models\User;
 use App\Services\McProfileService;
@@ -96,12 +97,9 @@ class GenerateVerificationCode
             }
         }
 
-        // Normalize UUID for comparison (remove dashes if present)
-        $normalizedUuid = str_replace('-', '', $uuid);
-
         // Check if UUID is already linked to the current user
-        $userExistingAccount = \App\Models\MinecraftAccount::where('user_id', $user->id)
-            ->whereRaw("REPLACE(uuid, '-', '') = ?", [$normalizedUuid])
+        $userExistingAccount = MinecraftAccount::whereNormalizedUuid($uuid)
+            ->where('user_id', $user->id)
             ->first();
 
         if ($userExistingAccount) {
@@ -114,7 +112,7 @@ class GenerateVerificationCode
         }
 
         // Check if UUID is already linked to another user
-        $existingAccount = \App\Models\MinecraftAccount::whereRaw("REPLACE(uuid, '-', '') = ?", [$normalizedUuid])->first();
+        $existingAccount = MinecraftAccount::whereNormalizedUuid($uuid)->first();
         if ($existingAccount && $existingAccount->user_id !== $user->id) {
             return [
                 'success' => false,
@@ -140,7 +138,7 @@ class GenerateVerificationCode
 
             $attempts++;
 
-            if ($attempts >= $maxAttempts && MinecraftVerification::where('code', $code)->exists()) {
+            if ($attempts >= $maxAttempts) {
                 return [
                     'success' => false,
                     'code' => null,
