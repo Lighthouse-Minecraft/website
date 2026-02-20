@@ -53,7 +53,14 @@ new class extends Component {
         <flux:table.rows>
             @foreach ($this->accounts as $account)
                 <flux:table.row :key="$account->id">
-                    <flux:table.cell class="whitespace-nowrap">{{ $account->username }}</flux:table.cell>
+                    <flux:table.cell class="whitespace-nowrap">
+                        <div class="flex items-center gap-2">
+                            @if($account->avatar_url)
+                                <img src="{{ $account->avatar_url }}" alt="{{ $account->username }}" class="w-6 h-6 rounded" />
+                            @endif
+                            {{ $account->username }}
+                        </div>
+                    </flux:table.cell>
 
                     <flux:table.cell class="whitespace-nowrap">
                         <flux:link href="{{ route('profile.show', $account->user_id) }}">{{ $account->user_name }}</flux:link>

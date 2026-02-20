@@ -70,10 +70,12 @@ class CompleteVerification
                 }
 
                 // Create permanent MinecraftAccount record
+                $normalizedUuid = str_replace('-', '', $verification->minecraft_uuid);
                 MinecraftAccount::create([
                     'user_id' => $verification->user_id,
                     'username' => $verification->minecraft_username,
                     'uuid' => $verification->minecraft_uuid,
+                    'avatar_url' => 'https://mc-heads.net/avatar/'.$normalizedUuid,
                     'account_type' => $verification->account_type,
                     'verified_at' => now(),
                     'last_username_check_at' => now(),

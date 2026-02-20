@@ -169,15 +169,29 @@ new class extends Component {
             </flux:card>
         @endif
 
-        @if($user->minecraftAccounts->isNotEmpty())
-            <flux:card class="w-full md:w-1/2 lg:w-1/3 {{ $user->staff_department ? 'md:mr-4' : 'md:mx-4' }} mb-6 md:mb-0 p-6">
+        @can('viewPii', $user)
+            <flux:card class="w-full md:w-1/2 lg:w-1/3 {{ $user->staff_department ? 'md:ml-4' : 'md:mx-4' }} p-6 space-y-2">
+                <flux:heading size="xl" class="mb-4">Contact Information</flux:heading>
+                <flux:text>Email: {{ $user->email }}</flux:text>
+            </flux:card>
+        @endcan
+    </div>
+
+    @if($user->minecraftAccounts->isNotEmpty())
+        <div class="w-full md:w-1/3 mt-6">
+            <flux:card class="p-6">
                 <flux:heading size="xl" class="mb-4">Minecraft Accounts</flux:heading>
                 <div class="flex flex-col gap-2">
                     @foreach($user->minecraftAccounts as $account)
                         <div wire:key="{{ $account->id }}" class="flex items-center justify-between">
-                            <div>
-                                <flux:text class="font-semibold">{{ $account->username }}</flux:text>
-                                <flux:text class="text-sm text-zinc-500">{{ $account->account_type->label() }}</flux:text>
+                            <div class="flex items-center gap-3">
+                                @if($account->avatar_url)
+                                    <img src="{{ $account->avatar_url }}" alt="{{ $account->username }}" class="w-8 h-8 rounded" />
+                                @endif
+                                <div>
+                                    <flux:text class="font-semibold">{{ $account->username }}</flux:text>
+                                    <flux:text class="text-sm text-zinc-500">{{ $account->account_type->label() }}</flux:text>
+                                </div>
                             </div>
                             @if(Auth::user()->isAdmin())
                                 <flux:button
@@ -192,15 +206,8 @@ new class extends Component {
                     @endforeach
                 </div>
             </flux:card>
-        @endif
-
-        @can('viewPii', $user)
-            <flux:card class="w-full md:w-1/2 lg:w-1/3 {{ $user->staff_department ? 'md:ml-4' : 'md:mx-4' }} p-6 space-y-2">
-                <flux:heading size="xl" class="mb-4">Contact Information</flux:heading>
-                <flux:text>Email: {{ $user->email }}</flux:text>
-            </flux:card>
-        @endcan
-    </div>
+        </div>
+    @endif
 
     <flux:modal name="manage-users-staff-position" class="w-full md:w-1/2 xl:w-1/3">
         <div class="space-y-6">

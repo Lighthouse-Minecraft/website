@@ -16,6 +16,7 @@ class MinecraftAccount extends Model
         'user_id',
         'username',
         'uuid',
+        'avatar_url',
         'account_type',
         'verified_at',
         'last_username_check_at',

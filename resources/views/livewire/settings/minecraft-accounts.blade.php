@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\GenerateVerificationCode;
+use App\Actions\SendMinecraftCommand;
 use App\Actions\UnlinkMinecraftAccount;
 use App\Enums\MinecraftAccountType;
 use App\Models\MinecraftAccount;
@@ -55,6 +56,35 @@ new class extends Component {
             $this->errorMessage = $result['error'];
             Flux::toast($result['error'], variant: 'danger');
         }
+    }
+
+    public function cancelVerification(): void
+    {
+        if (! $this->verificationCode) {
+            return;
+        }
+
+        $verification = MinecraftVerification::where('code', $this->verificationCode)
+            ->where('user_id', auth()->id())
+            ->pending()
+            ->first();
+
+        if ($verification) {
+            // Async whitelist remove — same pattern as CleanupExpiredVerifications
+            SendMinecraftCommand::dispatch(
+                "whitelist remove {$verification->minecraft_username}",
+                'whitelist',
+                $verification->minecraft_username,
+                auth()->user(),
+                ['action' => 'cancel_verification', 'verification_id' => $verification->id]
+            );
+
+            $verification->update(['status' => 'expired']);
+        }
+
+        $this->verificationCode = null;
+        $this->expiresAt = null;
+        Flux::toast('Verification cancelled.', variant: 'warning');
     }
 
     public function checkVerification(): void
@@ -126,11 +156,16 @@ new class extends Component {
             @foreach($linkedAccounts as $account)
                 <flux:card wire:key="{{ $account->id }}" class="p-4">
                     <div class="flex items-center justify-between">
-                        <div>
-                            <flux:text class="font-semibold">{{ $account->username }}</flux:text>
-                            <flux:text class="text-sm text-zinc-500">
-                                {{ $account->account_type->label() }} • Verified {{ $account->verified_at->diffForHumans() }}
-                            </flux:text>
+                        <div class="flex items-center gap-3">
+                            @if($account->avatar_url)
+                                <img src="{{ $account->avatar_url }}" alt="{{ $account->username }}" class="w-8 h-8 rounded" />
+                            @endif
+                            <div>
+                                <flux:text class="font-semibold">{{ $account->username }}</flux:text>
+                                <flux:text class="text-sm text-zinc-500">
+                                    {{ $account->account_type->label() }} • Verified {{ $account->verified_at->diffForHumans() }}
+                                </flux:text>
+                            </div>
                         </div>
                         <flux:button
                             wire:click="remove({{ $account->id }})"
@@ -183,6 +218,16 @@ new class extends Component {
                         <li>Wait for confirmation (this page will update automatically)</li>
                     </ol>
                 </div>
+
+                <div class="flex justify-end pt-2">
+                    <flux:button
+                        wire:click="cancelVerification"
+                        variant="ghost"
+                        size="sm"
+                        wire:confirm="Cancel this verification? You will need to generate a new code to link your account.">
+                        Cancel Verification
+                    </flux:button>
+                </div>
             </div>
         </flux:card>
     @endif
@@ -207,11 +252,24 @@ new class extends Component {
                     </flux:radio.group>
                 </flux:field>
 
-                <flux:input
-                    wire:model="username"
-                    label="Minecraft Username"
-                    placeholder="{{ $accountType === 'java' ? 'JavaPlayer123' : 'BedrockGamer456' }}"
-                    required />
+                <div class="flex items-end gap-4">
+                    <div class="flex-1">
+                        <flux:input
+                            wire:model.live.debounce.600ms="username"
+                            label="Minecraft Username"
+                            placeholder="{{ $accountType === 'java' ? 'JavaPlayer123' : 'BedrockGamer456' }}"
+                            required />
+                    </div>
+                    @if($accountType === 'java' && strlen($username) >= 3)
+                        <div class="flex-shrink-0 mb-0.5">
+                            <img
+                                src="https://mc-heads.net/avatar/{{ urlencode($username) }}/48"
+                                alt="{{ $username }}"
+                                class="w-12 h-12 rounded pixelated"
+                                title="{{ $username }}" />
+                        </div>
+                    @endif
+                </div>
 
                 <flux:button type="submit" variant="primary">
                     Generate Verification Code
