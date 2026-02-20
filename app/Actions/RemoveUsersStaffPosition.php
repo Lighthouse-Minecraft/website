@@ -25,6 +25,9 @@ class RemoveUsersStaffPosition
 
         \App\Actions\RecordActivity::run($user, 'staff_position_removed', $updateText);
 
+        // Remove the MC staff rank for all active Minecraft accounts
+        SyncMinecraftStaff::run($user);
+
         return true;
     }
 }

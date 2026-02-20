@@ -47,6 +47,11 @@ class SetUsersStaffPosition
 
         \App\Actions\RecordActivity::run($user, 'staff_position_updated', $updateText);
 
+        // Sync MC staff rank when the department changes (department = MC group)
+        if ($existingDepartment !== $department) {
+            SyncMinecraftStaff::run($user, $department);
+        }
+
         return true;
     }
 }

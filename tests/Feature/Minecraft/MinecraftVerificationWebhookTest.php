@@ -90,7 +90,6 @@ test('rejects non-existent verification code', function () {
     $response->assertSuccessful()
         ->assertJson([
             'success' => false,
-
         ]);
 });
 
@@ -131,7 +130,6 @@ test('rejects already completed verification', function () {
     $response->assertSuccessful()
         ->assertJson([
             'success' => false,
-
         ]);
 });
 
@@ -143,6 +141,8 @@ test('rejects duplicate uuid', function () {
 
     $verification = MinecraftVerification::factory()->for($this->user)->pending()->create([
         'code' => 'ABC123',
+        'minecraft_uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
+        'minecraft_username' => 'TestPlayer',
     ]);
 
     $response = $this->postJson('/api/minecraft/verify', [
@@ -203,8 +203,18 @@ test('rate limits requests', function () {
 });
 
 test('case insensitive code matching', function () {
-    $verification = MinecraftVerification::factory()->for($this->user)->pending()->create([
+    MinecraftVerification::factory()->for($this->user)->pending()->create([
         'code' => 'ABC123',
+        'minecraft_username' => 'TestPlayer',
+        'minecraft_uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
+        'account_type' => MinecraftAccountType::Java,
+    ]);
+
+    MinecraftAccount::factory()->for($this->user)->verifying()->create([
+        'username' => 'TestPlayer',
+        'uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
+        'account_type' => MinecraftAccountType::Java,
+        'command_id' => 'TestPlayer',
     ]);
 
     $response = $this->postJson('/api/minecraft/verify', [
@@ -218,8 +228,18 @@ test('case insensitive code matching', function () {
 });
 
 test('records activity log on successful verification', function () {
-    $verification = MinecraftVerification::factory()->for($this->user)->pending()->create([
+    MinecraftVerification::factory()->for($this->user)->pending()->create([
         'code' => 'ABC123',
+        'minecraft_username' => 'TestPlayer',
+        'minecraft_uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
+        'account_type' => MinecraftAccountType::Java,
+    ]);
+
+    MinecraftAccount::factory()->for($this->user)->verifying()->create([
+        'username' => 'TestPlayer',
+        'uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
+        'account_type' => MinecraftAccountType::Java,
+        'command_id' => 'TestPlayer',
     ]);
 
     $this->postJson('/api/minecraft/verify', [

@@ -43,6 +43,7 @@ class RefreshMinecraftUsernames extends Command
         // Select only active accounts, prioritizing active users (by last_login_at) then oldest checks
         // Skip accounts checked within the last 30 days
         $accounts = MinecraftAccount::active()
+            ->with('user')
             ->join('users', 'minecraft_accounts.user_id', '=', 'users.id')
             ->select('minecraft_accounts.*')
             ->where(function ($query) {

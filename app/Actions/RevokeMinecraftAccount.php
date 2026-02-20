@@ -5,6 +5,7 @@ namespace App\Actions;
 use App\Models\MinecraftAccount;
 use App\Models\User;
 use App\Services\MinecraftRconService;
+use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class RevokeMinecraftAccount
@@ -28,9 +29,19 @@ class RevokeMinecraftAccount
         $accountType = $account->account_type;
         $affectedUser = $account->user;
 
-        // Send whitelist remove command synchronously for immediate effect
         $rconService = app(MinecraftRconService::class);
+
+        // Reset the player's MC rank to default synchronously before removing from whitelist
         $rconService->executeCommand(
+            "lh setmember {$account->command_id} default",
+            'rank',
+            $account->command_id,
+            $admin,
+            ['action' => 'revoke_rank_reset', 'affected_user_id' => $affectedUser->id]
+        );
+
+        // Remove from whitelist synchronously; only delete the record if it succeeds
+        $whitelistResult = $rconService->executeCommand(
             $account->whitelistRemoveCommand(),
             'whitelist',
             $account->command_id,
@@ -38,7 +49,21 @@ class RevokeMinecraftAccount
             ['action' => 'revoke', 'affected_user_id' => $affectedUser->id]
         );
 
-        // Delete the account
+        if (! $whitelistResult['success']) {
+            Log::error('Failed to remove whitelist during account revocation', [
+                'account_id' => $account->id,
+                'command_id' => $account->command_id,
+                'response' => $whitelistResult['response'] ?? null,
+                'error' => $whitelistResult['error'] ?? null,
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'Failed to remove player from server whitelist. Account has not been deleted.',
+            ];
+        }
+
+        // Delete the account only after successful whitelist removal
         $account->delete();
 
         // Record activity for both admin and affected user
