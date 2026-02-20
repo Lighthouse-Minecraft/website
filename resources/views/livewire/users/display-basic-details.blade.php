@@ -18,6 +18,7 @@ new class extends Component {
 
     public function mount(User $user) {
         $this->user = $user;
+        $this->user->load('minecraftAccounts');
         $this->currentDepartment = $user->staff_department?->name ?? 'None';
         $this->currentDepartmentValue = $user->staff_department?->value ?? null;
         $this->currentTitle = $user->staff_title;
@@ -104,6 +105,35 @@ new class extends Component {
         Flux::modal('manage-users-staff-position')->close();
     }
 
+    public function revokeMinecraftAccount(int $accountId) {
+        if (!Auth::user()->isAdmin()) {
+            Flux::toast(
+                text: 'You do not have permission to revoke Minecraft accounts.',
+                heading: 'Error',
+                variant: 'danger'
+            );
+            return;
+        }
+
+        $account = \App\Models\MinecraftAccount::findOrFail($accountId);
+        $result = \App\Actions\RevokeMinecraftAccount::run($account, Auth::user());
+
+        if ($result['success']) {
+            Flux::toast(
+                text: $result['message'],
+                heading: 'Success',
+                variant: 'success'
+            );
+            $this->user->refresh();
+        } else {
+            Flux::toast(
+                text: $result['message'],
+                heading: 'Error',
+                variant: 'danger'
+            );
+        }
+    }
+
 }; ?>
 
 <div>
@@ -146,6 +176,38 @@ new class extends Component {
             </flux:card>
         @endcan
     </div>
+
+    @if($user->minecraftAccounts->isNotEmpty())
+        <div class="w-full md:w-1/3 mt-6">
+            <flux:card class="p-6">
+                <flux:heading size="xl" class="mb-4">Minecraft Accounts</flux:heading>
+                <div class="flex flex-col gap-2">
+                    @foreach($user->minecraftAccounts as $account)
+                        <div wire:key="{{ $account->id }}" class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                @if($account->avatar_url)
+                                    <img src="{{ $account->avatar_url }}" alt="{{ $account->username }}" class="w-8 h-8 rounded" />
+                                @endif
+                                <div>
+                                    <flux:text class="font-semibold">{{ $account->username }}</flux:text>
+                                    <flux:text class="text-sm text-zinc-500">{{ $account->account_type->label() }}</flux:text>
+                                </div>
+                            </div>
+                            @if(Auth::user()->isAdmin())
+                                <flux:button
+                                    wire:click="revokeMinecraftAccount({{ $account->id }})"
+                                    variant="danger"
+                                    size="sm"
+                                    wire:confirm="Are you sure you want to revoke this Minecraft account from {{ $user->name }}?">
+                                    Revoke
+                                </flux:button>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+            </flux:card>
+        </div>
+    @endif
 
     <flux:modal name="manage-users-staff-position" class="w-full md:w-1/2 xl:w-1/3">
         <div class="space-y-6">

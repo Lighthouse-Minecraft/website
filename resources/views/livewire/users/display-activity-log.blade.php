@@ -16,7 +16,7 @@ new class extends Component {
             'activities' => ActivityLog::relevantTo($this->user)
                 ->with(['causer', 'subject'])
                 ->latest()
-                ->paginate(25),
+                ->paginate(10),
         ];
     }
 }; ?>

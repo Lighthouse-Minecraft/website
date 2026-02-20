@@ -27,5 +27,7 @@ class PromoteUser
         $user->save();
 
         \App\Actions\RecordActivity::handle($user, 'user_promoted', "Promoted from {$current->label()} to {$nextLevel->label()}.");
+
+        SyncMinecraftRanks::run($user);
     }
 }

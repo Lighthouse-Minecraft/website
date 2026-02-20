@@ -25,6 +25,7 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('settings/password', 'settings.password')->name('settings.password');
     Volt::route('settings/appearance', 'settings.appearance')->name('settings.appearance');
     Volt::route('settings/notifications', 'settings.notifications')->name('settings.notifications');
+    Volt::route('settings/minecraft-accounts', 'settings.minecraft-accounts')->name('settings.minecraft-accounts');
 });
 
 Route::get('/profile/{user}', [UserController::class, 'show'])
@@ -94,6 +95,31 @@ Route::prefix('meetings')
     });
 
 Route::get('/donate', [DonationController::class, 'index'])->name('donate');
+
+// Minecraft verification webhook - throttled to 30 requests per minute
+Route::post('/api/minecraft/verify', function (\Illuminate\Http\Request $request) {
+    // Verify server token first
+    if ($request->server_token !== config('services.minecraft.verification_token')) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Invalid server token.',
+        ], 401);
+    }
+
+    $request->validate([
+        'code' => 'required|string|size:6',
+        'minecraft_username' => 'required|string',
+        'minecraft_uuid' => 'required|string',
+    ]);
+
+    $result = \App\Actions\CompleteVerification::run(
+        $request->code,
+        $request->minecraft_username,
+        $request->minecraft_uuid
+    );
+
+    return response()->json($result);
+})->middleware('throttle:30,1');
 
 require __DIR__.'/auth.php';
 

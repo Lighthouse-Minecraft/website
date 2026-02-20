@@ -23,6 +23,16 @@
             <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 <livewire:dashboard.announcements-widget />
 
+                @if(auth()->user()->minecraftAccounts()->doesntExist())
+                    <flux:card class="flex flex-col items-center justify-center gap-3 py-8 text-center">
+                        <flux:heading size="md">Minecraft Account</flux:heading>
+                        <flux:text variant="subtle">Link your Minecraft account to join the server.</flux:text>
+                        <flux:button href="{{ route('settings.minecraft-accounts') }}" variant="primary" icon="plus">
+                            Add Your Minecraft Account
+                        </flux:button>
+                    </flux:card>
+                @endif
+
                 <flux:card>
                     <flux:heading>Donations</flux:heading>
                     <flux:separator variant="subtle" class="my-2" />
