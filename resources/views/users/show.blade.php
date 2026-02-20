@@ -9,7 +9,7 @@
         </flux:modal.trigger>
     </div>
 
-    <flux:modal name="activity-log-modal" class="w-full xl:w-1/2">
+    <flux:modal name="activity-log-modal" class="w-full max-w-7xl">
         <livewire:users.display-activity-log :user="$user" />
     </flux:modal>
 </x-layouts.app>

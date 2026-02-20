@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\CompleteVerification;
 use App\Actions\GenerateVerificationCode;
 use App\Actions\UnlinkMinecraftAccount;
 use App\Enums\MinecraftAccountStatus;
@@ -12,6 +13,7 @@ use Livewire\Volt\Component;
 
 new class extends Component {
     public string $accountType = 'java';
+    public ?MinecraftAccount $selectedAccount = null;
 
     public string $username = '';
 
@@ -20,6 +22,15 @@ new class extends Component {
     public ?\Carbon\Carbon $expiresAt = null;
 
     public ?string $errorMessage = null;
+
+    public function showAccount(int $accountId): void
+    {
+        $this->selectedAccount = MinecraftAccount::with('user')->find($accountId);
+
+        if ($this->selectedAccount) {
+            $this->modal('mc-account-detail')->show();
+        }
+    }
 
     public function mount(): void
     {
@@ -134,6 +145,41 @@ new class extends Component {
         }
     }
 
+    public function simulateVerification(): void
+    {
+        abort_unless(app()->isLocal(), 403);
+
+        if (! $this->verificationCode) {
+            return;
+        }
+
+        $verification = MinecraftVerification::where('code', $this->verificationCode)
+            ->where('user_id', auth()->id())
+            ->pending()
+            ->first();
+
+        if (! $verification) {
+            Flux::toast('No pending verification found.', variant: 'danger');
+
+            return;
+        }
+
+        $result = CompleteVerification::run(
+            $verification->code,
+            $verification->minecraft_username,
+            $verification->minecraft_uuid,
+        );
+
+        if ($result['success']) {
+            $this->verificationCode = null;
+            $this->expiresAt = null;
+            $this->username = '';
+            Flux::toast('Verification simulated successfully!', variant: 'success');
+        } else {
+            Flux::toast('Simulation failed: '.$result['message'], variant: 'danger');
+        }
+    }
+
     public function remove(int $accountId): void
     {
         $account = MinecraftAccount::findOrFail($accountId);
@@ -179,7 +225,7 @@ new class extends Component {
                             @endif
                             <div>
                                 <div class="flex items-center gap-2">
-                                    <flux:text class="font-semibold">{{ $account->username }}</flux:text>
+                                    <button wire:click="showAccount({{ $account->id }})" class="font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">{{ $account->username }}</button>
                                     <flux:badge color="{{ $account->status->color() }}" size="sm">
                                         {{ $account->status->label() }}
                                     </flux:badge>
@@ -248,7 +294,18 @@ new class extends Component {
                     </ol>
                 </div>
 
-                <div class="flex justify-end pt-2">
+                <div class="flex justify-between items-center pt-2">
+                    @if(app()->isLocal())
+                        <flux:button
+                            wire:click="simulateVerification"
+                            variant="filled"
+                            size="sm"
+                            class="bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900 dark:text-amber-200 dark:hover:bg-amber-800">
+                            ⚙ Simulate Verification
+                        </flux:button>
+                    @else
+                        <div></div>
+                    @endif
                     <flux:button
                         wire:click="cancelVerification"
                         variant="ghost"
@@ -306,5 +363,6 @@ new class extends Component {
             </form>
         </flux:card>
     @endif
+    <x-minecraft.mc-account-detail-modal :account="$selectedAccount" />
 </div>
 </x-settings.layout>

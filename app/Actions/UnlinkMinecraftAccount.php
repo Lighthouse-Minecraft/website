@@ -44,6 +44,12 @@ class UnlinkMinecraftAccount
             ['action' => 'unlink_rank_reset']
         );
 
+        RecordActivity::handle(
+            $user,
+            'minecraft_rank_reset',
+            "Reset Minecraft rank to default for {$username}"
+        );
+
         // Remove from whitelist using the correct command for account type
         SendMinecraftCommand::dispatch(
             $account->whitelistRemoveCommand(),
@@ -51,6 +57,12 @@ class UnlinkMinecraftAccount
             $account->command_id,
             $user,
             ['action' => 'unlink']
+        );
+
+        RecordActivity::handle(
+            $user,
+            'minecraft_whitelist_removed',
+            "Removed {$username} from server whitelist"
         );
 
         // Delete the account

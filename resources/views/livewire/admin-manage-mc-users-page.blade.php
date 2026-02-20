@@ -10,6 +10,7 @@ new class extends Component {
 
     public string $sortBy = 'username';
     public string $sortDirection = 'asc';
+    public ?MinecraftAccount $selectedAccount = null;
 
     public function sort(string $column): void
     {
@@ -18,6 +19,15 @@ new class extends Component {
         } else {
             $this->sortBy = $column;
             $this->sortDirection = 'asc';
+        }
+    }
+
+    public function showAccount(int $accountId): void
+    {
+        $this->selectedAccount = MinecraftAccount::with('user')->find($accountId);
+
+        if ($this->selectedAccount) {
+            $this->modal('mc-account-detail')->show();
         }
     }
 
@@ -54,12 +64,13 @@ new class extends Component {
             @foreach ($this->accounts as $account)
                 <flux:table.row :key="$account->id">
                     <flux:table.cell class="whitespace-nowrap">
-                        <div class="flex items-center gap-2">
+                        <button wire:click="showAccount({{ $account->id }})"
+                                class="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
                             @if($account->avatar_url)
                                 <img src="{{ $account->avatar_url }}" alt="{{ $account->username }}" class="w-6 h-6 rounded" />
                             @endif
                             {{ $account->username }}
-                        </div>
+                        </button>
                     </flux:table.cell>
 
                     <flux:table.cell class="whitespace-nowrap">
@@ -77,4 +88,6 @@ new class extends Component {
             @endforeach
         </flux:table.rows>
     </flux:table>
+
+    <x-minecraft.mc-account-detail-modal :account="$selectedAccount" />
 </div>

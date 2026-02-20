@@ -1,6 +1,7 @@
 <?php
 
 use Livewire\Volt\Component;
+use App\Models\MinecraftAccount;
 use App\Models\User;
 use App\Enums\MembershipLevel;
 use Illuminate\Support\Facades\Auth;
@@ -9,6 +10,7 @@ use Flux\Flux;
 
 new class extends Component {
     public User $user;
+    public ?MinecraftAccount $selectedAccount = null;
     public $currentDepartment;
     public $currentDepartmentValue;
     public $currentTitle;
@@ -105,6 +107,15 @@ new class extends Component {
         Flux::modal('manage-users-staff-position')->close();
     }
 
+    public function showAccount(int $accountId): void
+    {
+        $this->selectedAccount = MinecraftAccount::with('user')->find($accountId);
+
+        if ($this->selectedAccount) {
+            $this->modal('mc-account-detail')->show();
+        }
+    }
+
     public function revokeMinecraftAccount(int $accountId) {
         if (!Auth::user()->isAdmin()) {
             Flux::toast(
@@ -177,10 +188,11 @@ new class extends Component {
         @endcan
     </div>
 
-    @if($user->minecraftAccounts->isNotEmpty())
-        <div class="w-full md:w-1/3 mt-6">
-            <flux:card class="p-6">
-                <flux:heading size="xl" class="mb-4">Minecraft Accounts</flux:heading>
+    <div class="w-full md:w-1/3 mt-6">
+        <flux:card class="p-6">
+            <flux:heading size="xl" class="mb-4">Minecraft Accounts</flux:heading>
+
+            @if($user->minecraftAccounts->isNotEmpty())
                 <div class="flex flex-col gap-2">
                     @foreach($user->minecraftAccounts as $account)
                         <div wire:key="{{ $account->id }}" class="flex items-center justify-between">
@@ -189,7 +201,7 @@ new class extends Component {
                                     <img src="{{ $account->avatar_url }}" alt="{{ $account->username }}" class="w-8 h-8 rounded" />
                                 @endif
                                 <div>
-                                    <flux:text class="font-semibold">{{ $account->username }}</flux:text>
+                                    <button wire:click="showAccount({{ $account->id }})" class="font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">{{ $account->username }}</button>
                                     <flux:text class="text-sm text-zinc-500">{{ $account->account_type->label() }}</flux:text>
                                 </div>
                             </div>
@@ -205,9 +217,21 @@ new class extends Component {
                         </div>
                     @endforeach
                 </div>
-            </flux:card>
-        </div>
-    @endif
+            @else
+                <flux:text class="text-zinc-500 dark:text-zinc-400 text-sm">No Minecraft accounts linked.</flux:text>
+
+                @if(auth()->id() === $user->id)
+                    <div class="mt-4">
+                        <flux:button :href="route('settings.minecraft-accounts')" size="sm" variant="primary">
+                            Add Account
+                        </flux:button>
+                    </div>
+                @endif
+            @endif
+        </flux:card>
+    </div>
+
+    <x-minecraft.mc-account-detail-modal :account="$selectedAccount" />
 
     <flux:modal name="manage-users-staff-position" class="w-full md:w-1/2 xl:w-1/3">
         <div class="space-y-6">

@@ -208,6 +208,12 @@ class GenerateVerificationCode
             ];
         }
 
+        RecordActivity::handle(
+            $user,
+            'minecraft_whitelisted',
+            "Added {$verifiedUsername} to server whitelist"
+        );
+
         // Create verification record; roll back account + whitelist on failure
         try {
             MinecraftVerification::create([

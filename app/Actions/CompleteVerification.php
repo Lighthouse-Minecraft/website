@@ -110,6 +110,12 @@ class CompleteVerification
                     $verification->user,
                     ['action' => 'set_rank_on_verify', 'account_id' => $this->completedAccount->id]
                 );
+
+                RecordActivity::handle(
+                    $verification->user,
+                    'minecraft_rank_assigned',
+                    "Assigned Minecraft rank '{$rank}' to {$this->completedAccount->username}"
+                );
             }
 
             return [

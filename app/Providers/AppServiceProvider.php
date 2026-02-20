@@ -13,7 +13,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        if ($this->app->isLocal()) {
+            $this->app->bind(
+                \App\Services\MinecraftRconService::class,
+                \App\Services\FakeMinecraftRconService::class,
+            );
+        }
     }
 
     /**

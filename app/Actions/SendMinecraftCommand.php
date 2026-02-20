@@ -28,6 +28,12 @@ class SendMinecraftCommand
         array $meta = [],
         bool $async = true
     ): void {
+        // In local dev, bypass the queue so FakeMinecraftRconService fires immediately
+        // without needing a queue worker running.
+        if (app()->isLocal()) {
+            $async = false;
+        }
+
         if ($async) {
             // Dispatch as a queued notification
             \Illuminate\Support\Facades\Notification::route('minecraft', 'server')
