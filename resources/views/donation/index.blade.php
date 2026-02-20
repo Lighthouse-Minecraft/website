@@ -8,7 +8,7 @@
     <flux:text>Here’s how the community is helping cover our monthly costs:</flux:text>
     <flux:text variant="subtle" size="sm" class="my-1">(Amounts are currently updated at least every 2 weeks)</flux:text>
 
-    <div class="flex w-full">
+    <div class="flex flex-wrap w-full">
         @if(config('lighthouse.donation_current_month_name'))
             <flux:card class="overflow-hidden min-w-[12rem] my-6 w-full md:w-1/6 mx-2">
                 <flux:text>{{ config('lighthouse.donation_current_month_name') }}</flux:text>
