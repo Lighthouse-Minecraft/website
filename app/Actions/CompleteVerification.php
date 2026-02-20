@@ -2,6 +2,7 @@
 
 namespace App\Actions;
 
+use App\Enums\MinecraftAccountStatus;
 use App\Models\MinecraftAccount;
 use App\Models\MinecraftVerification;
 use Illuminate\Support\Facades\DB;
@@ -11,6 +12,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class CompleteVerification
 {
     use AsAction;
+
+    private ?MinecraftAccount $completedAccount = null;
 
     /**
      * Complete the verification process when a user enters the code in-game
@@ -60,24 +63,27 @@ class CompleteVerification
 
         try {
             DB::transaction(function () use ($verification, $uuid) {
-                // Re-check UUID uniqueness under lock to prevent race conditions
-                $existingAccount = MinecraftAccount::whereNormalizedUuid($uuid)
+                // Find the verifying MinecraftAccount created by GenerateVerificationCode
+                $account = MinecraftAccount::whereNormalizedUuid($uuid)
                     ->lockForUpdate()
                     ->first();
 
-                if ($existingAccount && $existingAccount->user_id !== $verification->user_id) {
+                if (! $account) {
+                    throw new \DomainException('Account record not found. Please generate a new verification code.');
+                }
+
+                if ($account->user_id !== $verification->user_id) {
                     throw new \DomainException('This Minecraft account is already linked to another user.');
                 }
 
-                // Create permanent MinecraftAccount record
-                $normalizedUuid = str_replace('-', '', $verification->minecraft_uuid);
-                MinecraftAccount::create([
-                    'user_id' => $verification->user_id,
-                    'username' => $verification->minecraft_username,
-                    'uuid' => $verification->minecraft_uuid,
-                    'avatar_url' => 'https://mc-heads.net/avatar/'.$normalizedUuid,
-                    'account_type' => $verification->account_type,
-                    'verified_at' => now(),
+                if ($account->status !== MinecraftAccountStatus::Verifying) {
+                    throw new \DomainException('Account is not in a verifying state.');
+                }
+
+                // Promote to active
+                $account->update([
+                    'status'                 => MinecraftAccountStatus::Active,
+                    'verified_at'            => now(),
                     'last_username_check_at' => now(),
                 ]);
 
@@ -90,7 +96,21 @@ class CompleteVerification
                     'minecraft_account_linked',
                     "Linked {$verification->account_type->label()} account: {$verification->minecraft_username}"
                 );
+
+                $this->completedAccount = $account;
             });
+
+            // Dispatch rank assignment OUTSIDE the transaction so the job sees committed data
+            if ($this->completedAccount) {
+                $rank = config('lighthouse.minecraft_member_rank');
+                SendMinecraftCommand::dispatch(
+                    "lh setmember {$this->completedAccount->command_id} {$rank}",
+                    'rank',
+                    $this->completedAccount->command_id,
+                    $verification->user,
+                    ['action' => 'set_rank_on_verify', 'account_id' => $this->completedAccount->id]
+                );
+            }
 
             return [
                 'success' => true,

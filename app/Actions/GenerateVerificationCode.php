@@ -25,7 +25,7 @@ class GenerateVerificationCode
         MinecraftAccountType $accountType,
         string $username
     ): array {
-        // Check if user has reached max accounts
+        // Check if user has reached max accounts (all statuses count toward the limit)
         $maxAccounts = config('lighthouse.max_minecraft_accounts');
         if ($user->minecraftAccounts()->count() >= $maxAccounts) {
             return [
@@ -98,7 +98,7 @@ class GenerateVerificationCode
             }
         }
 
-        // Check if UUID is already linked (to this user or another)
+        // Check if UUID is already linked (any status — including verifying/cancelled blocks re-use)
         $existingAccount = MinecraftAccount::whereNormalizedUuid($uuid)->first();
 
         if ($existingAccount) {
@@ -118,6 +118,12 @@ class GenerateVerificationCode
                 'error' => 'This Minecraft account is already linked to another user.',
             ];
         }
+
+        // Determine the command identifier for RCON:
+        // Java uses username, Bedrock uses Floodgate UUID
+        $commandId = ($accountType === MinecraftAccountType::Java)
+            ? $verifiedUsername
+            : $uuid;
 
         // Generate unique 6-character code (excluding confusing characters: 0, O, 1, I, L, 5, S)
         $allowedCharacters = '2346789ABCDEFGHJKMNPQRTUVWXYZ';
@@ -149,17 +155,51 @@ class GenerateVerificationCode
         $gracePeriodMinutes = config('lighthouse.minecraft_verification_grace_period_minutes');
         $expiresAt = now()->addMinutes($gracePeriodMinutes);
 
-        // Send whitelist add command synchronously
+        // Create the MinecraftAccount record in 'verifying' state before sending whitelist
+        $normalizedUuid = str_replace('-', '', $uuid);
+        try {
+            $account = MinecraftAccount::create([
+                'user_id' => $user->id,
+                'username' => $verifiedUsername,
+                'uuid' => $uuid,
+                'avatar_url' => 'https://mc-heads.net/avatar/'.$normalizedUuid,
+                'account_type' => $accountType,
+                'status' => 'verifying',
+                'command_id' => $commandId,
+                'last_username_check_at' => now(),
+                // verified_at intentionally null until CompleteVerification promotes to active
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to create MinecraftAccount', [
+                'user_id' => $user->id,
+                'username' => $verifiedUsername,
+                'uuid' => $uuid,
+                'account_type' => $accountType->value,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return [
+                'success' => false,
+                'code' => null,
+                'expires_at' => null,
+                'error' => 'An error occurred. Please try again later.',
+            ];
+        }
+
+        // Send whitelist add command synchronously using the correct command for account type
         $rconService = app(MinecraftRconService::class);
         $whitelistResult = $rconService->executeCommand(
-            "whitelist add {$verifiedUsername}",
+            $account->whitelistAddCommand(),
             'whitelist',
-            $verifiedUsername,
+            $commandId,
             $user,
             ['action' => 'temp_verification', 'code' => $code]
         );
 
         if (! $whitelistResult['success']) {
+            $account->delete();
+
             return [
                 'success' => false,
                 'code' => null,
@@ -168,7 +208,7 @@ class GenerateVerificationCode
             ];
         }
 
-        // Create verification record; undo whitelist on failure
+        // Create verification record; roll back account + whitelist on failure
         try {
             MinecraftVerification::create([
                 'user_id' => $user->id,
@@ -181,13 +221,24 @@ class GenerateVerificationCode
                 'whitelisted_at' => now(),
             ]);
         } catch (\Exception $e) {
+            \Log::error('Failed to create MinecraftVerification', [
+                'user_id' => $user->id,
+                'code' => $code,
+                'username' => $verifiedUsername,
+                'uuid' => $uuid,
+                'account_type' => $accountType->value,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
             $rconService->executeCommand(
-                "whitelist remove {$verifiedUsername}",
+                $account->whitelistRemoveCommand(),
                 'whitelist',
-                $verifiedUsername,
+                $commandId,
                 $user,
                 ['action' => 'cleanup_failed_verification']
             );
+            $account->delete();
 
             return [
                 'success' => false,

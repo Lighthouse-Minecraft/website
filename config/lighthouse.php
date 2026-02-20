@@ -21,4 +21,5 @@ return [
     'max_minecraft_accounts' => (int) env('MAX_MINECRAFT_ACCOUNTS', 2),
     'minecraft_verification_grace_period_minutes' => (int) env('MINECRAFT_VERIFICATION_GRACE_PERIOD_MINUTES', 30),
     'minecraft_verification_rate_limit_per_hour' => (int) env('MINECRAFT_VERIFICATION_RATE_LIMIT_PER_HOUR', 10),
+    'minecraft_member_rank' => env('MINECRAFT_MEMBER_RANK', 'citizen'),
 ];

@@ -31,9 +31,9 @@ class RevokeMinecraftAccount
         // Send whitelist remove command synchronously for immediate effect
         $rconService = app(MinecraftRconService::class);
         $rconService->executeCommand(
-            "whitelist remove {$username}",
+            $account->whitelistRemoveCommand(),
             'whitelist',
-            $username,
+            $account->command_id,
             $admin,
             ['action' => 'revoke', 'affected_user_id' => $affectedUser->id]
         );

@@ -1,11 +1,12 @@
 <?php
 
 use App\Actions\GenerateVerificationCode;
-use App\Actions\SendMinecraftCommand;
 use App\Actions\UnlinkMinecraftAccount;
+use App\Enums\MinecraftAccountStatus;
 use App\Enums\MinecraftAccountType;
 use App\Models\MinecraftAccount;
 use App\Models\MinecraftVerification;
+use App\Services\MinecraftRconService;
 use Flux\Flux;
 use Livewire\Volt\Component;
 
@@ -70,14 +71,30 @@ new class extends Component {
             ->first();
 
         if ($verification) {
-            // Async whitelist remove — same pattern as CleanupExpiredVerifications
-            SendMinecraftCommand::dispatch(
-                "whitelist remove {$verification->minecraft_username}",
-                'whitelist',
-                $verification->minecraft_username,
-                auth()->user(),
-                ['action' => 'cancel_verification', 'verification_id' => $verification->id]
-            );
+            // Find and cancel the associated verifying account
+            $account = MinecraftAccount::whereNormalizedUuid($verification->minecraft_uuid)
+                ->verifying()
+                ->where('user_id', auth()->id())
+                ->first();
+
+            if ($account) {
+                // Mark cancelled before attempting removal (enters retry pool if server is down)
+                $account->update(['status' => MinecraftAccountStatus::Cancelled]);
+
+                $rconService = app(MinecraftRconService::class);
+                $result = $rconService->executeCommand(
+                    $account->whitelistRemoveCommand(),
+                    'whitelist',
+                    $account->command_id,
+                    auth()->user(),
+                    ['action' => 'cancel_verification', 'verification_id' => $verification->id]
+                );
+
+                if ($result['success']) {
+                    $account->delete();
+                }
+                // If server offline, account stays 'cancelled' for CleanupExpiredVerifications to retry
+            }
 
             $verification->update(['status' => 'expired']);
         }
@@ -161,19 +178,31 @@ new class extends Component {
                                 <img src="{{ $account->avatar_url }}" alt="{{ $account->username }}" class="w-8 h-8 rounded" />
                             @endif
                             <div>
-                                <flux:text class="font-semibold">{{ $account->username }}</flux:text>
+                                <div class="flex items-center gap-2">
+                                    <flux:text class="font-semibold">{{ $account->username }}</flux:text>
+                                    <flux:badge color="{{ $account->status->color() }}" size="sm">
+                                        {{ $account->status->label() }}
+                                    </flux:badge>
+                                </div>
                                 <flux:text class="text-sm text-zinc-500">
-                                    {{ $account->account_type->label() }} • Verified {{ $account->verified_at->diffForHumans() }}
+                                    {{ $account->account_type->label() }}
+                                    @if($account->status === \App\Enums\MinecraftAccountStatus::Active && $account->verified_at)
+                                        • Verified {{ $account->verified_at->diffForHumans() }}
+                                    @endif
                                 </flux:text>
                             </div>
                         </div>
-                        <flux:button
-                            wire:click="remove({{ $account->id }})"
-                            variant="danger"
-                            size="sm"
-                            wire:confirm="Are you sure you want to unlink this Minecraft account? You will be removed from the server whitelist.">
-                            Remove
-                        </flux:button>
+                        @if($account->status === \App\Enums\MinecraftAccountStatus::Active)
+                            <flux:button
+                                wire:click="remove({{ $account->id }})"
+                                variant="danger"
+                                size="sm"
+                                wire:confirm="Are you sure you want to unlink this Minecraft account? You will be removed from the server whitelist.">
+                                Remove
+                            </flux:button>
+                        @else
+                            <flux:text class="text-sm text-zinc-400 dark:text-zinc-500 italic">Pending removal...</flux:text>
+                        @endif
                     </div>
                 </flux:card>
             @endforeach

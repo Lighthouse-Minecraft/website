@@ -29,7 +29,7 @@ class RefreshMinecraftUsernames extends Command
      */
     public function handle(): int
     {
-        $totalAccounts = MinecraftAccount::count();
+        $totalAccounts = MinecraftAccount::active()->count();
 
         if ($totalAccounts === 0) {
             $this->info('No Minecraft accounts to refresh.');
@@ -40,9 +40,9 @@ class RefreshMinecraftUsernames extends Command
         // Calculate daily batch size to check all accounts over 30 days
         $dailyBatchSize = max(1, ceil($totalAccounts / 30));
 
-        // Select accounts prioritizing active users (by last_login_at) then oldest checks
+        // Select only active accounts, prioritizing active users (by last_login_at) then oldest checks
         // Skip accounts checked within the last 30 days
-        $accounts = MinecraftAccount::query()
+        $accounts = MinecraftAccount::active()
             ->join('users', 'minecraft_accounts.user_id', '=', 'users.id')
             ->select('minecraft_accounts.*')
             ->where(function ($query) {

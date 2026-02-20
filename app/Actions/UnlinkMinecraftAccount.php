@@ -2,6 +2,7 @@
 
 namespace App\Actions;
 
+use App\Enums\MinecraftAccountStatus;
 use App\Models\MinecraftAccount;
 use App\Models\User;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -23,14 +24,22 @@ class UnlinkMinecraftAccount
             ];
         }
 
+        // Only allow unlinking active accounts; verifying accounts use Cancel Verification
+        if ($account->status !== MinecraftAccountStatus::Active) {
+            return [
+                'success' => false,
+                'message' => 'This account cannot be unlinked in its current state.',
+            ];
+        }
+
         $username = $account->username;
         $accountType = $account->account_type;
 
-        // Send whitelist remove command asynchronously
+        // Send whitelist remove command asynchronously using the correct command for account type
         SendMinecraftCommand::dispatch(
-            "whitelist remove {$username}",
+            $account->whitelistRemoveCommand(),
             'whitelist',
-            $username,
+            $account->command_id,
             $user,
             ['action' => 'unlink']
         );
