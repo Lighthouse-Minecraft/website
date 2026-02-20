@@ -18,11 +18,16 @@ class MinecraftAccountFactory extends Factory
      */
     public function definition(): array
     {
+        $uuid = fake()->uuid();
+
         return [
             'user_id' => User::factory(),
             'username' => 'Player'.fake()->numberBetween(100, 9999),
-            'uuid' => fake()->uuid(),
+            'uuid' => $uuid,
+            'avatar_url' => 'https://mc-heads.net/avatar/'.str_replace('-', '', $uuid),
             'account_type' => fake()->randomElement([MinecraftAccountType::Java, MinecraftAccountType::Bedrock]),
+            'status' => 'active',
+            'command_id' => 'Player'.fake()->numberBetween(100, 9999),
             'verified_at' => now(),
             'last_username_check_at' => null,
         ];
@@ -46,6 +51,28 @@ class MinecraftAccountFactory extends Factory
         return $this->state(fn () => [
             'account_type' => MinecraftAccountType::Bedrock,
             'username' => '.Player'.fake()->numberBetween(100, 9999),
+        ]);
+    }
+
+    /**
+     * Indicate that the account is in verifying status.
+     */
+    public function verifying(): static
+    {
+        return $this->state(fn () => [
+            'status' => 'verifying',
+            'verified_at' => null,
+        ]);
+    }
+
+    /**
+     * Indicate that the account is active.
+     */
+    public function active(): static
+    {
+        return $this->state(fn () => [
+            'status' => 'active',
+            'verified_at' => now(),
         ]);
     }
 }

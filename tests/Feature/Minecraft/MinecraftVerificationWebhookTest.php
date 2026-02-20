@@ -20,6 +20,14 @@ test('completes verification with valid token', function () {
         'account_type' => MinecraftAccountType::Java,
     ]);
 
+    // Create the verifying account (as GenerateVerificationCode would)
+    MinecraftAccount::factory()->for($this->user)->verifying()->create([
+        'username' => 'TestPlayer',
+        'uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
+        'account_type' => MinecraftAccountType::Java,
+        'command_id' => 'TestPlayer',
+    ]);
+
     $response = $this->postJson('/api/minecraft/verify', [
         'server_token' => 'test-server-token',
         'code' => 'ABC123',
@@ -38,6 +46,7 @@ test('completes verification with valid token', function () {
         'username' => 'TestPlayer',
         'uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
         'account_type' => 'java',
+        'status' => 'active',
     ]);
 
     $this->assertDatabaseHas('minecraft_verifications', [
@@ -154,6 +163,15 @@ test('accepts uuid with or without dashes', function () {
         'code' => 'ABC123',
         'minecraft_username' => 'TestPlayer',
         'minecraft_uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
+        'account_type' => MinecraftAccountType::Java,
+    ]);
+
+    // Create the verifying account (as GenerateVerificationCode would)
+    MinecraftAccount::factory()->for($this->user)->verifying()->create([
+        'username' => 'TestPlayer',
+        'uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
+        'account_type' => MinecraftAccountType::Java,
+        'command_id' => 'TestPlayer',
     ]);
 
     $response = $this->postJson('/api/minecraft/verify', [
@@ -167,6 +185,7 @@ test('accepts uuid with or without dashes', function () {
 
     $this->assertDatabaseHas('minecraft_accounts', [
         'uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5', // Stored with dashes
+        'status' => 'active',
     ]);
 });
 

@@ -20,6 +20,14 @@ test('completes verification and creates account', function () {
         'minecraft_uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
     ]);
 
+    // Create the verifying account (as GenerateVerificationCode would)
+    MinecraftAccount::factory()->for($this->user)->verifying()->create([
+        'username' => 'TestPlayer',
+        'uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
+        'account_type' => 'java',
+        'command_id' => 'TestPlayer',
+    ]);
+
     $result = $this->action->handle(
         'ABC123',
         'TestPlayer',
@@ -32,6 +40,7 @@ test('completes verification and creates account', function () {
         'user_id' => $this->user->id,
         'username' => 'TestPlayer',
         'uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
+        'status' => 'active',
     ]);
 
     $this->assertDatabaseHas('minecraft_verifications', [
@@ -132,11 +141,20 @@ test('normalizes uuid with dashes', function () {
         'minecraft_uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
     ]);
 
+    // Create the verifying account (as GenerateVerificationCode would)
+    MinecraftAccount::factory()->for($this->user)->verifying()->create([
+        'username' => 'TestPlayer',
+        'uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
+        'account_type' => 'java',
+        'command_id' => 'TestPlayer',
+    ]);
+
     $result = $this->action->handle('ABC123', 'TestPlayer', '069a79f444e94726a5befca90e38aaf5');
 
     expect($result['success'])->toBeTrue();
 
     $this->assertDatabaseHas('minecraft_accounts', [
         'uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
+        'status' => 'active',
     ]);
 });

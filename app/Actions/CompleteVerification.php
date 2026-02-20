@@ -82,8 +82,8 @@ class CompleteVerification
 
                 // Promote to active
                 $account->update([
-                    'status'                 => MinecraftAccountStatus::Active,
-                    'verified_at'            => now(),
+                    'status' => MinecraftAccountStatus::Active,
+                    'verified_at' => now(),
                     'last_username_check_at' => now(),
                 ]);
 
