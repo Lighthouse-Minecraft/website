@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\CompleteVerification;
 use App\Actions\GenerateVerificationCode;
 use App\Actions\UnlinkMinecraftAccount;
 use App\Enums\MinecraftAccountStatus;
@@ -12,6 +13,7 @@ use Livewire\Volt\Component;
 
 new class extends Component {
     public string $accountType = 'java';
+    public ?MinecraftAccount $selectedAccount = null;
 
     public string $username = '';
 
@@ -21,6 +23,29 @@ new class extends Component {
 
     public ?string $errorMessage = null;
 
+    /**
+     * Load the authenticated user's Minecraft account by ID and open its detail modal if found.
+     *
+     * Sets $this->selectedAccount to the located account (including its related user). If an account
+     * with the given ID exists for the current user, shows the 'mc-account-detail' modal.
+     *
+     * @param int $accountId The ID of the Minecraft account to load.
+     */
+    public function showAccount(int $accountId): void
+    {
+        $this->selectedAccount = auth()->user()->minecraftAccounts()->with('user')->find($accountId);
+
+        if ($this->selectedAccount) {
+            $this->modal('mc-account-detail')->show();
+        }
+    }
+
+    /**
+     * Initialize component state from any active pending Minecraft verification for the authenticated user.
+     *
+     * If a pending verification that expires in the future exists, sets the component's
+     * verificationCode, expiresAt, and accountType to match that verification.
+     */
     public function mount(): void
     {
         // Check for active verification
@@ -104,6 +129,14 @@ new class extends Component {
         Flux::toast('Verification cancelled.', variant: 'warning');
     }
 
+    /**
+     * Refreshes the current verification status for the active verification code and updates component state.
+     *
+     * If there is no active code this is a no-op. The method re-queries the verification by code and current user:
+     * - If no verification is found, it clears the code and expiration.
+     * - If the verification is completed, it clears the code and expiration, resets the username, and shows a success toast.
+     * - If the verification is expired (by status or expiration timestamp), it clears the code and expiration and shows an expiration toast.
+     */
     public function checkVerification(): void
     {
         if (!$this->verificationCode) {
@@ -134,6 +167,59 @@ new class extends Component {
         }
     }
 
+    /**
+     * Simulates completion of the current pending Minecraft verification for local testing.
+     *
+     * Aborts with HTTP 403 when not running in the local environment. If there is no active
+     * verification code the method returns immediately. The method looks up a pending
+     * verification for the authenticated user by the stored code; if none is found a danger
+     * toast is shown. On successful simulation it clears the component's verification state
+     * (`verificationCode`, `expiresAt`, `username`) and shows a success toast; on failure it
+     * shows a danger toast with the error message.
+     */
+    public function simulateVerification(): void
+    {
+        abort_unless(app()->isLocal(), 403);
+
+        if (! $this->verificationCode) {
+            return;
+        }
+
+        $verification = MinecraftVerification::where('code', $this->verificationCode)
+            ->where('user_id', auth()->id())
+            ->pending()
+            ->first();
+
+        if (! $verification) {
+            Flux::toast('No pending verification found.', variant: 'danger');
+
+            return;
+        }
+
+        $result = CompleteVerification::run(
+            $verification->code,
+            $verification->minecraft_username,
+            $verification->minecraft_uuid,
+        );
+
+        if ($result['success']) {
+            $this->verificationCode = null;
+            $this->expiresAt = null;
+            $this->username = '';
+            Flux::toast('Verification simulated successfully!', variant: 'success');
+        } else {
+            Flux::toast('Simulation failed: '.$result['message'], variant: 'danger');
+        }
+    }
+
+    /**
+     * Remove a linked Minecraft account by ID, unlinking it and displaying a user toast with the operation result.
+     *
+     * Attempts to authorize the current user, run the unlink action for the specified account, and shows a success
+     * or error toast containing the action message.
+     *
+     * @param int $accountId The ID of the MinecraftAccount to remove.
+     */
     public function remove(int $accountId): void
     {
         $account = MinecraftAccount::findOrFail($accountId);
@@ -171,7 +257,7 @@ new class extends Component {
             <flux:heading size="lg">Your Linked Accounts</flux:heading>
 
             @foreach($linkedAccounts as $account)
-                <flux:card wire:key="{{ $account->id }}" class="p-4">
+                <flux:card wire:key="minecraft-account-{{ $account->id }}" class="p-4">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-3">
                             @if($account->avatar_url)
@@ -179,7 +265,7 @@ new class extends Component {
                             @endif
                             <div>
                                 <div class="flex items-center gap-2">
-                                    <flux:text class="font-semibold">{{ $account->username }}</flux:text>
+                                    <button wire:click="showAccount({{ $account->id }})" class="font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">{{ $account->username }}</button>
                                     <flux:badge color="{{ $account->status->color() }}" size="sm">
                                         {{ $account->status->label() }}
                                     </flux:badge>
@@ -248,7 +334,18 @@ new class extends Component {
                     </ol>
                 </div>
 
-                <div class="flex justify-end pt-2">
+                <div class="flex justify-between items-center pt-2">
+                    @if(app()->isLocal())
+                        <flux:button
+                            wire:click="simulateVerification"
+                            variant="filled"
+                            size="sm"
+                            class="bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900 dark:text-amber-200 dark:hover:bg-amber-800">
+                            ⚙ Simulate Verification
+                        </flux:button>
+                    @else
+                        <div></div>
+                    @endif
                     <flux:button
                         wire:click="cancelVerification"
                         variant="ghost"
@@ -262,7 +359,7 @@ new class extends Component {
     @endif
 
     {{-- Add New Account Form --}}
-    @if($remainingSlots > 0 && !$verificationCode)
+    @if($remainingSlots > 0 && !$verificationCode && !auth()->user()->isInBrig())
         <flux:card class="p-6">
             <flux:heading size="lg" class="mb-4">Link New Account</flux:heading>
 
@@ -306,5 +403,6 @@ new class extends Component {
             </form>
         </flux:card>
     @endif
+    <x-minecraft.mc-account-detail-modal :account="$selectedAccount" />
 </div>
 </x-settings.layout>

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Models\MinecraftAccount;
 use App\Models\MinecraftCommandLog;
 use App\Models\MinecraftVerification;
 use App\Models\User;
@@ -24,19 +25,29 @@ test('cleanup command removes expired verifications', function () {
         ->and($activeVerification->fresh()->status)->toBe('pending');
 });
 
-test('cleanup command sends async whitelist remove', function () {
-    MinecraftVerification::factory()->expired()->create([
+test('cleanup command sends whitelist remove command via rcon', function () {
+    $user = User::factory()->create();
+    MinecraftVerification::factory()->for($user)->expired()->create([
         'status' => 'pending',
         'minecraft_username' => 'ExpiredPlayer',
+        'minecraft_uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
     ]);
+    MinecraftAccount::factory()->for($user)->verifying()->create([
+        'username' => 'ExpiredPlayer',
+        'uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
+        'command_id' => 'ExpiredPlayer',
+    ]);
+
+    $rconMock = $this->mock(MinecraftRconService::class);
+    $rconMock->shouldReceive('executeCommand')
+        ->once()
+        ->with('whitelist remove ExpiredPlayer', 'whitelist', 'ExpiredPlayer', \Mockery::any(), \Mockery::any())
+        ->andReturn(['success' => true, 'response' => 'Removed']);
 
     Artisan::call('minecraft:cleanup-expired');
 
-    // Should queue notification
-    $this->assertDatabaseHas('jobs', [
-        'queue' => 'default',
-    ]);
-})->skip('Queue/notification testing requires additional infrastructure setup');
+    $this->assertDatabaseMissing('minecraft_accounts', ['username' => 'ExpiredPlayer']);
+});
 
 test('cleanup command runs successfully', function () {
     MinecraftVerification::factory()->count(3)->expired()->pending()->create();

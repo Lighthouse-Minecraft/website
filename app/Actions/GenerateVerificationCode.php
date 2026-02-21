@@ -16,15 +16,33 @@ class GenerateVerificationCode
     use AsAction;
 
     /**
-     * Generate a verification code for a user to link their Minecraft account
+     * Generate a verification code and prepare a temporary whitelist entry to link a Minecraft account to a user.
      *
-     * @return array ['success' => bool, 'code' => string|null, 'expires_at' => datetime|null, 'error' => string|null]
+     * @param  User  $user  The user requesting the verification.
+     * @param  MinecraftAccountType  $accountType  The Minecraft account type to verify (Java or Bedrock).
+     * @param  string  $username  The provided Minecraft username or gamertag to verify.
+     * @return array{success:bool, code:string|null, expires_at:\Illuminate\Support\Carbon|null, error:string|null}
+     *                                                                                                              An associative array:
+     *                                                                                                              - `success`: `true` on successful generation and whitelist addition, `false` on failure.
+     *                                                                                                              - `code`: the generated 6-character verification code when `success` is `true`, otherwise `null`.
+     *                                                                                                              - `expires_at`: timestamp when the verification code expires when `success` is `true`, otherwise `null`.
+     *                                                                                                              - `error`: user-facing error message when `success` is `false`, otherwise `null`.
      */
     public function handle(
         User $user,
         MinecraftAccountType $accountType,
         string $username
     ): array {
+        // Check if user is in the brig
+        if ($user->isInBrig()) {
+            return [
+                'success' => false,
+                'code' => null,
+                'expires_at' => null,
+                'error' => 'You cannot add Minecraft accounts while in the brig.',
+            ];
+        }
+
         // Check if user has reached max accounts (all statuses count toward the limit)
         $maxAccounts = config('lighthouse.max_minecraft_accounts');
         if ($user->minecraftAccounts()->count() >= $maxAccounts) {
@@ -248,7 +266,13 @@ class GenerateVerificationCode
             ];
         }
 
-        // Record activity
+        // Record activity — both logs written only after verification record is committed
+        RecordActivity::handle(
+            $user,
+            'minecraft_whitelisted',
+            "Added {$verifiedUsername} to server whitelist"
+        );
+
         RecordActivity::handle(
             $user,
             'minecraft_verification_generated',

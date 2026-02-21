@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Models\MinecraftAccount;
 use App\Models\MinecraftVerification;
 use App\Models\User;
+use App\Services\MinecraftRconService;
 use Illuminate\Support\Facades\Http;
 use Livewire\Volt\Volt;
 
@@ -37,27 +38,39 @@ test('displays linked accounts', function () {
 
 test('shows verification form when no active verification', function () {
     $this->get('/settings/minecraft-accounts')
-        ->assertSuccessful();
-})->skip('Layout wrapper interferes with Volt component testing');
+        ->assertSuccessful()
+        ->assertSee('Link New Account');
+});
 
 test('generates verification code', function () {
     Http::fake(['api.mojang.com/*' => Http::response(['id' => str_repeat('a', 32), 'name' => 'TestPlayer'])]);
+
+    $this->mock(MinecraftRconService::class, function ($mock) {
+        $mock->shouldReceive('executeCommand')->andReturn(['success' => true, 'response' => 'OK']);
+    });
 
     Volt::test('settings.minecraft-accounts')
         ->set('username', 'TestPlayer')
         ->set('accountType', 'java')
         ->call('generateCode')
         ->assertHasNoErrors();
-})->skip('Layout wrapper interferes with Volt component testing');
+
+    $this->assertDatabaseHas('minecraft_verifications', [
+        'user_id' => $this->user->id,
+        'minecraft_username' => 'TestPlayer',
+        'account_type' => 'java',
+    ]);
+});
 
 test('displays active verification code', function () {
-    $verification = MinecraftVerification::factory()->for($this->user)->pending()->create([
+    MinecraftVerification::factory()->for($this->user)->pending()->create([
         'code' => 'ABC123',
     ]);
 
     $this->get('/settings/minecraft-accounts')
-        ->assertSuccessful();
-})->skip('Layout wrapper interferes with Volt component testing');
+        ->assertSuccessful()
+        ->assertSee('ABC123');
+});
 
 test('validates username required', function () {
     Volt::test('settings.minecraft-accounts')
@@ -66,10 +79,6 @@ test('validates username required', function () {
         ->call('generateCode')
         ->assertHasErrors(['username' => 'required']);
 });
-
-test('validates account type required', function () {
-    // Validation is tested in the action tests
-})->skip('Layout wrapper interferes with Volt component validation testing');
 
 test('removes linked account', function () {
     $account = MinecraftAccount::factory()->for($this->user)->create();
@@ -100,8 +109,9 @@ test('shows remaining account slots', function () {
     MinecraftAccount::factory()->for($this->user)->create();
 
     $this->get('/settings/minecraft-accounts')
-        ->assertSuccessful();
-})->skip('Layout wrapper interferes with Volt component testing');
+        ->assertSuccessful()
+        ->assertSee('more account');
+});
 
 test('shows max accounts reached', function () {
     MinecraftAccount::factory()->count(config('lighthouse.max_minecraft_accounts'))->for($this->user)->create();

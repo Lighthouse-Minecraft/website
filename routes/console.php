@@ -27,3 +27,8 @@ Schedule::command('minecraft:cleanup-expired')
 Schedule::command('minecraft:refresh-usernames')
     ->dailyAt('03:00')
     ->runInBackground();
+
+// Check for expired brig timers and notify users daily at 9am
+Schedule::command('brig:check-timers')
+    ->dailyAt('09:00')
+    ->runInBackground();

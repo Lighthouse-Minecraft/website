@@ -36,29 +36,34 @@ test('regular user cannot revoke', function () {
     $this->assertDatabaseHas('minecraft_accounts', ['id' => $account->id]);
 });
 
-test('records activity for both admin and affected user', function () {
-    // TODO: Enable when activity_log table is created
-    // $this->assertDatabaseHas('activity_log', [
-    //     'user_id' => $this->admin->id,
-    //     'action' => 'minecraft_account_revoked_admin',
-    // ]);
+test('records activity for affected user', function () {
+    $account = MinecraftAccount::factory()->for($this->regularUser)->create();
 
-    // $this->assertDatabaseHas('activity_log', [
-    //     'user_id' => $this->regularUser->id,
-    //     'action' => 'minecraft_account_revoked',
-    // ]);
-})->skip('Requires activity_log table to be created');
+    $this->action->handle($account, $this->admin);
+
+    $this->assertDatabaseHas('activity_logs', [
+        'subject_type' => User::class,
+        'subject_id' => $this->regularUser->id,
+        'action' => 'minecraft_account_revoked',
+    ]);
+});
 
 test('sends sync whitelist remove command', function () {
     $account = MinecraftAccount::factory()->for($this->regularUser)->create([
         'username' => 'TestPlayer',
+        'command_id' => 'TestPlayer',
     ]);
 
     $mock = $this->mock(MinecraftRconService::class);
+    // Action makes two calls: rank reset, then whitelist remove
     $mock->shouldReceive('executeCommand')
         ->once()
-        ->with('whitelist remove TestPlayer', 'whitelist_remove', 'TestPlayer', $this->admin, \Mockery::any())
-        ->andReturn(['success' => true]);
+        ->with('lh setmember TestPlayer default', 'rank', 'TestPlayer', $this->admin, \Mockery::any())
+        ->andReturn(['success' => true, 'response' => 'OK']);
+    $mock->shouldReceive('executeCommand')
+        ->once()
+        ->with('whitelist remove TestPlayer', 'whitelist', 'TestPlayer', $this->admin, \Mockery::any())
+        ->andReturn(['success' => true, 'response' => 'Removed']);
 
     $this->action->handle($account, $this->admin);
-})->skip('RCON mock requires specific parameter matching');
+});

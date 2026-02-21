@@ -11,14 +11,17 @@ class SendMinecraftCommand
     use AsAction;
 
     /**
-     * Send a command to the Minecraft server (queued or synchronous)
+     * Send a command to the Minecraft server, either queued or executed immediately.
      *
-     * @param  string  $command  The RCON command to execute
-     * @param  string  $commandType  Type category (e.g., 'whitelist', 'verify', 'ban')
-     * @param  string|null  $target  The player or entity affected
-     * @param  User|null  $user  The user initiating the command
-     * @param  array  $meta  Additional metadata to log
-     * @param  bool  $async  Whether to queue the command (default: true)
+     * In local environments this method forces immediate execution (bypasses the queue).
+     * When `$async` is true the command is dispatched for queued processing; when false the command is executed synchronously.
+     *
+     * @param  string  $command  The RCON command to execute.
+     * @param  string  $commandType  Category of the command (e.g., 'whitelist', 'verify', 'ban').
+     * @param  string|null  $target  Optional player or entity target for the command.
+     * @param  User|null  $user  Optional user that initiated the command.
+     * @param  array  $meta  Optional additional metadata to include with the command.
+     * @param  bool  $async  Whether to queue the command (`true`) or execute it immediately (`false`).
      */
     public function handle(
         string $command,
@@ -28,6 +31,12 @@ class SendMinecraftCommand
         array $meta = [],
         bool $async = true
     ): void {
+        // In local dev, bypass the queue so FakeMinecraftRconService fires immediately
+        // without needing a queue worker running.
+        if (app()->isLocal()) {
+            $async = false;
+        }
+
         if ($async) {
             // Dispatch as a queued notification
             \Illuminate\Support\Facades\Notification::route('minecraft', 'server')

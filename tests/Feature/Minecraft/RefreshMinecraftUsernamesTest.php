@@ -77,15 +77,16 @@ test('updates bedrock username from mcprofile api', function () {
     ]);
 
     Http::fake([
-        'mcprofile.io/api/bedrock/uuid/*' => Http::response([
-            'username' => '.NewBedrockName',
+        // McProfileService::getBedrockGamertag calls /api/v1/bedrock/fuid/{floodgate_uuid}
+        'mcprofile.io/api/v1/bedrock/fuid/*' => Http::response([
+            'gamertag' => '.NewBedrockName',
         ]),
     ]);
 
     Artisan::call('minecraft:refresh-usernames');
 
     expect($account->fresh()->username)->toBe('.NewBedrockName');
-})->skip('Command requires additional HTTP mock configuration');
+});
 
 test('handles api failures gracefully', function () {
     $account = MinecraftAccount::factory()->java()->create([
@@ -102,7 +103,7 @@ test('handles api failures gracefully', function () {
     // Should still update last_username_check_at to avoid retrying immediately
     expect($account->fresh()->last_username_check_at->isToday())->toBeTrue()
         ->and($account->fresh()->username)->toBe('TestPlayer');
-})->skip('Command requires additional HTTP mock configuration');
+});
 
 test('skips recently checked accounts', function () {
     $account = MinecraftAccount::factory()->create([

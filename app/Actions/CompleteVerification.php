@@ -16,9 +16,17 @@ class CompleteVerification
     private ?MinecraftAccount $completedAccount = null;
 
     /**
-     * Complete the verification process when a user enters the code in-game
+     * Completes a pending Minecraft verification and links the Minecraft account to the user.
      *
-     * @return array ['success' => bool, 'message' => string]
+     * Validates the provided verification code, matches the username (case-insensitive) and UUID (dashes ignored),
+     * and on success promotes the account to active, records activity, and triggers optional post-link actions.
+     *
+     * @param  string  $code  The in-game verification code submitted by the player.
+     * @param  string  $username  The Minecraft username reported by the server (compared case-insensitively).
+     * @param  string  $uuid  The Minecraft UUID reported by the server; dashes are ignored during comparison.
+     * @return array An array with keys:
+     *               - 'success' => bool: `true` if the account was linked, `false` otherwise.
+     *               - 'message' => string: Human-readable outcome or error message.
      */
     public function handle(
         string $code,
@@ -102,14 +110,29 @@ class CompleteVerification
 
             // Dispatch rank assignment OUTSIDE the transaction so the job sees committed data
             if ($this->completedAccount) {
-                $rank = config('lighthouse.minecraft_member_rank');
-                SendMinecraftCommand::dispatch(
-                    "lh setmember {$this->completedAccount->command_id} {$rank}",
-                    'rank',
-                    $this->completedAccount->command_id,
-                    $verification->user,
-                    ['action' => 'set_rank_on_verify', 'account_id' => $this->completedAccount->id]
-                );
+                $rank = $verification->user->membership_level->minecraftRank();
+
+                // Only set rank if user has server access (Traveler or above)
+                if ($rank) {
+                    SendMinecraftCommand::dispatch(
+                        "lh setmember {$this->completedAccount->command_id} {$rank}",
+                        'rank',
+                        $this->completedAccount->command_id,
+                        $verification->user,
+                        ['action' => 'set_rank_on_verify', 'account_id' => $this->completedAccount->id]
+                    );
+
+                    RecordActivity::handle(
+                        $verification->user,
+                        'minecraft_rank_assignment_requested',
+                        "Queued rank assignment '{$rank}' for {$this->completedAccount->username}"
+                    );
+                }
+
+                // Sync staff position if user has one
+                if ($verification->user->staff_department) {
+                    SyncMinecraftStaff::run($verification->user, $verification->user->staff_department);
+                }
             }
 
             return [

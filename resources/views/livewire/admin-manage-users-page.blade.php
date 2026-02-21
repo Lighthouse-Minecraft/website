@@ -13,8 +13,9 @@ use Flux\Flux;
 new class extends Component {
     use WithPagination;
     public $sortBy = 'name';
-    public $sortDirection = 'desc';
-    public $perPage = 10;
+    public $sortDirection = 'asc';
+    public $perPage = 15;
+    public $filterBrig = '';
     public $editUserId = null;
     public $editUserData = [
         'name' => '',
@@ -39,6 +40,11 @@ new class extends Component {
         $this->editUserRoles = $user->roles->pluck('id')->toArray();
     }
 
+    /**
+     * Update the current sort column and direction for the users list, toggling direction when the same column is selected and resetting pagination.
+     *
+     * @param string $column The column name to sort by.
+     */
     public function sort($column) {
         if ($this->sortBy === $column) {
             $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
@@ -46,16 +52,45 @@ new class extends Component {
             $this->sortBy = $column;
             $this->sortDirection = 'asc';
         }
+        $this->resetPage();
     }
 
+    /**
+     * Reset the pagination page when the brig filter changes.
+     *
+     * Triggered by Livewire after the public property `$filterBrig` is updated to ensure the listing
+     * returns to the first page.
+     */
+    public function updatedFilterBrig()
+    {
+        $this->resetPage();
+    }
+
+    /**
+     * Get a paginated list of users with their roles, filtered, sorted, and paginated based on the component state.
+     *
+     * The result is eager-loaded with the `roles` relation, optionally filtered by the `filterBrig` value
+     * (`'in_brig'` to include only users with `in_brig = true`, `'not_brig'` to include only `in_brig = false`),
+     * ordered by `sortBy` and `sortDirection` when `sortBy` is set, and paginated using `perPage`.
+     *
+     * @return \Illuminate\Pagination\LengthAwarePaginator<PersistentModel> A paginator of User models with the `roles` relation loaded.
+     */
     #[\Livewire\Attributes\Computed]
     public function users()
     {
         return \App\Models\User::query()
+            ->with('roles')
+            ->when($this->filterBrig === 'in_brig', fn ($q) => $q->where('in_brig', true))
+            ->when($this->filterBrig === 'not_brig', fn ($q) => $q->where('in_brig', false))
             ->tap(fn ($query) => $this->sortBy ? $query->orderBy($this->sortBy, $this->sortDirection) : $query)
-            ->paginate(5);
+            ->paginate($this->perPage);
     }
 
+    /**
+     * Retrieve all role records.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection|\App\Models\Role[] Collection of all Role models.
+     */
     public function roles()
     {
         return \App\Models\Role::all();
@@ -70,6 +105,14 @@ new class extends Component {
         $this->editUserData = $user->only(['name', 'email']);
     }
 
+    /**
+     * Validate the edit form, apply admin-role safeguards, persist user changes, and close the edit modal.
+     *
+     * Validates name, email, and selected role IDs; prevents non-admins from adding or removing the "Admin" role on the target user; updates the user record and synced roles, resets the edit state, closes the modal, and displays a success toast.
+     *
+     * @throws \Illuminate\Validation\ValidationException If validation fails.
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException If the target user cannot be found.
+     */
     public function saveUser()
     {
         Validator::make([
@@ -89,15 +132,12 @@ new class extends Component {
         $currentUser = auth()->user();
 
         if (!$currentUser->isAdmin()) {
-            // Ensure the Admin role cannot be added or removed
             $hasAdminRole = $user->roles->contains('id', $adminRoleId);
 
-            // If the user currently has the Admin role, keep it
             if ($hasAdminRole && !in_array($adminRoleId, $this->editUserRoles)) {
                 $this->editUserRoles[] = $adminRoleId;
             }
 
-            // If the user does not have the Admin role, prevent it from being added
             if (!$hasAdminRole && in_array($adminRoleId, $this->editUserRoles)) {
                 $this->editUserRoles = array_diff($this->editUserRoles, [$adminRoleId]);
             }
@@ -114,7 +154,15 @@ new class extends Component {
 ?>
 
 <div class="space-y-6">
-    <flux:heading size="xl">Manage Users</flux:heading>
+    <div class="flex items-center gap-4">
+        <flux:heading size="xl">Manage Users</flux:heading>
+        <flux:spacer />
+        <flux:select wire:model.live="filterBrig" size="sm" class="w-48">
+            <flux:select.option value="">All Users</flux:select.option>
+            <flux:select.option value="in_brig">In the Brig</flux:select.option>
+            <flux:select.option value="not_brig">Not in Brig</flux:select.option>
+        </flux:select>
+    </div>
 
     <flux:table :paginate="$this->users">
         <flux:table.columns>
@@ -123,17 +171,16 @@ new class extends Component {
             <flux:table.column sortable :sorted="$sortBy === 'membership_level'" :direction="$sortDirection" wire:click="sort('membership_level')">Level</flux:table.column>
             <flux:table.column sortable :sorted="$sortBy === 'staff_department'" :direction="$sortDirection" wire:click="sort('staff_department')">Department</flux:table.column>
             <flux:table.column sortable :sorted="$sortBy === 'staff_rank'" :direction="$sortDirection" wire:click="sort('staff_rank')">Rank</flux:table.column>
+            <flux:table.column sortable :sorted="$sortBy === 'in_brig'" :direction="$sortDirection" wire:click="sort('in_brig')">Brig</flux:table.column>
             <flux:table.column>Staff Title</flux:table.column>
             <flux:table.column>Roles</flux:table.column>
-            {{-- <flux:table.column sortable :sorted="$sortBy === 'date'" :direction="$sortDirection" wire:click="sort('date')">Date</flux:table.column> --}}
             <flux:table.column>Actions</flux:table.column>
         </flux:table.columns>
 
         <flux:table.rows>
             @foreach ($this->users as $user)
-                <flux:table.row :key="$user->id">
+                <flux:table.row wire:key="user-{{ $user->id }}" :key="$user->id">
                     <flux:table.cell class="flex items-center gap-3">
-                        {{-- <flux:avatar size="xs" src="{{ $user->avatar }}" /> --}}
                         <flux:link href="{{ route('profile.show', $user) }}">{{ $user->name }}</flux:link>
                     </flux:table.cell>
 
@@ -141,6 +188,11 @@ new class extends Component {
                     <flux:table.cell class="whitespace-nowrap">{{ $user->membership_level->label() }}</flux:table.cell>
                     <flux:table.cell class="whitespace-nowrap">@if ($user->staff_department){{ $user->staff_department->label() }} @endif</flux:table.cell>
                     <flux:table.cell class="whitespace-nowrap">@if ($user->staff_rank != StaffRank::None)<flux:badge variant="pill" color="{{ $user->staff_rank->color() }}" size="sm">{{ $user->staff_rank->label() }}</flux:badge> @endif</flux:table.cell>
+                    <flux:table.cell class="whitespace-nowrap">
+                        @if($user->in_brig)
+                            <flux:badge color="red" size="sm">In Brig</flux:badge>
+                        @endif
+                    </flux:table.cell>
                     <flux:table.cell class="whitespace-nowrap">{{ $user->staff_title }}</flux:table.cell>
                     <flux:table.cell class="whitespace-nowrap">
                         @foreach ($user->roles as $role)
