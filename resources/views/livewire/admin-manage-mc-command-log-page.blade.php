@@ -100,7 +100,7 @@ new class extends Component {
                     $tz = auth()->user()->timezone ?? 'UTC';
                     $localTime = $log->executed_at->setTimezone($tz);
                 @endphp
-                <flux:table.row :key="$log->id">
+                <flux:table.row wire:key="log-{{ $log->id }}">
                     <flux:table.cell
                         class="whitespace-nowrap text-sm text-zinc-500 dark:text-zinc-400"
                         title="{{ $localTime->format('Y-m-d H:i:s T') }}">

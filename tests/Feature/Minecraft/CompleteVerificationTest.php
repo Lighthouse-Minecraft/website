@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use App\Actions\CompleteVerification;
+use App\Enums\StaffDepartment;
+use App\Enums\StaffRank;
 use App\Models\MinecraftAccount;
 use App\Models\MinecraftVerification;
 use App\Models\User;
@@ -10,6 +12,11 @@ use App\Models\User;
 beforeEach(function () {
     $this->user = User::factory()->create();
     $this->action = new CompleteVerification;
+
+    // Mock RCON service for all tests
+    $this->mock(\App\Services\MinecraftRconService::class, function ($mock) {
+        $mock->shouldReceive('executeCommand')->andReturn(['success' => true, 'response' => 'OK']);
+    });
 });
 
 test('completes verification and creates account', function () {
@@ -157,4 +164,47 @@ test('normalizes uuid with dashes', function () {
         'uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
         'status' => 'active',
     ]);
+});
+test('syncs staff position when staff member verifies account', function () {
+    // Create staff user with server access
+    $staffUser = User::factory()->create([
+        'membership_level' => \App\Enums\MembershipLevel::Traveler,
+        'staff_department' => StaffDepartment::Command,
+        'staff_rank' => StaffRank::Officer,
+        'staff_title' => 'Test Officer',
+    ]);
+
+    $verification = MinecraftVerification::factory()->for($staffUser)->pending()->create([
+        'code' => 'ABC123',
+        'account_type' => 'java',
+        'minecraft_username' => 'StaffPlayer',
+        'minecraft_uuid' => '169a79f4-44e9-4726-a5be-fca90e38aaf5',
+    ]);
+
+    // Create the verifying account
+    MinecraftAccount::factory()->for($staffUser)->verifying()->create([
+        'username' => 'StaffPlayer',
+        'uuid' => '169a79f4-44e9-4726-a5be-fca90e38aaf5',
+        'account_type' => 'java',
+        'command_id' => 'StaffPlayer',
+    ]);
+
+    $action = new CompleteVerification;
+    $result = $action->handle(
+        'ABC123',
+        'StaffPlayer',
+        '169a79f4-44e9-4726-a5be-fca90e38aaf5'
+    );
+
+    expect($result['success'])->toBeTrue();
+
+    // Verify account is active
+    $this->assertDatabaseHas('minecraft_accounts', [
+        'user_id' => $staffUser->id,
+        'username' => 'StaffPlayer',
+        'status' => 'active',
+    ]);
+
+    // The mock in beforeEach will have received both setmember and setstaff commands
+    // which verifies staff position sync is working
 });

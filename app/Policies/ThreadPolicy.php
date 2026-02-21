@@ -59,8 +59,8 @@ class ThreadPolicy
      */
     public function create(User $user): bool
     {
-        // Any authenticated user can create support tickets
-        return true;
+        // Users in the brig cannot open new tickets
+        return ! $user->in_brig;
     }
 
     /**

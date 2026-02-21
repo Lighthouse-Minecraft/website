@@ -36,6 +36,10 @@ class User extends Authenticatable // implements MustVerifyEmail
         'pushover_key',
         'email_digest_frequency',
         'notification_preferences',
+        'in_brig',
+        'brig_reason',
+        'brig_expires_at',
+        'brig_timer_notified',
     ];
 
     /**
@@ -70,7 +74,25 @@ class User extends Authenticatable // implements MustVerifyEmail
             'last_ticket_digest_sent_at' => 'datetime',
             'pushover_count_reset_at' => 'datetime',
             'notification_preferences' => 'array',
+            'in_brig' => 'boolean',
+            'brig_expires_at' => 'datetime',
+            'brig_timer_notified' => 'boolean',
         ];
+    }
+
+    public function isInBrig(): bool
+    {
+        return (bool) $this->in_brig;
+    }
+
+    public function brigTimerExpired(): bool
+    {
+        return $this->brig_expires_at === null || now()->gte($this->brig_expires_at);
+    }
+
+    public function canAppeal(): bool
+    {
+        return $this->in_brig && $this->brigTimerExpired();
     }
 
     /**

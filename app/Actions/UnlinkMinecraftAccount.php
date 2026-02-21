@@ -46,8 +46,8 @@ class UnlinkMinecraftAccount
 
         RecordActivity::handle(
             $user,
-            'minecraft_rank_reset',
-            "Reset Minecraft rank to default for {$username}"
+            'minecraft_rank_reset_requested',
+            "Queued rank reset to default for {$username}"
         );
 
         // Remove from whitelist using the correct command for account type
@@ -61,8 +61,8 @@ class UnlinkMinecraftAccount
 
         RecordActivity::handle(
             $user,
-            'minecraft_whitelist_removed',
-            "Removed {$username} from server whitelist"
+            'minecraft_whitelist_removal_requested',
+            "Queued removal of {$username} from server whitelist"
         );
 
         // Delete the account

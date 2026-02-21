@@ -27,6 +27,10 @@ class AuthServiceProvider extends ServiceProvider
     {
         $this->registerPolicies();
 
+        Gate::define('view-community-content', function ($user) {
+            return ! $user->in_brig;
+        });
+
         Gate::define('view-community-updates', function ($user) {
             return $user->isAtLeastLevel(MembershipLevel::Traveler) || $user->hasRole('Admin');
         });

@@ -102,20 +102,29 @@ class CompleteVerification
 
             // Dispatch rank assignment OUTSIDE the transaction so the job sees committed data
             if ($this->completedAccount) {
-                $rank = config('lighthouse.minecraft_member_rank');
-                SendMinecraftCommand::dispatch(
-                    "lh setmember {$this->completedAccount->command_id} {$rank}",
-                    'rank',
-                    $this->completedAccount->command_id,
-                    $verification->user,
-                    ['action' => 'set_rank_on_verify', 'account_id' => $this->completedAccount->id]
-                );
+                $rank = $verification->user->membership_level->minecraftRank();
 
-                RecordActivity::handle(
-                    $verification->user,
-                    'minecraft_rank_assigned',
-                    "Assigned Minecraft rank '{$rank}' to {$this->completedAccount->username}"
-                );
+                // Only set rank if user has server access (Traveler or above)
+                if ($rank) {
+                    SendMinecraftCommand::dispatch(
+                        "lh setmember {$this->completedAccount->command_id} {$rank}",
+                        'rank',
+                        $this->completedAccount->command_id,
+                        $verification->user,
+                        ['action' => 'set_rank_on_verify', 'account_id' => $this->completedAccount->id]
+                    );
+
+                    RecordActivity::handle(
+                        $verification->user,
+                        'minecraft_rank_assignment_requested',
+                        "Queued rank assignment '{$rank}' for {$this->completedAccount->username}"
+                    );
+                }
+
+                // Sync staff position if user has one
+                if ($verification->user->staff_department) {
+                    SyncMinecraftStaff::run($verification->user, $verification->user->staff_department);
+                }
             }
 
             return [

@@ -3,15 +3,19 @@
 use App\Enums\MembershipLevel;
 use App\Models\User;
 use Flux\Flux;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Volt\Component;
 
 new class extends Component {
     public $selectedUser = null;
     public $showUserModal = false;
+    public $brigReason = '';
+    public $brigDays = null;
 
     public function getStowawayUsersProperty()
     {
         return User::where('membership_level', MembershipLevel::Stowaway->value)
+            ->where('in_brig', false)
             ->orderBy('name')
             ->get();
     }
@@ -26,6 +30,8 @@ new class extends Component {
     {
         $this->selectedUser = null;
         $this->showUserModal = false;
+        $this->brigReason = '';
+        $this->brigDays = null;
     }
 
     public function promoteToTraveler()
@@ -47,6 +53,43 @@ new class extends Component {
 
         } catch (\Exception $e) {
             Flux::toast('Failed to promote user. Please try again.', 'Error', variant: 'danger');
+        }
+    }
+
+    public function openBrigModal()
+    {
+        $this->authorize('manage-stowaway-users');
+        $this->brigReason = '';
+        $this->brigDays = null;
+        Flux::modal('brig-reason-modal')->show();
+    }
+
+    public function confirmPutInBrig()
+    {
+        if (!$this->selectedUser) {
+            return;
+        }
+
+        $this->authorize('manage-stowaway-users');
+
+        $this->validate([
+            'brigReason' => 'required|string|min:5',
+            'brigDays' => 'nullable|integer|min:1|max:365',
+        ]);
+
+        $expiresAt = $this->brigDays ? now()->addDays((int) $this->brigDays) : null;
+
+        try {
+            \App\Actions\PutUserInBrig::run($this->selectedUser, Auth::user(), $this->brigReason, $expiresAt);
+
+            Flux::toast("{$this->selectedUser->name} has been placed in the Brig.", 'Done', variant: 'success');
+
+            Flux::modal('brig-reason-modal')->close();
+            $this->closeModal();
+            $this->dispatch('$refresh');
+
+        } catch (\Exception $e) {
+            Flux::toast('Failed to put user in the Brig. Please try again.', 'Error', variant: 'danger');
         }
     }
 }; ?>
@@ -143,6 +186,14 @@ new class extends Component {
 
                     @can('manage-stowaway-users')
                         <flux:button
+                            wire:click="openBrigModal"
+                            variant="danger"
+                            icon="lock-closed"
+                        >
+                            Put in Brig
+                        </flux:button>
+
+                        <flux:button
                             wire:click="promoteToTraveler"
                             variant="primary"
                         >
@@ -153,4 +204,31 @@ new class extends Component {
             </div>
         </flux:modal>
     @endif
+
+    <!-- Put in Brig Reason Modal -->
+    <flux:modal name="brig-reason-modal" class="w-full lg:w-1/2">
+        <div class="space-y-6">
+            <flux:heading size="lg">Put {{ $selectedUser?->name }} in the Brig</flux:heading>
+            <flux:text variant="subtle">Placing this user in the Brig will suspend their community access and ban their Minecraft accounts. They will be notified.</flux:text>
+
+            <flux:field>
+                <flux:label>Reason <span class="text-red-500">*</span></flux:label>
+                <flux:description>Explain why this user is being placed in the Brig.</flux:description>
+                <flux:textarea wire:model="brigReason" rows="4" placeholder="Enter reason..." />
+                <flux:error name="brigReason" />
+            </flux:field>
+
+            <flux:field>
+                <flux:label>Days Until Appeal Available</flux:label>
+                <flux:description>Optional. Leave blank to allow appeal immediately. Enter a number of days to delay the appeal window.</flux:description>
+                <flux:input wire:model="brigDays" type="number" min="1" max="365" placeholder="e.g. 7 (leave blank for no timer)" />
+                <flux:error name="brigDays" />
+            </flux:field>
+
+            <div class="flex gap-2 justify-end">
+                <flux:button variant="ghost" x-on:click="$flux.modal('brig-reason-modal').close()">Cancel</flux:button>
+                <flux:button wire:click="confirmPutInBrig" variant="danger">Confirm — Put in Brig</flux:button>
+            </div>
+        </div>
+    </flux:modal>
 </flux:card>

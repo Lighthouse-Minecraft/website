@@ -3,7 +3,12 @@
 namespace App\Actions;
 
 use App\Enums\MembershipLevel;
+use App\Enums\StaffDepartment;
 use App\Models\User;
+use App\Notifications\UserPromotedToResidentNotification;
+use App\Notifications\UserPromotedToStowawayNotification;
+use App\Notifications\UserPromotedToTravelerNotification;
+use App\Services\TicketNotificationService;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class PromoteUser
@@ -29,5 +34,23 @@ class PromoteUser
         \App\Actions\RecordActivity::handle($user, 'user_promoted', "Promoted from {$current->label()} to {$nextLevel->label()}.");
 
         SyncMinecraftRanks::run($user);
+
+        $notificationService = app(TicketNotificationService::class);
+
+        if ($nextLevel === MembershipLevel::Stowaway) {
+            $notification = new UserPromotedToStowawayNotification($user);
+            $staff = User::where(function ($q) {
+                $q->where('staff_department', StaffDepartment::Quartermaster)
+                    ->orWhere('staff_department', StaffDepartment::Command);
+            })->whereNotNull('staff_rank')->get();
+
+            foreach ($staff as $member) {
+                $notificationService->send($member, clone $notification);
+            }
+        } elseif ($nextLevel === MembershipLevel::Traveler) {
+            $notificationService->send($user, new UserPromotedToTravelerNotification($user));
+        } elseif ($nextLevel === MembershipLevel::Resident) {
+            $notificationService->send($user, new UserPromotedToResidentNotification($user));
+        }
     }
 }

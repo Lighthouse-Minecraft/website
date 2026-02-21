@@ -12,6 +12,7 @@ new class extends Component {
     public function getTravelerUsersProperty()
     {
         return User::where('membership_level', MembershipLevel::Traveler->value)
+            ->where('in_brig', false)
             ->orderBy('promoted_at', 'asc')
             ->get();
     }

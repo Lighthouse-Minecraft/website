@@ -62,7 +62,7 @@ new class extends Component {
 
         <flux:table.rows>
             @foreach ($this->accounts as $account)
-                <flux:table.row :key="$account->id">
+                <flux:table.row wire:key="account-{{ $account->id }}">
                     <flux:table.cell class="whitespace-nowrap">
                         <button wire:click="showAccount({{ $account->id }})"
                                 class="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
