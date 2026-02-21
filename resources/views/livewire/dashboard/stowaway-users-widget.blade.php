@@ -12,6 +12,11 @@ new class extends Component {
     public $brigReason = '';
     public $brigDays = null;
 
+    /**
+     * Fetches Stowaway users who are not in the Brig, ordered by name.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, \App\Models\User> Collection of User models for stowaway users not in Brig, ordered by name.
+     */
     public function getStowawayUsersProperty()
     {
         return User::where('membership_level', MembershipLevel::Stowaway->value)
@@ -26,6 +31,14 @@ new class extends Component {
         $this->showUserModal = true;
     }
 
+    /**
+     * Reset the user modal state and clear selected user and brig fields.
+     *
+     * Clears the currently selected user, hides the user details modal, and resets
+     * brigReason to an empty string and brigDays to null.
+     *
+     * @return void
+     */
     public function closeModal()
     {
         $this->selectedUser = null;
@@ -34,6 +47,15 @@ new class extends Component {
         $this->brigDays = null;
     }
 
+    /**
+     * Promote the currently selected stowaway user to the Traveler membership level.
+     *
+     * If no user is selected this method does nothing. On success it shows a success
+     * toast, closes any open user modal, and refreshes the component; on failure it
+     * shows an error toast.
+     *
+     * @return void
+     */
     public function promoteToTraveler()
     {
         if (!$this->selectedUser) {
@@ -56,6 +78,12 @@ new class extends Component {
         }
     }
 
+    /**
+     * Open the Brig reason modal and initialize brig input fields.
+     *
+     * Ensures the caller is authorized to manage stowaway users, resets the
+     * brigReason and brigDays properties, and displays the "brig-reason-modal".
+     */
     public function openBrigModal()
     {
         $this->authorize('manage-stowaway-users');
@@ -64,6 +92,19 @@ new class extends Component {
         Flux::modal('brig-reason-modal')->show();
     }
 
+    /**
+     * Place the currently selected stowaway user in the Brig after validating input and authorization.
+     *
+     * If no user is selected this method returns immediately. It requires the caller to be authorized
+     * for 'manage-stowaway-users' and validates that `brigReason` is at least 5 characters and that
+     * `brigDays`, if provided, is an integer between 1 and 365. If `brigDays` is provided an expiration
+     * datetime is computed; otherwise the Brig placement is indefinite.
+     *
+     * On success this runs the Brig placement action, shows a success toast, closes the brig and user
+     * modals, and triggers a component refresh. On failure it shows an error toast.
+     *
+     * @return void
+     */
     public function confirmPutInBrig()
     {
         if (!$this->selectedUser) {

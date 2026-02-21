@@ -8,10 +8,20 @@ use App\Models\User;
 class FakeMinecraftRconService extends MinecraftRconService
 {
     /**
-     * Simulate a Minecraft RCON command without connecting to a real server.
+     * Simulate execution of a Minecraft RCON command and record a corresponding command log for local development.
      *
-     * Creates a command log entry (so you can inspect what would have fired)
-     * and always returns success. Only active in APP_ENV=local.
+     * Creates a log entry marked as simulated (meta + ['simulated' => true]), records the request IP and execution timestamp,
+     * and updates the log with a simulated response and execution time. Intended for use in a local environment (APP_ENV=local).
+     *
+     * @param string $command The raw command to simulate.
+     * @param string $commandType A type or category describing the command.
+     * @param string|null $target Optional target identifier for the command (e.g., server, entity).
+     * @param \App\Models\User|null $user Optional user initiating the command; used to set the log's user_id.
+     * @param array $meta Additional metadata to attach to the command log; will be merged with ['simulated' => true].
+     * @return array An associative array with keys:
+     *               - 'success' => `true` if the simulation succeeded, `false` otherwise.
+     *               - 'response' => the simulated response string.
+     *               - 'error' => an error message or `null` when there is no error.
      */
     public function executeCommand(
         string $command,

@@ -40,6 +40,11 @@ new class extends Component {
         $this->editUserRoles = $user->roles->pluck('id')->toArray();
     }
 
+    /**
+     * Update the current sort column and direction for the users list, toggling direction when the same column is selected and resetting pagination.
+     *
+     * @param string $column The column name to sort by.
+     */
     public function sort($column) {
         if ($this->sortBy === $column) {
             $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
@@ -50,11 +55,26 @@ new class extends Component {
         $this->resetPage();
     }
 
+    /**
+     * Reset the pagination page when the brig filter changes.
+     *
+     * Triggered by Livewire after the public property `$filterBrig` is updated to ensure the listing
+     * returns to the first page.
+     */
     public function updatedFilterBrig()
     {
         $this->resetPage();
     }
 
+    /**
+     * Get a paginated list of users with their roles, filtered, sorted, and paginated based on the component state.
+     *
+     * The result is eager-loaded with the `roles` relation, optionally filtered by the `filterBrig` value
+     * (`'in_brig'` to include only users with `in_brig = true`, `'not_brig'` to include only `in_brig = false`),
+     * ordered by `sortBy` and `sortDirection` when `sortBy` is set, and paginated using `perPage`.
+     *
+     * @return \Illuminate\Pagination\LengthAwarePaginator<PersistentModel> A paginator of User models with the `roles` relation loaded.
+     */
     #[\Livewire\Attributes\Computed]
     public function users()
     {
@@ -66,6 +86,11 @@ new class extends Component {
             ->paginate($this->perPage);
     }
 
+    /**
+     * Retrieve all role records.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection|\App\Models\Role[] Collection of all Role models.
+     */
     public function roles()
     {
         return \App\Models\Role::all();
@@ -80,6 +105,14 @@ new class extends Component {
         $this->editUserData = $user->only(['name', 'email']);
     }
 
+    /**
+     * Validate the edit form, apply admin-role safeguards, persist user changes, and close the edit modal.
+     *
+     * Validates name, email, and selected role IDs; prevents non-admins from adding or removing the "Admin" role on the target user; updates the user record and synced roles, resets the edit state, closes the modal, and displays a success toast.
+     *
+     * @throws \Illuminate\Validation\ValidationException If validation fails.
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException If the target user cannot be found.
+     */
     public function saveUser()
     {
         Validator::make([

@@ -12,6 +12,14 @@ new class extends Component {
     public string $sortDirection = 'asc';
     public ?MinecraftAccount $selectedAccount = null;
 
+    /**
+     * Set the current sort column for the accounts table and toggle or reset the sort direction.
+     *
+     * If called with the same column as the current sort, flips between 'asc' and 'desc'.
+     * If called with a different column, sets that column and resets the direction to 'asc'.
+     *
+     * @param string $column The column identifier to sort by (e.g. 'username', 'user_name', 'account_type', 'verified_at').
+     */
     public function sort(string $column): void
     {
         if ($this->sortBy === $column) {
@@ -22,6 +30,13 @@ new class extends Component {
         }
     }
 
+    /**
+     * Authorizes viewing Minecraft accounts, loads the account with its user relation by ID, assigns it to the component, and opens the account detail modal if found.
+     *
+     * Performs an authorization check for viewing Minecraft accounts. If a matching account exists it is stored in `$this->selectedAccount` and the `mc-account-detail` modal is shown; if no account is found, no modal is opened.
+     *
+     * @param int $accountId The ID of the Minecraft account to load and display.
+     */
     public function showAccount(int $accountId): void
     {
         $this->authorize('viewAny', MinecraftAccount::class);
@@ -33,6 +48,12 @@ new class extends Component {
         }
     }
 
+    /**
+     * Retrieve a paginated list of MinecraftAccount records joined with their user name,
+     * ordered according to the component's current sort column and direction.
+     *
+     * @return \Illuminate\Pagination\LengthAwarePaginator<Pokemon\Models\MinecraftAccount> Paginated MinecraftAccount models with an added `user_name` attribute from the joined users table.
+     */
     #[\Livewire\Attributes\Computed]
     public function accounts()
     {

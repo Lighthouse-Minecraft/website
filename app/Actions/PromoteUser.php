@@ -15,6 +15,14 @@ class PromoteUser
 {
     use AsAction;
 
+    /**
+     * Promotes a user one membership level higher, stopping at the provided maximum level.
+     *
+     * Updates the user's membership_level and promoted_at, persists the change, records an activity,
+     * synchronizes Minecraft ranks, and dispatches level-specific notifications.
+     *
+     * @param MembershipLevel $maxLevel The highest membership level the user may be promoted to.
+     */
     public function handle(User $user, MembershipLevel $maxLevel = MembershipLevel::Citizen)
     {
         $current = $user->membership_level;

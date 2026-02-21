@@ -13,10 +13,29 @@ new class extends Component {
     public string $typeFilter = '';
     public ?MinecraftAccount $selectedAccount = null;
 
-    public function updatedSearch(): void { $this->resetPage(); }
-    public function updatedStatusFilter(): void { $this->resetPage(); }
-    public function updatedTypeFilter(): void { $this->resetPage(); }
+    /**
+ * Reset the pagination page when the search filter changes.
+ */
+public function updatedSearch(): void { $this->resetPage(); }
+    /**
+ * Reset the current pagination page to the first page when the status filter is updated.
+ */
+public function updatedStatusFilter(): void { $this->resetPage(); }
+    /**
+ * Reset the pagination page when the command type filter changes.
+ *
+ * Ensures the log listing returns to the first page after updating the type filter.
+ */
+public function updatedTypeFilter(): void { $this->resetPage(); }
 
+    /**
+     * Selects a Minecraft account by command ID or username and opens the account detail modal if found.
+     *
+     * Performs an authorization check before loading the account. If a matching account is found,
+     * assigns it to $this->selectedAccount and shows the "mc-account-detail" modal.
+     *
+     * @param string $target Command ID or username to look up.
+     */
     public function showAccount(string $target): void
     {
         $this->authorize('viewAny', MinecraftAccount::class);
@@ -31,6 +50,13 @@ new class extends Component {
         }
     }
 
+    /**
+     * Retrieve paginated Minecraft command logs filtered by the component's search, status, and type filters.
+     *
+     * The result is ordered by `executed_at` (latest first) and includes the related `user` for each log.
+     *
+     * @return \Illuminate\Pagination\LengthAwarePaginator<int, \App\Models\MinecraftCommandLog> Paginated collection of MinecraftCommandLog models.
+     */
     #[\Livewire\Attributes\Computed]
     public function logs()
     {
@@ -46,6 +72,11 @@ new class extends Component {
             ->paginate(25);
     }
 
+    /**
+     * Retrieve the distinct command types from the command log in ascending order.
+     *
+     * @return string[] An array of distinct `command_type` values ordered by `command_type`.
+     */
     #[\Livewire\Attributes\Computed]
     public function commandTypes(): array
     {

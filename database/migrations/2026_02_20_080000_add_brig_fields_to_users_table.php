@@ -6,6 +6,13 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Add brig-related columns to the users table.
+     *
+     * Adds four columns: `in_brig` (boolean, default false) after `promoted_at`,
+     * `brig_reason` (text, nullable) after `in_brig`, `brig_expires_at` (timestamp, nullable)
+     * after `brig_reason`, and `brig_timer_notified` (boolean, default false) after `brig_expires_at`.
+     */
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
@@ -16,6 +23,11 @@ return new class extends Migration
         });
     }
 
+    /**
+     * Reverts the migration by removing brig-related columns from the users table.
+     *
+     * Drops the `in_brig`, `brig_reason`, `brig_expires_at`, and `brig_timer_notified` columns from the `users` table.
+     */
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {

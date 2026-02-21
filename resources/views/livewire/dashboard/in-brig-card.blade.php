@@ -18,6 +18,15 @@ use Livewire\Volt\Component;
 new class extends Component {
     public string $appealMessage = '';
 
+    /**
+     * Submit the current user's brig appeal.
+     *
+     * Validates the appeal message, creates a Quartermaster ticket containing the appeal,
+     * records ticket activity, sets a 7-day next-appeal cooldown for the user, attempts
+     * to notify Quartermaster staff, and updates the UI (closes modal, clears input, shows toast).
+     *
+     * If the user is not eligible to appeal or ticket creation fails, a danger toast is shown and the method exits.
+     */
     public function submitAppeal(): void
     {
         $user = Auth::user();

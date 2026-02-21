@@ -9,7 +9,11 @@ use Illuminate\Support\ServiceProvider;
 class AppServiceProvider extends ServiceProvider
 {
     /**
-     * Register any application services.
+     * Register application service bindings and environment-specific overrides.
+     *
+     * When the application is running in the local environment, binds
+     * App\Services\MinecraftRconService to App\Services\FakeMinecraftRconService
+     * so the fake implementation is resolved where the real service is requested.
      */
     public function register(): void
     {

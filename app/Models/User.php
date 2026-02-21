@@ -82,16 +82,33 @@ class User extends Authenticatable // implements MustVerifyEmail
         ];
     }
 
+    /**
+     * Indicates whether the user is currently in the brig.
+     *
+     * @return bool `true` if the user is marked as in the brig, `false` otherwise.
+     */
     public function isInBrig(): bool
     {
         return (bool) $this->in_brig;
     }
 
+    /**
+     * Determine whether the user's brig timer has expired.
+     *
+     * Considered expired when `brig_expires_at` is null or the current time is equal to or after `brig_expires_at`.
+     *
+     * @return bool `true` if `brig_expires_at` is null or now is equal to or after `brig_expires_at`, `false` otherwise.
+     */
     public function brigTimerExpired(): bool
     {
         return $this->brig_expires_at === null || now()->gte($this->brig_expires_at);
     }
 
+    /**
+     * Determine whether the user is eligible to submit an appeal from the brig.
+     *
+     * @return bool `true` if the user is in the brig and either no next-appeal time is set or that time is now or in the past, `false` otherwise.
+     */
     public function canAppeal(): bool
     {
         if (! $this->in_brig) {
