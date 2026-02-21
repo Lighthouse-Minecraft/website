@@ -33,24 +33,18 @@ class FakeMinecraftRconService extends MinecraftRconService
         $startTime = microtime(true);
         $response = '[local] Simulated: '.$command;
 
-        $log = MinecraftCommandLog::create([
+        MinecraftCommandLog::create([
             'user_id' => $user?->id,
             'command' => $command,
             'command_type' => $commandType,
             'target' => $target,
-            'status' => 'failed',
-            'ip_address' => request()->ip(),
-            'meta' => array_merge($meta, ['simulated' => true]),
-            'executed_at' => now(),
-        ]);
-
-        $executionTime = (microtime(true) - $startTime) * 1000;
-
-        $log->update([
             'status' => 'success',
             'response' => $response,
             'error_message' => null,
-            'execution_time_ms' => round($executionTime),
+            'ip_address' => request()->ip(),
+            'meta' => array_merge($meta, ['simulated' => true]),
+            'executed_at' => now(),
+            'execution_time_ms' => round((microtime(true) - $startTime) * 1000),
         ]);
 
         return [

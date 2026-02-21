@@ -47,8 +47,8 @@ class PromoteUser
 
         if ($nextLevel === MembershipLevel::Stowaway) {
             $notification = new UserPromotedToStowawayNotification($user);
-            $staff = User::where(function ($q) {
-                $q->where('staff_department', StaffDepartment::Quartermaster)
+            $staff = User::where(function ($query) {
+                $query->where('staff_department', StaffDepartment::Quartermaster)
                     ->orWhere('staff_department', StaffDepartment::Command);
             })->whereNotNull('staff_rank')->get();
 

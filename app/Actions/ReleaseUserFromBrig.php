@@ -28,6 +28,7 @@ class ReleaseUserFromBrig
         $target->in_brig = false;
         $target->brig_reason = null;
         $target->brig_expires_at = null;
+        $target->next_appeal_available_at = null;
         $target->brig_timer_notified = false;
         $target->save();
 

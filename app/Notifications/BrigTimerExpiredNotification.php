@@ -76,7 +76,7 @@ class BrigTimerExpiredNotification extends Notification implements ShouldQueue
             ->line('Your mandatory brig period has ended.')
             ->line('You can now submit an appeal to have your account reviewed by staff.')
             ->line('Please visit your dashboard and use the appeal button to submit your case.')
-            ->action('Go to Dashboard', url('/dashboard'))
+            ->action('Go to Dashboard', route('dashboard'))
             ->line('Note: submitting an appeal does not guarantee reinstatement.');
     }
 
@@ -94,7 +94,7 @@ class BrigTimerExpiredNotification extends Notification implements ShouldQueue
         return [
             'title' => 'Brig Period Ended',
             'message' => 'Your brig period has ended. You may now submit an appeal via your dashboard.',
-            'url' => url('/dashboard'),
+            'url' => route('dashboard'),
         ];
     }
 }

@@ -41,10 +41,9 @@ new class extends Component {
         ]);
 
         $thread = null;
-        $quartermasters = null;
 
         // Create appeal ticket directly — brig users are exempt from the ticket create policy for appeals only
-        DB::transaction(function () use ($user, &$thread, &$quartermasters) {
+        DB::transaction(function () use ($user, &$thread) {
             // Re-check with a row lock to prevent duplicate appeals from concurrent requests
             $lockedUser = User::where('id', $user->id)->lockForUpdate()->firstOrFail();
 
@@ -76,16 +75,17 @@ new class extends Component {
             // Set a 7-day lockout to prevent appeal spam
             $lockedUser->next_appeal_available_at = now()->addDays(7);
             $lockedUser->save();
-
-            $quartermasters = User::where('staff_department', StaffDepartment::Quartermaster)
-                ->whereNotNull('staff_rank')
-                ->get();
         });
 
         if ($thread === null) {
             Flux::toast('You cannot submit an appeal at this time.', 'Not Available', variant: 'danger');
             return;
         }
+
+        // Fetch quartermasters outside the transaction — read doesn't need to extend the row lock
+        $quartermasters = User::where('staff_department', StaffDepartment::Quartermaster)
+            ->whereNotNull('staff_rank')
+            ->get();
 
         // Notify Quartermaster staff outside the transaction so failures don't roll back DB changes
         try {

@@ -88,7 +88,7 @@ class UserPutInBrigNotification extends Notification implements ShouldQueue
             $mail->line('You will receive a notification when your appeal window opens.');
         } else {
             $mail->line('You may submit an appeal at any time via your dashboard.');
-            $mail->action('Go to Dashboard', url('/dashboard'));
+            $mail->action('Go to Dashboard', route('dashboard'));
         }
 
         $mail->line('Your Minecraft server access has been suspended during this period.');

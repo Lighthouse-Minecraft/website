@@ -89,6 +89,20 @@ it('sends notification to the released user', function () {
     Notification::assertSentTo($target, UserReleasedFromBrigNotification::class);
 });
 
+it('clears next_appeal_available_at on release', function () {
+    $admin = User::factory()->create();
+    $target = User::factory()->create([
+        'in_brig' => true,
+        'next_appeal_available_at' => now()->addDays(5),
+    ]);
+
+    $this->mock(MinecraftRconService::class)->shouldReceive('executeCommand')->andReturn(['success' => true, 'response' => null, 'error' => null]);
+
+    ReleaseUserFromBrig::run($target, $admin, 'Released');
+
+    expect($target->fresh()->next_appeal_available_at)->toBeNull();
+});
+
 it('sets brig_timer_notified to false on release', function () {
     $admin = User::factory()->create();
     $target = User::factory()->create([
