@@ -33,6 +33,11 @@ class PromoteUser
 
         $levels = MembershipLevel::cases();
         $currentIndex = array_search($current, $levels, strict: true);
+
+        if ($currentIndex === false) {
+            return;
+        }
+
         $nextLevel = $levels[$currentIndex + 1] ?? null;
 
         if ($nextLevel === null) {
@@ -43,7 +48,7 @@ class PromoteUser
         $user->promoted_at = now();
         $user->save();
 
-        RecordActivity::handle($user, 'user_promoted', "Promoted from {$current->label()} to {$nextLevel->label()}.");
+        RecordActivity::run($user, 'user_promoted', "Promoted from {$current->label()} to {$nextLevel->label()}.");
 
         SyncMinecraftRanks::run($user);
 

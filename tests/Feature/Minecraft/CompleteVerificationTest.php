@@ -8,6 +8,8 @@ use App\Enums\StaffRank;
 use App\Models\MinecraftAccount;
 use App\Models\MinecraftVerification;
 use App\Models\User;
+use App\Notifications\MinecraftCommandNotification;
+use Illuminate\Support\Facades\Notification;
 
 beforeEach(function () {
     $this->user = User::factory()->create();
@@ -15,7 +17,7 @@ beforeEach(function () {
 
     // Mock RCON service for all tests
     $this->mock(\App\Services\MinecraftRconService::class, function ($mock) {
-        $mock->shouldReceive('executeCommand')->andReturn(['success' => true, 'response' => 'OK']);
+        $mock->shouldReceive('executeCommand')->andReturn(['success' => true, 'response' => 'OK', 'error' => null]);
     });
 });
 
@@ -221,6 +223,15 @@ test('syncs staff position when staff member verifies account', function () {
         'status' => 'active',
     ]);
 
-    // The mock in beforeEach will have received both setmember and setstaff commands
-    // which verifies staff position sync is working
+    // setmember command dispatched for Traveler rank assignment
+    Notification::assertSentOnDemand(
+        MinecraftCommandNotification::class,
+        fn ($n) => str_contains($n->command, 'lh setmember')
+    );
+
+    // setstaff command dispatched for staff position sync
+    Notification::assertSentOnDemand(
+        MinecraftCommandNotification::class,
+        fn ($n) => str_contains($n->command, 'lh setstaff')
+    );
 });

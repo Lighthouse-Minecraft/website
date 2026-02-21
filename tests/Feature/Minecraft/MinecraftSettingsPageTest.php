@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Models\MinecraftAccount;
 use App\Models\MinecraftVerification;
 use App\Models\User;
+use App\Services\MinecraftRconService;
 use Illuminate\Support\Facades\Http;
 use Livewire\Volt\Volt;
 
@@ -37,17 +38,28 @@ test('displays linked accounts', function () {
 
 test('shows verification form when no active verification', function () {
     $this->get('/settings/minecraft-accounts')
-        ->assertSuccessful();
+        ->assertSuccessful()
+        ->assertSee('Link New Account');
 });
 
 test('generates verification code', function () {
     Http::fake(['api.mojang.com/*' => Http::response(['id' => str_repeat('a', 32), 'name' => 'TestPlayer'])]);
+
+    $this->mock(MinecraftRconService::class, function ($mock) {
+        $mock->shouldReceive('executeCommand')->andReturn(['success' => true, 'response' => 'OK']);
+    });
 
     Volt::test('settings.minecraft-accounts')
         ->set('username', 'TestPlayer')
         ->set('accountType', 'java')
         ->call('generateCode')
         ->assertHasNoErrors();
+
+    $this->assertDatabaseHas('minecraft_verifications', [
+        'user_id' => $this->user->id,
+        'minecraft_username' => 'TestPlayer',
+        'account_type' => 'java',
+    ]);
 });
 
 test('displays active verification code', function () {
@@ -56,7 +68,8 @@ test('displays active verification code', function () {
     ]);
 
     $this->get('/settings/minecraft-accounts')
-        ->assertSuccessful();
+        ->assertSuccessful()
+        ->assertSee('ABC123');
 });
 
 test('validates username required', function () {
@@ -96,7 +109,8 @@ test('shows remaining account slots', function () {
     MinecraftAccount::factory()->for($this->user)->create();
 
     $this->get('/settings/minecraft-accounts')
-        ->assertSuccessful();
+        ->assertSuccessful()
+        ->assertSee('more account');
 });
 
 test('shows max accounts reached', function () {

@@ -42,7 +42,7 @@ test('records activity for affected user', function () {
     $this->action->handle($account, $this->admin);
 
     $this->assertDatabaseHas('activity_logs', [
-        'subject_type' => \App\Models\User::class,
+        'subject_type' => User::class,
         'subject_id' => $this->regularUser->id,
         'action' => 'minecraft_account_revoked',
     ]);

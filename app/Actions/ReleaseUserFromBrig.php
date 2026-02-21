@@ -49,6 +49,7 @@ class ReleaseUserFromBrig
                     'command_id' => $account->command_id,
                     'user_id' => $target->id,
                     'error' => $e->getMessage(),
+                    'exception' => $e,
                 ]);
             }
         }

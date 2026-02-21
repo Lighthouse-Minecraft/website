@@ -40,6 +40,8 @@ test('prevents unlinking other users account', function () {
 });
 
 test('sends async whitelist remove command', function () {
+    Notification::fake();
+
     $account = MinecraftAccount::factory()->for($this->user)->create([
         'username' => 'TestPlayer',
     ]);
