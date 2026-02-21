@@ -35,11 +35,15 @@ class PromoteUser
         $currentIndex = array_search($current, $levels, strict: true);
         $nextLevel = $levels[$currentIndex + 1] ?? null;
 
+        if ($nextLevel === null) {
+            return;
+        }
+
         $user->membership_level = $nextLevel;
         $user->promoted_at = now();
         $user->save();
 
-        \App\Actions\RecordActivity::handle($user, 'user_promoted', "Promoted from {$current->label()} to {$nextLevel->label()}.");
+        RecordActivity::handle($user, 'user_promoted', "Promoted from {$current->label()} to {$nextLevel->label()}.");
 
         SyncMinecraftRanks::run($user);
 

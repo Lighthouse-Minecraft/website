@@ -6,6 +6,7 @@ use App\Enums\MinecraftAccountStatus;
 use App\Models\User;
 use App\Notifications\UserReleasedFromBrigNotification;
 use App\Services\TicketNotificationService;
+use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ReleaseUserFromBrig
@@ -34,14 +35,22 @@ class ReleaseUserFromBrig
 
         // Restore all banned Minecraft accounts
         foreach ($target->minecraftAccounts()->where('status', MinecraftAccountStatus::Banned->value)->get() as $account) {
-            $account->status = MinecraftAccountStatus::Active;
-            $account->save();
-            SendMinecraftCommand::run(
-                $account->whitelistAddCommand(),
-                'whitelist',
-                $account->command_id,
-                $target
-            );
+            try {
+                SendMinecraftCommand::run(
+                    $account->whitelistAddCommand(),
+                    'whitelist',
+                    $account->command_id,
+                    $target
+                );
+                $account->status = MinecraftAccountStatus::Active;
+                $account->save();
+            } catch (\Exception $e) {
+                Log::error('Failed to whitelist account on brig release', [
+                    'command_id' => $account->command_id,
+                    'user_id' => $target->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
 
         SyncMinecraftRanks::run($target);
