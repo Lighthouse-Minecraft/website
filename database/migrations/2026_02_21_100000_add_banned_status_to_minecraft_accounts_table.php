@@ -19,6 +19,8 @@ return new class extends Migration
     {
         if (DB::getDriverName() === 'pgsql') {
             DB::statement('ALTER TABLE minecraft_accounts DROP CONSTRAINT IF EXISTS minecraft_accounts_status_check');
+            // Reassign any banned accounts to cancelled before re-adding the constraint that excludes 'banned'
+            DB::table('minecraft_accounts')->where('status', 'banned')->update(['status' => 'cancelled']);
             DB::statement("ALTER TABLE minecraft_accounts ADD CONSTRAINT minecraft_accounts_status_check CHECK (status IN ('verifying', 'active', 'cancelled'))");
         }
     }

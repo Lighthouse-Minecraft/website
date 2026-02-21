@@ -111,7 +111,7 @@ new class extends Component {
     @if($user->next_appeal_available_at && ! $user->canAppeal())
         <div class="bg-zinc-50 dark:bg-zinc-800 rounded-lg p-4 text-left">
             <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-1">Appeal Available</flux:text>
-            <flux:text class="text-zinc-800 dark:text-zinc-200">You may submit an appeal after <strong>{{ $user->next_appeal_available_at->format('F j, Y \a\t g:i A T') }}</strong>.</flux:text>
+            <flux:text class="text-zinc-800 dark:text-zinc-200">You may submit an appeal after <strong>{{ $user->next_appeal_available_at->setTimezone($user->timezone ?? 'UTC')->format('F j, Y \a\t g:i A T') }}</strong>.</flux:text>
         </div>
     @endif
 

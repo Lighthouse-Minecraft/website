@@ -38,7 +38,7 @@ new class extends Component {
     }
 }; ?>
 
-<div class="space-y-6">
+<div class="space-y-6 w-full max-w-full">
     <div class="flex items-center gap-4">
         <flux:heading size="xl">User Activity Log</flux:heading>
         <flux:spacer />
@@ -97,7 +97,7 @@ new class extends Component {
                         @endif
                     </flux:table.cell>
 
-                    <flux:table.cell class="max-w-sm text-sm truncate text-zinc-400">
+                    <flux:table.cell class="text-sm text-zinc-400">
                         {{ $activity->description }}
                     </flux:table.cell>
                 </flux:table.row>
