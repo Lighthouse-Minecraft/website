@@ -5,7 +5,9 @@ declare(strict_types=1);
 use App\Actions\UnlinkMinecraftAccount;
 use App\Models\MinecraftAccount;
 use App\Models\User;
+use App\Notifications\MinecraftCommandNotification;
 use App\Services\MinecraftRconService;
+use Illuminate\Support\Facades\Notification;
 
 beforeEach(function () {
     $this->user = User::factory()->create();
@@ -42,26 +44,23 @@ test('sends async whitelist remove command', function () {
         'username' => 'TestPlayer',
     ]);
 
-    $mock = $this->mock(MinecraftRconService::class);
-    $mock->shouldNotReceive('executeCommand');
+    // SendMinecraftCommand::dispatch() routes through an on-demand notification,
+    // not the job queue. Notification::fake() is active globally, so RCON is never called.
+    $this->mock(MinecraftRconService::class)->shouldNotReceive('executeCommand');
 
     $this->action->handle($account, $this->user);
 
-    // Should queue notification instead of executing immediately
-    $this->assertDatabaseHas('jobs', [
-        'queue' => 'default',
-    ]);
-})->skip('Queue/notification testing requires additional infrastructure setup');
+    Notification::assertSentOnDemand(MinecraftCommandNotification::class);
+});
 
 test('records activity log', function () {
     $account = MinecraftAccount::factory()->for($this->user)->create();
 
     $this->action->handle($account, $this->user);
 
-    // TODO: Enable when activity_log table is created
-    // $this->assertDatabaseHas('activity_log', [
-    //     'user_id' => $this->user->id,
-    //     'action' => 'minecraft_account_unlinked',
-    // ]);
-    expect(true)->toBeTrue(); // Placeholder
+    $this->assertDatabaseHas('activity_logs', [
+        'subject_type' => \App\Models\User::class,
+        'subject_id' => $this->user->id,
+        'action' => 'minecraft_account_unlinked',
+    ]);
 });

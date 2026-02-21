@@ -134,12 +134,28 @@ test('uses database transaction', function () {
 });
 
 test('records activity log', function () {
-    // TODO: Enable when activity_log table is created
-    // $this->assertDatabaseHas('activity_log', [
-    //     'user_id' => $this->user->id,
-    //     'action' => 'minecraft_account_linked',
-    // ]);
-})->skip('Requires activity_log table to be created');
+    MinecraftVerification::factory()->for($this->user)->pending()->create([
+        'code' => 'ABC123',
+        'account_type' => 'java',
+        'minecraft_username' => 'TestPlayer',
+        'minecraft_uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
+    ]);
+
+    MinecraftAccount::factory()->for($this->user)->verifying()->create([
+        'username' => 'TestPlayer',
+        'uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
+        'account_type' => 'java',
+        'command_id' => 'TestPlayer',
+    ]);
+
+    $this->action->handle('ABC123', 'TestPlayer', '069a79f4-44e9-4726-a5be-fca90e38aaf5');
+
+    $this->assertDatabaseHas('activity_logs', [
+        'subject_type' => \App\Models\User::class,
+        'subject_id' => $this->user->id,
+        'action' => 'minecraft_account_linked',
+    ]);
+});
 
 test('normalizes uuid with dashes', function () {
     $verification = MinecraftVerification::factory()->for($this->user)->pending()->create([
