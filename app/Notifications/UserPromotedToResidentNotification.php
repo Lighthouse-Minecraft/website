@@ -20,7 +20,7 @@ class UserPromotedToResidentNotification extends Notification implements ShouldQ
     /**
      * Create a notification for a user who was promoted to Resident.
      *
-     * @param User $user The user that was promoted to Resident.
+     * @param  User  $user  The user that was promoted to Resident.
      */
     public function __construct(
         public User $user
@@ -29,8 +29,8 @@ class UserPromotedToResidentNotification extends Notification implements ShouldQ
     /**
      * Configure which channels the notification may use and optionally set a Pushover API key.
      *
-     * @param array $channels List of channel identifiers (e.g., 'mail', 'pushover') to allow for delivery.
-     * @param string|null $pushoverKey Optional Pushover API key to enable the Pushover channel when present.
+     * @param  array  $channels  List of channel identifiers (e.g., 'mail', 'pushover') to allow for delivery.
+     * @param  string|null  $pushoverKey  Optional Pushover API key to enable the Pushover channel when present.
      * @return $this The notification instance (fluent interface) for method chaining.
      */
     public function setChannels(array $channels, ?string $pushoverKey = null): self
@@ -67,7 +67,7 @@ class UserPromotedToResidentNotification extends Notification implements ShouldQ
     /**
      * Build the mail message sent to a user when they are promoted to Resident.
      *
-     * @param object $notifiable The notification recipient.
+     * @param  object  $notifiable  The notification recipient.
      * @return \Illuminate\Notifications\Messages\MailMessage Mail message with a subject welcoming the user by name and body lines announcing the Resident promotion and encouragement to engage.
      */
     public function toMail(object $notifiable): MailMessage
@@ -86,7 +86,7 @@ class UserPromotedToResidentNotification extends Notification implements ShouldQ
      * - `title`: a short title that includes the promoted user's name.
      * - `message`: the body text announcing the promotion and welcome.
      *
-     * @param object $notifiable The entity receiving the notification (unused).
+     * @param  object  $notifiable  The entity receiving the notification (unused).
      * @return array<string,string> Associative array with `title` and `message` keys.
      */
     public function toPushover(object $notifiable): array

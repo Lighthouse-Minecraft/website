@@ -13,11 +13,11 @@ class FakeMinecraftRconService extends MinecraftRconService
      * Creates a log entry marked as simulated (meta + ['simulated' => true]), records the request IP and execution timestamp,
      * and updates the log with a simulated response and execution time. Intended for use in a local environment (APP_ENV=local).
      *
-     * @param string $command The raw command to simulate.
-     * @param string $commandType A type or category describing the command.
-     * @param string|null $target Optional target identifier for the command (e.g., server, entity).
-     * @param \App\Models\User|null $user Optional user initiating the command; used to set the log's user_id.
-     * @param array $meta Additional metadata to attach to the command log; will be merged with ['simulated' => true].
+     * @param  string  $command  The raw command to simulate.
+     * @param  string  $commandType  A type or category describing the command.
+     * @param  string|null  $target  Optional target identifier for the command (e.g., server, entity).
+     * @param  \App\Models\User|null  $user  Optional user initiating the command; used to set the log's user_id.
+     * @param  array  $meta  Additional metadata to attach to the command log; will be merged with ['simulated' => true].
      * @return array An associative array with keys:
      *               - 'success' => `true` if the simulation succeeded, `false` otherwise.
      *               - 'response' => the simulated response string.

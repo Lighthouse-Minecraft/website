@@ -18,11 +18,11 @@ class PutUserInBrig
      *
      * Marks the target user as in brig (storing reason, optional expiry, and next-appeal timestamp), bans the user's active or verifying Minecraft accounts, records an activity entry, and notifies the user.
      *
-     * @param User $target The user to put in the brig.
-     * @param User $admin The admin performing the action.
-     * @param string $reason Reason for placing the user in the brig.
-     * @param Carbon|null $expiresAt Optional timestamp when the brig placement expires.
-     * @param Carbon|null $appealAvailableAt Optional timestamp when appeals become available.
+     * @param  User  $target  The user to put in the brig.
+     * @param  User  $admin  The admin performing the action.
+     * @param  string  $reason  Reason for placing the user in the brig.
+     * @param  Carbon|null  $expiresAt  Optional timestamp when the brig placement expires.
+     * @param  Carbon|null  $appealAvailableAt  Optional timestamp when appeals become available.
      */
     public function handle(User $target, User $admin, string $reason, ?Carbon $expiresAt = null, ?Carbon $appealAvailableAt = null): void
     {

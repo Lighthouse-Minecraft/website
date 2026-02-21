@@ -20,7 +20,7 @@ class UserReleasedFromBrigNotification extends Notification implements ShouldQue
     /**
      * Create a new notification for a user released from the brig.
      *
-     * @param User $user The user who has been released and will receive the notification.
+     * @param  User  $user  The user who has been released and will receive the notification.
      */
     public function __construct(
         public User $user
@@ -29,8 +29,8 @@ class UserReleasedFromBrigNotification extends Notification implements ShouldQue
     /**
      * Configure which delivery channels this notification may use and set an optional Pushover key.
      *
-     * @param array $channels Array of allowed channels (for example: ['mail'], ['mail', 'pushover']).
-     * @param string|null $pushoverKey Optional Pushover user key to use when Pushover is enabled.
+     * @param  array  $channels  Array of allowed channels (for example: ['mail'], ['mail', 'pushover']).
+     * @param  string|null  $pushoverKey  Optional Pushover user key to use when Pushover is enabled.
      * @return $this The notification instance for method chaining.
      */
     public function setChannels(array $channels, ?string $pushoverKey = null): self
@@ -64,7 +64,7 @@ class UserReleasedFromBrigNotification extends Notification implements ShouldQue
     /**
      * Create a mail message notifying the recipient that their account has been released from the brig.
      *
-     * @param object $notifiable The notifiable entity that will receive the notification.
+     * @param  object  $notifiable  The notifiable entity that will receive the notification.
      * @return \Illuminate\Notifications\Messages\MailMessage A MailMessage with subject "You Have Been Released from the Brig", explanatory lines about restored access and ranks, a welcome line, and an action button linking to the dashboard.
      */
     public function toMail(object $notifiable): MailMessage

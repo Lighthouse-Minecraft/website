@@ -16,12 +16,12 @@ class SendMinecraftCommand
      * In local environments this method forces immediate execution (bypasses the queue).
      * When `$async` is true the command is dispatched for queued processing; when false the command is executed synchronously.
      *
-     * @param string $command The RCON command to execute.
-     * @param string $commandType Category of the command (e.g., 'whitelist', 'verify', 'ban').
-     * @param string|null $target Optional player or entity target for the command.
-     * @param User|null $user Optional user that initiated the command.
-     * @param array $meta Optional additional metadata to include with the command.
-     * @param bool $async Whether to queue the command (`true`) or execute it immediately (`false`).
+     * @param  string  $command  The RCON command to execute.
+     * @param  string  $commandType  Category of the command (e.g., 'whitelist', 'verify', 'ban').
+     * @param  string|null  $target  Optional player or entity target for the command.
+     * @param  User|null  $user  Optional user that initiated the command.
+     * @param  array  $meta  Optional additional metadata to include with the command.
+     * @param  bool  $async  Whether to queue the command (`true`) or execute it immediately (`false`).
      */
     public function handle(
         string $command,

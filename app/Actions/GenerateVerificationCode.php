@@ -18,15 +18,15 @@ class GenerateVerificationCode
     /**
      * Generate a verification code and prepare a temporary whitelist entry to link a Minecraft account to a user.
      *
-     * @param User $user The user requesting the verification.
-     * @param MinecraftAccountType $accountType The Minecraft account type to verify (Java or Bedrock).
-     * @param string $username The provided Minecraft username or gamertag to verify.
+     * @param  User  $user  The user requesting the verification.
+     * @param  MinecraftAccountType  $accountType  The Minecraft account type to verify (Java or Bedrock).
+     * @param  string  $username  The provided Minecraft username or gamertag to verify.
      * @return array{success:bool, code:string|null, expires_at:\Illuminate\Support\Carbon|null, error:string|null}
-     *     An associative array:
-     *     - `success`: `true` on successful generation and whitelist addition, `false` on failure.
-     *     - `code`: the generated 6-character verification code when `success` is `true`, otherwise `null`.
-     *     - `expires_at`: timestamp when the verification code expires when `success` is `true`, otherwise `null`.
-     *     - `error`: user-facing error message when `success` is `false`, otherwise `null`.
+     *                                                                                                              An associative array:
+     *                                                                                                              - `success`: `true` on successful generation and whitelist addition, `false` on failure.
+     *                                                                                                              - `code`: the generated 6-character verification code when `success` is `true`, otherwise `null`.
+     *                                                                                                              - `expires_at`: timestamp when the verification code expires when `success` is `true`, otherwise `null`.
+     *                                                                                                              - `error`: user-facing error message when `success` is `false`, otherwise `null`.
      */
     public function handle(
         User $user,

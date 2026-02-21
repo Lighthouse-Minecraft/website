@@ -20,7 +20,7 @@ class UserPromotedToTravelerNotification extends Notification implements ShouldQ
     /**
      * Create a new notification instance for a promoted user.
      *
-     * @param User $user The user who was promoted to Traveler. 
+     * @param  User  $user  The user who was promoted to Traveler.
      */
     public function __construct(
         public User $user
@@ -29,8 +29,8 @@ class UserPromotedToTravelerNotification extends Notification implements ShouldQ
     /**
      * Configure which delivery channels the notification may use and optionally set a Pushover key.
      *
-     * @param array $channels Array of channel identifiers to allow (e.g. ['mail'], ['mail','pushover']).
-     * @param string|null $pushoverKey Optional Pushover user key; when provided, enables the Pushover channel.
+     * @param  array  $channels  Array of channel identifiers to allow (e.g. ['mail'], ['mail','pushover']).
+     * @param  string|null  $pushoverKey  Optional Pushover user key; when provided, enables the Pushover channel.
      * @return $this The current notification instance for method chaining.
      */
     public function setChannels(array $channels, ?string $pushoverKey = null): self
@@ -46,7 +46,7 @@ class UserPromotedToTravelerNotification extends Notification implements ShouldQ
      *
      * If 'mail' is allowed, the 'mail' channel is included. If 'pushover' is allowed and a Pushover key is present, the Pushover channel class is included.
      *
-     * @param object $notifiable The entity to which the notification will be sent.
+     * @param  object  $notifiable  The entity to which the notification will be sent.
      * @return array An array of channel identifiers (e.g., 'mail' or channel class names) to use for delivery.
      */
     public function via(object $notifiable): array

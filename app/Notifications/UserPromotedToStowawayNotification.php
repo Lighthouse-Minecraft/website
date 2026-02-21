@@ -20,7 +20,7 @@ class UserPromotedToStowawayNotification extends Notification implements ShouldQ
     /**
      * Create a notification for a user who has been promoted to stowaway.
      *
-     * @param \App\Models\User $newStowaway The user who was promoted to stowaway.
+     * @param  \App\Models\User  $newStowaway  The user who was promoted to stowaway.
      */
     public function __construct(
         public User $newStowaway
@@ -29,8 +29,8 @@ class UserPromotedToStowawayNotification extends Notification implements ShouldQ
     /**
      * Configure the notification's allowed delivery channels and optional Pushover API key.
      *
-     * @param array $channels Allowed notification channels (e.g., 'mail', 'pushover').
-     * @param string|null $pushoverKey Optional Pushover API key to enable the Pushover channel.
+     * @param  array  $channels  Allowed notification channels (e.g., 'mail', 'pushover').
+     * @param  string|null  $pushoverKey  Optional Pushover API key to enable the Pushover channel.
      * @return self The notification instance for method chaining.
      */
     public function setChannels(array $channels, ?string $pushoverKey = null): self
@@ -69,7 +69,7 @@ class UserPromotedToStowawayNotification extends Notification implements ShouldQ
      * The message includes the promoted user's name, a request to review or manage the account,
      * an action button linking to the user's profile, and a closing thank-you line.
      *
-     * @param object $notifiable The entity that will receive the notification.
+     * @param  object  $notifiable  The entity that will receive the notification.
      * @return \Illuminate\Notifications\Messages\MailMessage The prepared mail message.
      */
     public function toMail(object $notifiable): MailMessage
@@ -89,9 +89,9 @@ class UserPromotedToStowawayNotification extends Notification implements ShouldQ
      * new stowaway, and a URL linking to the promoted user's profile.
      *
      * @return array{title:string,message:string,url:string} Associative array with keys:
-     *               - `title`: notification title
-     *               - `message`: brief message describing the promotion
-     *               - `url`: absolute URL to the promoted user's profile
+     *                                                       - `title`: notification title
+     *                                                       - `message`: brief message describing the promotion
+     *                                                       - `url`: absolute URL to the promoted user's profile
      */
     public function toPushover(object $notifiable): array
     {

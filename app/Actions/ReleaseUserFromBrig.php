@@ -19,9 +19,9 @@ class ReleaseUserFromBrig
      * synchronizes Minecraft ranks, records an activity entry describing the release (including the admin and reason),
      * and sends a UserReleasedFromBrigNotification via the ticket notification service.
      *
-     * @param User $target The user being released from brig.
-     * @param User $admin The administrator performing the release.
-     * @param string $reason A human-readable reason for the release.
+     * @param  User  $target  The user being released from brig.
+     * @param  User  $admin  The administrator performing the release.
+     * @param  string  $reason  A human-readable reason for the release.
      */
     public function handle(User $target, User $admin, string $reason): void
     {

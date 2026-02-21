@@ -21,9 +21,9 @@ class CompleteVerification
      * Validates the provided verification code, matches the username (case-insensitive) and UUID (dashes ignored),
      * and on success promotes the account to active, records activity, and triggers optional post-link actions.
      *
-     * @param string $code The in-game verification code submitted by the player.
-     * @param string $username The Minecraft username reported by the server (compared case-insensitively).
-     * @param string $uuid The Minecraft UUID reported by the server; dashes are ignored during comparison.
+     * @param  string  $code  The in-game verification code submitted by the player.
+     * @param  string  $username  The Minecraft username reported by the server (compared case-insensitively).
+     * @param  string  $uuid  The Minecraft UUID reported by the server; dashes are ignored during comparison.
      * @return array An array with keys:
      *               - 'success' => bool: `true` if the account was linked, `false` otherwise.
      *               - 'message' => string: Human-readable outcome or error message.

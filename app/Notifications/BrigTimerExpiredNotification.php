@@ -17,10 +17,10 @@ class BrigTimerExpiredNotification extends Notification implements ShouldQueue
 
     protected ?string $pushoverKey = null;
 
-    / **
+    /**
      * Create a new notification for the given user.
      *
-     * @param User $user The user associated with this notification.
+     * @param  User  $user  The user associated with this notification.
      */
     public function __construct(
         public User $user
@@ -31,8 +31,8 @@ class BrigTimerExpiredNotification extends Notification implements ShouldQueue
      *
      * Optionally provides a Pushover API key to enable the Pushover channel when requested.
      *
-     * @param array $channels Array of channel identifiers (e.g., 'mail', 'pushover').
-     * @param string|null $pushoverKey Pushover API key to enable Pushover delivery, or null to leave disabled.
+     * @param  array  $channels  Array of channel identifiers (e.g., 'mail', 'pushover').
+     * @param  string|null  $pushoverKey  Pushover API key to enable Pushover delivery, or null to leave disabled.
      * @return $this The notification instance for method chaining.
      */
     public function setChannels(array $channels, ?string $pushoverKey = null): self
@@ -46,7 +46,7 @@ class BrigTimerExpiredNotification extends Notification implements ShouldQueue
     /**
      * Determine which channels should be used to deliver this notification for the given notifiable.
      *
-     * @param object $notifiable The entity that will receive the notification.
+     * @param  object  $notifiable  The entity that will receive the notification.
      * @return array Array of channel identifiers: contains `'mail'` when mail delivery is allowed, and `PushoverChannel::class` when `'pushover'` is allowed and a pushover key has been provided.
      */
     public function via(object $notifiable): array
@@ -83,7 +83,7 @@ class BrigTimerExpiredNotification extends Notification implements ShouldQueue
     /**
      * Build the Pushover payload for this notification.
      *
-     * @param object $notifiable The entity receiving the notification.
+     * @param  object  $notifiable  The entity receiving the notification.
      * @return array The Pushover payload containing:
      *               - 'title': notification title,
      *               - 'message': body text,

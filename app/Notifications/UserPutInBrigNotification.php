@@ -20,9 +20,9 @@ class UserPutInBrigNotification extends Notification implements ShouldQueue
     /**
      * Create a notification indicating a user has been placed in the Brig.
      *
-     * @param User $user The affected user.
-     * @param string $reason The reason the user was placed in the Brig.
-     * @param \Illuminate\Support\Carbon|null $expiresAt Optional timestamp for when the brig placement or appeal window ends (null if no expiration / appeals available immediately).
+     * @param  User  $user  The affected user.
+     * @param  string  $reason  The reason the user was placed in the Brig.
+     * @param  \Illuminate\Support\Carbon|null  $expiresAt  Optional timestamp for when the brig placement or appeal window ends (null if no expiration / appeals available immediately).
      */
     public function __construct(
         public User $user,
@@ -33,8 +33,8 @@ class UserPutInBrigNotification extends Notification implements ShouldQueue
     /**
      * Set which delivery channels are allowed for this notification and an optional Pushover key.
      *
-     * @param string[] $channels List of allowed channel identifiers (for example `'mail'` or `'pushover'`).
-     * @param string|null $pushoverKey Optional Pushover key to enable Pushover channel when present.
+     * @param  string[]  $channels  List of allowed channel identifiers (for example `'mail'` or `'pushover'`).
+     * @param  string|null  $pushoverKey  Optional Pushover key to enable Pushover channel when present.
      * @return $this The same notification instance.
      */
     public function setChannels(array $channels, ?string $pushoverKey = null): self
@@ -50,7 +50,7 @@ class UserPutInBrigNotification extends Notification implements ShouldQueue
      *
      * Returns an array containing 'mail' and/or PushoverChannel::class when those channels are enabled and available.
      *
-     * @param object $notifiable The entity that will receive the notification.
+     * @param  object  $notifiable  The entity that will receive the notification.
      * @return array<string|class-string> Array of channel identifiers to deliver the notification through.
      */
     public function via(object $notifiable): array
@@ -103,10 +103,10 @@ class UserPutInBrigNotification extends Notification implements ShouldQueue
      * (formatted as "M j, Y") when an expiration is set, or guidance to appeal via
      * the dashboard if no expiration is provided.
      *
-     * @param object $notifiable The entity to be notified (unused).
+     * @param  object  $notifiable  The entity to be notified (unused).
      * @return array<string,string> Associative array with keys:
-     *                             - 'title': the notification title,
-     *                             - 'message': the assembled message string.
+     *                              - 'title': the notification title,
+     *                              - 'message': the assembled message string.
      */
     public function toPushover(object $notifiable): array
     {
