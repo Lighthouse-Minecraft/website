@@ -59,6 +59,7 @@ new class extends Component {
     public function users()
     {
         return \App\Models\User::query()
+            ->with('roles')
             ->when($this->filterBrig === 'in_brig', fn ($q) => $q->where('in_brig', true))
             ->when($this->filterBrig === 'not_brig', fn ($q) => $q->where('in_brig', false))
             ->tap(fn ($query) => $this->sortBy ? $query->orderBy($this->sortBy, $this->sortDirection) : $query)

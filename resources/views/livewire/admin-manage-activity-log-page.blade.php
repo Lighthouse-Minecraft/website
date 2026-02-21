@@ -60,7 +60,7 @@ new class extends Component {
 
         <flux:table.rows>
             @foreach($this->activities as $activity)
-                <flux:table.row :key="$activity->id">
+                <flux:table.row wire:key="activity-{{ $activity->id }}" :key="$activity->id">
                     @php
                         $tz = auth()->user()->timezone ?? 'UTC';
                         $localTime = $activity->created_at->setTimezone($tz);
@@ -76,7 +76,7 @@ new class extends Component {
                         @if ($subject instanceof User)
                             <flux:link href="{{ route('profile.show', $subject) }}">{{ $subject->name }}</flux:link>
                         @elseif ($subject instanceof Thread)
-                            <flux:link href="/tickets/{{ $subject->id }}">{{ $subject->subject }}</flux:link>
+                            <flux:link href="{{ route('tickets.show', ['ticket' => $subject->id]) }}">{{ $subject->subject }}</flux:link>
                         @elseif ($subject)
                             {{ class_basename($activity->subject_type) }} #{{ $activity->subject_id }}
                         @else

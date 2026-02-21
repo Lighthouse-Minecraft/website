@@ -63,8 +63,7 @@ new class extends Component {
         }
 
         // Set a 7-day lockout to prevent appeal spam
-        $user->brig_expires_at = now()->addDays(7);
-        $user->brig_timer_notified = false;
+        $user->next_appeal_available_at = now()->addDays(7);
         $user->save();
 
         $this->appealMessage = '';

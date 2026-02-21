@@ -217,7 +217,7 @@ new class extends Component {
             <flux:heading size="lg">Your Linked Accounts</flux:heading>
 
             @foreach($linkedAccounts as $account)
-                <flux:card wire:key="{{ $account->id }}" class="p-4">
+                <flux:card wire:key="minecraft-account-{{ $account->id }}" class="p-4">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-3">
                             @if($account->avatar_url)

@@ -324,7 +324,7 @@ new class extends Component {
             @if($user->minecraftAccounts->isNotEmpty())
                 <div class="flex flex-col gap-2">
                     @foreach($user->minecraftAccounts as $account)
-                        <div wire:key="{{ $account->id }}" class="flex items-center justify-between">
+                        <div wire:key="minecraft-account-{{ $account->id }}" class="flex items-center justify-between">
                             <div class="flex items-center gap-3">
                                 @if($account->avatar_url)
                                     <img src="{{ $account->avatar_url }}" alt="{{ $account->username }}" class="w-8 h-8 rounded" />

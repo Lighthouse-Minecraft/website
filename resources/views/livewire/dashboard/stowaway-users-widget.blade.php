@@ -77,10 +77,15 @@ new class extends Component {
             'brigDays' => 'nullable|integer|min:1|max:365',
         ]);
 
-        $expiresAt = $this->brigDays ? now()->addDays((int) $this->brigDays) : null;
+        $appealAvailableAt = $this->brigDays ? now()->addDays((int) $this->brigDays) : null;
 
         try {
-            \App\Actions\PutUserInBrig::run($this->selectedUser, Auth::user(), $this->brigReason, $expiresAt);
+            \App\Actions\PutUserInBrig::run(
+                target: $this->selectedUser,
+                admin: Auth::user(),
+                reason: $this->brigReason,
+                appealAvailableAt: $appealAvailableAt
+            );
 
             Flux::toast("{$this->selectedUser->name} has been placed in the Brig.", 'Done', variant: 'success');
 
@@ -214,14 +219,14 @@ new class extends Component {
             <flux:field>
                 <flux:label>Reason <span class="text-red-500">*</span></flux:label>
                 <flux:description>Explain why this user is being placed in the Brig.</flux:description>
-                <flux:textarea wire:model="brigReason" rows="4" placeholder="Enter reason..." />
+                <flux:textarea wire:model.live="brigReason" rows="4" placeholder="Enter reason..." />
                 <flux:error name="brigReason" />
             </flux:field>
 
             <flux:field>
                 <flux:label>Days Until Appeal Available</flux:label>
                 <flux:description>Optional. Leave blank to allow appeal immediately. Enter a number of days to delay the appeal window.</flux:description>
-                <flux:input wire:model="brigDays" type="number" min="1" max="365" placeholder="e.g. 7 (leave blank for no timer)" />
+                <flux:input wire:model.live="brigDays" type="number" min="1" max="365" placeholder="e.g. 7 (leave blank for no timer)" />
                 <flux:error name="brigDays" />
             </flux:field>
 

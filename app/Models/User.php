@@ -39,6 +39,7 @@ class User extends Authenticatable // implements MustVerifyEmail
         'in_brig',
         'brig_reason',
         'brig_expires_at',
+        'next_appeal_available_at',
         'brig_timer_notified',
     ];
 
@@ -76,6 +77,7 @@ class User extends Authenticatable // implements MustVerifyEmail
             'notification_preferences' => 'array',
             'in_brig' => 'boolean',
             'brig_expires_at' => 'datetime',
+            'next_appeal_available_at' => 'datetime',
             'brig_timer_notified' => 'boolean',
         ];
     }
@@ -92,7 +94,17 @@ class User extends Authenticatable // implements MustVerifyEmail
 
     public function canAppeal(): bool
     {
-        return $this->in_brig && $this->brigTimerExpired();
+        if (! $this->in_brig) {
+            return false;
+        }
+
+        // If no appeal timer is set, they can appeal immediately
+        if (! $this->next_appeal_available_at) {
+            return true;
+        }
+
+        // Otherwise, check if the timer has expired
+        return $this->next_appeal_available_at <= now();
     }
 
     /**

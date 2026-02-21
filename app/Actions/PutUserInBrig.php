@@ -13,11 +13,12 @@ class PutUserInBrig
 {
     use AsAction;
 
-    public function handle(User $target, User $admin, string $reason, ?Carbon $expiresAt = null): void
+    public function handle(User $target, User $admin, string $reason, ?Carbon $expiresAt = null, ?Carbon $appealAvailableAt = null): void
     {
         $target->in_brig = true;
         $target->brig_reason = $reason;
         $target->brig_expires_at = $expiresAt;
+        $target->next_appeal_available_at = $appealAvailableAt;
         $target->brig_timer_notified = false;
         $target->save();
 
@@ -38,6 +39,9 @@ class PutUserInBrig
             $description .= " Timer set until {$expiresAt->toDateTimeString()}.";
         } else {
             $description .= ' No timer set.';
+        }
+        if ($appealAvailableAt) {
+            $description .= " Appeals available after {$appealAvailableAt->toDateTimeString()}.";
         }
 
         RecordActivity::handle($target, 'user_put_in_brig', $description);

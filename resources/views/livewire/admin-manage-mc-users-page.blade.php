@@ -83,7 +83,7 @@ new class extends Component {
                         </flux:badge>
                     </flux:table.cell>
 
-                    <flux:table.cell class="whitespace-nowrap">{{ $account->verified_at->format('M j, Y') }}</flux:table.cell>
+                    <flux:table.cell class="whitespace-nowrap">{{ $account->verified_at ? $account->verified_at->format('M j, Y') : '—' }}</flux:table.cell>
                 </flux:table.row>
             @endforeach
         </flux:table.rows>

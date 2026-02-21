@@ -19,6 +19,8 @@ new class extends Component {
 
     public function showAccount(string $target): void
     {
+        $this->authorize('viewAny', MinecraftAccount::class);
+
         $this->selectedAccount = MinecraftAccount::with('user')
             ->where('command_id', $target)
             ->orWhere('username', $target)
