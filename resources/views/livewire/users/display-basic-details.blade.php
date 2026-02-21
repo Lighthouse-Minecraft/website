@@ -156,6 +156,7 @@ new class extends Component {
         \App\Actions\PromoteUser::run($this->user);
         $this->user->refresh();
 
+        Flux::modal('profile-promote-confirm-modal')->close();
         Flux::toast(
             text: "Promoted to {$this->user->membership_level->label()} successfully.",
             heading: 'Promoted',
@@ -411,8 +412,8 @@ new class extends Component {
             </flux:field>
 
             <flux:field>
-                <flux:label>Days Until Appeal Available</flux:label>
-                <flux:description>Optional. Leave blank to allow immediate appeal.</flux:description>
+                <flux:label>Days Until Auto-Release</flux:label>
+                <flux:description>Optional. Leave blank for no auto-release timer.</flux:description>
                 <flux:input wire:model="brigActionDays" type="number" min="1" max="365" placeholder="e.g. 7 (leave blank for no timer)" />
                 <flux:error name="brigActionDays" />
             </flux:field>

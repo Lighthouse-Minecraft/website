@@ -2,9 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Enums\MembershipLevel;
-use App\Enums\StaffDepartment;
-use App\Enums\StaffRank;
 use App\Models\User;
 use App\Policies\UserPolicy;
 
@@ -15,7 +12,7 @@ uses()->group('policies');
 it('admin can bypass all policy checks', function () {
     $admin = loginAsAdmin();
     $target = User::factory()->create();
-    $policy = new UserPolicy();
+    $policy = new UserPolicy;
 
     expect($policy->before($admin, 'view'))->toBeTrue();
 });
@@ -23,14 +20,14 @@ it('admin can bypass all policy checks', function () {
 it('command officer can bypass all policy checks', function () {
     $officer = officerCommand();
     $target = User::factory()->create();
-    $policy = new UserPolicy();
+    $policy = new UserPolicy;
 
     expect($policy->before($officer, 'view'))->toBeTrue();
 });
 
 it('non-admin non-command returns null from before', function () {
     $user = User::factory()->create();
-    $policy = new UserPolicy();
+    $policy = new UserPolicy;
 
     expect($policy->before($user, 'view'))->toBeNull();
 });
@@ -123,42 +120,42 @@ it('regular crew member cannot update other users', function () {
 
 it('no one can create users through policy', function () {
     $admin = loginAsAdmin();
-    $policy = new UserPolicy();
+    $policy = new UserPolicy;
     // Admin bypasses via before(), so test the raw method
     $user = User::factory()->create();
     expect($policy->create($user))->toBeFalse();
 });
 
 it('no one can delete users through policy', function () {
-    $policy = new UserPolicy();
+    $policy = new UserPolicy;
     $user = User::factory()->create();
     $target = User::factory()->create();
     expect($policy->delete($user, $target))->toBeFalse();
 });
 
 it('no one can restore users through policy', function () {
-    $policy = new UserPolicy();
+    $policy = new UserPolicy;
     $user = User::factory()->create();
     $target = User::factory()->create();
     expect($policy->restore($user, $target))->toBeFalse();
 });
 
 it('no one can force delete users through policy', function () {
-    $policy = new UserPolicy();
+    $policy = new UserPolicy;
     $user = User::factory()->create();
     $target = User::factory()->create();
     expect($policy->forceDelete($user, $target))->toBeFalse();
 });
 
 it('no one can update staff positions through policy (requires admin bypass)', function () {
-    $policy = new UserPolicy();
+    $policy = new UserPolicy;
     $user = User::factory()->create();
     $target = User::factory()->create();
     expect($policy->updateStaffPosition($user, $target))->toBeFalse();
 });
 
 it('no one can remove staff positions through policy (requires admin bypass)', function () {
-    $policy = new UserPolicy();
+    $policy = new UserPolicy;
     $user = User::factory()->create();
     $target = User::factory()->create();
     expect($policy->removeStaffPosition($user, $target))->toBeFalse();

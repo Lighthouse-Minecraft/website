@@ -21,7 +21,7 @@ it('marks the target user as no longer in brig', function () {
         'brig_expires_at' => now()->addDays(10),
     ]);
 
-    $this->mock(MinecraftRconService::class)->shouldReceive('sendCommand')->andReturn(true);
+    $this->mock(MinecraftRconService::class)->shouldReceive('executeCommand')->andReturn(['success' => true, 'response' => null, 'error' => null]);
 
     ReleaseUserFromBrig::run($target, $admin, 'Released');
 
@@ -38,7 +38,7 @@ it('restores banned minecraft accounts to active', function () {
         'status' => MinecraftAccountStatus::Banned,
     ]);
 
-    $this->mock(MinecraftRconService::class)->shouldReceive('sendCommand')->andReturn(true);
+    $this->mock(MinecraftRconService::class)->shouldReceive('executeCommand')->andReturn(['success' => true, 'response' => null, 'error' => null]);
 
     ReleaseUserFromBrig::run($target, $admin, 'Pardoned');
 
@@ -50,7 +50,7 @@ it('does not affect non-banned minecraft accounts', function () {
     $target = User::factory()->create(['in_brig' => true]);
     $activeAccount = MinecraftAccount::factory()->active()->create(['user_id' => $target->id]);
 
-    $this->mock(MinecraftRconService::class)->shouldReceive('sendCommand')->andReturn(true);
+    $this->mock(MinecraftRconService::class)->shouldReceive('executeCommand')->andReturn(['success' => true, 'response' => null, 'error' => null]);
 
     ReleaseUserFromBrig::run($target, $admin, 'Released');
 
@@ -61,7 +61,7 @@ it('records activity for user released from brig', function () {
     $admin = User::factory()->create();
     $target = User::factory()->create(['in_brig' => true]);
 
-    $this->mock(MinecraftRconService::class)->shouldReceive('sendCommand')->andReturn(true);
+    $this->mock(MinecraftRconService::class)->shouldReceive('executeCommand')->andReturn(['success' => true, 'response' => null, 'error' => null]);
 
     ReleaseUserFromBrig::run($target, $admin, 'Good behavior');
 
@@ -82,7 +82,7 @@ it('sends notification to the released user', function () {
         'notification_preferences' => ['tickets' => ['email' => true, 'pushover' => false]],
     ]);
 
-    $this->mock(MinecraftRconService::class)->shouldReceive('sendCommand')->andReturn(true);
+    $this->mock(MinecraftRconService::class)->shouldReceive('executeCommand')->andReturn(['success' => true, 'response' => null, 'error' => null]);
 
     ReleaseUserFromBrig::run($target, $admin, 'Released');
 
@@ -96,7 +96,7 @@ it('sets brig_timer_notified to false on release', function () {
         'brig_timer_notified' => true,
     ]);
 
-    $this->mock(MinecraftRconService::class)->shouldReceive('sendCommand')->andReturn(true);
+    $this->mock(MinecraftRconService::class)->shouldReceive('executeCommand')->andReturn(['success' => true, 'response' => null, 'error' => null]);
 
     ReleaseUserFromBrig::run($target, $admin, 'Released');
 

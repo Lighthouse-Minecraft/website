@@ -95,10 +95,10 @@ new class extends Component {
         </div>
     @endif
 
-    @if($user->brig_expires_at && ! $user->brigTimerExpired())
+    @if($user->next_appeal_available_at && ! $user->canAppeal())
         <div class="bg-zinc-50 dark:bg-zinc-800 rounded-lg p-4 text-left">
             <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-1">Appeal Available</flux:text>
-            <flux:text class="text-zinc-800 dark:text-zinc-200">You may submit an appeal after <strong>{{ $user->brig_expires_at->format('F j, Y \a\t g:i A T') }}</strong>.</flux:text>
+            <flux:text class="text-zinc-800 dark:text-zinc-200">You may submit an appeal after <strong>{{ $user->next_appeal_available_at->format('F j, Y \a\t g:i A T') }}</strong>.</flux:text>
         </div>
     @endif
 
@@ -121,7 +121,7 @@ new class extends Component {
 
             <flux:field>
                 <flux:label>Your Appeal <span class="text-red-500">*</span></flux:label>
-                <flux:textarea wire:model="appealMessage" rows="6" placeholder="Explain why you believe the Brig status should be lifted..." />
+                <flux:textarea wire:model.live="appealMessage" rows="6" placeholder="Explain why you believe the Brig status should be lifted..." />
                 <flux:error name="appealMessage" />
             </flux:field>
 

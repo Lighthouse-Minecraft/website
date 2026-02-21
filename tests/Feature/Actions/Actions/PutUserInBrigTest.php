@@ -3,14 +3,12 @@
 declare(strict_types=1);
 
 use App\Actions\PutUserInBrig;
-use App\Actions\RecordActivity;
 use App\Enums\EmailDigestFrequency;
 use App\Enums\MinecraftAccountStatus;
 use App\Models\MinecraftAccount;
 use App\Models\User;
 use App\Notifications\UserPutInBrigNotification;
 use App\Services\MinecraftRconService;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Notification;
 
 uses()->group('brig', 'actions');
@@ -19,7 +17,7 @@ it('marks the target user as in brig', function () {
     $admin = User::factory()->create();
     $target = User::factory()->create();
 
-    $this->mock(MinecraftRconService::class)->shouldReceive('sendCommand')->andReturn(true);
+    $this->mock(MinecraftRconService::class)->shouldReceive('executeCommand')->andReturn(['success' => true, 'response' => null, 'error' => null]);
 
     PutUserInBrig::run($target, $admin, 'Test reason');
 
@@ -31,7 +29,7 @@ it('sets brig_expires_at when expiresAt is provided', function () {
     $admin = User::factory()->create();
     $target = User::factory()->create();
 
-    $this->mock(MinecraftRconService::class)->shouldReceive('sendCommand')->andReturn(true);
+    $this->mock(MinecraftRconService::class)->shouldReceive('executeCommand')->andReturn(['success' => true, 'response' => null, 'error' => null]);
 
     $expiresAt = now()->addDays(7);
     PutUserInBrig::run($target, $admin, 'Test reason', $expiresAt);
@@ -43,7 +41,7 @@ it('sets next_appeal_available_at when appealAvailableAt is provided', function 
     $admin = User::factory()->create();
     $target = User::factory()->create();
 
-    $this->mock(MinecraftRconService::class)->shouldReceive('sendCommand')->andReturn(true);
+    $this->mock(MinecraftRconService::class)->shouldReceive('executeCommand')->andReturn(['success' => true, 'response' => null, 'error' => null]);
 
     $appealAt = now()->addDays(3);
     PutUserInBrig::run($target, $admin, 'Test reason', null, $appealAt);
@@ -55,7 +53,7 @@ it('sets brig_timer_notified to false', function () {
     $admin = User::factory()->create();
     $target = User::factory()->create(['brig_timer_notified' => true]);
 
-    $this->mock(MinecraftRconService::class)->shouldReceive('sendCommand')->andReturn(true);
+    $this->mock(MinecraftRconService::class)->shouldReceive('executeCommand')->andReturn(['success' => true, 'response' => null, 'error' => null]);
 
     PutUserInBrig::run($target, $admin, 'Test reason');
 
@@ -67,7 +65,7 @@ it('bans active minecraft accounts', function () {
     $target = User::factory()->create();
     $account = MinecraftAccount::factory()->active()->create(['user_id' => $target->id]);
 
-    $this->mock(MinecraftRconService::class)->shouldReceive('sendCommand')->andReturn(true);
+    $this->mock(MinecraftRconService::class)->shouldReceive('executeCommand')->andReturn(['success' => true, 'response' => null, 'error' => null]);
 
     PutUserInBrig::run($target, $admin, 'Test reason');
 
@@ -79,7 +77,7 @@ it('bans verifying minecraft accounts', function () {
     $target = User::factory()->create();
     $account = MinecraftAccount::factory()->verifying()->create(['user_id' => $target->id]);
 
-    $this->mock(MinecraftRconService::class)->shouldReceive('sendCommand')->andReturn(true);
+    $this->mock(MinecraftRconService::class)->shouldReceive('executeCommand')->andReturn(['success' => true, 'response' => null, 'error' => null]);
 
     PutUserInBrig::run($target, $admin, 'Test reason');
 
@@ -90,7 +88,7 @@ it('records activity for user put in brig', function () {
     $admin = User::factory()->create();
     $target = User::factory()->create();
 
-    $this->mock(MinecraftRconService::class)->shouldReceive('sendCommand')->andReturn(true);
+    $this->mock(MinecraftRconService::class)->shouldReceive('executeCommand')->andReturn(['success' => true, 'response' => null, 'error' => null]);
 
     PutUserInBrig::run($target, $admin, 'Bad behavior');
 
@@ -110,7 +108,7 @@ it('sends notification to the target user', function () {
         'notification_preferences' => ['tickets' => ['email' => true, 'pushover' => false]],
     ]);
 
-    $this->mock(MinecraftRconService::class)->shouldReceive('sendCommand')->andReturn(true);
+    $this->mock(MinecraftRconService::class)->shouldReceive('executeCommand')->andReturn(['success' => true, 'response' => null, 'error' => null]);
 
     PutUserInBrig::run($target, $admin, 'Test reason');
 
@@ -121,7 +119,7 @@ it('works without expires_at or appeal_available_at', function () {
     $admin = User::factory()->create();
     $target = User::factory()->create();
 
-    $this->mock(MinecraftRconService::class)->shouldReceive('sendCommand')->andReturn(true);
+    $this->mock(MinecraftRconService::class)->shouldReceive('executeCommand')->andReturn(['success' => true, 'response' => null, 'error' => null]);
 
     PutUserInBrig::run($target, $admin, 'Test reason');
 

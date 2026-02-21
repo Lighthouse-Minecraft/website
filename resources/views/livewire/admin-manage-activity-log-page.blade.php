@@ -66,7 +66,7 @@ new class extends Component {
                         $tz = auth()->user()->timezone ?? 'UTC';
                         $localTime = $activity->created_at->setTimezone($tz);
                     @endphp
-                    <flux:table.cell class="whitespace-nowrap text-sm text-zinc-500 dark:text-zinc-400"
+                    <flux:table.cell class="text-sm whitespace-nowrap text-zinc-500 dark:text-zinc-400"
                         title="{{ $localTime->format('Y-m-d H:i:s T') }}">
                         {{ $localTime->format('M j, Y') }}<br>
                         {{ $localTime->format('g:i A') }}
@@ -97,7 +97,7 @@ new class extends Component {
                         @endif
                     </flux:table.cell>
 
-                    <flux:table.cell class="text-sm text-zinc-400 max-w-sm truncate">
+                    <flux:table.cell class="max-w-sm text-sm truncate text-zinc-400">
                         {{ $activity->description }}
                     </flux:table.cell>
                 </flux:table.row>

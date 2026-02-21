@@ -23,7 +23,7 @@ it('regular user cannot view any minecraft accounts', function () {
 // === view ===
 
 it('view always returns false through policy', function () {
-    $policy = new MinecraftAccountPolicy();
+    $policy = new MinecraftAccountPolicy;
     $user = User::factory()->create();
     $account = MinecraftAccount::factory()->create(['user_id' => $user->id]);
 
@@ -33,7 +33,7 @@ it('view always returns false through policy', function () {
 // === create ===
 
 it('create always returns false through policy', function () {
-    $policy = new MinecraftAccountPolicy();
+    $policy = new MinecraftAccountPolicy;
     $user = User::factory()->create();
 
     expect($policy->create($user))->toBeFalse();
@@ -42,7 +42,7 @@ it('create always returns false through policy', function () {
 // === update ===
 
 it('update always returns false through policy', function () {
-    $policy = new MinecraftAccountPolicy();
+    $policy = new MinecraftAccountPolicy;
     $user = User::factory()->create();
     $account = MinecraftAccount::factory()->create(['user_id' => $user->id]);
 
@@ -77,7 +77,7 @@ it('other user cannot delete someone elses minecraft account', function () {
 // === restore ===
 
 it('restore always returns false through policy', function () {
-    $policy = new MinecraftAccountPolicy();
+    $policy = new MinecraftAccountPolicy;
     $user = User::factory()->create();
     $account = MinecraftAccount::factory()->create(['user_id' => $user->id]);
 
@@ -87,7 +87,7 @@ it('restore always returns false through policy', function () {
 // === forceDelete ===
 
 it('forceDelete always returns false through policy', function () {
-    $policy = new MinecraftAccountPolicy();
+    $policy = new MinecraftAccountPolicy;
     $user = User::factory()->create();
     $account = MinecraftAccount::factory()->create(['user_id' => $user->id]);
 

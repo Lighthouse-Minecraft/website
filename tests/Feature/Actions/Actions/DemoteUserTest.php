@@ -12,7 +12,7 @@ uses()->group('actions');
 it('demotes a user one level down', function () {
     $user = User::factory()->withMembershipLevel(MembershipLevel::Traveler)->create();
 
-    $this->mock(MinecraftRconService::class)->shouldReceive('sendCommand')->andReturn(true);
+    $this->mock(MinecraftRconService::class)->shouldReceive('executeCommand')->andReturn(['success' => true, 'response' => null, 'error' => null]);
 
     DemoteUser::run($user);
 
@@ -22,7 +22,7 @@ it('demotes a user one level down', function () {
 it('does not demote below the minimum level', function () {
     $user = User::factory()->withMembershipLevel(MembershipLevel::Drifter)->create();
 
-    $this->mock(MinecraftRconService::class)->shouldReceive('sendCommand')->andReturn(true);
+    $this->mock(MinecraftRconService::class)->shouldReceive('executeCommand')->andReturn(['success' => true, 'response' => null, 'error' => null]);
 
     DemoteUser::run($user);
 
@@ -32,7 +32,7 @@ it('does not demote below the minimum level', function () {
 it('does not demote stowaway below default minimum level', function () {
     $user = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create();
 
-    $this->mock(MinecraftRconService::class)->shouldReceive('sendCommand')->andReturn(true);
+    $this->mock(MinecraftRconService::class)->shouldReceive('executeCommand')->andReturn(['success' => true, 'response' => null, 'error' => null]);
 
     DemoteUser::run($user);
 
@@ -42,7 +42,7 @@ it('does not demote stowaway below default minimum level', function () {
 it('respects a custom minimum level', function () {
     $user = User::factory()->withMembershipLevel(MembershipLevel::Traveler)->create();
 
-    $this->mock(MinecraftRconService::class)->shouldReceive('sendCommand')->andReturn(true);
+    $this->mock(MinecraftRconService::class)->shouldReceive('executeCommand')->andReturn(['success' => true, 'response' => null, 'error' => null]);
 
     DemoteUser::run($user, MembershipLevel::Traveler);
 
@@ -52,7 +52,7 @@ it('respects a custom minimum level', function () {
 it('records activity when demoting', function () {
     $user = User::factory()->withMembershipLevel(MembershipLevel::Resident)->create();
 
-    $this->mock(MinecraftRconService::class)->shouldReceive('sendCommand')->andReturn(true);
+    $this->mock(MinecraftRconService::class)->shouldReceive('executeCommand')->andReturn(['success' => true, 'response' => null, 'error' => null]);
 
     DemoteUser::run($user);
 
@@ -66,7 +66,7 @@ it('records activity when demoting', function () {
 it('does not record activity when at minimum level', function () {
     $user = User::factory()->withMembershipLevel(MembershipLevel::Drifter)->create();
 
-    $this->mock(MinecraftRconService::class)->shouldReceive('sendCommand')->andReturn(true);
+    $this->mock(MinecraftRconService::class)->shouldReceive('executeCommand')->andReturn(['success' => true, 'response' => null, 'error' => null]);
 
     DemoteUser::run($user);
 
