@@ -211,3 +211,24 @@ test('rejects when user already has this account verified with uuid dashes', fun
         ->and($result['error'])->toContain('already verified')
         ->and($result['code'])->toBeNull();
 });
+
+test('rejects when user is in the brig', function () {
+    $user = User::factory()->create(['in_brig' => true]);
+
+    Http::fake([
+        'api.mojang.com/*' => Http::response([
+            'id' => '069a79f444e94726a5befca90e38aaf5',
+            'name' => 'Notch',
+        ]),
+    ]);
+
+    $action = new GenerateVerificationCode;
+    $result = $action->handle($user, MinecraftAccountType::Java, 'Notch');
+
+    expect($result['success'])->toBeFalse()
+        ->and($result['error'])->toContain('in the brig')
+        ->and($result['code'])->toBeNull();
+
+    // Verify no verification was created
+    expect(MinecraftVerification::where('user_id', $user->id)->exists())->toBeFalse();
+});

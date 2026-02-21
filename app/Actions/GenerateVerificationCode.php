@@ -25,6 +25,16 @@ class GenerateVerificationCode
         MinecraftAccountType $accountType,
         string $username
     ): array {
+        // Check if user is in the brig
+        if ($user->isInBrig()) {
+            return [
+                'success' => false,
+                'code' => null,
+                'expires_at' => null,
+                'error' => 'You cannot add Minecraft accounts while in the brig.',
+            ];
+        }
+
         // Check if user has reached max accounts (all statuses count toward the limit)
         $maxAccounts = config('lighthouse.max_minecraft_accounts');
         if ($user->minecraftAccounts()->count() >= $maxAccounts) {
@@ -208,12 +218,6 @@ class GenerateVerificationCode
             ];
         }
 
-        RecordActivity::handle(
-            $user,
-            'minecraft_whitelisted',
-            "Added {$verifiedUsername} to server whitelist"
-        );
-
         // Create verification record; roll back account + whitelist on failure
         try {
             MinecraftVerification::create([
@@ -254,7 +258,13 @@ class GenerateVerificationCode
             ];
         }
 
-        // Record activity
+        // Record activity — both logs written only after verification record is committed
+        RecordActivity::handle(
+            $user,
+            'minecraft_whitelisted',
+            "Added {$verifiedUsername} to server whitelist"
+        );
+
         RecordActivity::handle(
             $user,
             'minecraft_verification_generated',

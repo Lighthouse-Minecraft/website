@@ -25,7 +25,7 @@ new class extends Component {
 
     public function showAccount(int $accountId): void
     {
-        $this->selectedAccount = MinecraftAccount::with('user')->find($accountId);
+        $this->selectedAccount = auth()->user()->minecraftAccounts()->with('user')->find($accountId);
 
         if ($this->selectedAccount) {
             $this->modal('mc-account-detail')->show();
@@ -319,7 +319,7 @@ new class extends Component {
     @endif
 
     {{-- Add New Account Form --}}
-    @if($remainingSlots > 0 && !$verificationCode)
+    @if($remainingSlots > 0 && !$verificationCode && !auth()->user()->isInBrig())
         <flux:card class="p-6">
             <flux:heading size="lg" class="mb-4">Link New Account</flux:heading>
 
