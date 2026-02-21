@@ -11,6 +11,16 @@ new class extends Component {
 
     public $perPage = 25;
     public string $filterAction = '';
+    public array $distinctActions = [];
+
+    public function mount(): void
+    {
+        $this->distinctActions = ActivityLog::select('action')
+            ->distinct()
+            ->orderBy('action')
+            ->pluck('action')
+            ->toArray();
+    }
 
     public function updatedFilterAction()
     {
@@ -26,15 +36,6 @@ new class extends Component {
             ->latest()
             ->paginate($this->perPage);
     }
-
-    #[\Livewire\Attributes\Computed]
-    public function distinctActions()
-    {
-        return ActivityLog::select('action')
-            ->distinct()
-            ->orderBy('action')
-            ->pluck('action');
-    }
 }; ?>
 
 <div class="space-y-6">
@@ -43,7 +44,7 @@ new class extends Component {
         <flux:spacer />
         <flux:select wire:model.live="filterAction" size="sm" class="w-56">
             <flux:select.option value="">All Actions</flux:select.option>
-            @foreach($this->distinctActions as $action)
+            @foreach($distinctActions as $action)
                 <flux:select.option value="{{ $action }}">{{ Str::of($action)->replace('_', ' ')->title() }}</flux:select.option>
             @endforeach
         </flux:select>
@@ -76,7 +77,7 @@ new class extends Component {
                         @if ($subject instanceof User)
                             <flux:link href="{{ route('profile.show', $subject) }}">{{ $subject->name }}</flux:link>
                         @elseif ($subject instanceof Thread)
-                            <flux:link href="{{ route('tickets.show', ['ticket' => $subject->id]) }}">{{ $subject->subject }}</flux:link>
+                            <flux:link href="{{ route('tickets.show', ['thread' => $subject->id]) }}">{{ $subject->subject }}</flux:link>
                         @elseif ($subject)
                             {{ class_basename($activity->subject_type) }} #{{ $activity->subject_id }}
                         @else

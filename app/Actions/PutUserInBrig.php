@@ -23,7 +23,7 @@ class PutUserInBrig
         $target->save();
 
         // Ban all active/verifying Minecraft accounts
-        foreach ($target->minecraftAccounts()->whereIn('status', [MinecraftAccountStatus::Active->value, MinecraftAccountStatus::Verifying->value])->get() as $account) {
+        foreach ($target->minecraftAccounts()->whereIn('status', [MinecraftAccountStatus::Active, MinecraftAccountStatus::Verifying])->get() as $account) {
             SendMinecraftCommand::run(
                 $account->whitelistRemoveCommand(),
                 'whitelist',

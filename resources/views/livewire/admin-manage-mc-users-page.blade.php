@@ -24,6 +24,8 @@ new class extends Component {
 
     public function showAccount(int $accountId): void
     {
+        $this->authorize('viewAny', MinecraftAccount::class);
+
         $this->selectedAccount = MinecraftAccount::with('user')->find($accountId);
 
         if ($this->selectedAccount) {

@@ -12,6 +12,7 @@ use App\Notifications\NewTicketNotification;
 use App\Services\TicketNotificationService;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Livewire\Volt\Component;
 
 new class extends Component {
@@ -31,40 +32,46 @@ new class extends Component {
         ]);
 
         // Create appeal ticket directly — brig users are exempt from the ticket create policy for appeals only
-        $thread = Thread::create([
-            'type' => ThreadType::Ticket,
-            'subtype' => ThreadSubtype::AdminAction,
-            'department' => StaffDepartment::Quartermaster,
-            'subject' => 'Brig Appeal: '.$user->name,
-            'status' => ThreadStatus::Open,
-            'created_by_user_id' => $user->id,
-            'last_message_at' => now(),
-        ]);
+        [$thread, $quartermaster] = DB::transaction(function () use ($user) {
+            $thread = Thread::create([
+                'type' => ThreadType::Ticket,
+                'subtype' => ThreadSubtype::AdminAction,
+                'department' => StaffDepartment::Quartermaster,
+                'subject' => 'Brig Appeal: '.$user->name,
+                'status' => ThreadStatus::Open,
+                'created_by_user_id' => $user->id,
+                'last_message_at' => now(),
+            ]);
 
-        $thread->addParticipant($user);
+            $thread->addParticipant($user);
 
-        Message::create([
-            'thread_id' => $thread->id,
-            'user_id' => $user->id,
-            'body' => $this->appealMessage,
-            'kind' => MessageKind::Message,
-        ]);
+            Message::create([
+                'thread_id' => $thread->id,
+                'user_id' => $user->id,
+                'body' => $this->appealMessage,
+                'kind' => MessageKind::Message,
+            ]);
 
-        \App\Actions\RecordActivity::handle($thread, 'ticket_opened', 'Brig appeal submitted: '.$thread->subject);
+            \App\Actions\RecordActivity::handle($thread, 'ticket_opened', 'Brig appeal submitted: '.$thread->subject);
 
-        // Notify Quartermaster staff
-        $notificationService = app(TicketNotificationService::class);
-        $quartermaster = User::where('staff_department', StaffDepartment::Quartermaster)
-            ->whereNotNull('staff_rank')
-            ->get();
+            // Set a 7-day lockout to prevent appeal spam
+            $user->next_appeal_available_at = now()->addDays(7);
+            $user->save();
 
-        foreach ($quartermaster as $member) {
-            $notificationService->send($member, new NewTicketNotification($thread));
+            $quartermaster = User::where('staff_department', StaffDepartment::Quartermaster)
+                ->whereNotNull('staff_rank')
+                ->get();
+
+            return [$thread, $quartermaster];
+        });
+
+        // Notify Quartermaster staff outside the transaction so failures don't roll back DB changes
+        try {
+            $notificationService = app(TicketNotificationService::class);
+            $notificationService->sendToMany($quartermaster, new NewTicketNotification($thread));
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to send brig appeal notifications', ['error' => $e->getMessage()]);
         }
-
-        // Set a 7-day lockout to prevent appeal spam
-        $user->next_appeal_available_at = now()->addDays(7);
-        $user->save();
 
         $this->appealMessage = '';
         Flux::modal('brig-appeal-modal')->close();
@@ -82,16 +89,16 @@ new class extends Component {
     @php $user = Auth::user(); @endphp
 
     @if($user->brig_reason)
-        <div class="bg-zinc-800 rounded-lg p-4 text-left">
-            <flux:text class="font-medium text-sm text-zinc-400 uppercase tracking-wide mb-1">Reason</flux:text>
-            <flux:text>{{ $user->brig_reason }}</flux:text>
+        <div class="bg-zinc-50 dark:bg-zinc-800 rounded-lg p-4 text-left">
+            <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-1">Reason</flux:text>
+            <flux:text class="text-zinc-800 dark:text-zinc-200">{{ $user->brig_reason }}</flux:text>
         </div>
     @endif
 
     @if($user->brig_expires_at && ! $user->brigTimerExpired())
-        <div class="bg-zinc-800 rounded-lg p-4 text-left">
-            <flux:text class="font-medium text-sm text-zinc-400 uppercase tracking-wide mb-1">Appeal Available</flux:text>
-            <flux:text>You may submit an appeal after <strong>{{ $user->brig_expires_at->format('F j, Y \a\t g:i A T') }}</strong>.</flux:text>
+        <div class="bg-zinc-50 dark:bg-zinc-800 rounded-lg p-4 text-left">
+            <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-1">Appeal Available</flux:text>
+            <flux:text class="text-zinc-800 dark:text-zinc-200">You may submit an appeal after <strong>{{ $user->brig_expires_at->format('F j, Y \a\t g:i A T') }}</strong>.</flux:text>
         </div>
     @endif
 

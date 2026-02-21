@@ -146,7 +146,7 @@ new class extends Component {
 
         <flux:table.rows>
             @foreach ($this->users as $user)
-                <flux:table.row :key="$user->id">
+                <flux:table.row wire:key="user-{{ $user->id }}" :key="$user->id">
                     <flux:table.cell class="flex items-center gap-3">
                         <flux:link href="{{ route('profile.show', $user) }}">{{ $user->name }}</flux:link>
                     </flux:table.cell>

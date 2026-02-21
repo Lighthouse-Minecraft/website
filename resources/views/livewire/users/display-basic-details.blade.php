@@ -127,7 +127,7 @@ new class extends Component {
             return;
         }
 
-        $account = \App\Models\MinecraftAccount::findOrFail($accountId);
+        $account = $this->user->minecraftAccounts()->findOrFail($accountId);
         $result = \App\Actions\RevokeMinecraftAccount::run($account, Auth::user());
 
         if ($result['success']) {

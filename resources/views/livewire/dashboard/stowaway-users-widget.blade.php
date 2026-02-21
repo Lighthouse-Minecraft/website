@@ -77,14 +77,14 @@ new class extends Component {
             'brigDays' => 'nullable|integer|min:1|max:365',
         ]);
 
-        $appealAvailableAt = $this->brigDays ? now()->addDays((int) $this->brigDays) : null;
+        $expiresAt = $this->brigDays ? now()->addDays((int) $this->brigDays) : null;
 
         try {
             \App\Actions\PutUserInBrig::run(
                 target: $this->selectedUser,
                 admin: Auth::user(),
                 reason: $this->brigReason,
-                appealAvailableAt: $appealAvailableAt
+                expiresAt: $expiresAt
             );
 
             Flux::toast("{$this->selectedUser->name} has been placed in the Brig.", 'Done', variant: 'success');
@@ -112,7 +112,7 @@ new class extends Component {
             </flux:table.columns>
             <flux:table.rows>
                 @foreach ($this->stowawayUsers as $user)
-                    <flux:table.row>
+                    <flux:table.row wire:key="stowaway-user-{{ $user->id }}">
                         <flux:table.cell>
                             <flux:link href="{{ route('profile.show', $user) }}">{{ $user->name }}</flux:link>
                         </flux:table.cell>
@@ -224,8 +224,8 @@ new class extends Component {
             </flux:field>
 
             <flux:field>
-                <flux:label>Days Until Appeal Available</flux:label>
-                <flux:description>Optional. Leave blank to allow appeal immediately. Enter a number of days to delay the appeal window.</flux:description>
+                <flux:label>Brig Duration (Days)</flux:label>
+                <flux:description>Optional. Leave blank for no expiry timer. Enter a number of days until the brig expires.</flux:description>
                 <flux:input wire:model.live="brigDays" type="number" min="1" max="365" placeholder="e.g. 7 (leave blank for no timer)" />
                 <flux:error name="brigDays" />
             </flux:field>
