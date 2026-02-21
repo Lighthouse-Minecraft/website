@@ -12,7 +12,15 @@ class UnlinkMinecraftAccount
     use AsAction;
 
     /**
-     * Unlink a Minecraft account from a user
+     * Unlink the given Minecraft account from the specified user, queue server-side rank reset and whitelist removal, record related activities, and delete the account.
+     *
+     * If the user does not own the account or the account is not in an active state, the unlink is not performed and an appropriate failure message is returned.
+     *
+     * @param MinecraftAccount $account The Minecraft account to unlink.
+     * @param User $user The user requesting the unlink; ownership is verified against the account.
+     * @return array An associative array with keys:
+     *               - `success` (bool): `true` when the account was unlinked, `false` on permission or state failure.
+     *               - `message` (string): A human-readable status message.
      */
     public function handle(MinecraftAccount $account, User $user): array
     {

@@ -9,6 +9,11 @@ enum MinecraftAccountStatus: string
     case Cancelled = 'cancelled';
     case Banned = 'banned';
 
+    /**
+     * Get a human-readable label for the enum case.
+     *
+     * @return string The human-readable label corresponding to the enum case.
+     */
     public function label(): string
     {
         return match ($this) {
@@ -19,6 +24,11 @@ enum MinecraftAccountStatus: string
         };
     }
 
+    /**
+     * Get the color associated with the account status.
+     *
+     * @return string The color name for the status: 'yellow' for Verifying, 'green' for Active, 'red' for Cancelled, or 'orange' for Banned.
+     */
     public function color(): string
     {
         return match ($this) {

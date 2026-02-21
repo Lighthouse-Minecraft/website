@@ -13,6 +13,14 @@ new class extends Component {
     public string $filterAction = '';
     public array $distinctActions = [];
 
+    /**
+     * Populate the component's $distinctActions with all distinct activity action names.
+     *
+     * Loads action values from the ActivityLog model, ordered alphabetically, into the
+     * component's distinctActions array for use by the action filter.
+     *
+     * @return void
+     */
     public function mount(): void
     {
         $this->distinctActions = ActivityLog::select('action')
@@ -22,11 +30,22 @@ new class extends Component {
             ->toArray();
     }
 
+    /**
+     * Reset pagination to the first page after the action filter changes.
+     *
+     * @return void
+     */
     public function updatedFilterAction()
     {
         $this->resetPage();
     }
 
+    /****
+     * Retrieve a paginated list of activity log entries with their causer and subject relations,
+     * optionally filtered by the current action and ordered by newest first.
+     *
+     * @return \Illuminate\Pagination\LengthAwarePaginator A paginator of ActivityLog models with `causer` and `subject` relations loaded.
+     */
     #[\Livewire\Attributes\Computed]
     public function activities()
     {

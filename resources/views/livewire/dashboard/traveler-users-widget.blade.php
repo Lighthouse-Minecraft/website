@@ -9,6 +9,11 @@ new class extends Component {
     public $selectedUser = null;
     public $showUserModal = false;
 
+    /**
+     * Retrieve Traveler members who are not in brig, ordered by their promotion time ascending.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, \App\Models\User> Collection of Traveler users not in brig ordered by `promoted_at` ascending.
+     */
     public function getTravelerUsersProperty()
     {
         return User::where('membership_level', MembershipLevel::Traveler->value)

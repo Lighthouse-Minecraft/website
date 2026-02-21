@@ -7,7 +7,9 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * Add a nullable `next_appeal_available_at` timestamp column to the `users` table after `brig_expires_at`.
+     *
+     * The new column records when a user may next file an appeal and allows null values.
      */
     public function up(): void
     {
@@ -17,7 +19,9 @@ return new class extends Migration
     }
 
     /**
-     * Reverse the migrations.
+     * Remove the `next_appeal_available_at` timestamp column from the `users` table.
+     *
+     * This rollback drops the column added by the corresponding migration.
      */
     public function down(): void
     {

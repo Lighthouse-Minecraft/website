@@ -55,7 +55,10 @@ class ThreadPolicy
     }
 
     /**
-     * Determine whether the user can create threads (tickets)
+     * Determine if the user is allowed to create a new thread.
+     *
+     * @param User $user The user attempting to create the thread.
+     * @return bool `true` if the user is allowed to create a thread, `false` otherwise.
      */
     public function create(User $user): bool
     {

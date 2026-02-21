@@ -13,6 +13,15 @@ class CheckBrigTimers extends Command
 
     protected $description = 'Notify brig\'d users whose appeal timer has expired';
 
+    /**
+     * Notify users whose brig expiration time has passed and mark them as notified.
+     *
+     * Queries users with in_brig = true, a non-null brig_expires_at that is <= now(),
+     * and brig_timer_notified = false; sends a BrigTimerExpiredNotification to each
+     * matched user and updates their brig_timer_notified flag to true.
+     *
+     * @return int Command::SUCCESS on completion.
+     */
     public function handle(): int
     {
         $users = User::where('in_brig', true)

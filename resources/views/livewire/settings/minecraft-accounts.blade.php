@@ -23,6 +23,14 @@ new class extends Component {
 
     public ?string $errorMessage = null;
 
+    /**
+     * Load the authenticated user's Minecraft account by ID and open its detail modal if found.
+     *
+     * Sets $this->selectedAccount to the located account (including its related user). If an account
+     * with the given ID exists for the current user, shows the 'mc-account-detail' modal.
+     *
+     * @param int $accountId The ID of the Minecraft account to load.
+     */
     public function showAccount(int $accountId): void
     {
         $this->selectedAccount = auth()->user()->minecraftAccounts()->with('user')->find($accountId);
@@ -32,6 +40,12 @@ new class extends Component {
         }
     }
 
+    /**
+     * Initialize component state from any active pending Minecraft verification for the authenticated user.
+     *
+     * If a pending verification that expires in the future exists, sets the component's
+     * verificationCode, expiresAt, and accountType to match that verification.
+     */
     public function mount(): void
     {
         // Check for active verification
@@ -115,6 +129,14 @@ new class extends Component {
         Flux::toast('Verification cancelled.', variant: 'warning');
     }
 
+    /**
+     * Refreshes the current verification status for the active verification code and updates component state.
+     *
+     * If there is no active code this is a no-op. The method re-queries the verification by code and current user:
+     * - If no verification is found, it clears the code and expiration.
+     * - If the verification is completed, it clears the code and expiration, resets the username, and shows a success toast.
+     * - If the verification is expired (by status or expiration timestamp), it clears the code and expiration and shows an expiration toast.
+     */
     public function checkVerification(): void
     {
         if (!$this->verificationCode) {
@@ -145,6 +167,16 @@ new class extends Component {
         }
     }
 
+    /**
+     * Simulates completion of the current pending Minecraft verification for local testing.
+     *
+     * Aborts with HTTP 403 when not running in the local environment. If there is no active
+     * verification code the method returns immediately. The method looks up a pending
+     * verification for the authenticated user by the stored code; if none is found a danger
+     * toast is shown. On successful simulation it clears the component's verification state
+     * (`verificationCode`, `expiresAt`, `username`) and shows a success toast; on failure it
+     * shows a danger toast with the error message.
+     */
     public function simulateVerification(): void
     {
         abort_unless(app()->isLocal(), 403);
@@ -180,6 +212,14 @@ new class extends Component {
         }
     }
 
+    /**
+     * Remove a linked Minecraft account by ID, unlinking it and displaying a user toast with the operation result.
+     *
+     * Attempts to authorize the current user, run the unlink action for the specified account, and shows a success
+     * or error toast containing the action message.
+     *
+     * @param int $accountId The ID of the MinecraftAccount to remove.
+     */
     public function remove(int $accountId): void
     {
         $account = MinecraftAccount::findOrFail($accountId);

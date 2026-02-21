@@ -20,6 +20,15 @@ new class extends Component {
     public string $brigActionReason = '';
     public ?int $brigActionDays = null;
 
+    /**
+     * Initialize component state for the given user.
+     *
+     * Loads the user's Minecraft accounts and populates component properties used by the UI:
+     * the managed User instance, current staff department/title/rank values, and the available
+     * department and rank enum cases.
+     *
+     * @param \App\Models\User $user The user being managed by this component.
+     */
     public function mount(User $user) {
         $this->user = $user;
         $this->user->load('minecraftAccounts');
@@ -31,6 +40,12 @@ new class extends Component {
         $this->ranks = \App\Enums\StaffRank::cases();
     }
 
+    /**
+     * Update the user's staff position from the component's inputs.
+     *
+     * Validates input, checks authorization, executes the SetUsersStaffPosition action,
+     * shows a success or error toast based on the result, and closes the manage-users-staff-position modal.
+     */
     public function updateStaffPosition() {
         if (!Auth::user()->can('updateStaffPosition', $this->user)) {
             Flux::toast(
@@ -79,6 +94,11 @@ new class extends Component {
         Flux::modal('manage-users-staff-position')->close();
     }
 
+    /**
+     * Removes the current user's staff position when the caller is authorized, then provides success or error feedback and closes the Manage Staff Position modal.
+     *
+     * If the caller lacks permission, an error toast is shown and no action is taken.
+     */
     public function removeStaffPosition() {
         if (!Auth::user()->can('removeStaffPosition', $this->user)) {
             Flux::toast(
@@ -108,6 +128,13 @@ new class extends Component {
         Flux::modal('manage-users-staff-position')->close();
     }
 
+    /**
+     * Loads the specified Minecraft account for the managed user into `$selectedAccount` and opens the account detail modal if the account exists.
+     *
+     * Performs an authorization check for viewing PII before loading the account.
+     *
+     * @param int $accountId The ID of the Minecraft account to load.
+     */
     public function showAccount(int $accountId): void
     {
         $this->authorize('viewPii', $this->user);
@@ -119,6 +146,13 @@ new class extends Component {
         }
     }
 
+    /**
+     * Revoke the specified Minecraft account for the managed user, requiring admin privileges.
+     *
+     * If the current user is not an administrator, an error toast is shown and no action is taken. On success the user's data is refreshed and a success toast is shown; on failure an error toast is shown with the action message.
+     *
+     * @param int $accountId The ID of the Minecraft account to revoke.
+     */
     public function revokeMinecraftAccount(int $accountId) {
         if (!Auth::user()->isAdmin()) {
             Flux::toast(
@@ -148,6 +182,13 @@ new class extends Component {
         }
     }
 
+    /**
+     * Promotes the component's user to the next membership level.
+     *
+     * Requires the current user to have the `manage-stowaway-users` permission.
+     * On success the user model is refreshed, the promotion confirmation modal is closed,
+     * and a success toast displaying the new membership level label is shown.
+     */
     public function promoteUser(): void
     {
         if (! Auth::user()->can('manage-stowaway-users')) {
@@ -166,6 +207,13 @@ new class extends Component {
         );
     }
 
+    /**
+     * Prepares and opens the "Put in Brig" modal for the managed user.
+     *
+     * Resets brigActionReason to an empty string and brigActionDays to null, then displays
+     * the profile-put-in-brig-modal. No action is taken if the current user lacks the
+     * 'manage-stowaway-users' permission.
+     */
     public function openPutInBrigModal(): void
     {
         if (! Auth::user()->can('manage-stowaway-users')) {
@@ -176,6 +224,15 @@ new class extends Component {
         Flux::modal('profile-put-in-brig-modal')->show();
     }
 
+    /**
+     * Place the component's user into the Brig with a reason and optional duration.
+     *
+     * Requires the current user to have the `manage-stowaway-users` permission.
+     * Validates `brigActionReason` (required, at least 5 characters) and
+     * `brigActionDays` (optional integer between 1 and 365). When valid, schedules
+     * an expiration if days are provided, executes the brig placement, refreshes
+     * the user model, closes the put-in-brig modal, and displays a success toast.
+     */
     public function confirmPutInBrig(): void
     {
         if (! Auth::user()->can('manage-stowaway-users')) {
@@ -196,6 +253,13 @@ new class extends Component {
         Flux::toast(text: "{$this->user->name} has been placed in the Brig.", heading: 'Done', variant: 'success');
     }
 
+    /**
+     * Prepare and open the "release from Brig" modal for the current user.
+     *
+     * Resets the brig action reason to an empty string and shows the
+     * profile-release-from-brig-modal. If the current user does not have
+     * the `manage-stowaway-users` permission, no action is taken.
+     */
     public function openReleaseFromBrigModal(): void
     {
         if (! Auth::user()->can('manage-stowaway-users')) {
@@ -205,6 +269,14 @@ new class extends Component {
         Flux::modal('profile-release-from-brig-modal')->show();
     }
 
+    /**
+     * Release the component's user from the Brig after validating a release reason.
+     *
+     * Requires the current user to have the `manage-stowaway-users` permission. Validates
+     * that `brigActionReason` is provided and at least 5 characters long, executes the
+     * release action, refreshes the user model, closes the release modal, and shows a
+     * success toast announcing the release.
+     */
     public function confirmReleaseFromBrig(): void
     {
         if (! Auth::user()->can('manage-stowaway-users')) {
@@ -222,6 +294,11 @@ new class extends Component {
         Flux::toast(text: "{$this->user->name} has been released from the Brig.", heading: 'Released', variant: 'success');
     }
 
+    /**
+     * Get the next MembershipLevel after the user's current membership level.
+     *
+     * @return MembershipLevel|null The next membership level, or `null` if the user is at the highest level or their current level is not found.
+     */
     public function getNextMembershipLevelProperty(): ?MembershipLevel
     {
         $levels = MembershipLevel::cases();
