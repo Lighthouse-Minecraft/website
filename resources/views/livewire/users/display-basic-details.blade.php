@@ -110,6 +110,8 @@ new class extends Component {
 
     public function showAccount(int $accountId): void
     {
+        $this->authorize('viewPii', $this->user);
+
         $this->selectedAccount = $this->user->minecraftAccounts()->with('user')->find($accountId);
 
         if ($this->selectedAccount) {
@@ -407,14 +409,14 @@ new class extends Component {
 
             <flux:field>
                 <flux:label>Reason <span class="text-red-500">*</span></flux:label>
-                <flux:textarea wire:model="brigActionReason" rows="4" placeholder="Enter reason..." />
+                <flux:textarea wire:model.live="brigActionReason" rows="4" placeholder="Enter reason..." />
                 <flux:error name="brigActionReason" />
             </flux:field>
 
             <flux:field>
                 <flux:label>Days Until Auto-Release</flux:label>
                 <flux:description>Optional. Leave blank for no auto-release timer.</flux:description>
-                <flux:input wire:model="brigActionDays" type="number" min="1" max="365" placeholder="e.g. 7 (leave blank for no timer)" />
+                <flux:input wire:model.live="brigActionDays" type="number" min="1" max="365" placeholder="e.g. 7 (leave blank for no timer)" />
                 <flux:error name="brigActionDays" />
             </flux:field>
 
@@ -448,7 +450,7 @@ new class extends Component {
 
             <flux:field>
                 <flux:label>Reason for Release <span class="text-red-500">*</span></flux:label>
-                <flux:textarea wire:model="brigActionReason" rows="4" placeholder="Enter reason for release..." />
+                <flux:textarea wire:model.live="brigActionReason" rows="4" placeholder="Enter reason for release..." />
                 <flux:error name="brigActionReason" />
             </flux:field>
 

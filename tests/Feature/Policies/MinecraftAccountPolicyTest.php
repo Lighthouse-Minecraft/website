@@ -20,34 +20,23 @@ it('regular user cannot view any minecraft accounts', function () {
     expect($user->can('viewAny', MinecraftAccount::class))->toBeFalse();
 });
 
-// === view ===
+// === view / create / update / restore / forceDelete always return false ===
 
-it('view always returns false through policy', function () {
+it('always returns false through policy', function (string $action, bool $needsAccount) {
     $policy = new MinecraftAccountPolicy;
     $user = User::factory()->create();
-    $account = MinecraftAccount::factory()->create(['user_id' => $user->id]);
+    $account = $needsAccount ? MinecraftAccount::factory()->create(['user_id' => $user->id]) : null;
 
-    expect($policy->view($user, $account))->toBeFalse();
-});
+    $result = $needsAccount ? $policy->$action($user, $account) : $policy->$action($user);
 
-// === create ===
-
-it('create always returns false through policy', function () {
-    $policy = new MinecraftAccountPolicy;
-    $user = User::factory()->create();
-
-    expect($policy->create($user))->toBeFalse();
-});
-
-// === update ===
-
-it('update always returns false through policy', function () {
-    $policy = new MinecraftAccountPolicy;
-    $user = User::factory()->create();
-    $account = MinecraftAccount::factory()->create(['user_id' => $user->id]);
-
-    expect($policy->update($user, $account))->toBeFalse();
-});
+    expect($result)->toBeFalse();
+})->with([
+    'view' => ['view', true],
+    'create' => ['create', false],
+    'update' => ['update', true],
+    'restore' => ['restore', true],
+    'forceDelete' => ['forceDelete', true],
+]);
 
 // === delete ===
 
@@ -72,24 +61,4 @@ it('other user cannot delete someone elses minecraft account', function () {
     $account = MinecraftAccount::factory()->create(['user_id' => $owner->id]);
 
     expect($user->can('delete', $account))->toBeFalse();
-});
-
-// === restore ===
-
-it('restore always returns false through policy', function () {
-    $policy = new MinecraftAccountPolicy;
-    $user = User::factory()->create();
-    $account = MinecraftAccount::factory()->create(['user_id' => $user->id]);
-
-    expect($policy->restore($user, $account))->toBeFalse();
-});
-
-// === forceDelete ===
-
-it('forceDelete always returns false through policy', function () {
-    $policy = new MinecraftAccountPolicy;
-    $user = User::factory()->create();
-    $account = MinecraftAccount::factory()->create(['user_id' => $user->id]);
-
-    expect($policy->forceDelete($user, $account))->toBeFalse();
 });

@@ -31,23 +31,33 @@ new class extends Component {
             'appealMessage' => 'required|string|min:20',
         ]);
 
+        $thread = null;
+        $quartermasters = null;
+
         // Create appeal ticket directly — brig users are exempt from the ticket create policy for appeals only
-        [$thread, $quartermaster] = DB::transaction(function () use ($user) {
+        DB::transaction(function () use ($user, &$thread, &$quartermasters) {
+            // Re-check with a row lock to prevent duplicate appeals from concurrent requests
+            $lockedUser = User::where('id', $user->id)->lockForUpdate()->firstOrFail();
+
+            if (! $lockedUser->canAppeal()) {
+                return;
+            }
+
             $thread = Thread::create([
                 'type' => ThreadType::Ticket,
                 'subtype' => ThreadSubtype::AdminAction,
                 'department' => StaffDepartment::Quartermaster,
-                'subject' => 'Brig Appeal: '.$user->name,
+                'subject' => 'Brig Appeal: '.$lockedUser->name,
                 'status' => ThreadStatus::Open,
-                'created_by_user_id' => $user->id,
+                'created_by_user_id' => $lockedUser->id,
                 'last_message_at' => now(),
             ]);
 
-            $thread->addParticipant($user);
+            $thread->addParticipant($lockedUser);
 
             Message::create([
                 'thread_id' => $thread->id,
-                'user_id' => $user->id,
+                'user_id' => $lockedUser->id,
                 'body' => $this->appealMessage,
                 'kind' => MessageKind::Message,
             ]);
@@ -55,20 +65,23 @@ new class extends Component {
             \App\Actions\RecordActivity::handle($thread, 'ticket_opened', 'Brig appeal submitted: '.$thread->subject);
 
             // Set a 7-day lockout to prevent appeal spam
-            $user->next_appeal_available_at = now()->addDays(7);
-            $user->save();
+            $lockedUser->next_appeal_available_at = now()->addDays(7);
+            $lockedUser->save();
 
-            $quartermaster = User::where('staff_department', StaffDepartment::Quartermaster)
+            $quartermasters = User::where('staff_department', StaffDepartment::Quartermaster)
                 ->whereNotNull('staff_rank')
                 ->get();
-
-            return [$thread, $quartermaster];
         });
+
+        if ($thread === null) {
+            Flux::toast('You cannot submit an appeal at this time.', 'Not Available', variant: 'danger');
+            return;
+        }
 
         // Notify Quartermaster staff outside the transaction so failures don't roll back DB changes
         try {
             $notificationService = app(TicketNotificationService::class);
-            $notificationService->sendToMany($quartermaster, new NewTicketNotification($thread));
+            $notificationService->sendToMany($quartermasters, new NewTicketNotification($thread));
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Failed to send brig appeal notifications', ['error' => $e->getMessage()]);
         }
@@ -127,7 +140,7 @@ new class extends Component {
 
             <div class="flex gap-2 justify-end">
                 <flux:button variant="ghost" x-on:click="$flux.modal('brig-appeal-modal').close()">Cancel</flux:button>
-                <flux:button wire:click="submitAppeal" variant="primary">Submit Appeal</flux:button>
+                <flux:button wire:click="submitAppeal" wire:loading.attr="disabled" wire:target="submitAppeal" variant="primary">Submit Appeal</flux:button>
             </div>
         </div>
     </flux:modal>
