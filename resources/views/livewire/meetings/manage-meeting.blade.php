@@ -7,6 +7,7 @@ use App\Models\MeetingNote;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonTimeZone;
 use Flux\Flux;
+use Illuminate\Validation\ValidationException;
 use Livewire\Volt\Component;
 
 new class extends Component {
@@ -52,25 +53,43 @@ new class extends Component {
     {
         $this->authorize('attend', $this->meeting);
 
-        if ($this->meeting->attendees->contains(auth()->id())) {
+        $attendeeId = auth()->id();
+
+        if ($this->meeting->attendees()->where('id', $attendeeId)->exists()) {
             Flux::toast('You are already listed as an attendee.', variant: 'warning');
 
             return;
         }
 
-        $this->meeting->attendees()->attach(auth()->id(), ['added_at' => now()]);
+        $changes = $this->meeting->attendees()->syncWithoutDetaching([
+            $attendeeId => ['added_at' => now()],
+        ]);
         $this->meeting->load('attendees');
+
+        if (empty($changes['attached'])) {
+            Flux::toast('You are already listed as an attendee.', variant: 'warning');
+
+            return;
+        }
 
         Flux::toast('You have joined the meeting!', variant: 'success');
     }
 
     private function parseScheduledTime(string $day, string $time): CarbonImmutable
     {
-        return CarbonImmutable::createFromFormat(
+        $parsedTime = CarbonImmutable::createFromFormat(
             'Y-m-d g:i A',
             "{$day} {$time}",
             new CarbonTimeZone('America/New_York')
-        )->utc();
+        );
+
+        if ($parsedTime === false) {
+            throw ValidationException::withMessages([
+                'scheduleNextTime' => 'Please enter a valid time in the format H:MM AM/PM.',
+            ]);
+        }
+
+        return $parsedTime->utc();
     }
 
     public function EndMeeting() {
@@ -161,7 +180,7 @@ new class extends Component {
 
         $this->validate([
             'scheduleNextTitle' => 'required|string|max:255',
-            'scheduleNextDay' => 'required|date',
+            'scheduleNextDay' => 'required|date_format:Y-m-d',
             'scheduleNextTime' => 'required|date_format:g:i A',
         ]);
 

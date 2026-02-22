@@ -29,12 +29,12 @@ it('removes whitelist and kicks player when verification expires', function () {
     ]);
 
     $this->rconMock->shouldReceive('executeCommand')
-        ->withArgs(fn ($cmd) => str_contains($cmd, 'whitelist remove'))
+        ->withArgs(fn (...$args) => str_contains($args[0], 'whitelist remove'))
         ->once()
         ->andReturn(['success' => true, 'response' => 'OK']);
 
     $this->rconMock->shouldReceive('executeCommand')
-        ->withArgs(fn ($cmd) => str_contains($cmd, 'kick "TestPlayer"'))
+        ->withArgs(fn (...$args) => str_contains($args[0], 'kick "TestPlayer"'))
         ->once()
         ->andReturn(['success' => true, 'response' => 'OK']);
 
@@ -60,12 +60,12 @@ it('does not crash if kick fails and still deletes account', function () {
     ]);
 
     $this->rconMock->shouldReceive('executeCommand')
-        ->withArgs(fn ($cmd) => str_contains($cmd, 'whitelist remove'))
+        ->withArgs(fn (...$args) => str_contains($args[0], 'whitelist remove'))
         ->once()
         ->andReturn(['success' => true, 'response' => 'OK']);
 
     $this->rconMock->shouldReceive('executeCommand')
-        ->withArgs(fn ($cmd) => str_contains($cmd, 'kick "OfflinePlayer"'))
+        ->withArgs(fn (...$args) => str_contains($args[0], 'kick "OfflinePlayer"'))
         ->once()
         ->andReturn(['success' => false, 'response' => 'Player not online']);
 
