@@ -10,11 +10,11 @@ class NotesDisplay extends Component
 {
     use WithPagination;
 
-    public $sectionKey;
+    public ?string $sectionKey = null;
 
     public int $perPage = 10;
 
-    public function mount($sectionKey)
+    public function mount(string $sectionKey)
     {
         $this->sectionKey = $sectionKey;
     }

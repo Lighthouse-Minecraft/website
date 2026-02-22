@@ -88,7 +88,7 @@ class CleanupExpiredVerifications extends Command
             if ($result['success']) {
                 // Best-effort kick; this can fail harmlessly if the user is offline.
                 $rconService->executeCommand(
-                    "kick {$account->username} Your verification has expired. Please re-verify to rejoin.",
+                    "kick \"{$account->username}\" Your verification has expired. Please re-verify to rejoin.",
                     'kick',
                     $account->command_id,
                     $verification->user,

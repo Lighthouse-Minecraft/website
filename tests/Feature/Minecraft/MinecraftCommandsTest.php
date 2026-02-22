@@ -45,7 +45,7 @@ test('cleanup command sends whitelist remove command via rcon', function () {
         ->andReturn(['success' => true, 'response' => 'Removed']);
     $rconMock->shouldReceive('executeCommand')
         ->once()
-        ->with('kick ExpiredPlayer Your verification has expired. Please re-verify to rejoin.', 'kick', 'ExpiredPlayer', \Mockery::any(), \Mockery::any())
+        ->with('kick "ExpiredPlayer" Your verification has expired. Please re-verify to rejoin.', 'kick', 'ExpiredPlayer', \Mockery::any(), \Mockery::any())
         ->andReturn(['success' => true, 'response' => 'Kicked']);
 
     Artisan::call('minecraft:cleanup-expired');

@@ -60,7 +60,7 @@ None — no migrations required.
 **Action**: Modify — three CSS class changes only, no PHP
 
 **Change 1** — Detail badge row (around line 523):
-```
+```blade
 // Old:
 <div class="mt-2 flex items-center gap-4 text-sm text-zinc-600 dark:text-zinc-400">
 
@@ -69,7 +69,7 @@ None — no migrations required.
 ```
 
 **Change 2** — Status/Assignment controls div (around line 540):
-```
+```blade
 // Old:
 <div class="flex items-center gap-4 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 p-4">
 
@@ -78,7 +78,7 @@ None — no migrations required.
 ```
 
 **Change 3** — Reply form action row (around line 646):
-```
+```blade
 // Old:
 <div class="mt-4 flex items-center justify-between">
 
@@ -677,7 +677,7 @@ it('does not crash if kick fails (player already offline)', function () {
 **File**: `.env.example`
 **Action**: Modify — append at the bottom
 
-```
+```blade
 # Minecraft Server — player-facing connection info (shown in the verification UI)
 MINECRAFT_SERVER_NAME="Lighthouse MC"
 MINECRAFT_SERVER_HOST=play.lighthousemc.net

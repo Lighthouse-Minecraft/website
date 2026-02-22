@@ -162,7 +162,7 @@ new class extends Component {
         $this->validate([
             'scheduleNextTitle' => 'required|string|max:255',
             'scheduleNextDay' => 'required|date',
-            'scheduleNextTime' => 'required|string',
+            'scheduleNextTime' => 'required|date_format:g:i A',
         ]);
 
         $newMeeting = Meeting::create([
