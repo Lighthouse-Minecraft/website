@@ -520,7 +520,7 @@ new class extends Component
     <div class="flex items-start justify-between">
         <div>
             <flux:heading size="xl">{{ $thread->subject }}</flux:heading>
-            <div class="mt-2 flex items-center gap-4 text-sm text-zinc-600 dark:text-zinc-400">
+            <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-zinc-600 dark:text-zinc-400">
                 <span>For: <a href="{{ route('profile.show', $this->targetUser) }}" class="text-blue-600 dark:text-blue-400 hover:underline">{{ $this->targetUser->name }}</a></span>
                 <span>•</span>
                 <span>Department: {{ $thread->department->label() }}</span>
@@ -537,7 +537,7 @@ new class extends Component
 
     {{-- Status & Assignment Controls (Staff Only) --}}
     @if($this->canChangeStatus || $this->canAssign)
-        <div class="flex items-center gap-4 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 p-4">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 p-4">
             @if($this->canChangeStatus)
                 <flux:field class="flex-1">
                     <flux:label>Status</flux:label>
@@ -594,11 +594,7 @@ new class extends Component
                 </div>
 
                 <div class="mt-3 prose prose-sm dark:prose-invert max-w-none [&_a]:text-blue-600 dark:[&_a]:text-blue-400 [&_a]:underline [&_a]:font-medium hover:[&_a]:text-blue-700 dark:hover:[&_a]:text-blue-300">
-                    @if($message->kind === \App\Enums\MessageKind::System)
-                        {!! Str::markdown($message->body) !!}
-                    @else
-                        {!! nl2br(e($message->body)) !!}
-                    @endif
+                    {!! Str::markdown($message->body, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
                 </div>
 
                 {{-- Show flags for staff with viewFlagged permission --}}
@@ -643,7 +639,7 @@ new class extends Component
                     <flux:error name="replyMessage" />
                 </flux:field>
 
-                <div class="mt-4 flex items-center justify-between">
+                <div class="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div>
                         @if($this->canAddInternalNotes)
                             <flux:checkbox wire:model="isInternalNote" label="Internal Note (Staff Only)" />

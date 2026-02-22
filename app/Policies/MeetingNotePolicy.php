@@ -22,11 +22,7 @@ class MeetingNotePolicy
      */
     public function create(User $user): bool
     {
-        if ($user->isAtLeastRank(StaffRank::CrewMember)) {
-            return true;
-        }
-
-        return false;
+        return $user->isAtLeastRank(StaffRank::Officer) || $user->hasRole('Meeting Secretary');
     }
 
     /**
@@ -34,11 +30,7 @@ class MeetingNotePolicy
      */
     public function update(User $user, MeetingNote $meetingNote): bool
     {
-        if ($user->isAtLeastRank(StaffRank::CrewMember)) {
-            return true;
-        }
-
-        return false;
+        return $user->isAtLeastRank(StaffRank::Officer) || $user->hasRole('Meeting Secretary');
     }
 
     public function updateSave(User $user, MeetingNote $meetingNote): bool

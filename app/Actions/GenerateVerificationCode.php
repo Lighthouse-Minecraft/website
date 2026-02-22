@@ -92,7 +92,8 @@ class GenerateVerificationCode
         } else {
             // Bedrock
             $mcProfileService = app(McProfileService::class);
-            $playerData = $mcProfileService->getBedrockPlayerInfo($username);
+            $lookupUsername = ltrim($username, '.');
+            $playerData = $mcProfileService->getBedrockPlayerInfo($lookupUsername);
 
             if (! $playerData) {
                 return [
@@ -104,7 +105,12 @@ class GenerateVerificationCode
             }
 
             $uuid = $playerData['floodgate_uuid'] ?? null;
-            $verifiedUsername = $playerData['gamertag'] ?? $username;
+            $verifiedUsername = $playerData['gamertag'] ?? $lookupUsername;
+
+            // Bedrock usernames appear with a leading dot on Floodgate servers.
+            if (! str_starts_with($verifiedUsername, '.')) {
+                $verifiedUsername = '.'.$verifiedUsername;
+            }
 
             if (! $uuid) {
                 return [

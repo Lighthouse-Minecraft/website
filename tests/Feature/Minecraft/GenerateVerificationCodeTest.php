@@ -46,16 +46,14 @@ test('generates verification code for java account', function () {
     ]);
 });
 
-test('generates verification code for bedrock account', function () {
+test('generates verification code for bedrock account - normalizes dot prefix', function () {
     Http::fake([
-        'mcprofile.io/api/v1/bedrock/gamertag/*' => Http::response([
+        'api.geysermc.org/*' => Http::response([
             'xuid' => '2535428197086765',
-            'gamertag' => '.BedrockPlayer',
-            'floodgate_uuid' => '00000000-0000-0000-0009-01234567890a',
         ]),
     ]);
 
-    $result = $this->action->handle($this->user, MinecraftAccountType::Bedrock, '.BedrockPlayer');
+    $result = $this->action->handle($this->user, MinecraftAccountType::Bedrock, 'BedrockPlayer');
 
     expect($result['success'])->toBeTrue()
         ->and($result['code'])->toHaveLength(6)
@@ -66,6 +64,27 @@ test('generates verification code for bedrock account', function () {
         'account_type' => 'bedrock',
         'minecraft_username' => '.BedrockPlayer',
         'status' => 'pending',
+    ]);
+
+    $this->assertDatabaseHas('minecraft_accounts', [
+        'user_id' => $this->user->id,
+        'username' => '.BedrockPlayer',
+    ]);
+});
+
+test('bedrock verification does not double-add the dot if user enters it', function () {
+    Http::fake([
+        'api.geysermc.org/*' => Http::response([
+            'xuid' => '2535428197086765',
+        ]),
+    ]);
+
+    $result = $this->action->handle($this->user, MinecraftAccountType::Bedrock, '.BedrockPlayer');
+
+    expect($result['success'])->toBeTrue();
+
+    $this->assertDatabaseHas('minecraft_verifications', [
+        'minecraft_username' => '.BedrockPlayer',
     ]);
 });
 
