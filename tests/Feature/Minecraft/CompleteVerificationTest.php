@@ -183,6 +183,31 @@ test('normalizes uuid with dashes', function () {
         'status' => 'active',
     ]);
 });
+
+test('completes verification for bedrock account with dot-prefix username', function () {
+    MinecraftVerification::factory()->for($this->user)->pending()->create([
+        'code' => 'BED123',
+        'account_type' => 'bedrock',
+        'minecraft_username' => '.BedrockPlayer',
+        'minecraft_uuid' => '00000000-0000-0000-0009-01234567890a',
+    ]);
+
+    MinecraftAccount::factory()->for($this->user)->verifying()->create([
+        'username' => '.BedrockPlayer',
+        'uuid' => '00000000-0000-0000-0009-01234567890a',
+        'account_type' => 'bedrock',
+        'command_id' => '00000000000000000009-01234567890a',
+    ]);
+
+    $result = $this->action->handle(
+        'BED123',
+        '.BedrockPlayer',
+        '00000000-0000-0000-0009-01234567890a'
+    );
+
+    expect($result['success'])->toBeTrue();
+});
+
 test('syncs staff position when staff member verifies account', function () {
     // Create staff user with server access
     $staffUser = User::factory()->create([

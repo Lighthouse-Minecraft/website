@@ -327,8 +327,21 @@ new class extends Component {
 
                 <div class="space-y-2">
                     <flux:text class="font-semibold">Instructions:</flux:text>
+                    @php
+                        $serverName = config('lighthouse.minecraft.server_name');
+                        $serverHost = config('lighthouse.minecraft.server_host');
+                        $serverPort = $accountType === 'bedrock'
+                            ? config('lighthouse.minecraft.server_port_bedrock')
+                            : config('lighthouse.minecraft.server_port_java');
+                    @endphp
                     <ol class="flex flex-col gap-1 list-decimal list-inside text-sm text-zinc-700 dark:text-zinc-300">
-                        <li>Join the Minecraft server</li>
+                        <li>
+                            Join the Minecraft server: <strong>{{ $serverName }}</strong>
+                            <br>
+                            <code class="px-2 py-1 bg-zinc-200 dark:bg-zinc-700 rounded">
+                                {{ $serverHost }}:{{ $serverPort }}
+                            </code>
+                        </li>
                         <li>Type in chat: <code class="px-2 py-1 bg-zinc-200 dark:bg-zinc-700 rounded">/verify {{ $verificationCode }}</code></li>
                         <li>Wait for confirmation (this page will update automatically)</li>
                     </ol>
@@ -385,6 +398,11 @@ new class extends Component {
                             label="Minecraft Username"
                             placeholder="{{ $accountType === 'java' ? 'JavaPlayer123' : 'BedrockGamer456' }}"
                             required />
+                        @if($accountType === 'bedrock')
+                            <flux:description>
+                                Enter your Xbox gamertag without the dot - it will be added automatically.
+                            </flux:description>
+                        @endif
                     </div>
                     @if($accountType === 'java' && strlen($username) >= 3)
                         <div class="flex-shrink-0 mb-0.5">

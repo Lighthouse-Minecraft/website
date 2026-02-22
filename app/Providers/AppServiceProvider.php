@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Auth\Events\Login;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -36,7 +37,7 @@ class AppServiceProvider extends ServiceProvider
         );
 
         // Register custom notification channel
-        app()->bind('minecraft', function () {
+        Notification::extend('minecraft', function ($app) {
             return new \App\Channels\MinecraftChannel;
         });
     }
