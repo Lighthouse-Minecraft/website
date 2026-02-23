@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Actions\UnlinkMinecraftAccount;
+use App\Enums\StaffDepartment;
 use App\Models\MinecraftAccount;
 use App\Models\User;
 use App\Services\MinecraftRconService;
@@ -53,6 +54,30 @@ test('sends rank reset and whitelist remove commands via rcon', function () {
         ->andReturn(['success' => true, 'response' => 'Removed']);
 
     $this->action->handle($account, $this->user);
+});
+
+test('sends removestaff command when user has a staff department', function () {
+    $staffUser = User::factory()->create(['staff_department' => StaffDepartment::Command]);
+    $account = MinecraftAccount::factory()->for($staffUser)->create([
+        'username' => 'StaffPlayer',
+    ]);
+
+    $mock = $this->mock(MinecraftRconService::class);
+    $mock->shouldReceive('executeCommand')
+        ->once()
+        ->with('lh setmember StaffPlayer default', 'rank', 'StaffPlayer', $staffUser, \Mockery::any())
+        ->andReturn(['success' => true, 'response' => 'OK']);
+    $mock->shouldReceive('executeCommand')
+        ->once()
+        ->with('lh removestaff StaffPlayer', 'rank', 'StaffPlayer', $staffUser, \Mockery::any())
+        ->andReturn(['success' => true, 'response' => 'OK']);
+    $mock->shouldReceive('executeCommand')
+        ->once()
+        ->with('whitelist remove StaffPlayer', 'whitelist', 'StaffPlayer', $staffUser, \Mockery::any())
+        ->andReturn(['success' => true, 'response' => 'Removed']);
+
+    $action = new UnlinkMinecraftAccount;
+    $action->handle($account, $staffUser);
 });
 
 test('records activity log', function () {

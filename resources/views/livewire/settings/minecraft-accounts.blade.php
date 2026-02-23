@@ -238,10 +238,10 @@ new class extends Component {
 
         $this->authorize('delete', $account);
 
+        $result = UnlinkMinecraftAccount::run($account, auth()->user());
+
         $this->modal('confirm-remove')->close();
         $this->accountToUnlink = null;
-
-        $result = UnlinkMinecraftAccount::run($account, auth()->user());
 
         if ($result['success']) {
             Flux::toast($result['message'], variant: 'success');

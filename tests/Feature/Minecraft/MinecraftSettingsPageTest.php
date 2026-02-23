@@ -83,6 +83,10 @@ test('validates username required', function () {
 test('removes linked account', function () {
     $account = MinecraftAccount::factory()->for($this->user)->create();
 
+    $this->mock(MinecraftRconService::class, function ($mock) {
+        $mock->shouldReceive('executeCommand')->andReturn(['success' => true, 'response' => 'OK']);
+    });
+
     Volt::test('settings.minecraft-accounts')
         ->set('accountToUnlink', $account->id)
         ->call('remove')
@@ -131,5 +135,5 @@ test('polls for verification completion', function () {
     $verification->update(['status' => 'completed']);
 
     $component->call('checkVerification')
-        ->assertSet('activeVerification', null);
+        ->assertSet('verificationCode', null);
 });
