@@ -234,7 +234,11 @@ new class extends Component {
             return;
         }
 
-        $account = MinecraftAccount::findOrFail($this->accountToUnlink);
+        $account = auth()->user()->minecraftAccounts()->find($this->accountToUnlink);
+
+        if (! $account) {
+            return;
+        }
 
         $this->authorize('delete', $account);
 
@@ -335,7 +339,7 @@ new class extends Component {
 
                 <flux:text class="text-sm">
                     @php $tz = auth()->user()->timezone ?? 'UTC'; @endphp
-                    Expires {{ $expiresAt->diffForHumans() }} ({{ $expiresAt->setTimezone($tz)->format('g:i A T') }})
+                    Expires {{ $expiresAt->diffForHumans() }} ({{ $expiresAt->copy()->setTimezone($tz)->format('g:i A T') }})
                 </flux:text>
 
                 <flux:separator />

@@ -104,7 +104,7 @@ test('cannot remove another users account', function () {
     Volt::test('settings.minecraft-accounts')
         ->set('accountToUnlink', $account->id)
         ->call('remove')
-        ->assertForbidden();
+        ->assertHasNoErrors();
 
     $this->assertDatabaseHas('minecraft_accounts', [
         'id' => $account->id,

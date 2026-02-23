@@ -39,7 +39,7 @@ test('prevents unlinking other users account', function () {
 });
 
 test('sends rank reset and whitelist remove commands via rcon', function () {
-    $account = MinecraftAccount::factory()->for($this->user)->create([
+    $account = MinecraftAccount::factory()->for($this->user)->java()->create([
         'username' => 'TestPlayer',
     ]);
 
@@ -58,7 +58,7 @@ test('sends rank reset and whitelist remove commands via rcon', function () {
 
 test('sends removestaff command when user has a staff department', function () {
     $staffUser = User::factory()->create(['staff_department' => StaffDepartment::Command]);
-    $account = MinecraftAccount::factory()->for($staffUser)->create([
+    $account = MinecraftAccount::factory()->for($staffUser)->java()->create([
         'username' => 'StaffPlayer',
     ]);
 
