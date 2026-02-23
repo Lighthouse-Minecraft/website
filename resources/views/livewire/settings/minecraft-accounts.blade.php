@@ -23,6 +23,8 @@ new class extends Component {
 
     public ?string $errorMessage = null;
 
+    public ?int $accountToUnlink = null;
+
     /**
      * Load the authenticated user's Minecraft account by ID and open its detail modal if found.
      *
@@ -213,18 +215,31 @@ new class extends Component {
     }
 
     /**
-     * Remove a linked Minecraft account by ID, unlinking it and displaying a user toast with the operation result.
-     *
-     * Attempts to authorize the current user, run the unlink action for the specified account, and shows a success
-     * or error toast containing the action message.
+     * Store the account ID and open the remove confirmation modal.
      *
      * @param int $accountId The ID of the MinecraftAccount to remove.
      */
-    public function remove(int $accountId): void
+    public function confirmRemove(int $accountId): void
     {
-        $account = MinecraftAccount::findOrFail($accountId);
+        $this->accountToUnlink = $accountId;
+        $this->modal('confirm-remove')->show();
+    }
+
+    /**
+     * Remove the account stored in $accountToUnlink, unlinking it from the user.
+     */
+    public function remove(): void
+    {
+        if (! $this->accountToUnlink) {
+            return;
+        }
+
+        $account = MinecraftAccount::findOrFail($this->accountToUnlink);
 
         $this->authorize('delete', $account);
+
+        $this->modal('confirm-remove')->close();
+        $this->accountToUnlink = null;
 
         $result = UnlinkMinecraftAccount::run($account, auth()->user());
 
@@ -280,10 +295,9 @@ new class extends Component {
                         </div>
                         @if($account->status === \App\Enums\MinecraftAccountStatus::Active)
                             <flux:button
-                                wire:click="remove({{ $account->id }})"
+                                wire:click="confirmRemove({{ $account->id }})"
                                 variant="danger"
-                                size="sm"
-                                wire:confirm="Are you sure you want to unlink this Minecraft account? You will be removed from the server whitelist.">
+                                size="sm">
                                 Remove
                             </flux:button>
                         @else
@@ -419,5 +433,20 @@ new class extends Component {
         </flux:card>
     @endif
     <x-minecraft.mc-account-detail-modal :account="$selectedAccount" />
+
+    {{-- Remove account confirmation modal --}}
+    <flux:modal name="confirm-remove" class="min-w-[22rem] space-y-6">
+        <div>
+            <flux:heading size="lg">Remove Minecraft Account</flux:heading>
+            <flux:text class="mt-2">Are you sure you want to unlink this account? You will be removed from the server whitelist.</flux:text>
+        </div>
+
+        <div class="flex gap-2 justify-end">
+            <flux:modal.close>
+                <flux:button variant="ghost">Cancel</flux:button>
+            </flux:modal.close>
+            <flux:button variant="danger" wire:click="remove">Remove Account</flux:button>
+        </div>
+    </flux:modal>
 </div>
 </x-settings.layout>

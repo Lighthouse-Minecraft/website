@@ -84,7 +84,8 @@ test('removes linked account', function () {
     $account = MinecraftAccount::factory()->for($this->user)->create();
 
     Volt::test('settings.minecraft-accounts')
-        ->call('remove', $account->id)
+        ->set('accountToUnlink', $account->id)
+        ->call('remove')
         ->assertHasNoErrors();
 
     $this->assertDatabaseMissing('minecraft_accounts', [
@@ -97,7 +98,8 @@ test('cannot remove another users account', function () {
     $account = MinecraftAccount::factory()->for($otherUser)->create();
 
     Volt::test('settings.minecraft-accounts')
-        ->call('remove', $account->id)
+        ->set('accountToUnlink', $account->id)
+        ->call('remove')
         ->assertForbidden();
 
     $this->assertDatabaseHas('minecraft_accounts', [
