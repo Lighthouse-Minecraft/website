@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Enums\MembershipLevel;
 use App\Models\MinecraftAccount;
 use App\Models\MinecraftVerification;
 use App\Models\User;
@@ -40,6 +41,16 @@ test('shows verification form when no active verification', function () {
     $this->get('/settings/minecraft-accounts')
         ->assertSuccessful()
         ->assertSee('Link New Account');
+});
+
+test('shows promotion callout instead of form for users below traveler rank', function () {
+    $stowaway = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create();
+    $this->actingAs($stowaway);
+
+    $this->get('/settings/minecraft-accounts')
+        ->assertSuccessful()
+        ->assertSee('promoted you to Traveler rank')
+        ->assertDontSee('Link New Account');
 });
 
 test('generates verification code', function () {
@@ -83,8 +94,13 @@ test('validates username required', function () {
 test('removes linked account', function () {
     $account = MinecraftAccount::factory()->for($this->user)->create();
 
+    $this->mock(MinecraftRconService::class, function ($mock) {
+        $mock->shouldReceive('executeCommand')->andReturn(['success' => true, 'response' => 'OK']);
+    });
+
     Volt::test('settings.minecraft-accounts')
-        ->call('remove', $account->id)
+        ->set('accountToUnlink', $account->id)
+        ->call('unlinkAccount')
         ->assertHasNoErrors();
 
     $this->assertDatabaseMissing('minecraft_accounts', [
@@ -97,8 +113,9 @@ test('cannot remove another users account', function () {
     $account = MinecraftAccount::factory()->for($otherUser)->create();
 
     Volt::test('settings.minecraft-accounts')
-        ->call('remove', $account->id)
-        ->assertForbidden();
+        ->set('accountToUnlink', $account->id)
+        ->call('unlinkAccount')
+        ->assertHasNoErrors();
 
     $this->assertDatabaseHas('minecraft_accounts', [
         'id' => $account->id,
@@ -129,5 +146,5 @@ test('polls for verification completion', function () {
     $verification->update(['status' => 'completed']);
 
     $component->call('checkVerification')
-        ->assertSet('activeVerification', null);
+        ->assertSet('verificationCode', null);
 });

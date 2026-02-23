@@ -5,6 +5,7 @@ namespace App\Actions;
 use App\Enums\MinecraftAccountStatus;
 use App\Models\MinecraftAccount;
 use App\Models\User;
+use App\Services\MinecraftRconService;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class UnlinkMinecraftAccount
@@ -12,9 +13,12 @@ class UnlinkMinecraftAccount
     use AsAction;
 
     /**
-     * Unlink the given Minecraft account from the specified user, queue server-side rank reset and whitelist removal, record related activities, and delete the account.
+     * Unlink the given Minecraft account from the specified user, execute server-side rank
+     * reset, staff removal (if applicable), and whitelist removal via RCON, then delete the
+     * account record.
      *
-     * If the user does not own the account or the account is not in an active state, the unlink is not performed and an appropriate failure message is returned.
+     * If the user does not own the account or the account is not in an active state, the unlink
+     * is not performed and an appropriate failure message is returned.
      *
      * @param  MinecraftAccount  $account  The Minecraft account to unlink.
      * @param  User  $user  The user requesting the unlink; ownership is verified against the account.
@@ -42,9 +46,10 @@ class UnlinkMinecraftAccount
 
         $username = $account->username;
         $accountType = $account->account_type;
+        $rconService = app(MinecraftRconService::class);
 
         // Reset the player's MC rank to default before removing from whitelist
-        SendMinecraftCommand::dispatch(
+        $rconService->executeCommand(
             "lh setmember {$account->username} default",
             'rank',
             $account->username,
@@ -55,11 +60,28 @@ class UnlinkMinecraftAccount
         RecordActivity::handle(
             $user,
             'minecraft_rank_reset_requested',
-            "Queued rank reset to default for {$username}"
+            "Reset rank to default for {$username}"
         );
 
+        // Remove staff position if the user holds one
+        if ($user->staff_department !== null) {
+            $rconService->executeCommand(
+                "lh removestaff {$account->username}",
+                'rank',
+                $account->username,
+                $user,
+                ['action' => 'unlink_staff_reset']
+            );
+
+            RecordActivity::handle(
+                $user,
+                'minecraft_staff_position_removed',
+                "Removed Minecraft staff position for {$username}"
+            );
+        }
+
         // Remove from whitelist using the correct command for account type
-        SendMinecraftCommand::dispatch(
+        $rconService->executeCommand(
             $account->whitelistRemoveCommand(),
             'whitelist',
             $account->username,
@@ -70,13 +92,12 @@ class UnlinkMinecraftAccount
         RecordActivity::handle(
             $user,
             'minecraft_whitelist_removal_requested',
-            "Queued removal of {$username} from server whitelist"
+            "Removed {$username} from server whitelist"
         );
 
         // Delete the account
         $account->delete();
 
-        // Record activity
         RecordActivity::handle(
             $user,
             'minecraft_account_unlinked',

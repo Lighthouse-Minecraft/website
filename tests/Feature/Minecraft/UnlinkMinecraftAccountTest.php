@@ -3,11 +3,10 @@
 declare(strict_types=1);
 
 use App\Actions\UnlinkMinecraftAccount;
+use App\Enums\StaffDepartment;
 use App\Models\MinecraftAccount;
 use App\Models\User;
-use App\Notifications\MinecraftCommandNotification;
 use App\Services\MinecraftRconService;
-use Illuminate\Support\Facades\Notification;
 
 beforeEach(function () {
     $this->user = User::factory()->create();
@@ -39,20 +38,46 @@ test('prevents unlinking other users account', function () {
     $this->assertDatabaseHas('minecraft_accounts', ['id' => $account->id]);
 });
 
-test('sends async whitelist remove command', function () {
-    Notification::fake();
-
-    $account = MinecraftAccount::factory()->for($this->user)->create([
+test('sends rank reset and whitelist remove commands via rcon', function () {
+    $account = MinecraftAccount::factory()->for($this->user)->java()->create([
         'username' => 'TestPlayer',
     ]);
 
-    // SendMinecraftCommand::dispatch() routes through an on-demand notification,
-    // not the job queue. Notification::fake() is active globally, so RCON is never called.
-    $this->mock(MinecraftRconService::class)->shouldNotReceive('executeCommand');
+    $mock = $this->mock(MinecraftRconService::class);
+    $mock->shouldReceive('executeCommand')
+        ->once()
+        ->with('lh setmember TestPlayer default', 'rank', 'TestPlayer', $this->user, \Mockery::any())
+        ->andReturn(['success' => true, 'response' => 'OK']);
+    $mock->shouldReceive('executeCommand')
+        ->once()
+        ->with('whitelist remove TestPlayer', 'whitelist', 'TestPlayer', $this->user, \Mockery::any())
+        ->andReturn(['success' => true, 'response' => 'Removed']);
 
     $this->action->handle($account, $this->user);
+});
 
-    Notification::assertSentOnDemand(MinecraftCommandNotification::class);
+test('sends removestaff command when user has a staff department', function () {
+    $staffUser = User::factory()->create(['staff_department' => StaffDepartment::Command]);
+    $account = MinecraftAccount::factory()->for($staffUser)->java()->create([
+        'username' => 'StaffPlayer',
+    ]);
+
+    $mock = $this->mock(MinecraftRconService::class);
+    $mock->shouldReceive('executeCommand')
+        ->once()
+        ->with('lh setmember StaffPlayer default', 'rank', 'StaffPlayer', $staffUser, \Mockery::any())
+        ->andReturn(['success' => true, 'response' => 'OK']);
+    $mock->shouldReceive('executeCommand')
+        ->once()
+        ->with('lh removestaff StaffPlayer', 'rank', 'StaffPlayer', $staffUser, \Mockery::any())
+        ->andReturn(['success' => true, 'response' => 'OK']);
+    $mock->shouldReceive('executeCommand')
+        ->once()
+        ->with('whitelist remove StaffPlayer', 'whitelist', 'StaffPlayer', $staffUser, \Mockery::any())
+        ->andReturn(['success' => true, 'response' => 'Removed']);
+
+    $action = new UnlinkMinecraftAccount;
+    $action->handle($account, $staffUser);
 });
 
 test('records activity log', function () {
