@@ -38,11 +38,6 @@
                 </div>
 
                 <div class="flex justify-between gap-4">
-                    <dt class="text-zinc-500 dark:text-zinc-400 font-medium shrink-0">Command ID</dt>
-                    <dd class="font-mono text-xs break-all text-right">{{ $account->command_id }}</dd>
-                </div>
-
-                <div class="flex justify-between gap-4">
                     <dt class="text-zinc-500 dark:text-zinc-400 font-medium shrink-0">Linked User</dt>
                     <dd>
                         @if($account->user)

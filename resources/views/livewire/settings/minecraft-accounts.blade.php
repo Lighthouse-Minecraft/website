@@ -110,7 +110,7 @@ new class extends Component {
                 $result = $rconService->executeCommand(
                     $account->whitelistRemoveCommand(),
                     'whitelist',
-                    $account->command_id,
+                    $account->username,
                     auth()->user(),
                     ['action' => 'cancel_verification', 'verification_id' => $verification->id]
                 );
@@ -398,11 +398,7 @@ new class extends Component {
                             label="Minecraft Username"
                             placeholder="{{ $accountType === 'java' ? 'JavaPlayer123' : 'BedrockGamer456' }}"
                             required />
-                        @if($accountType === 'bedrock')
-                            <flux:description>
-                                Enter your Xbox gamertag without the dot - it will be added automatically.
-                            </flux:description>
-                        @endif
+
                     </div>
                     @if($accountType === 'java' && strlen($username) >= 3)
                         <div class="flex-shrink-0 mb-0.5">

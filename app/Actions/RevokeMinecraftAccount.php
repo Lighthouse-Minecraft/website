@@ -33,9 +33,9 @@ class RevokeMinecraftAccount
 
         // Reset the player's MC rank to default synchronously before removing from whitelist
         $rconService->executeCommand(
-            "lh setmember {$account->command_id} default",
+            "lh setmember {$account->username} default",
             'rank',
-            $account->command_id,
+            $account->username,
             $admin,
             ['action' => 'revoke_rank_reset', 'affected_user_id' => $affectedUser->id]
         );
@@ -44,7 +44,7 @@ class RevokeMinecraftAccount
         $whitelistResult = $rconService->executeCommand(
             $account->whitelistRemoveCommand(),
             'whitelist',
-            $account->command_id,
+            $account->username,
             $admin,
             ['action' => 'revoke', 'affected_user_id' => $affectedUser->id]
         );
@@ -52,7 +52,7 @@ class RevokeMinecraftAccount
         if (! $whitelistResult['success']) {
             Log::error('Failed to remove whitelist during account revocation', [
                 'account_id' => $account->id,
-                'command_id' => $account->command_id,
+                'username' => $account->username,
                 'response' => $whitelistResult['response'] ?? null,
                 'error' => $whitelistResult['error'] ?? null,
             ]);

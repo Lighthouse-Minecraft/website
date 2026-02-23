@@ -29,7 +29,6 @@ class MinecraftAccountFactory extends Factory
             'avatar_url' => 'https://mc-heads.net/avatar/'.str_replace('-', '', $uuid),
             'account_type' => MinecraftAccountType::Java,
             'status' => MinecraftAccountStatus::Active,
-            'command_id' => $username, // Java: command_id = username
             'verified_at' => now(),
             'last_username_check_at' => null,
         ];
@@ -53,7 +52,6 @@ class MinecraftAccountFactory extends Factory
         return $this->state(fn () => [
             'account_type' => MinecraftAccountType::Bedrock,
             'username' => '.Player'.fake()->numberBetween(100, 9999),
-            'command_id' => fake()->uuid(), // Bedrock: command_id = floodgate UUID
         ]);
     }
 

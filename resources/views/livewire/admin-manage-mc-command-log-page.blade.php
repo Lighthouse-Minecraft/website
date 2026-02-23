@@ -41,8 +41,7 @@ public function updatedTypeFilter(): void { $this->resetPage(); }
         $this->authorize('viewAny', MinecraftAccount::class);
 
         $this->selectedAccount = MinecraftAccount::with('user')
-            ->where('command_id', $target)
-            ->orWhere('username', $target)
+            ->where('username', $target)
             ->first();
 
         if ($this->selectedAccount) {

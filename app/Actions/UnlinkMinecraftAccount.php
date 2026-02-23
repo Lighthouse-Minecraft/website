@@ -45,9 +45,9 @@ class UnlinkMinecraftAccount
 
         // Reset the player's MC rank to default before removing from whitelist
         SendMinecraftCommand::dispatch(
-            "lh setmember {$account->command_id} default",
+            "lh setmember {$account->username} default",
             'rank',
-            $account->command_id,
+            $account->username,
             $user,
             ['action' => 'unlink_rank_reset']
         );
@@ -62,7 +62,7 @@ class UnlinkMinecraftAccount
         SendMinecraftCommand::dispatch(
             $account->whitelistRemoveCommand(),
             'whitelist',
-            $account->command_id,
+            $account->username,
             $user,
             ['action' => 'unlink']
         );

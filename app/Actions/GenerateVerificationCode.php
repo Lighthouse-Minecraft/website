@@ -143,12 +143,6 @@ class GenerateVerificationCode
             ];
         }
 
-        // Determine the command identifier for RCON:
-        // Java uses username, Bedrock uses Floodgate UUID
-        $commandId = ($accountType === MinecraftAccountType::Java)
-            ? $verifiedUsername
-            : $uuid;
-
         // Generate unique 6-character code (excluding confusing characters: 0, O, 1, I, L, 5, S)
         $allowedCharacters = '2346789ABCDEFGHJKMNPQRTUVWXYZ';
         $codeLength = 6;
@@ -189,7 +183,6 @@ class GenerateVerificationCode
                 'avatar_url' => 'https://mc-heads.net/avatar/'.$normalizedUuid,
                 'account_type' => $accountType,
                 'status' => 'verifying',
-                'command_id' => $commandId,
                 'last_username_check_at' => now(),
                 // verified_at intentionally null until CompleteVerification promotes to active
             ]);
@@ -216,7 +209,7 @@ class GenerateVerificationCode
         $whitelistResult = $rconService->executeCommand(
             $account->whitelistAddCommand(),
             'whitelist',
-            $commandId,
+            $verifiedUsername,
             $user,
             ['action' => 'temp_verification', 'code' => $code]
         );
@@ -258,7 +251,7 @@ class GenerateVerificationCode
             $rconService->executeCommand(
                 $account->whitelistRemoveCommand(),
                 'whitelist',
-                $commandId,
+                $verifiedUsername,
                 $user,
                 ['action' => 'cleanup_failed_verification']
             );
