@@ -320,7 +320,8 @@ new class extends Component {
                 </div>
 
                 <flux:text class="text-sm">
-                    Expires {{ $expiresAt->diffForHumans() }} ({{ $expiresAt->format('g:i A') }})
+                    @php $tz = auth()->user()->timezone ?? 'UTC'; @endphp
+                    Expires {{ $expiresAt->diffForHumans() }} ({{ $expiresAt->setTimezone($tz)->format('g:i A T') }})
                 </flux:text>
 
                 <flux:separator />
