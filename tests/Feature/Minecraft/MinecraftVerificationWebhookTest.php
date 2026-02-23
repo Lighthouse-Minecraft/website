@@ -25,7 +25,6 @@ test('completes verification with valid token', function () {
         'username' => 'TestPlayer',
         'uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
         'account_type' => MinecraftAccountType::Java,
-        'command_id' => 'TestPlayer',
     ]);
 
     $response = $this->postJson('/api/minecraft/verify', [
@@ -171,7 +170,6 @@ test('accepts uuid with or without dashes', function () {
         'username' => 'TestPlayer',
         'uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
         'account_type' => MinecraftAccountType::Java,
-        'command_id' => 'TestPlayer',
     ]);
 
     $response = $this->postJson('/api/minecraft/verify', [
@@ -214,7 +212,6 @@ test('case insensitive code matching', function () {
         'username' => 'TestPlayer',
         'uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
         'account_type' => MinecraftAccountType::Java,
-        'command_id' => 'TestPlayer',
     ]);
 
     $response = $this->postJson('/api/minecraft/verify', [
@@ -239,7 +236,6 @@ test('records activity log on successful verification', function () {
         'username' => 'TestPlayer',
         'uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
         'account_type' => MinecraftAccountType::Java,
-        'command_id' => 'TestPlayer',
     ]);
 
     $this->postJson('/api/minecraft/verify', [

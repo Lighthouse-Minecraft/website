@@ -80,7 +80,7 @@ class CleanupExpiredVerifications extends Command
             $result = $rconService->executeCommand(
                 $account->whitelistRemoveCommand(),
                 'whitelist',
-                $account->command_id,
+                $account->username,
                 $verification->user,
                 ['action' => 'cleanup_expired', 'verification_id' => $verification->id]
             );
@@ -90,7 +90,7 @@ class CleanupExpiredVerifications extends Command
                 $rconService->executeCommand(
                     "kick \"{$account->username}\" Your verification has expired. Please re-verify to rejoin.",
                     'kick',
-                    $account->command_id,
+                    $account->username,
                     $verification->user,
                     ['action' => 'kick_expired_verification', 'verification_id' => $verification->id]
                 );
@@ -128,7 +128,7 @@ class CleanupExpiredVerifications extends Command
             $result = $rconService->executeCommand(
                 $account->whitelistRemoveCommand(),
                 'whitelist',
-                $account->command_id,
+                $account->username,
                 $account->user,
                 ['action' => 'retry_cancelled_removal', 'account_id' => $account->id]
             );

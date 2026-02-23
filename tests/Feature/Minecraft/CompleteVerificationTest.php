@@ -34,7 +34,6 @@ test('completes verification and creates account', function () {
         'username' => 'TestPlayer',
         'uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
         'account_type' => 'java',
-        'command_id' => 'TestPlayer',
     ]);
 
     $result = $this->action->handle(
@@ -147,7 +146,6 @@ test('records activity log', function () {
         'username' => 'TestPlayer',
         'uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
         'account_type' => 'java',
-        'command_id' => 'TestPlayer',
     ]);
 
     $this->action->handle('ABC123', 'TestPlayer', '069a79f4-44e9-4726-a5be-fca90e38aaf5');
@@ -171,7 +169,6 @@ test('normalizes uuid with dashes', function () {
         'username' => 'TestPlayer',
         'uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
         'account_type' => 'java',
-        'command_id' => 'TestPlayer',
     ]);
 
     $result = $this->action->handle('ABC123', 'TestPlayer', '069a79f444e94726a5befca90e38aaf5');
@@ -196,7 +193,6 @@ test('completes verification for bedrock account with dot-prefix username', func
         'username' => '.BedrockPlayer',
         'uuid' => '00000000-0000-0000-0009-01234567890a',
         'account_type' => 'bedrock',
-        'command_id' => '00000000000000000009-01234567890a',
     ]);
 
     $result = $this->action->handle(
@@ -229,7 +225,6 @@ test('syncs staff position when staff member verifies account', function () {
         'username' => 'StaffPlayer',
         'uuid' => '169a79f4-44e9-4726-a5be-fca90e38aaf5',
         'account_type' => 'java',
-        'command_id' => 'StaffPlayer',
     ]);
 
     $action = new CompleteVerification;

@@ -12,12 +12,9 @@ class SyncMinecraftRanks
     /**
      * Sync all of a user's active Minecraft accounts to their current membership rank.
      *
-     * Sends `lh setmember <command_id> <rank>` for each active account.
+     * Sends `lh setmember <username> <rank>` for each active account.
      * Accounts for users below the server access threshold (Drifter, Stowaway)
      * are skipped — they should not be on the server in the first place.
-     *
-     * Note: `lh setstaff` syncing will be added once the Lighthouse plugin
-     * implements that command.
      */
     public function handle(User $user): void
     {
@@ -32,9 +29,9 @@ class SyncMinecraftRanks
 
         foreach ($activeAccounts as $account) {
             SendMinecraftCommand::dispatch(
-                "lh setmember {$account->command_id} {$rank}",
+                "lh setmember {$account->username} {$rank}",
                 'rank',
-                $account->command_id,
+                $account->username,
                 $user,
                 ['action' => 'sync_rank', 'membership_level' => $user->membership_level->value]
             );

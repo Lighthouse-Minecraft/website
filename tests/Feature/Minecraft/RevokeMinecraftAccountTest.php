@@ -51,7 +51,6 @@ test('records activity for affected user', function () {
 test('sends sync whitelist remove command', function () {
     $account = MinecraftAccount::factory()->for($this->regularUser)->create([
         'username' => 'TestPlayer',
-        'command_id' => 'TestPlayer',
     ]);
 
     $mock = $this->mock(MinecraftRconService::class);

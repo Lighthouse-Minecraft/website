@@ -39,14 +39,14 @@ class ReleaseUserFromBrig
                 SendMinecraftCommand::run(
                     $account->whitelistAddCommand(),
                     'whitelist',
-                    $account->command_id,
+                    $account->username,
                     $target
                 );
                 $account->status = MinecraftAccountStatus::Active;
                 $account->save();
             } catch (\Exception $e) {
                 Log::error('Failed to whitelist account on brig release', [
-                    'command_id' => $account->command_id,
+                    'username' => $account->username,
                     'user_id' => $target->id,
                     'error' => $e->getMessage(),
                     'exception' => $e,
@@ -54,7 +54,7 @@ class ReleaseUserFromBrig
             }
         }
 
-        SyncMinecraftRanks::run($target);
+        SyncMinecraftPermissions::run($target);
 
         RecordActivity::handle($target, 'user_released_from_brig', "Released from brig by {$admin->name}. Reason: {$reason}");
 

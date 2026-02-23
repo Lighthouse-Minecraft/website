@@ -38,7 +38,7 @@ class PutUserInBrig
             SendMinecraftCommand::run(
                 $account->whitelistRemoveCommand(),
                 'whitelist',
-                $account->command_id,
+                $account->username,
                 $target
             );
             $account->status = MinecraftAccountStatus::Banned;

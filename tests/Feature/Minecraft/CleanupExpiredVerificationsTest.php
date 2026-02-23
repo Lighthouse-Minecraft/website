@@ -24,7 +24,6 @@ it('removes whitelist and kicks player when verification expires', function () {
     MinecraftAccount::factory()->for($this->user)->verifying()->create([
         'username' => 'TestPlayer',
         'uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
-        'command_id' => 'TestPlayer',
         'account_type' => MinecraftAccountType::Java,
     ]);
 
@@ -55,7 +54,6 @@ it('does not crash if kick fails and still deletes account', function () {
     MinecraftAccount::factory()->for($this->user)->verifying()->create([
         'username' => 'OfflinePlayer',
         'uuid' => '169a79f4-44e9-4726-a5be-fca90e38aaf5',
-        'command_id' => 'OfflinePlayer',
         'account_type' => MinecraftAccountType::Java,
     ]);
 

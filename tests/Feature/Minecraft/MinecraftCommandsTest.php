@@ -35,7 +35,6 @@ test('cleanup command sends whitelist remove command via rcon', function () {
     MinecraftAccount::factory()->for($user)->verifying()->create([
         'username' => 'ExpiredPlayer',
         'uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
-        'command_id' => 'ExpiredPlayer',
     ]);
 
     $rconMock = $this->mock(MinecraftRconService::class);

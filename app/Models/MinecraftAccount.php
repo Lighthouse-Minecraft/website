@@ -20,7 +20,6 @@ class MinecraftAccount extends Model
         'avatar_url',
         'account_type',
         'status',
-        'command_id',
         'verified_at',
         'last_username_check_at',
     ];
@@ -73,8 +72,8 @@ class MinecraftAccount extends Model
     public function whitelistAddCommand(): string
     {
         return match ($this->account_type) {
-            MinecraftAccountType::Java => "whitelist add {$this->command_id}",
-            MinecraftAccountType::Bedrock => "fwhitelist add {$this->command_id}",
+            MinecraftAccountType::Java => "whitelist add {$this->username}",
+            MinecraftAccountType::Bedrock => "fwhitelist add {$this->uuid}",
         };
     }
 
@@ -86,8 +85,8 @@ class MinecraftAccount extends Model
     public function whitelistRemoveCommand(): string
     {
         return match ($this->account_type) {
-            MinecraftAccountType::Java => "whitelist remove {$this->command_id}",
-            MinecraftAccountType::Bedrock => "fwhitelist remove {$this->command_id}",
+            MinecraftAccountType::Java => "whitelist remove {$this->username}",
+            MinecraftAccountType::Bedrock => "fwhitelist remove {$this->uuid}",
         };
     }
 }

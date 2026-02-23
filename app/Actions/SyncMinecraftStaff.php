@@ -27,9 +27,9 @@ class SyncMinecraftStaff
         foreach ($activeAccounts as $account) {
             if ($department !== null) {
                 SendMinecraftCommand::dispatch(
-                    "lh setstaff {$account->command_id} {$department->value}",
+                    "lh setstaff {$account->username} {$department->value}",
                     'rank',
-                    $account->command_id,
+                    $account->username,
                     $user,
                     ['action' => 'set_staff_position', 'department' => $department->value]
                 );
@@ -41,9 +41,9 @@ class SyncMinecraftStaff
                 );
             } else {
                 SendMinecraftCommand::dispatch(
-                    "lh removestaff {$account->command_id}",
+                    "lh removestaff {$account->username}",
                     'rank',
-                    $account->command_id,
+                    $account->username,
                     $user,
                     ['action' => 'remove_staff_position']
                 );
