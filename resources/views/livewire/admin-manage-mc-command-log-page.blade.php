@@ -29,12 +29,13 @@ public function updatedStatusFilter(): void { $this->resetPage(); }
 public function updatedTypeFilter(): void { $this->resetPage(); }
 
     /**
-     * Selects a Minecraft account by command ID or username and opens the account detail modal if found.
+     * Selects a Minecraft account by username or UUID and opens the account detail modal if found.
      *
-     * Performs an authorization check before loading the account. If a matching account is found,
-     * assigns it to $this->selectedAccount and shows the "mc-account-detail" modal.
+     * Lookup order: username first, then uuid (for legacy log entries where Bedrock targets
+     * were stored as Floodgate UUIDs). Performs an authorization check before loading the account.
+     * If a matching account is found, assigns it to $this->selectedAccount and shows the modal.
      *
-     * @param string $target Command ID or username to look up.
+     * @param string $target Username or UUID to look up.
      */
     public function showAccount(string $target): void
     {
@@ -42,6 +43,7 @@ public function updatedTypeFilter(): void { $this->resetPage(); }
 
         $this->selectedAccount = MinecraftAccount::with('user')
             ->where('username', $target)
+            ->orWhere('uuid', $target)
             ->first();
 
         if ($this->selectedAccount) {
