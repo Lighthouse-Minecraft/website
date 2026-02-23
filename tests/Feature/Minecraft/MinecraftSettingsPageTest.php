@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Enums\MembershipLevel;
 use App\Models\MinecraftAccount;
 use App\Models\MinecraftVerification;
 use App\Models\User;
@@ -40,6 +41,16 @@ test('shows verification form when no active verification', function () {
     $this->get('/settings/minecraft-accounts')
         ->assertSuccessful()
         ->assertSee('Link New Account');
+});
+
+test('shows promotion callout instead of form for users below traveler rank', function () {
+    $stowaway = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create();
+    $this->actingAs($stowaway);
+
+    $this->get('/settings/minecraft-accounts')
+        ->assertSuccessful()
+        ->assertSee('promoted you to Traveler rank')
+        ->assertDontSee('Link New Account');
 });
 
 test('generates verification code', function () {
@@ -89,7 +100,7 @@ test('removes linked account', function () {
 
     Volt::test('settings.minecraft-accounts')
         ->set('accountToUnlink', $account->id)
-        ->call('remove')
+        ->call('unlinkAccount')
         ->assertHasNoErrors();
 
     $this->assertDatabaseMissing('minecraft_accounts', [
@@ -103,7 +114,7 @@ test('cannot remove another users account', function () {
 
     Volt::test('settings.minecraft-accounts')
         ->set('accountToUnlink', $account->id)
-        ->call('remove')
+        ->call('unlinkAccount')
         ->assertHasNoErrors();
 
     $this->assertDatabaseHas('minecraft_accounts', [

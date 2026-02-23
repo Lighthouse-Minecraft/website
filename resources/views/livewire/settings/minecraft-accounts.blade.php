@@ -228,15 +228,18 @@ new class extends Component {
     /**
      * Remove the account stored in $accountToUnlink, unlinking it from the user.
      */
-    public function remove(): void
+    public function unlinkAccount(): void
     {
         if (! $this->accountToUnlink) {
+            $this->modal('confirm-remove')->close();
             return;
         }
 
         $account = auth()->user()->minecraftAccounts()->find($this->accountToUnlink);
 
         if (! $account) {
+            $this->modal('confirm-remove')->close();
+            $this->accountToUnlink = null;
             return;
         }
 
@@ -338,8 +341,11 @@ new class extends Component {
                 </div>
 
                 <flux:text class="text-sm">
-                    @php $tz = auth()->user()->timezone ?? 'UTC'; @endphp
-                    Expires {{ $expiresAt->diffForHumans() }} ({{ $expiresAt->copy()->setTimezone($tz)->format('g:i A T') }})
+                    @php
+                        $tz = auth()->user()->timezone ?? 'UTC';
+                        $expiresAtInTz = $expiresAt->copy()->setTimezone($tz);
+                    @endphp
+                    Expires {{ $expiresAtInTz->diffForHumans() }} ({{ $expiresAtInTz->format('g:i A T') }})
                 </flux:text>
 
                 <flux:separator />
@@ -391,7 +397,11 @@ new class extends Component {
     @endif
 
     {{-- Add New Account Form --}}
-    @if($remainingSlots > 0 && !$verificationCode && !auth()->user()->isInBrig())
+    @if(auth()->user()->membership_level->minecraftRank() === null)
+        <flux:callout variant="info">
+            You'll be able to link your Minecraft account once an admin has verified your membership and promoted you to Traveler rank.
+        </flux:callout>
+    @elseif($remainingSlots > 0 && !$verificationCode && !auth()->user()->isInBrig())
         <flux:card class="p-6">
             <flux:heading size="lg" class="mb-4">Link New Account</flux:heading>
 
@@ -449,7 +459,7 @@ new class extends Component {
             <flux:modal.close>
                 <flux:button variant="ghost">Cancel</flux:button>
             </flux:modal.close>
-            <flux:button variant="danger" wire:click="remove">Remove Account</flux:button>
+            <flux:button variant="danger" wire:click="unlinkAccount">Remove Account</flux:button>
         </div>
     </flux:modal>
 </div>
