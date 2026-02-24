@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\User;
+use App\Notifications\Channels\DiscordChannel;
 use App\Notifications\Channels\PushoverChannel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -65,6 +66,10 @@ class UserPutInBrigNotification extends Notification implements ShouldQueue
             $channels[] = PushoverChannel::class;
         }
 
+        if (in_array('discord', $this->allowedChannels)) {
+            $channels[] = DiscordChannel::class;
+        }
+
         return $channels;
     }
 
@@ -122,5 +127,18 @@ class UserPutInBrigNotification extends Notification implements ShouldQueue
             'title' => 'Placed in the Brig',
             'message' => $message,
         ];
+    }
+
+    public function toDiscord(object $notifiable): string
+    {
+        $msg = "**You Have Been Placed in the Brig**\n**Reason:** {$this->reason}";
+
+        if ($this->expiresAt) {
+            $msg .= "\nYou may appeal after ".$this->expiresAt->format('M j, Y').'.';
+        } else {
+            $msg .= "\nYou may appeal at any time from your dashboard.";
+        }
+
+        return $msg;
     }
 }

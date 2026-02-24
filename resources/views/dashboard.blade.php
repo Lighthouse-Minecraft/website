@@ -34,6 +34,18 @@
                         </flux:card>
                     @endif
 
+                    @can('link-discord')
+                        @if(auth()->user()->discordAccounts()->doesntExist())
+                            <flux:card class="flex flex-col items-center justify-center gap-3 py-8 text-center">
+                                <flux:heading size="md">Discord Account</flux:heading>
+                                <flux:text variant="subtle">Link your Discord account for role sync and DM notifications.</flux:text>
+                                <flux:button href="{{ route('settings.discord-account') }}" variant="primary" icon="plus">
+                                    Link Your Discord
+                                </flux:button>
+                            </flux:card>
+                        @endif
+                    @endcan
+
                     <flux:card>
                         <flux:heading>Donations</flux:heading>
                         <flux:separator variant="subtle" class="my-2" />

@@ -76,6 +76,11 @@ class TicketNotificationService
             $channels[] = 'pushover';
         }
 
+        // Add Discord if user wants it and has a linked account
+        if (($ticketPrefs['discord'] ?? false) && $user->hasDiscordLinked()) {
+            $channels[] = 'discord';
+        }
+
         return $channels;
     }
 

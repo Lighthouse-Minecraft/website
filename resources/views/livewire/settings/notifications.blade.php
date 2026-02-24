@@ -19,6 +19,8 @@ new class extends Component
 
     public bool $notify_tickets_pushover = false;
 
+    public bool $notify_tickets_discord = false;
+
     public function mount(): void
     {
         $user = Auth::user();
@@ -31,6 +33,7 @@ new class extends Component
         $preferences = $user->notification_preferences ?? [];
         $this->notify_tickets_email = $preferences['tickets']['email'] ?? true;
         $this->notify_tickets_pushover = $preferences['tickets']['pushover'] ?? false;
+        $this->notify_tickets_discord = $preferences['tickets']['discord'] ?? false;
     }
 
     public function updateNotificationSettings(): void
@@ -42,6 +45,7 @@ new class extends Component
             'email_digest_frequency' => ['required', 'in:immediate,daily,weekly'],
             'notify_tickets_email' => ['boolean'],
             'notify_tickets_pushover' => ['boolean'],
+            'notify_tickets_discord' => ['boolean'],
         ]);
 
         $user->pushover_key = $validated['pushover_key'];
@@ -52,6 +56,7 @@ new class extends Component
         $preferences['tickets'] = [
             'email' => $validated['notify_tickets_email'],
             'pushover' => $validated['notify_tickets_pushover'],
+            'discord' => $validated['notify_tickets_discord'],
         ];
         $user->notification_preferences = $preferences;
 
@@ -120,6 +125,9 @@ new class extends Component
                     <div class="flex gap-6">
                         <flux:switch wire:model="notify_tickets_email" label="Email" />
                         <flux:switch wire:model="notify_tickets_pushover" label="Pushover" />
+                        @if(auth()->user()->hasDiscordLinked())
+                            <flux:switch wire:model="notify_tickets_discord" label="Discord DM" />
+                        @endif
                     </div>
                 </div>
             </div>

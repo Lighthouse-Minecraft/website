@@ -208,6 +208,16 @@ class User extends Authenticatable // implements MustVerifyEmail
         return $this->hasMany(MinecraftAccount::class);
     }
 
+    public function discordAccounts(): HasMany
+    {
+        return $this->hasMany(DiscordAccount::class);
+    }
+
+    public function hasDiscordLinked(): bool
+    {
+        return $this->discordAccounts()->where('status', 'active')->exists();
+    }
+
     public function canSendPushover(): bool
     {
         if (! $this->pushover_key) {

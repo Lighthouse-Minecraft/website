@@ -51,6 +51,7 @@ class PromoteUser
         RecordActivity::run($user, 'user_promoted', "Promoted from {$current->label()} to {$nextLevel->label()}.");
 
         SyncMinecraftPermissions::run($user);
+        SyncDiscordPermissions::run($user);
 
         $notificationService = app(TicketNotificationService::class);
 

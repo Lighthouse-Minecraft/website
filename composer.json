@@ -12,11 +12,13 @@
         "php": "^8.2",
         "laravel/framework": "^12.0",
         "laravel/nightwatch": "^1.13",
+        "laravel/socialite": "^5.24",
         "laravel/tinker": "^2.10.1",
         "livewire/flux": "^2.0",
         "livewire/flux-pro": "^2.2",
         "livewire/volt": "^1.6.7",
         "lorisleiva/laravel-actions": "^2.9",
+        "socialiteproviders/discord": "^4.2",
         "thedudeguy/rcon": "^1.0"
     },
     "require-dev": {

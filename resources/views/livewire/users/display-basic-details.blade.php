@@ -31,7 +31,7 @@ new class extends Component {
      */
     public function mount(User $user) {
         $this->user = $user;
-        $this->user->load('minecraftAccounts');
+        $this->user->load('minecraftAccounts', 'discordAccounts');
         $this->currentDepartment = $user->staff_department?->name ?? 'None';
         $this->currentDepartmentValue = $user->staff_department?->value ?? null;
         $this->currentTitle = $user->staff_title;
@@ -180,6 +180,28 @@ new class extends Component {
                 variant: 'danger'
             );
         }
+    }
+
+    public function revokeDiscordAccount(int $accountId): void
+    {
+        if (! Auth::user()->isAdmin()) {
+            Flux::toast(
+                text: 'You do not have permission to revoke Discord accounts.',
+                heading: 'Error',
+                variant: 'danger'
+            );
+            return;
+        }
+
+        $account = $this->user->discordAccounts()->findOrFail($accountId);
+        \App\Actions\RevokeDiscordAccount::run($account, Auth::user());
+
+        Flux::toast(
+            text: 'Discord account revoked successfully.',
+            heading: 'Success',
+            variant: 'success'
+        );
+        $this->user->refresh();
     }
 
     /**
@@ -436,6 +458,48 @@ new class extends Component {
                         </flux:button>
                     </div>
                 @endif
+            @endif
+        </flux:card>
+    </div>
+
+        {{-- Discord Accounts Card --}}
+        <flux:card class="p-6">
+            <div class="flex items-center mb-4">
+                <flux:heading size="xl">Discord Accounts</flux:heading>
+                @if(auth()->id() === $user->id)
+                    <flux:spacer />
+                    <flux:link href="{{ route('settings.discord-account') }}" class="text-sm text-zinc-400 hover:text-zinc-200">Manage</flux:link>
+                @endif
+            </div>
+
+            @if($user->discordAccounts->isNotEmpty())
+                <div class="flex flex-col gap-2">
+                    @foreach($user->discordAccounts as $discordAccount)
+                        <div wire:key="discord-account-{{ $discordAccount->id }}" class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <img src="{{ $discordAccount->avatarUrl() }}" alt="{{ $discordAccount->username }}" class="w-8 h-8 rounded-full" />
+                                <div>
+                                    <span class="font-semibold">{{ $discordAccount->displayName() }}</span>
+                                    <flux:text class="text-sm text-zinc-500">
+                                        {{ $discordAccount->username }}
+                                        <flux:badge color="{{ $discordAccount->status->color() }}" size="sm" class="ml-1">{{ $discordAccount->status->label() }}</flux:badge>
+                                    </flux:text>
+                                </div>
+                            </div>
+                            @if(Auth::user()->isAdmin())
+                                <flux:button
+                                    wire:click="revokeDiscordAccount({{ $discordAccount->id }})"
+                                    variant="danger"
+                                    size="sm"
+                                    wire:confirm="Are you sure you want to revoke this Discord account from {{ $user->name }}?">
+                                    Revoke
+                                </flux:button>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <flux:text class="text-zinc-500 dark:text-zinc-400 text-sm">No Discord accounts linked.</flux:text>
             @endif
         </flux:card>
     </div>

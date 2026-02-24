@@ -28,4 +28,14 @@ enum StaffRank: int
             self::Officer => 'emerald',
         };
     }
+
+    public function discordRoleId(): ?string
+    {
+        return match ($this) {
+            self::None => null,
+            self::JrCrew => config('lighthouse.discord.roles.rank_jr_crew'),
+            self::CrewMember => config('lighthouse.discord.roles.rank_crew_member'),
+            self::Officer => config('lighthouse.discord.roles.rank_officer'),
+        };
+    }
 }

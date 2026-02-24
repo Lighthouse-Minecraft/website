@@ -56,6 +56,21 @@ class ReleaseUserFromBrig
 
         SyncMinecraftPermissions::run($target);
 
+        // Restore Discord accounts from brigged to active and re-sync roles
+        foreach ($target->discordAccounts()->where('status', \App\Enums\DiscordAccountStatus::Brigged)->get() as $discordAccount) {
+            try {
+                $discordAccount->status = \App\Enums\DiscordAccountStatus::Active;
+                $discordAccount->save();
+            } catch (\Exception $e) {
+                Log::error('Failed to restore Discord account on brig release', [
+                    'discord_user_id' => $discordAccount->discord_user_id,
+                    'user_id' => $target->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+        SyncDiscordPermissions::run($target);
+
         RecordActivity::handle($target, 'user_released_from_brig', "Released from brig by {$admin->name}. Reason: {$reason}");
 
         $notificationService = app(TicketNotificationService::class);

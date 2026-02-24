@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\User;
+use App\Notifications\Channels\DiscordChannel;
 use App\Notifications\Channels\PushoverChannel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -59,6 +60,10 @@ class UserReleasedFromBrigNotification extends Notification implements ShouldQue
             $channels[] = PushoverChannel::class;
         }
 
+        if (in_array('discord', $this->allowedChannels)) {
+            $channels[] = DiscordChannel::class;
+        }
+
         return $channels;
     }
 
@@ -90,5 +95,10 @@ class UserReleasedFromBrigNotification extends Notification implements ShouldQue
             'message' => "You've been released from the Brig. Your Minecraft accounts can access the server again. Welcome back!",
             'url' => url('/dashboard'),
         ];
+    }
+
+    public function toDiscord(object $notifiable): string
+    {
+        return "**Released from the Brig!**\nYour account has been restored. Your Minecraft and Discord access has been re-enabled. Welcome back!\n".url('/dashboard');
     }
 }
