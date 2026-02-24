@@ -15,6 +15,8 @@ use App\Models\User;
 use App\Notifications\MessageFlaggedNotification;
 use App\Services\TicketNotificationService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class FlagMessage
@@ -44,7 +46,7 @@ class FlagMessage
             // Get or create system user
             $systemUser = User::firstOrCreate(
                 ['email' => 'system@lighthouse.local'],
-                ['name' => 'System']
+                ['name' => 'System', 'password' => Hash::make(Str::random(64))]
             );
 
             // Create Quartermaster moderation flag ticket

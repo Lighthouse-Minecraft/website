@@ -408,7 +408,7 @@ new class extends Component
         // Get system user for consistent attribution of system messages
         $systemUser = User::firstOrCreate(
             ['email' => 'system@lighthouse.local'],
-            ['name' => 'System']
+            ['name' => 'System', 'password' => \Illuminate\Support\Facades\Hash::make(\Illuminate\Support\Str::random(64))]
         );
 
         // Create system message
