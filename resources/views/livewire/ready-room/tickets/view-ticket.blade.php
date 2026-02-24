@@ -405,11 +405,7 @@ new class extends Component
 
         $this->thread->update(['status' => $newStatus]);
 
-        // Get system user for consistent attribution of system messages
-        $systemUser = User::firstOrCreate(
-            ['email' => 'system@lighthouse.local'],
-            ['name' => 'System', 'password' => \Illuminate\Support\Facades\Hash::make(\Illuminate\Support\Str::random(64))]
-        );
+        $systemUser = User::where('email', 'system@lighthouse.local')->firstOrFail();
 
         // Create system message
         $systemMessageBody = $isStaff
