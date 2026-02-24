@@ -90,6 +90,7 @@ new class extends Component {
     public function cancelVerification(): void
     {
         if (! $this->verificationCode) {
+            $this->modal('confirm-cancel-verification')->close();
             return;
         }
 
