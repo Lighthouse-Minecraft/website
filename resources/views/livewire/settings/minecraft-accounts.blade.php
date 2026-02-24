@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\CompleteVerification;
+use App\Actions\ExpireVerification;
 use App\Actions\GenerateVerificationCode;
 use App\Actions\UnlinkMinecraftAccount;
 use App\Enums\MinecraftAccountStatus;
@@ -165,57 +166,11 @@ new class extends Component {
         } elseif ($verification->status === 'expired' || $verification->expires_at < now()) {
             // If still pending, the scheduler hasn't cleaned up yet — do it now
             if ($verification->status === 'pending') {
-                $this->cleanupExpiredVerification($verification);
+                ExpireVerification::run($verification);
             }
             $this->verificationCode = null;
             $this->expiresAt = null;
             Flux::toast('Verification code expired. Please generate a new one.', variant: 'danger');
-        }
-    }
-
-    /**
-     * Performs immediate cleanup of an expired pending verification.
-     *
-     * Mirrors the logic in CleanupExpiredVerifications::handleExpiredVerifications()
-     * to ensure cleanup fires even when the scheduler has not yet run. Marks the
-     * verification expired, marks the account cancelled, attempts synchronous
-     * whitelist removal and a best-effort kick, then deletes the account on success.
-     * If the server is unreachable the account stays in 'cancelled' state and will
-     * be retried on the next scheduler cycle.
-     */
-    private function cleanupExpiredVerification(MinecraftVerification $verification): void
-    {
-        $verification->update(['status' => 'expired']);
-
-        $account = MinecraftAccount::whereNormalizedUuid($verification->minecraft_uuid)
-            ->verifying()
-            ->where('user_id', $verification->user_id)
-            ->first();
-
-        if (! $account) {
-            return;
-        }
-
-        $account->update(['status' => MinecraftAccountStatus::Cancelled]);
-
-        $rcon = app(MinecraftRconService::class);
-        $result = $rcon->executeCommand(
-            $account->whitelistRemoveCommand(),
-            'whitelist',
-            $account->username,
-            $verification->user,
-            ['action' => 'cleanup_expired_livewire', 'verification_id' => $verification->id]
-        );
-
-        if ($result['success']) {
-            $rcon->executeCommand(
-                "kick \"{$account->username}\" Your verification has expired. Please re-verify to rejoin.",
-                'kick',
-                $account->username,
-                $verification->user,
-                ['action' => 'kick_expired_verification_livewire', 'verification_id' => $verification->id]
-            );
-            $account->delete();
         }
     }
 
