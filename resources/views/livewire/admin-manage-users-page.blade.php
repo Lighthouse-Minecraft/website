@@ -12,6 +12,9 @@ use Flux\Flux;
 
 new class extends Component {
     use WithPagination;
+
+    protected const ALLOWED_SORTS = ['name', 'email', 'membership_level', 'created_at', 'last_login_at'];
+
     public $sortBy = 'name';
     public $sortDirection = 'asc';
     public $perPage = 15;
@@ -78,11 +81,14 @@ new class extends Component {
     #[\Livewire\Attributes\Computed]
     public function users()
     {
+        $sortColumn = in_array($this->sortBy, self::ALLOWED_SORTS) ? $this->sortBy : 'name';
+        $sortDir = $this->sortDirection === 'desc' ? 'desc' : 'asc';
+
         return \App\Models\User::query()
             ->with('roles')
             ->when($this->filterBrig === 'in_brig', fn ($q) => $q->where('in_brig', true))
             ->when($this->filterBrig === 'not_brig', fn ($q) => $q->where('in_brig', false))
-            ->tap(fn ($query) => $this->sortBy ? $query->orderBy($this->sortBy, $this->sortDirection) : $query)
+            ->orderBy($sortColumn, $sortDir)
             ->paginate($this->perPage);
     }
 

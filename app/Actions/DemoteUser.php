@@ -20,7 +20,12 @@ class DemoteUser
 
         $levels = MembershipLevel::cases();
         $currentIndex = array_search($current, $levels, strict: true);
-        $previousLevel = $levels[$currentIndex - 1] ?? null;
+
+        if ($currentIndex === false || $currentIndex === 0) {
+            return;
+        }
+
+        $previousLevel = $levels[$currentIndex - 1];
 
         $user->membership_level = $previousLevel;
         $user->save();
