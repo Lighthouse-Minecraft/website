@@ -139,7 +139,6 @@
         <flux:header class="bg-zinc-900">
             <flux:sidebar.toggle class="lg:hidden" icon="bars-2" inset="left" />
 
-            <x-discord-banner-modal />
             <flux:spacer />
 
             @auth
