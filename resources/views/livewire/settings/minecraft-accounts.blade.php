@@ -129,6 +129,7 @@ new class extends Component {
 
         $this->verificationCode = null;
         $this->expiresAt = null;
+        $this->modal('confirm-cancel-verification')->close();
         Flux::toast('Verification cancelled.', variant: 'warning');
     }
 
@@ -313,7 +314,13 @@ new class extends Component {
                                 Remove
                             </flux:button>
                         @else
-                            <flux:text class="text-sm text-zinc-400 dark:text-zinc-500 italic">Pending removal...</flux:text>
+                            <flux:modal.trigger name="confirm-cancel-verification">
+                                <flux:button
+                                    variant="danger"
+                                    size="sm">
+                                    Remove
+                                </flux:button>
+                            </flux:modal.trigger>
                         @endif
                     </div>
                 </flux:card>
@@ -465,6 +472,21 @@ new class extends Component {
                 <flux:button variant="ghost">Cancel</flux:button>
             </flux:modal.close>
             <flux:button variant="danger" wire:click="unlinkAccount">Remove Account</flux:button>
+        </div>
+    </flux:modal>
+
+    {{-- Cancel verification confirmation modal --}}
+    <flux:modal name="confirm-cancel-verification" class="min-w-[22rem] space-y-6">
+        <div>
+            <flux:heading size="lg">Cancel Verification</flux:heading>
+            <flux:text class="mt-2">Cancel this verification? You will need to generate a new code to link your account.</flux:text>
+        </div>
+
+        <div class="flex gap-2 justify-end">
+            <flux:modal.close>
+                <flux:button variant="ghost">Keep Waiting</flux:button>
+            </flux:modal.close>
+            <flux:button variant="danger" wire:click="cancelVerification">Remove</flux:button>
         </div>
     </flux:modal>
 </div>
