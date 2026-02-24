@@ -18,14 +18,6 @@ use Livewire\Volt\Volt;
 use function Pest\Laravel\actingAs;
 
 describe('View Ticket Component', function () {
-    beforeEach(function () {
-        // Ensure system user exists
-        User::factory()->create([
-            'email' => 'system@lighthouse.local',
-            'name' => 'System',
-        ]);
-    });
-
     it('can render for participants', function () {
         $user = User::factory()->create();
 

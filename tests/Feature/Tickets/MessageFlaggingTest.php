@@ -18,14 +18,6 @@ use Illuminate\Support\Facades\Notification;
 use function Pest\Laravel\actingAs;
 
 describe('Message Flagging Workflow', function () {
-    beforeEach(function () {
-        // Ensure system user exists
-        User::factory()->create([
-            'email' => 'system@lighthouse.local',
-            'name' => 'System',
-        ]);
-    });
-
     it('allows users to flag messages they did not create', function () {
         $author = User::factory()->create();
         $flagger = User::factory()->create();

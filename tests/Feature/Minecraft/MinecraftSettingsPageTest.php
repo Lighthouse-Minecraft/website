@@ -148,3 +148,37 @@ test('polls for verification completion', function () {
     $component->call('checkVerification')
         ->assertSet('verificationCode', null);
 });
+
+test('checkVerification cleans up when timer expires while user is on the page', function () {
+    $uuid = '069a79f4-44e9-4726-a5be-fca90e38aaf5';
+
+    $verification = MinecraftVerification::factory()->for($this->user)->pending()->create([
+        'expires_at' => now()->subMinute(),
+        'minecraft_username' => 'ExpiredPlayer',
+        'minecraft_uuid' => $uuid,
+    ]);
+
+    MinecraftAccount::factory()->for($this->user)->verifying()->create([
+        'username' => 'ExpiredPlayer',
+        'uuid' => $uuid,
+        'account_type' => 'java',
+    ]);
+
+    $rcon = $this->mock(MinecraftRconService::class);
+    $rcon->shouldReceive('executeCommand')
+        ->withArgs(fn (...$args) => str_contains($args[0], 'whitelist remove'))
+        ->once()
+        ->andReturn(['success' => true, 'response' => 'OK']);
+    $rcon->shouldReceive('executeCommand')
+        ->withArgs(fn (...$args) => str_contains($args[0], 'kick "ExpiredPlayer"'))
+        ->once()
+        ->andReturn(['success' => true, 'response' => 'OK']);
+
+    Volt::test('settings.minecraft-accounts')
+        ->set('verificationCode', $verification->code)
+        ->call('checkVerification')
+        ->assertSet('verificationCode', null);
+
+    expect($verification->fresh()->status)->toBe('expired');
+    $this->assertDatabaseMissing('minecraft_accounts', ['username' => 'ExpiredPlayer']);
+});

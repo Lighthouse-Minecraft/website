@@ -11,14 +11,6 @@ use Livewire\Volt\Volt;
 use function Pest\Laravel\actingAs;
 
 describe('Ticket Activity Logging', function () {
-    beforeEach(function () {
-        // Ensure system user exists
-        User::factory()->create([
-            'email' => 'system@lighthouse.local',
-            'name' => 'System',
-        ]);
-    });
-
     it('logs activity when a ticket is opened', function () {
         $user = User::factory()->create();
 

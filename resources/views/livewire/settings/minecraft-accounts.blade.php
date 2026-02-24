@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\CompleteVerification;
+use App\Actions\ExpireVerification;
 use App\Actions\GenerateVerificationCode;
 use App\Actions\UnlinkMinecraftAccount;
 use App\Enums\MinecraftAccountStatus;
@@ -163,6 +164,10 @@ new class extends Component {
             $this->username = '';
             Flux::toast('Minecraft account linked successfully!', variant: 'success');
         } elseif ($verification->status === 'expired' || $verification->expires_at < now()) {
+            // If still pending, the scheduler hasn't cleaned up yet — do it now
+            if ($verification->status === 'pending') {
+                ExpireVerification::run($verification);
+            }
             $this->verificationCode = null;
             $this->expiresAt = null;
             Flux::toast('Verification code expired. Please generate a new one.', variant: 'danger');

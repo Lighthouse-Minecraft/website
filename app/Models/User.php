@@ -125,6 +125,21 @@ class User extends Authenticatable // implements MustVerifyEmail
     }
 
     /**
+     * Lock the system account out of authentication entirely.
+     *
+     * Returning '!' means Hash::check() will always return false for this user,
+     * so no password — known, guessed, or reset — can ever authenticate it.
+     */
+    public function getAuthPassword(): string
+    {
+        if ($this->email === 'system@lighthouse.local') {
+            return '!';
+        }
+
+        return $this->password;
+    }
+
+    /**
      * Get the user's initials
      */
     public function initials(): string

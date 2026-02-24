@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Enums\MinecraftAccountStatus;
+use App\Actions\ExpireVerification;
 use App\Models\MinecraftAccount;
 use App\Models\MinecraftVerification;
 use App\Services\MinecraftRconService;
@@ -37,8 +37,7 @@ class CleanupExpiredVerifications extends Command
 
     /**
      * Pass 1: Handle newly expired pending verifications.
-     * Marks the associated MinecraftAccount as 'cancelled', attempts sync whitelist removal,
-     * and deletes the account if successful.
+     * Delegates per-verification cleanup to ExpireVerification.
      */
     private function handleExpiredVerifications(): void
     {
@@ -53,52 +52,15 @@ class CleanupExpiredVerifications extends Command
             return;
         }
 
-        $rconService = app(MinecraftRconService::class);
         $count = 0;
 
         foreach ($expiredVerifications as $verification) {
-            // Mark verification expired first
-            $verification->update(['status' => 'expired']);
+            $removed = ExpireVerification::run($verification);
 
-            // Find the corresponding verifying account
-            $account = MinecraftAccount::whereNormalizedUuid($verification->minecraft_uuid)
-                ->verifying()
-                ->where('user_id', $verification->user_id)
-                ->first();
-
-            if (! $account) {
-                $this->warn("No verifying account found for verification #{$verification->id}");
-                $count++;
-
-                continue;
-            }
-
-            // Mark as cancelled BEFORE attempting removal so it enters the retry pool
-            // if the process crashes or the server is unreachable
-            $account->update(['status' => MinecraftAccountStatus::Cancelled]);
-
-            $result = $rconService->executeCommand(
-                $account->whitelistRemoveCommand(),
-                'whitelist',
-                $account->username,
-                $verification->user,
-                ['action' => 'cleanup_expired', 'verification_id' => $verification->id]
-            );
-
-            if ($result['success']) {
-                // Best-effort kick; this can fail harmlessly if the user is offline.
-                $rconService->executeCommand(
-                    "kick \"{$account->username}\" Your verification has expired. Please re-verify to rejoin.",
-                    'kick',
-                    $account->username,
-                    $verification->user,
-                    ['action' => 'kick_expired_verification', 'verification_id' => $verification->id]
-                );
-
-                $account->delete();
-                $this->info("Removed whitelist and deleted account for {$account->username}.");
+            if ($removed) {
+                $this->info("Removed whitelist and deleted account for {$verification->minecraft_username}.");
             } else {
-                $this->warn("Server offline — {$account->username} marked cancelled, will retry next cycle.");
+                $this->warn("Could not remove {$verification->minecraft_username} — account not found or server offline.");
             }
 
             $count++;
