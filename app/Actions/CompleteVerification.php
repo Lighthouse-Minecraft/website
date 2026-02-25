@@ -147,8 +147,17 @@ class CompleteVerification
                     );
                 }
 
-                // Grant new-player reward (first verified account only)
-                GrantNewPlayerReward::run($account, $user);
+                // Grant new-player reward (first verified account only).
+                // Wrapped in try/catch so reward failures never block a successful verification.
+                try {
+                    GrantNewPlayerReward::run($account, $user);
+                } catch (\Throwable $e) {
+                    Log::warning('New-player reward failed after successful verification', [
+                        'account_id' => $account->id,
+                        'user_id' => $user->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
             }
 
             return [

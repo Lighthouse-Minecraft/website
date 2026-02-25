@@ -26,7 +26,7 @@ test('grants reward when enabled and first account', function () {
     $this->assertDatabaseHas('minecraft_rewards', [
         'user_id' => $this->user->id,
         'minecraft_account_id' => $this->account->id,
-        'reward_name' => 'New Player Reward',
+        'reward_name' => GrantNewPlayerReward::REWARD_NAME,
         'reward_description' => '96 Lumens',
     ]);
 });

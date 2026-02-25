@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('reward_description');
             $table->timestamps();
 
-            $table->index(['user_id', 'reward_name']);
+            $table->unique(['user_id', 'reward_name'], 'unique_user_reward');
         });
     }
 

@@ -4,6 +4,7 @@ namespace App\Actions;
 
 use App\Models\MinecraftAccount;
 use App\Models\User;
+use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class GrantNewPlayerReward
@@ -25,9 +26,19 @@ class GrantNewPlayerReward
             return;
         }
 
-        $diamonds = config('lighthouse.minecraft.rewards.new_player_diamonds');
-        $exchangeRate = config('lighthouse.minecraft.rewards.new_player_exchange_rate');
+        $diamonds = (int) config('lighthouse.minecraft.rewards.new_player_diamonds');
+        $exchangeRate = (int) config('lighthouse.minecraft.rewards.new_player_exchange_rate');
         $lumens = $diamonds * $exchangeRate;
+
+        if ($lumens <= 0) {
+            Log::warning('New-player reward skipped: calculated lumen amount is not positive', [
+                'diamonds' => $diamonds,
+                'exchange_rate' => $exchangeRate,
+                'user_id' => $user->id,
+            ]);
+
+            return;
+        }
 
         GrantMinecraftReward::run(
             $account,

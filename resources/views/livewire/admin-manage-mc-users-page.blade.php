@@ -75,6 +75,8 @@ new class extends Component {
             default => 'minecraft_accounts.username',
         };
 
+        $direction = in_array($this->sortDirection, ['asc', 'desc']) ? $this->sortDirection : 'asc';
+
         return MinecraftAccount::query()
             ->join('users', 'minecraft_accounts.user_id', '=', 'users.id')
             ->select('minecraft_accounts.*', 'users.name as user_name')
@@ -83,7 +85,7 @@ new class extends Component {
                     ->orWhere('users.name', 'like', "%{$this->search}%")
                     ->orWhere('minecraft_accounts.uuid', 'like', "%{$this->search}%");
             }))
-            ->orderBy($sortColumn, $this->sortDirection)
+            ->orderBy($sortColumn, $direction)
             ->paginate(15);
     }
 }; ?>
