@@ -413,8 +413,8 @@ new class extends Component {
         @endcan
     </div>
 
-    <div class="w-full md:w-1/3 mt-6">
-        <flux:card class="p-6">
+    <div class="w-full flex flex-col md:flex-row gap-4 mt-6">
+        <flux:card class="w-full md:w-1/2 lg:w-1/3 p-6">
             <div class="flex items-center mb-4">
                 <flux:heading size="xl">Minecraft Accounts</flux:heading>
                 @if(auth()->id() === $user->id)
@@ -460,10 +460,9 @@ new class extends Component {
                 @endif
             @endif
         </flux:card>
-    </div>
 
         {{-- Discord Accounts Card --}}
-        <flux:card class="p-6">
+        <flux:card class="w-full md:w-1/2 lg:w-1/3 p-6">
             <div class="flex items-center mb-4">
                 <flux:heading size="xl">Discord Accounts</flux:heading>
                 @if(auth()->id() === $user->id)
