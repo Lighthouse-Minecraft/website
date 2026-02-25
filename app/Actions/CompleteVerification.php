@@ -146,6 +146,9 @@ class CompleteVerification
                         "Set Minecraft staff position to {$user->staff_department->label()} for {$account->username}"
                     );
                 }
+
+                // Grant new-player reward (first verified account only)
+                GrantNewPlayerReward::run($account, $user);
             }
 
             return [
