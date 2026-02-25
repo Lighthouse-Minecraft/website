@@ -246,6 +246,7 @@ test('records activity log on successful verification', function () {
     ]);
 
     $this->assertDatabaseHas('activity_logs', [
+        'subject_type' => \App\Models\User::class,
         'subject_id' => $this->user->id,
         'action' => 'minecraft_account_linked',
     ]);

@@ -13,7 +13,7 @@ use Flux\Flux;
 new class extends Component {
     use WithPagination;
 
-    protected const ALLOWED_SORTS = ['name', 'email', 'membership_level', 'created_at', 'last_login_at'];
+    protected const ALLOWED_SORTS = ['name', 'email', 'membership_level', 'staff_department', 'staff_rank', 'in_brig', 'created_at', 'last_login_at'];
 
     public $sortBy = 'name';
     public $sortDirection = 'asc';
