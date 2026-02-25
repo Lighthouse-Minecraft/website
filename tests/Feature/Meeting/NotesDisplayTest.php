@@ -15,7 +15,7 @@ it('can render the notes display component', function () {
 
 it('displays meetings for the specified section key', function () {
     $admin = loginAsAdmin();
-    $meeting = Meeting::factory()->create(['title' => 'Dev Team Meeting']);
+    $meeting = Meeting::factory()->create(['title' => 'Dev Team Meeting', 'minutes' => 'Global meeting minutes']);
     MeetingNote::factory()->create([
         'meeting_id' => $meeting->id,
         'section_key' => 'development',
@@ -27,10 +27,10 @@ it('displays meetings for the specified section key', function () {
     $component->assertSee('Dev Team Meeting');
 });
 
-it('shows meeting note content when a meeting is selected', function () {
+it('shows meeting note content inline for matching department', function () {
     $admin = loginAsAdmin();
     $meeting = Meeting::factory()->create(['title' => 'Dev Team Meeting']);
-    $meetingNote = MeetingNote::factory()->create([
+    MeetingNote::factory()->create([
         'meeting_id' => $meeting->id,
         'section_key' => 'command',
         'content' => 'This is the meeting content.',
@@ -39,26 +39,33 @@ it('shows meeting note content when a meeting is selected', function () {
 
     $component = Livewire::test(NotesDisplay::class, ['sectionKey' => 'command']);
 
-    $component->call('selectMeeting', $meeting->id)
-        ->assertSee('This is the meeting content.');
+    $component->assertSee('This is the meeting content.');
 });
 
-it('shows appropriate message when no meetings exist', function () {
+it('shows all meetings even when no department note exists', function () {
     loginAsAdmin();
+    Meeting::factory()->create(['title' => 'Meeting Without Department Notes']);
 
     $component = Livewire::test(NotesDisplay::class, ['sectionKey' => 'nonexistent']);
 
-    $component->assertSee('No meetings found for this department.');
+    $component
+        ->assertSee('Meeting Without Department Notes')
+        ->assertSee('No Nonexistent notes were recorded for this meeting.');
 });
 
-it('shows appropriate message when no notes exist for selected meeting', function () {
+it('shows message when no meetings exist', function () {
     loginAsAdmin();
-
-    $meeting = Meeting::factory()->create(['title' => 'Meeting Without Notes']);
 
     $component = Livewire::test(NotesDisplay::class, ['sectionKey' => 'development']);
 
-    $component->call('selectMeeting', $meeting->id)
-        ->assertSee('No Notes Available')
-        ->assertSee('No meeting notes found for this department');
+    $component->assertSee('No meetings found.');
+});
+
+it('paginates the meetings list', function () {
+    loginAsAdmin();
+    Meeting::factory()->count(11)->create();
+
+    $component = Livewire::test(NotesDisplay::class, ['sectionKey' => 'development']);
+
+    $component->assertSee('Next');
 });

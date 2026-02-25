@@ -20,4 +20,18 @@ enum MembershipLevel: int
             self::Citizen => 'Citizen',
         };
     }
+
+    /**
+     * The rank name passed to `lh setmember <player> <rank>`.
+     * Returns null for levels below server access threshold (Drifter, Stowaway).
+     */
+    public function minecraftRank(): ?string
+    {
+        return match ($this) {
+            self::Drifter, self::Stowaway => null,
+            self::Traveler => 'traveler',
+            self::Resident => 'resident',
+            self::Citizen => 'citizen',
+        };
+    }
 }

@@ -82,9 +82,10 @@ describe('Prayer Widget - Timezone Handling', function () {
         ]);
         $this->actingAs($user);
 
-        // Set last_prayed_at to yesterday in user's timezone
-        $yesterday = Carbon::now('America/Los_Angeles')->subDay();
-        $user->last_prayed_at = $yesterday;
+        // Set last_prayed_at to yesterday at midnight in user's timezone
+        // Convert to UTC explicitly to avoid Laravel's timezone handling issues
+        $yesterday = Carbon::now('America/Los_Angeles')->subDay()->startOfDay();
+        $user->last_prayed_at = $yesterday->setTimezone('UTC');
         $user->save();
 
         $today = Carbon::now('America/Los_Angeles')->format('n-j');

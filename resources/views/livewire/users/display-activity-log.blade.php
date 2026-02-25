@@ -16,7 +16,7 @@ new class extends Component {
             'activities' => ActivityLog::relevantTo($this->user)
                 ->with(['causer', 'subject'])
                 ->latest()
-                ->paginate(25),
+                ->paginate(10),
         ];
     }
 }; ?>
@@ -26,6 +26,7 @@ new class extends Component {
 
     <flux:table>
         <flux:table.columns>
+            <flux:table.column>Date / Time</flux:table.column>
             <flux:table.column>Subject</flux:table.column>
             <flux:table.column>Action</flux:table.column>
             <flux:table.column>By User</flux:table.column>
@@ -35,13 +36,24 @@ new class extends Component {
         <flux:table.rows>
             @foreach($activities as $activity)
                 <flux:table.row :key="$activity->id">
+                    {{-- Date / Time (in viewer's stored timezone) --}}
+                    @php
+                        $tz = auth()->user()->timezone ?? 'UTC';
+                        $localTime = $activity->created_at->setTimezone($tz);
+                    @endphp
+                    <flux:table.cell class="whitespace-nowrap text-sm text-zinc-500 dark:text-zinc-400"
+                        title="{{ $localTime->format('Y-m-d H:i:s T') }}">
+                        {{ $localTime->format('M j, Y') }}<br>
+                        {{ $localTime->format('g:i A') }}
+                    </flux:table.cell>
+
                     {{-- Subject --}}
                     <flux:table.cell>
                         @php
                             $subject = $activity->subject;
                         @endphp
 
-                        @if ($subject instanceof \App\Models\User)
+                        @if ($subject instanceof User)
                             <flux:link href="{{ route('profile.show', $subject) }}">
                                 {{ $subject->name }}
                             </flux:link>

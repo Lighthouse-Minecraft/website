@@ -36,10 +36,15 @@ test('user can sort by name', function () {
 
     $this->actingAs($this->admin);
 
+    // Default sort is by 'name' asc, so first click toggles to desc
     Volt::test('admin-manage-users-page')
-        ->call('sort', 'name')
         ->assertSet('sortBy', 'name')
         ->assertSet('sortDirection', 'asc')
+        ->call('sort', 'name')
+        ->assertSet('sortBy', 'name')
+        ->assertSet('sortDirection', 'desc') // First click toggles to desc
+        ->call('sort', 'name')
+        ->assertSet('sortDirection', 'asc') // Second click toggles back to asc
         ->assertHasNoErrors();
 });
 

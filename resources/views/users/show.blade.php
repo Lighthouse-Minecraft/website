@@ -3,9 +3,13 @@
         <livewire:users.display-basic-details :user="$user" />
     </div>
 
-    <div class="w-full my-6">
-        <flux:card>
-            <livewire:users.display-activity-log :user="$user" />
-        </flux:card>
+    <div class="w-full my-6 flex justify-end">
+        <flux:modal.trigger name="activity-log-modal">
+            <flux:button icon="clock" size="sm" variant="ghost">View Activity Log</flux:button>
+        </flux:modal.trigger>
     </div>
+
+    <flux:modal name="activity-log-modal" class="w-full max-w-7xl">
+        <livewire:users.display-activity-log :user="$user" lazy />
+    </flux:modal>
 </x-layouts.app>

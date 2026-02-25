@@ -39,6 +39,18 @@ new class extends Component {
             @can('viewAny', \App\Models\PrayerCountry::class)
                 <flux:tab name="prayer-manager">Prayer Nations</flux:tab>
             @endcan
+
+            @can('viewAny', \App\Models\MinecraftAccount::class)
+                <flux:tab name="mc-user-manager">MC Users</flux:tab>
+            @endcan
+
+            @can('viewAny', \App\Models\MinecraftAccount::class)
+                <flux:tab name="mc-command-log">MC Command Log</flux:tab>
+            @endcan
+
+            @can('viewAny', \App\Models\User::class)
+                <flux:tab name="activity-log">Activity Log</flux:tab>
+            @endcan
         </flux:tabs>
 
 
@@ -75,6 +87,24 @@ new class extends Component {
         <flux:tab.panel name="prayer-manager">
             @can('viewAny', \App\Models\PrayerCountry::class)
                 <livewire:prayer.manage-months />
+            @endcan
+        </flux:tab.panel>
+
+        <flux:tab.panel name="mc-user-manager">
+            @can('viewAny', \App\Models\MinecraftAccount::class)
+                <livewire:admin-manage-mc-users-page />
+            @endcan
+        </flux:tab.panel>
+
+        <flux:tab.panel name="mc-command-log">
+            @can('viewAny', \App\Models\MinecraftAccount::class)
+                <livewire:admin-manage-mc-command-log-page />
+            @endcan
+        </flux:tab.panel>
+
+        <flux:tab.panel name="activity-log">
+            @can('viewAny', \App\Models\User::class)
+                <livewire:admin-manage-activity-log-page />
             @endcan
         </flux:tab.panel>
 

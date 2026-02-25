@@ -272,7 +272,7 @@ describe('Note Editor - Permissions for Editing', function () {
         livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
             ->call('EditNote')
             ->assertOk();
-    })->with('rankAtLeastCrewMembers')->done();
+    })->with('officers')->done();
 
     it('denies Jr Crew for note editors EditNote method', function (User $user) {
         loginAs($user);
@@ -300,7 +300,7 @@ describe('Note Editor - Permissions for Editing', function () {
         livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
             ->assertSeeText('Edit Agenda')
             ->assertOk();
-    })->with('rankAtLeastCrewMembers')->done();
+    })->with('officers')->done();
 
     it('hides the edit button from staff who are not allowed to edit the note', function ($user) {
         loginAs($user);
@@ -331,7 +331,7 @@ describe('Note Editor - Permissions for Creating', function () {
         livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
             ->assertSeeText('Create Agenda')
             ->assertOk();
-    })->with('rankAtLeastCrewMembers')->done();
+    })->with('officers')->done();
 
     it('hides the create button from Jr Staff', function ($user) {
         loginAs($user);
@@ -358,7 +358,7 @@ describe('Note Editor - Permissions for Creating', function () {
         livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
             ->call('CreateNote')
             ->assertOk();
-    })->with('rankAtLeastCrewMembers')->done();
+    })->with('officers')->done();
 
     it('denies access from Jr Crew to the CreateNote method', function ($user) {
         loginAs($user);
@@ -388,7 +388,7 @@ describe('Note Editor - Permissions for Saving', function () {
         livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
             ->call('SaveNote')
             ->assertOk();
-    })->with('rankAtLeastCrewMembers')->done();
+    })->with('officers')->done();
 
     it('denies Jr Crew access to the SaveNote method', function ($user) {
         loginAs($user);
@@ -435,7 +435,7 @@ describe('Note Editor - Permissions for Locking and Unlocking', function () {
         livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
             ->call('UnlockNote')
             ->assertOk();
-    })->with('rankAtLeastCrewMembers')->done();
+    })->with('officers')->done();
 
     it('denies Jr Crew access to the UnlockNote method', function ($user) {
         loginAs($user);

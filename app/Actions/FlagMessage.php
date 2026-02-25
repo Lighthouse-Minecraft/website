@@ -41,11 +41,7 @@ class FlagMessage
                 'has_open_flags' => true,
             ]);
 
-            // Get or create system user
-            $systemUser = User::firstOrCreate(
-                ['email' => 'system@lighthouse.local'],
-                ['name' => 'System']
-            );
+            $systemUser = User::where('email', 'system@lighthouse.local')->firstOrFail();
 
             // Create Quartermaster moderation flag ticket
             $reviewTicket = Thread::create([

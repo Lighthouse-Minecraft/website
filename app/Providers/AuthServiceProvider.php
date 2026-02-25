@@ -21,11 +21,19 @@ class AuthServiceProvider extends ServiceProvider
     ];
 
     /**
-     * Register any authentication / authorization services.
+     * Register authentication and authorization services and define application authorization gates.
+     *
+     * Registers the class's policy mappings and defines gates that control access to community content and updates,
+     * manage stowaway/traveler user administration, and view various ready-room sections based on user roles, ranks,
+     * membership levels, and departments.
      */
     public function boot(): void
     {
         $this->registerPolicies();
+
+        Gate::define('view-community-content', function ($user) {
+            return ! $user->in_brig;
+        });
 
         Gate::define('view-community-updates', function ($user) {
             return $user->isAtLeastLevel(MembershipLevel::Traveler) || $user->hasRole('Admin');

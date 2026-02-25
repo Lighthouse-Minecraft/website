@@ -20,20 +20,33 @@
                 <livewire:dashboard.view-rules />
             </div>
         @else
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                <livewire:dashboard.announcements-widget />
+            @can('view-community-content')
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    <livewire:dashboard.announcements-widget />
 
-                <flux:card>
-                    <flux:heading>Donations</flux:heading>
-                    <flux:separator variant="subtle" class="my-2" />
-                    <div class="flex mt-4">
-                        <flux:button size="xs" href="{{ route('donate') }}" variant="primary" color="sky">Support Lighthouse</flux:button>
-                        <flux:spacer />
-                        <flux:button href="{{  config('lighthouse.stripe.customer_portal_url') }}" size="xs">Manage Subscription</flux:button>
-                    </div>
+                    @if(auth()->user()->minecraftAccounts()->doesntExist())
+                        <flux:card class="flex flex-col items-center justify-center gap-3 py-8 text-center">
+                            <flux:heading size="md">Minecraft Account</flux:heading>
+                            <flux:text variant="subtle">Link your Minecraft account to join the server.</flux:text>
+                            <flux:button href="{{ route('settings.minecraft-accounts') }}" variant="primary" icon="plus">
+                                Add Your Minecraft Account
+                            </flux:button>
+                        </flux:card>
+                    @endif
 
-                </flux:card>
-            </div>
+                    <flux:card>
+                        <flux:heading>Donations</flux:heading>
+                        <flux:separator variant="subtle" class="my-2" />
+                        <div class="flex mt-4">
+                            <flux:button size="xs" href="{{ route('donate') }}" variant="primary" color="sky">Support Lighthouse</flux:button>
+                            <flux:spacer />
+                            <flux:button href="{{  config('lighthouse.stripe.customer_portal_url') }}" size="xs">Manage Subscription</flux:button>
+                        </div>
+                    </flux:card>
+                </div>
+            @else
+                <livewire:dashboard.in-brig-card />
+            @endcan
         @endif
 
     </div>

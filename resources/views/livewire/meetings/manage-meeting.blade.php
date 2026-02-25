@@ -4,11 +4,18 @@ use App\Enums\MeetingStatus;
 use App\Enums\StaffDepartment;
 use App\Models\Meeting;
 use App\Models\MeetingNote;
+use Carbon\CarbonImmutable;
+use Carbon\CarbonTimeZone;
+use Flux\Flux;
+use Illuminate\Validation\ValidationException;
 use Livewire\Volt\Component;
 
 new class extends Component {
     public Meeting $meeting;
     public $pollTime = 0;
+    public string $scheduleNextTitle = '';
+    public string $scheduleNextDay = '';
+    public string $scheduleNextTime = '7:00 PM';
 
     public function mount(Meeting $meeting) {
         $this->meeting = $meeting->load('attendees');
@@ -40,6 +47,49 @@ new class extends Component {
         }
 
         $this->pollTime = 60;
+    }
+
+    public function joinMeeting(): void
+    {
+        $this->authorize('attend', $this->meeting);
+
+        $attendeeId = auth()->id();
+
+        if ($this->meeting->attendees()->where('id', $attendeeId)->exists()) {
+            Flux::toast('You are already listed as an attendee.', variant: 'warning');
+
+            return;
+        }
+
+        $changes = $this->meeting->attendees()->syncWithoutDetaching([
+            $attendeeId => ['added_at' => now()],
+        ]);
+        $this->meeting->load('attendees');
+
+        if (empty($changes['attached'])) {
+            Flux::toast('You are already listed as an attendee.', variant: 'warning');
+
+            return;
+        }
+
+        Flux::toast('You have joined the meeting!', variant: 'success');
+    }
+
+    private function parseScheduledTime(string $day, string $time): CarbonImmutable
+    {
+        $parsedTime = CarbonImmutable::createFromFormat(
+            'Y-m-d g:i A',
+            "{$day} {$time}",
+            new CarbonTimeZone('America/New_York')
+        );
+
+        if ($parsedTime === false) {
+            throw ValidationException::withMessages([
+                'scheduleNextTime' => 'Please enter a valid time in the format H:MM AM/PM.',
+            ]);
+        }
+
+        return $parsedTime->utc();
     }
 
     public function EndMeeting() {
@@ -115,6 +165,34 @@ new class extends Component {
         $this->meeting->save();
 
         $this->modal('complete-meeting-confirmation')->close();
+
+        // Pre-fill next meeting scheduler with current meeting details
+        $this->scheduleNextTitle = $this->meeting->title;
+        $this->scheduleNextTime = $this->meeting->scheduled_time
+            ->setTimezone('America/New_York')
+            ->format('g:i A');
+        $this->modal('schedule-next-meeting')->show();
+    }
+
+    public function scheduleNextMeeting(): void
+    {
+        $this->authorize('create', Meeting::class);
+
+        $this->validate([
+            'scheduleNextTitle' => 'required|string|max:255',
+            'scheduleNextDay' => 'required|date_format:Y-m-d',
+            'scheduleNextTime' => 'required|date_format:g:i A',
+        ]);
+
+        $newMeeting = Meeting::create([
+            'title' => $this->scheduleNextTitle,
+            'day' => $this->scheduleNextDay,
+            'scheduled_time' => $this->parseScheduledTime($this->scheduleNextDay, $this->scheduleNextTime),
+        ]);
+
+        Flux::toast('Next meeting scheduled!', variant: 'success');
+        $this->modal('schedule-next-meeting')->close();
+        $this->redirect(route('meeting.edit', $newMeeting), navigate: true);
     }
 }; ?>
 
@@ -170,6 +248,18 @@ new class extends Component {
                     <div class="mt-4">
                         <livewire:meeting.manage-attendees :meeting="$meeting" :key="'attendees-' . $meeting->id" />
                     </div>
+                @endif
+
+                @if($meeting->status->value === 'in_progress')
+                    @can('attend', $meeting)
+                        @unless($meeting->attendees->contains(auth()->id()))
+                            <div class="mt-4">
+                                <flux:button wire:click="joinMeeting" variant="primary" size="sm">
+                                    Join Meeting
+                                </flux:button>
+                            </div>
+                        @endunless
+                    @endcan
                 @endif
 
             </flux:card>
@@ -308,4 +398,29 @@ new class extends Component {
             </flux:modal>
         @endif
     </div>
+
+    @can('create', \App\Models\Meeting::class)
+        <flux:modal name="schedule-next-meeting" class="min-w-[28rem] !text-left">
+            <div class="space-y-6">
+                <div>
+                    <flux:heading size="lg">Schedule Next Meeting</flux:heading>
+                    <flux:text class="mt-2">Would you like to schedule the next occurrence?</flux:text>
+                </div>
+
+                <flux:input wire:model="scheduleNextTitle" label="Meeting Title" required />
+                <flux:date-picker wire:model="scheduleNextDay" label="Meeting Date" required />
+                <flux:input wire:model="scheduleNextTime" label="Meeting Time (Eastern Time)" required />
+
+                <div class="flex gap-2">
+                    <flux:spacer />
+                    <flux:modal.close>
+                        <flux:button variant="ghost">Skip</flux:button>
+                    </flux:modal.close>
+                    <flux:button wire:click="scheduleNextMeeting" variant="primary">
+                        Schedule Meeting
+                    </flux:button>
+                </div>
+            </div>
+        </flux:modal>
+    @endcan
 </div>

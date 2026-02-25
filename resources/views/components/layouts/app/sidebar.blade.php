@@ -34,10 +34,10 @@
                     @endcan
 
                     @auth
-                        <flux:navlist.item 
-                            icon="inbox" 
-                            :href="route('tickets.index')" 
-                            :current="request()->routeIs('tickets.*')" 
+                        <flux:navlist.item
+                            icon="inbox"
+                            :href="route('tickets.index')"
+                            :current="request()->routeIs('tickets.*')"
                             wire:navigate
                             :badge="auth()->user()->ticketCounts()['badge'] ?: null"
                             :badge:color="auth()->user()->ticketCounts()['has-unread'] ? 'red' : 'zinc'"
@@ -47,10 +47,10 @@
                     @endauth
 
                     @can('view-ready-room')
-                        <flux:navlist.item 
-                            icon="building-storefront" 
-                            :href="route('ready-room.index')" 
-                            :current="request()->routeIs('ready-room.index')" 
+                        <flux:navlist.item
+                            icon="building-storefront"
+                            :href="route('ready-room.index')"
+                            :current="request()->routeIs('ready-room.index')"
                             wire:navigate
                         >
                             Staff Ready Room
@@ -139,7 +139,6 @@
         <flux:header class="bg-zinc-900">
             <flux:sidebar.toggle class="lg:hidden" icon="bars-2" inset="left" />
 
-            <x-discord-banner-modal />
             <flux:spacer />
 
             @auth

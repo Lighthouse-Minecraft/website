@@ -34,10 +34,6 @@ new #[Layout('components.layouts.auth')] class extends Component {
 
         RecordActivity::run($user, 'user_registered', 'User registered for an account');
 
-        if (app()->environment('testing') && User::query()->count() === 1) {
-            App\Actions\PromoteUserToAdmin::run($user);
-        }
-
         $this->redirect(route('dashboard', absolute: false), navigate: true);
     }
 }; ?>

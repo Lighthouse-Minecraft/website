@@ -9,6 +9,7 @@ use App\Enums\StaffDepartment;
 use App\Enums\StaffRank;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
@@ -35,6 +36,11 @@ class User extends Authenticatable // implements MustVerifyEmail
         'pushover_key',
         'email_digest_frequency',
         'notification_preferences',
+        'in_brig',
+        'brig_reason',
+        'brig_expires_at',
+        'next_appeal_available_at',
+        'brig_timer_notified',
     ];
 
     /**
@@ -65,10 +71,72 @@ class User extends Authenticatable // implements MustVerifyEmail
             'promoted_at' => 'datetime',
             'last_prayed_at' => 'datetime',
             'last_notification_read_at' => 'datetime',
+            'last_login_at' => 'datetime',
             'last_ticket_digest_sent_at' => 'datetime',
             'pushover_count_reset_at' => 'datetime',
             'notification_preferences' => 'array',
+            'in_brig' => 'boolean',
+            'brig_expires_at' => 'datetime',
+            'next_appeal_available_at' => 'datetime',
+            'brig_timer_notified' => 'boolean',
         ];
+    }
+
+    /**
+     * Indicates whether the user is currently in the brig.
+     *
+     * @return bool `true` if the user is marked as in the brig, `false` otherwise.
+     */
+    public function isInBrig(): bool
+    {
+        return (bool) $this->in_brig;
+    }
+
+    /**
+     * Determine whether the user's brig timer has expired.
+     *
+     * Considered expired when `brig_expires_at` is null or the current time is equal to or after `brig_expires_at`.
+     *
+     * @return bool `true` if `brig_expires_at` is null or now is equal to or after `brig_expires_at`, `false` otherwise.
+     */
+    public function brigTimerExpired(): bool
+    {
+        return $this->brig_expires_at === null || now()->gte($this->brig_expires_at);
+    }
+
+    /**
+     * Determine whether the user is eligible to submit an appeal from the brig.
+     *
+     * @return bool `true` if the user is in the brig and either no next-appeal time is set or that time is now or in the past, `false` otherwise.
+     */
+    public function canAppeal(): bool
+    {
+        if (! $this->in_brig) {
+            return false;
+        }
+
+        // If no appeal timer is set, they can appeal immediately
+        if (! $this->next_appeal_available_at) {
+            return true;
+        }
+
+        // Otherwise, check if the timer has expired
+        return $this->next_appeal_available_at <= now();
+    }
+
+    /**
+     * Lock the system account out of authentication entirely.
+     *
+     * Returning '!' means Hash::check() will always return false for this user,
+     * so no password — known, guessed, or reset — can ever authenticate it.
+     */
+    public function getAuthPassword(): string
+    {
+        if ($this->email === 'system@lighthouse.local') {
+            return '!';
+        }
+
+        return $this->password;
     }
 
     /**
@@ -133,6 +201,11 @@ class User extends Authenticatable // implements MustVerifyEmail
     public function prayerCountries()
     {
         return $this->belongsToMany(PrayerCountry::class)->withPivot('year')->withTimestamps();
+    }
+
+    public function minecraftAccounts(): HasMany
+    {
+        return $this->hasMany(MinecraftAccount::class);
     }
 
     public function canSendPushover(): bool
