@@ -173,6 +173,30 @@ class GenerateVerificationCode
         $gracePeriodMinutes = config('lighthouse.minecraft_verification_grace_period_minutes');
         $expiresAt = now()->addMinutes($gracePeriodMinutes);
 
+        // Validate API-returned values before persisting (defense-in-depth)
+        $usernamePattern = $accountType === MinecraftAccountType::Bedrock
+            ? '/^\.?[A-Za-z0-9_ ]{1,16}$/'
+            : '/^[A-Za-z0-9_]{3,16}$/';
+
+        if (! preg_match($usernamePattern, $verifiedUsername)) {
+            return [
+                'success' => false,
+                'code' => null,
+                'expires_at' => null,
+                'error' => 'The API returned an invalid username format. Please try again.',
+            ];
+        }
+
+        $cleanUuid = str_replace('-', '', $uuid);
+        if (! preg_match('/^[0-9a-fA-F]{32}$/', $cleanUuid)) {
+            return [
+                'success' => false,
+                'code' => null,
+                'expires_at' => null,
+                'error' => 'The API returned an invalid UUID format. Please try again.',
+            ];
+        }
+
         // Create the MinecraftAccount record in 'verifying' state before sending whitelist
         $normalizedUuid = str_replace('-', '', $uuid);
         try {

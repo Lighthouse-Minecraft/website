@@ -205,6 +205,8 @@ test('completes verification for bedrock account with dot-prefix username', func
 });
 
 test('syncs staff position when staff member verifies account', function () {
+    Notification::fake();
+
     // Create staff user with server access
     $staffUser = User::factory()->create([
         'membership_level' => \App\Enums\MembershipLevel::Traveler,

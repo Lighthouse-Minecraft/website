@@ -26,5 +26,10 @@ return [
         'server_host' => env('MINECRAFT_SERVER_HOST', 'play.lighthousemc.net'),
         'server_port_java' => (int) env('MINECRAFT_SERVER_PORT_JAVA', 25565),
         'server_port_bedrock' => (int) env('MINECRAFT_SERVER_PORT_BEDROCK', 19132),
+        'rewards' => [
+            'new_player_enabled' => (bool) env('MC_NEW_PLAYER_REWARD_ENABLED', false),
+            'new_player_diamonds' => (int) env('MC_NEW_PLAYER_REWARD_DIAMONDS', 3),
+            'new_player_exchange_rate' => (int) env('MC_NEW_PLAYER_LUMEN_EXCHANGE_RATE', 32),
+        ],
     ],
 ];

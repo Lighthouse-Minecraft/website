@@ -10,6 +10,6 @@
     </div>
 
     <flux:modal name="activity-log-modal" class="w-full max-w-7xl">
-        <livewire:users.display-activity-log :user="$user" />
+        <livewire:users.display-activity-log :user="$user" lazy />
     </flux:modal>
 </x-layouts.app>

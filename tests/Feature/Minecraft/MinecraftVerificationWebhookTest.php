@@ -245,10 +245,9 @@ test('records activity log on successful verification', function () {
         'minecraft_uuid' => '069a79f4-44e9-4726-a5be-fca90e38aaf5',
     ]);
 
-    // TODO: Enable when activity_log table is created
-    // $this->assertDatabaseHas('activity_log', [
-    //     'user_id' => $this->user->id,
-    //     'action' => 'minecraft_account_linked',
-    // ]);
-    expect(true)->toBeTrue(); // Placeholder
+    $this->assertDatabaseHas('activity_logs', [
+        'subject_type' => \App\Models\User::class,
+        'subject_id' => $this->user->id,
+        'action' => 'minecraft_account_linked',
+    ]);
 });

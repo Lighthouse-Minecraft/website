@@ -309,7 +309,7 @@ new class extends Component {
 }; ?>
 
 <div>
-    <div class="w-full block md:flex md:mr-4">
+    <div class="w-full block md:flex md:gap-4">
         <flux:card class="w-full md:w-1/2 lg:w-1/3 p-6 space-y-2 mb-6 md:mb-0">
             <div class="flex items-center gap-3 flex-wrap mb-2">
                 <flux:heading size="xl">{{ $user->name }}</flux:heading>
@@ -359,7 +359,7 @@ new class extends Component {
         </flux:card>
 
         @if($user->staff_department)
-            <flux:card class="w-full md:w-1/2 lg:w-1/3 md:mx-4 mb-6 md:mb-0">
+            <flux:card class="w-full md:w-1/2 lg:w-1/3 mb-6 md:mb-0">
                 <flux:heading size="xl">{{  $user->staff_title }}</flux:heading>
                 <flux:text>Department: {{  $user->staff_department->label() }}</flux:text>
                 <flux:text>Rank: {{  $user->staff_rank->label() }}</flux:text>
@@ -373,7 +373,7 @@ new class extends Component {
                 @endif
             </flux:card>
         @elseif (Auth::user()->isAdmin())
-            <flux:card class="w-full md:w-1/4 md:mx-4 mb-6 md:mb-0">
+            <flux:card class="w-full md:w-1/4 mb-6 md:mb-0">
                 <flux:heading size="xl">Staff Config</flux:heading>
                 <div class="mt-6 text-center">
                     <flux:modal.trigger name="manage-users-staff-position">
@@ -384,7 +384,7 @@ new class extends Component {
         @endif
 
         @can('viewPii', $user)
-            <flux:card class="w-full md:w-1/2 lg:w-1/3 {{ $user->staff_department ? 'md:ml-4' : 'md:mx-4' }} p-6 space-y-2">
+            <flux:card class="w-full md:w-1/2 lg:w-1/3 p-6 space-y-2">
                 <flux:heading size="xl" class="mb-4">Contact Information</flux:heading>
                 <flux:text>Email: {{ $user->email }}</flux:text>
             </flux:card>

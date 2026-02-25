@@ -51,8 +51,14 @@ class MinecraftRconService
             );
 
             if ($rcon->connect()) {
-                $response = $rcon->sendCommand($command);
-                $status = 'success';
+                $result = $rcon->sendCommand($command);
+                if ($result === false) {
+                    $response = null;
+                    $errorMessage = 'Failed to send command to RCON server';
+                } else {
+                    $response = $result;
+                    $status = 'success';
+                }
             } else {
                 $errorMessage = 'Failed to connect to RCON server';
             }

@@ -2,15 +2,25 @@
 
 use App\Enums\MinecraftAccountType;
 use App\Models\MinecraftAccount;
+use Illuminate\Support\Str;
 use Livewire\Volt\Component;
 use Livewire\WithPagination;
 
 new class extends Component {
     use WithPagination;
 
+    public string $search = '';
     public string $sortBy = 'username';
     public string $sortDirection = 'asc';
     public ?MinecraftAccount $selectedAccount = null;
+
+    /**
+     * Reset the pagination page when the search filter changes.
+     */
+    public function updatedSearch(): void
+    {
+        $this->resetPage();
+    }
 
     /**
      * Set the current sort column for the accounts table and toggle or reset the sort direction.
@@ -18,7 +28,7 @@ new class extends Component {
      * If called with the same column as the current sort, flips between 'asc' and 'desc'.
      * If called with a different column, sets that column and resets the direction to 'asc'.
      *
-     * @param string $column The column identifier to sort by (e.g. 'username', 'user_name', 'account_type', 'verified_at').
+     * @param string $column The column identifier to sort by (e.g. 'username', 'user_name', 'account_type', 'uuid', 'verified_at').
      */
     public function sort(string $column): void
     {
@@ -50,9 +60,9 @@ new class extends Component {
 
     /**
      * Retrieve a paginated list of MinecraftAccount records joined with their user name,
-     * ordered according to the component's current sort column and direction.
+     * filtered by the search term and ordered according to the component's current sort column and direction.
      *
-     * @return \Illuminate\Pagination\LengthAwarePaginator<Pokemon\Models\MinecraftAccount> Paginated MinecraftAccount models with an added `user_name` attribute from the joined users table.
+     * @return \Illuminate\Pagination\LengthAwarePaginator Paginated MinecraftAccount models with an added `user_name` attribute from the joined users table.
      */
     #[\Livewire\Attributes\Computed]
     public function accounts()
@@ -60,14 +70,22 @@ new class extends Component {
         $sortColumn = match ($this->sortBy) {
             'user_name' => 'users.name',
             'account_type' => 'minecraft_accounts.account_type',
+            'uuid' => 'minecraft_accounts.uuid',
             'verified_at' => 'minecraft_accounts.verified_at',
             default => 'minecraft_accounts.username',
         };
 
+        $direction = in_array($this->sortDirection, ['asc', 'desc']) ? $this->sortDirection : 'asc';
+
         return MinecraftAccount::query()
             ->join('users', 'minecraft_accounts.user_id', '=', 'users.id')
             ->select('minecraft_accounts.*', 'users.name as user_name')
-            ->orderBy($sortColumn, $this->sortDirection)
+            ->when($this->search, fn ($q) => $q->where(function ($q) {
+                $q->where('minecraft_accounts.username', 'like', "%{$this->search}%")
+                    ->orWhere('users.name', 'like', "%{$this->search}%")
+                    ->orWhere('minecraft_accounts.uuid', 'like', "%{$this->search}%");
+            }))
+            ->orderBy($sortColumn, $direction)
             ->paginate(15);
     }
 }; ?>
@@ -75,11 +93,14 @@ new class extends Component {
 <div class="space-y-6">
     <flux:heading size="xl">Minecraft Users</flux:heading>
 
+    <flux:input wire:model.live.debounce.400ms="search" placeholder="Search username, user, or UUID..." icon="magnifying-glass" class="max-w-sm" />
+
     <flux:table :paginate="$this->accounts">
         <flux:table.columns>
             <flux:table.column sortable :sorted="$sortBy === 'username'" :direction="$sortDirection" wire:click="sort('username')">MC Username</flux:table.column>
             <flux:table.column sortable :sorted="$sortBy === 'user_name'" :direction="$sortDirection" wire:click="sort('user_name')">User</flux:table.column>
             <flux:table.column sortable :sorted="$sortBy === 'account_type'" :direction="$sortDirection" wire:click="sort('account_type')">Type</flux:table.column>
+            <flux:table.column sortable :sorted="$sortBy === 'uuid'" :direction="$sortDirection" wire:click="sort('uuid')">UUID</flux:table.column>
             <flux:table.column sortable :sorted="$sortBy === 'verified_at'" :direction="$sortDirection" wire:click="sort('verified_at')">Date Verified</flux:table.column>
         </flux:table.columns>
 
@@ -105,6 +126,8 @@ new class extends Component {
                             {{ $account->account_type->label() }}
                         </flux:badge>
                     </flux:table.cell>
+
+                    <flux:table.cell class="whitespace-nowrap font-mono text-xs text-zinc-500 dark:text-zinc-400">…{{ Str::afterLast($account->uuid, '-') }}</flux:table.cell>
 
                     <flux:table.cell class="whitespace-nowrap">{{ $account->verified_at ? $account->verified_at->format('M j, Y') : '—' }}</flux:table.cell>
                 </flux:table.row>

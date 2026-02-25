@@ -39,7 +39,7 @@ class PutUserInBrig
                 $account->whitelistRemoveCommand(),
                 'whitelist',
                 $account->username,
-                $target
+                $admin
             );
             $account->status = MinecraftAccountStatus::Banned;
             $account->save();
