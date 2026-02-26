@@ -2,6 +2,7 @@
 
 namespace App\Actions;
 
+use App\Enums\DiscordAccountStatus;
 use App\Models\DiscordAccount;
 use App\Models\User;
 use Illuminate\Support\Carbon;
@@ -37,7 +38,7 @@ class LinkDiscordAccount
             'token_expires_at' => isset($discordData['expires_in'])
                 ? Carbon::now()->addSeconds($discordData['expires_in'])
                 : null,
-            'status' => 'active',
+            'status' => DiscordAccountStatus::Active,
             'verified_at' => Carbon::now(),
         ]);
 

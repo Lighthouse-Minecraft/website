@@ -72,9 +72,16 @@ class ReleaseUserFromBrig
                 ]);
             }
         }
-        SyncDiscordRoles::run($target);
-        if ($target->staff_department !== null) {
-            SyncDiscordStaff::run($target, $target->staff_department);
+        try {
+            SyncDiscordRoles::run($target);
+            if ($target->staff_department !== null) {
+                SyncDiscordStaff::run($target, $target->staff_department);
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to sync Discord roles on brig release', [
+                'user_id' => $target->id,
+                'error' => $e->getMessage(),
+            ]);
         }
 
         RecordActivity::handle($target, 'user_released_from_brig', "Released from brig by {$admin->name}. Reason: {$reason}");
