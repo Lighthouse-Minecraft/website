@@ -32,7 +32,7 @@ class DiscordChannel
         foreach ($notifiable->discordAccounts()->active()->get() as $account) {
             try {
                 $discordApi->sendDirectMessage($account->discord_user_id, $message);
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
                 Log::warning('Failed to send Discord DM', [
                     'discord_user_id' => $account->discord_user_id,
                     'user_id' => $notifiable->id,

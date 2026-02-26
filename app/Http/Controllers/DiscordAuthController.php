@@ -10,7 +10,7 @@ use Laravel\Socialite\Facades\Socialite;
 
 class DiscordAuthController extends Controller
 {
-    public function redirect(Request $request)
+    public function redirect()
     {
         Gate::authorize('link-discord');
 

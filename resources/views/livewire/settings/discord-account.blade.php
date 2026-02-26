@@ -48,7 +48,6 @@ new class extends Component {
             'linkedAccounts' => $linkedAccounts,
             'maxAccounts' => $maxAccounts,
             'remainingSlots' => $maxAccounts - $linkedAccounts->count(),
-            'canLink' => auth()->user()->can('link-discord'),
         ];
     }
 }; ?>
@@ -115,24 +114,28 @@ new class extends Component {
     @endif
 
     {{-- Link Button --}}
-    @if($canLink && $remainingSlots > 0)
-        <flux:card class="p-6">
-            <flux:heading size="lg" class="mb-4">Link Discord Account</flux:heading>
-            <flux:text class="mb-4">
-                Connect your Discord account to automatically receive server roles matching your membership level and staff position.
-                You'll also be able to receive notifications via Discord DM.
-            </flux:text>
-            <a href="{{ route('auth.discord.redirect') }}">
-                <flux:button variant="primary">
-                    Link Discord Account
-                </flux:button>
-            </a>
-        </flux:card>
-    @elseif(!$canLink && $linkedAccounts->isEmpty())
-        <flux:callout variant="info">
-            You'll be able to link your Discord account once you've been promoted to Traveler rank.
-        </flux:callout>
-    @endif
+    @can('link-discord')
+        @if($remainingSlots > 0)
+            <flux:card class="p-6">
+                <flux:heading size="lg" class="mb-4">Link Discord Account</flux:heading>
+                <flux:text class="mb-4">
+                    Connect your Discord account to automatically receive server roles matching your membership level and staff position.
+                    You'll also be able to receive notifications via Discord DM.
+                </flux:text>
+                <a href="{{ route('auth.discord.redirect') }}">
+                    <flux:button variant="primary">
+                        Link Discord Account
+                    </flux:button>
+                </a>
+            </flux:card>
+        @endif
+    @elsecannot('link-discord')
+        @if($linkedAccounts->isEmpty())
+            <flux:callout variant="info">
+                You'll be able to link your Discord account once you've been promoted to Traveler rank.
+            </flux:callout>
+        @endif
+    @endcannot
 
     {{-- Unlink Confirmation Modal --}}
     <flux:modal name="confirm-unlink-discord" class="min-w-[22rem] space-y-6">
