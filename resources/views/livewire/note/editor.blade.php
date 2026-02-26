@@ -158,6 +158,7 @@ new class extends Component {
         }
 
         // Prevent accidental content wipe from stale Livewire state
+        $this->note->refresh();
         if (empty(trim($this->updatedContent ?? '')) && ! empty(trim($this->note->content ?? ''))) {
             $this->updatedContent = $this->note->content;
             return;

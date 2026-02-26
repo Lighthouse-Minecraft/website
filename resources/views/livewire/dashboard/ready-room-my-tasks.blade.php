@@ -39,7 +39,7 @@ new class extends Component {
     @else
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             @foreach($tasksBySection as $section => $tasks)
-                <flux:card>
+                <flux:card wire:key="task-section-{{ $section }}">
                     <flux:heading class="mb-4">{{ ucfirst($section) }}</flux:heading>
                     @foreach($tasks as $task)
                         <livewire:task.show-task :task="$task" wire:key="my-task-{{ $task->id }}" />

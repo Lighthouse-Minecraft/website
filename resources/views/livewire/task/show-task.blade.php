@@ -134,7 +134,7 @@ new class extends Component {
         <flux:select wire:model="editAssignedTo" label="Assign To" placeholder="Unassigned">
             <flux:select.option value="">Unassigned</flux:select.option>
             @foreach($this->staffUsers as $staffUser)
-                <flux:select.option value="{{ $staffUser->id }}">{{ $staffUser->name }}</flux:select.option>
+                <flux:select.option wire:key="staff-{{ $staffUser->id }}" value="{{ $staffUser->id }}">{{ $staffUser->name }}</flux:select.option>
             @endforeach
         </flux:select>
 
