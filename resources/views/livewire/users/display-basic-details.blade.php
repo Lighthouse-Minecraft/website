@@ -338,6 +338,40 @@ new class extends Component {
         return $levels[$currentIndex + 1] ?? null;
     }
 
+    /**
+     * Get the previous MembershipLevel before the user's current level.
+     *
+     * Returns null if the user is at or below Traveler (we don't demote below Traveler).
+     */
+    public function getPreviousMembershipLevelProperty(): ?MembershipLevel
+    {
+        if ($this->user->membership_level->value <= MembershipLevel::Traveler->value) {
+            return null;
+        }
+
+        $levels = MembershipLevel::cases();
+        $currentIndex = array_search($this->user->membership_level, $levels, strict: true);
+        return $levels[$currentIndex - 1] ?? null;
+    }
+
+    public function demoteUser(): void
+    {
+        if (! Auth::user()->can('manage-stowaway-users')) {
+            Flux::toast(text: 'You do not have permission to demote users.', heading: 'Error', variant: 'danger');
+            return;
+        }
+
+        \App\Actions\DemoteUser::run($this->user);
+        $this->user->refresh();
+
+        Flux::modal('profile-demote-confirm-modal')->close();
+        Flux::toast(
+            text: "Demoted to {$this->user->membership_level->label()} successfully.",
+            heading: 'Demoted',
+            variant: 'success'
+        );
+    }
+
 }; ?>
 
 <div>
@@ -383,6 +417,19 @@ new class extends Component {
                                 icon="arrow-up-circle"
                             >
                                 Promote to {{ $this->nextMembershipLevel->label() }}
+                            </flux:button>
+                        </flux:modal.trigger>
+                    @endif
+
+                    @if(! $user->isInBrig() && $this->previousMembershipLevel !== null)
+                        <flux:modal.trigger name="profile-demote-confirm-modal">
+                            <flux:button
+                                size="sm"
+                                variant="ghost"
+                                icon="arrow-down-circle"
+                                class="text-zinc-500 hover:text-red-400"
+                            >
+                                Demote to {{ $this->previousMembershipLevel->label() }}
                             </flux:button>
                         </flux:modal.trigger>
                     @endif
@@ -587,6 +634,21 @@ new class extends Component {
             <div class="flex gap-2 justify-end">
                 <flux:button variant="ghost" x-on:click="$flux.modal('profile-promote-confirm-modal').close()">Cancel</flux:button>
                 <flux:button wire:click="promoteUser" variant="primary" icon="arrow-up-circle">Confirm Promotion</flux:button>
+            </div>
+        </div>
+    </flux:modal>
+    @endif
+
+    <!-- Demote Confirmation Modal -->
+    @if($this->previousMembershipLevel !== null)
+    <flux:modal name="profile-demote-confirm-modal" class="w-full md:w-1/2 xl:w-1/3">
+        <div class="space-y-6">
+            <flux:heading size="lg">Confirm Demotion</flux:heading>
+            <flux:text>Are you sure you want to demote <strong>{{ $user->name }}</strong> from <strong>{{ $user->membership_level->label() }}</strong> to <strong>{{ $this->previousMembershipLevel->label() }}</strong>?</flux:text>
+            <flux:text variant="subtle">This will sync any applicable Minecraft and Discord ranks.</flux:text>
+            <div class="flex gap-2 justify-end">
+                <flux:button variant="ghost" x-on:click="$flux.modal('profile-demote-confirm-modal').close()">Cancel</flux:button>
+                <flux:button wire:click="demoteUser" variant="danger" icon="arrow-down-circle">Confirm Demotion</flux:button>
             </div>
         </div>
     </flux:modal>
