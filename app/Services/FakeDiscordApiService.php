@@ -51,6 +51,29 @@ class FakeDiscordApiService extends DiscordApiService
         return true;
     }
 
+    public function syncManagedRoles(string $discordUserId, array $managedRoleIds, array $desiredRoleIds): bool
+    {
+        $this->calls[] = [
+            'method' => 'syncManagedRoles',
+            'discord_user_id' => $discordUserId,
+            'managed_role_ids' => $managedRoleIds,
+            'desired_role_ids' => $desiredRoleIds,
+        ];
+        Log::info('[FakeDiscord] syncManagedRoles', [
+            'discord_user_id' => $discordUserId,
+            'managed_role_ids' => $managedRoleIds,
+            'desired_role_ids' => $desiredRoleIds,
+        ]);
+
+        // Simulate the diff against an empty roles set so addRole/removeRole
+        // calls are recorded for test assertions
+        foreach (array_filter($desiredRoleIds) as $roleId) {
+            $this->addRole($discordUserId, $roleId);
+        }
+
+        return true;
+    }
+
     public function removeAllManagedRoles(string $discordUserId): void
     {
         $this->calls[] = ['method' => 'removeAllManagedRoles', 'discord_user_id' => $discordUserId];

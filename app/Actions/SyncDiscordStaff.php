@@ -21,42 +21,44 @@ class SyncDiscordStaff
         }
 
         $discordApi = app(DiscordApiService::class);
+
+        // Build the list of all managed staff role IDs (departments + ranks)
+        $managedRoleIds = [];
+        foreach (StaffDepartment::cases() as $dept) {
+            $roleId = $dept->discordRoleId();
+            if ($roleId) {
+                $managedRoleIds[] = $roleId;
+            }
+        }
+        foreach (StaffRank::cases() as $rank) {
+            $roleId = $rank->discordRoleId();
+            if ($roleId) {
+                $managedRoleIds[] = $roleId;
+            }
+        }
+
+        // Build the desired role IDs based on user's current staff position
+        $desiredRoleIds = [];
+        if ($department !== null) {
+            $roleId = $department->discordRoleId();
+            if ($roleId) {
+                $desiredRoleIds[] = $roleId;
+            }
+        }
         $staffRank = $user->staff_rank;
+        if ($staffRank !== null && $staffRank !== StaffRank::None) {
+            $roleId = $staffRank->discordRoleId();
+            if ($roleId) {
+                $desiredRoleIds[] = $roleId;
+            }
+        }
 
         foreach ($accounts as $account) {
-            $discordUserId = $account->discord_user_id;
-
-            // Remove all staff department roles
-            foreach (StaffDepartment::cases() as $dept) {
-                $roleId = $dept->discordRoleId();
-                if ($roleId) {
-                    $discordApi->removeRole($discordUserId, $roleId);
-                }
-            }
-
-            // Remove all staff rank roles
-            foreach (StaffRank::cases() as $rank) {
-                $roleId = $rank->discordRoleId();
-                if ($roleId) {
-                    $discordApi->removeRole($discordUserId, $roleId);
-                }
-            }
-
-            // Add the correct department role
-            if ($department !== null) {
-                $roleId = $department->discordRoleId();
-                if ($roleId) {
-                    $discordApi->addRole($discordUserId, $roleId);
-                }
-            }
-
-            // Add the correct staff rank role
-            if ($staffRank !== null && $staffRank !== StaffRank::None) {
-                $roleId = $staffRank->discordRoleId();
-                if ($roleId) {
-                    $discordApi->addRole($discordUserId, $roleId);
-                }
-            }
+            $discordApi->syncManagedRoles(
+                $account->discord_user_id,
+                $managedRoleIds,
+                $desiredRoleIds
+            );
         }
 
         if ($department !== null) {
