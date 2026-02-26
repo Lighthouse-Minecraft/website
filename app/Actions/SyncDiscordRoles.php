@@ -20,29 +20,32 @@ class SyncDiscordRoles
         }
 
         $discordApi = app(DiscordApiService::class);
-        $currentRoleId = $user->membership_level->discordRoleId();
+
+        // Build the list of all managed role IDs (membership levels + verified)
+        $managedRoleIds = [];
+        foreach (MembershipLevel::cases() as $level) {
+            $roleId = $level->discordRoleId();
+            if ($roleId) {
+                $managedRoleIds[] = $roleId;
+            }
+        }
+        $verifiedRoleId = config('lighthouse.discord.roles.verified');
+        if ($verifiedRoleId) {
+            $managedRoleIds[] = $verifiedRoleId;
+        }
+
+        // Build the list of desired role IDs for this user
+        $desiredRoleIds = array_filter([
+            $user->membership_level->discordRoleId(),
+            $verifiedRoleId,
+        ]);
 
         foreach ($accounts as $account) {
-            $discordUserId = $account->discord_user_id;
-
-            // Remove all membership-level roles first
-            foreach (MembershipLevel::cases() as $level) {
-                $roleId = $level->discordRoleId();
-                if ($roleId) {
-                    $discordApi->removeRole($discordUserId, $roleId);
-                }
-            }
-
-            // Add the correct membership role
-            if ($currentRoleId) {
-                $discordApi->addRole($discordUserId, $currentRoleId);
-            }
-
-            // Always add "verified" role if configured
-            $verifiedRoleId = config('lighthouse.discord.roles.verified');
-            if ($verifiedRoleId) {
-                $discordApi->addRole($discordUserId, $verifiedRoleId);
-            }
+            $discordApi->syncManagedRoles(
+                $account->discord_user_id,
+                $managedRoleIds,
+                $desiredRoleIds
+            );
         }
 
         RecordActivity::run(

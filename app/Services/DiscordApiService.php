@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -13,6 +14,8 @@ class DiscordApiService
 
     protected string $guildId;
 
+    protected int $maxRetries = 2;
+
     public function __construct()
     {
         $this->botToken = (string) config('services.discord.bot_token', '');
@@ -21,9 +24,7 @@ class DiscordApiService
 
     public function getGuildMember(string $discordUserId): ?array
     {
-        $response = Http::withHeaders($this->botHeaders())
-            ->timeout(5)
-            ->get("{$this->baseUrl}/guilds/{$this->guildId}/members/{$discordUserId}");
+        $response = $this->requestWithRetry('GET', "/guilds/{$this->guildId}/members/{$discordUserId}");
 
         if ($response->successful()) {
             return $response->json();
@@ -38,9 +39,7 @@ class DiscordApiService
             return false;
         }
 
-        $response = Http::withHeaders($this->botHeaders())
-            ->timeout(5)
-            ->put("{$this->baseUrl}/guilds/{$this->guildId}/members/{$discordUserId}/roles/{$roleId}");
+        $response = $this->requestWithRetry('PUT', "/guilds/{$this->guildId}/members/{$discordUserId}/roles/{$roleId}");
 
         if (! $response->successful()) {
             Log::warning('Discord addRole failed', [
@@ -60,9 +59,7 @@ class DiscordApiService
             return false;
         }
 
-        $response = Http::withHeaders($this->botHeaders())
-            ->timeout(5)
-            ->delete("{$this->baseUrl}/guilds/{$this->guildId}/members/{$discordUserId}/roles/{$roleId}");
+        $response = $this->requestWithRetry('DELETE', "/guilds/{$this->guildId}/members/{$discordUserId}/roles/{$roleId}");
 
         if (! $response->successful()) {
             Log::warning('Discord removeRole failed', [
@@ -78,11 +75,9 @@ class DiscordApiService
 
     public function sendDirectMessage(string $discordUserId, string $content): bool
     {
-        $channelResponse = Http::withHeaders($this->botHeaders())
-            ->timeout(5)
-            ->post("{$this->baseUrl}/users/@me/channels", [
-                'recipient_id' => $discordUserId,
-            ]);
+        $channelResponse = $this->requestWithRetry('POST', '/users/@me/channels', [
+            'recipient_id' => $discordUserId,
+        ]);
 
         if (! $channelResponse->successful()) {
             Log::warning('Discord createDM failed', [
@@ -95,11 +90,9 @@ class DiscordApiService
 
         $channelId = $channelResponse->json('id');
 
-        $messageResponse = Http::withHeaders($this->botHeaders())
-            ->timeout(5)
-            ->post("{$this->baseUrl}/channels/{$channelId}/messages", [
-                'content' => $content,
-            ]);
+        $messageResponse = $this->requestWithRetry('POST', "/channels/{$channelId}/messages", [
+            'content' => $content,
+        ]);
 
         if (! $messageResponse->successful()) {
             Log::warning('Discord sendDM failed', [
@@ -110,6 +103,48 @@ class DiscordApiService
         }
 
         return $messageResponse->successful();
+    }
+
+    /**
+     * Sync a subset of managed roles for a guild member.
+     *
+     * Fetches the member's current roles, diffs against the desired set within the
+     * managed role IDs, and only adds/removes what's actually changed.
+     *
+     * @param  string  $discordUserId  The Discord user ID.
+     * @param  array<string>  $managedRoleIds  All role IDs this operation manages (e.g. all membership roles).
+     * @param  array<string>  $desiredRoleIds  The role IDs the user should have from the managed set.
+     * @return bool Whether the member was found in the guild.
+     */
+    public function syncManagedRoles(string $discordUserId, array $managedRoleIds, array $desiredRoleIds): bool
+    {
+        $member = $this->getGuildMember($discordUserId);
+        if (! $member) {
+            return false;
+        }
+
+        $currentRoles = $member['roles'] ?? [];
+        $managedRoleIds = array_filter($managedRoleIds);
+        $desiredRoleIds = array_intersect(array_filter($desiredRoleIds), $managedRoleIds);
+
+        // Only look at managed roles the user currently has
+        $managedCurrent = array_intersect($currentRoles, $managedRoleIds);
+
+        // Roles to remove: managed roles the user has but shouldn't
+        $toRemove = array_diff($managedCurrent, $desiredRoleIds);
+
+        // Roles to add: desired roles the user doesn't have yet
+        $toAdd = array_diff($desiredRoleIds, $currentRoles);
+
+        foreach ($toRemove as $roleId) {
+            $this->removeRole($discordUserId, $roleId);
+        }
+
+        foreach ($toAdd as $roleId) {
+            $this->addRole($discordUserId, $roleId);
+        }
+
+        return true;
     }
 
     public function removeAllManagedRoles(string $discordUserId): void
@@ -123,6 +158,44 @@ class DiscordApiService
         foreach ($allRoleIds as $roleId) {
             $this->removeRole($discordUserId, $roleId);
         }
+    }
+
+    /**
+     * Make a Discord API request with automatic rate limit retry.
+     *
+     * If Discord returns a 429, sleeps for the retry_after duration
+     * and retries up to $maxRetries times.
+     */
+    protected function requestWithRetry(string $method, string $path, array $data = []): Response
+    {
+        $url = "{$this->baseUrl}{$path}";
+
+        for ($attempt = 0; $attempt <= $this->maxRetries; $attempt++) {
+            $pending = Http::withHeaders($this->botHeaders())->timeout(5);
+
+            $response = match (strtoupper($method)) {
+                'GET' => $pending->get($url),
+                'POST' => $pending->post($url, $data),
+                'PUT' => $pending->put($url, $data),
+                'DELETE' => $pending->delete($url),
+            };
+
+            if ($response->status() !== 429) {
+                return $response;
+            }
+
+            $retryAfter = $response->json('retry_after', 1);
+
+            Log::info('Discord rate limited, waiting to retry', [
+                'path' => $path,
+                'retry_after' => $retryAfter,
+                'attempt' => $attempt + 1,
+            ]);
+
+            usleep((int) ($retryAfter * 1_000_000));
+        }
+
+        return $response;
     }
 
     protected function botHeaders(): array
