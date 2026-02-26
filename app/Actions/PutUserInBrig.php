@@ -75,6 +75,6 @@ class PutUserInBrig
         RecordActivity::handle($target, 'user_put_in_brig', $description);
 
         $notificationService = app(TicketNotificationService::class);
-        $notificationService->send($target, new UserPutInBrigNotification($target, $reason, $expiresAt));
+        $notificationService->send($target, new UserPutInBrigNotification($target, $reason, $expiresAt), 'account');
     }
 }

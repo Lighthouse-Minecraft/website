@@ -71,12 +71,12 @@ class PromoteUser
             })->whereNotNull('staff_rank')->get();
 
             foreach ($staff as $member) {
-                $notificationService->send($member, clone $notification);
+                $notificationService->send($member, clone $notification, 'staff_alerts');
             }
         } elseif ($nextLevel === MembershipLevel::Traveler) {
-            $notificationService->send($user, new UserPromotedToTravelerNotification($user));
+            $notificationService->send($user, new UserPromotedToTravelerNotification($user), 'account');
         } elseif ($nextLevel === MembershipLevel::Resident) {
-            $notificationService->send($user, new UserPromotedToResidentNotification($user));
+            $notificationService->send($user, new UserPromotedToResidentNotification($user), 'account');
         }
     }
 }

@@ -80,6 +80,6 @@ class ReleaseUserFromBrig
         RecordActivity::handle($target, 'user_released_from_brig', "Released from brig by {$admin->name}. Reason: {$reason}");
 
         $notificationService = app(TicketNotificationService::class);
-        $notificationService->send($target, new UserReleasedFromBrigNotification($target));
+        $notificationService->send($target, new UserReleasedFromBrigNotification($target), 'account');
     }
 }
