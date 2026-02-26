@@ -63,6 +63,9 @@ it('restores discord accounts to active when released from brig', function () {
 });
 
 it('syncs discord permissions when released from brig', function () {
+    config(['lighthouse.discord.roles.traveler' => '111']);
+    config(['lighthouse.discord.roles.verified' => '999']);
+
     $admin = User::factory()->create();
     $target = User::factory()->create([
         'membership_level' => MembershipLevel::Traveler,
@@ -71,13 +74,11 @@ it('syncs discord permissions when released from brig', function () {
     ]);
     $account = DiscordAccount::factory()->brigged()->create(['user_id' => $target->id]);
 
-    $fakeApi = app(DiscordApiService::class);
+    $fakeApi = new FakeDiscordApiService;
+    app()->instance(DiscordApiService::class, $fakeApi);
 
     ReleaseUserFromBrig::run($target, $admin, 'Appeal approved');
 
-    if ($fakeApi instanceof FakeDiscordApiService) {
-        // Should have role add calls from SyncDiscordPermissions
-        $addCalls = collect($fakeApi->calls)->where('method', 'addRole');
-        expect($addCalls->count())->toBeGreaterThanOrEqual(0);
-    }
+    $addCalls = collect($fakeApi->calls)->where('method', 'addRole');
+    expect($addCalls->count())->toBeGreaterThanOrEqual(1);
 });

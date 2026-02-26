@@ -51,7 +51,15 @@ class PromoteUser
         RecordActivity::run($user, 'user_promoted', "Promoted from {$current->label()} to {$nextLevel->label()}.");
 
         SyncMinecraftPermissions::run($user);
-        SyncDiscordPermissions::run($user);
+
+        try {
+            SyncDiscordPermissions::run($user);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Failed to sync Discord permissions during promotion', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         $notificationService = app(TicketNotificationService::class);
 

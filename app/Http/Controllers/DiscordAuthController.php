@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Actions\LinkDiscordAccount;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Laravel\Socialite\Facades\Socialite;
 
 class DiscordAuthController extends Controller
@@ -25,6 +26,8 @@ class DiscordAuthController extends Controller
         try {
             $discordUser = Socialite::driver('discord')->user();
         } catch (\Exception $e) {
+            Log::warning('Discord OAuth callback failed', ['error' => $e->getMessage()]);
+
             return redirect()->route('settings.discord-account')
                 ->with('error', 'Failed to authenticate with Discord. Please try again.');
         }

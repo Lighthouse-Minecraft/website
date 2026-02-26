@@ -194,7 +194,17 @@ new class extends Component {
         }
 
         $account = $this->user->discordAccounts()->findOrFail($accountId);
-        \App\Actions\RevokeDiscordAccount::run($account, Auth::user());
+
+        try {
+            \App\Actions\RevokeDiscordAccount::run($account, Auth::user());
+        } catch (\Exception $e) {
+            Flux::toast(
+                text: 'Failed to revoke Discord account. Please try again.',
+                heading: 'Error',
+                variant: 'danger'
+            );
+            return;
+        }
 
         Flux::toast(
             text: 'Discord account revoked successfully.',

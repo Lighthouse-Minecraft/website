@@ -44,5 +44,6 @@ it('records activity when unlinking', function () {
     UnlinkDiscordAccount::run($account, $user);
 
     expect(\App\Models\ActivityLog::where('subject_id', $user->id)
+        ->where('subject_type', User::class)
         ->where('action', 'discord_account_unlinked')->exists())->toBeTrue();
 });

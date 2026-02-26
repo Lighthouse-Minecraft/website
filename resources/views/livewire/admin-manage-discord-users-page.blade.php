@@ -10,6 +10,11 @@ new class extends Component {
     public string $sortBy = 'username';
     public string $sortDirection = 'asc';
 
+    public function mount(): void
+    {
+        $this->authorize('viewAny', DiscordAccount::class);
+    }
+
     public function sort(string $column): void
     {
         if ($this->sortBy === $column) {
@@ -18,6 +23,8 @@ new class extends Component {
             $this->sortBy = $column;
             $this->sortDirection = 'asc';
         }
+
+        $this->resetPage();
     }
 
     #[\Livewire\Attributes\Computed]

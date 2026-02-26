@@ -22,8 +22,8 @@ enum MembershipLevel: int
     }
 
     /**
-     * The rank name passed to `lh setmember <player> <rank>`.
-     * Returns null for levels below server access threshold (Drifter, Stowaway).
+     * The Discord role ID for this membership level.
+     * Returns null for levels without a Discord role (Drifter, Stowaway).
      */
     public function discordRoleId(): ?string
     {

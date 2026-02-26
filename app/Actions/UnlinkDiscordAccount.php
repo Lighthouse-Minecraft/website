@@ -25,7 +25,7 @@ class UnlinkDiscordAccount
         RecordActivity::run(
             $owner,
             'discord_account_unlinked',
-            "Unlinked Discord account: {$username} ({$discordUserId})"
+            "Unlinked Discord account: {$username} ({$discordUserId}) by {$performedBy->name}"
         );
     }
 }

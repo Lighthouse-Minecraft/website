@@ -11,20 +11,20 @@ new class extends Component {
     public function confirmUnlink(int $accountId): void
     {
         $this->accountToUnlink = $accountId;
-        $this->modal('confirm-unlink-discord')->show();
+        Flux::modal('confirm-unlink-discord')->show();
     }
 
     public function unlinkAccount(): void
     {
         if (! $this->accountToUnlink) {
-            $this->modal('confirm-unlink-discord')->close();
+            Flux::modal('confirm-unlink-discord')->close();
             return;
         }
 
         $account = auth()->user()->discordAccounts()->find($this->accountToUnlink);
 
         if (! $account) {
-            $this->modal('confirm-unlink-discord')->close();
+            Flux::modal('confirm-unlink-discord')->close();
             $this->accountToUnlink = null;
             return;
         }
@@ -33,7 +33,7 @@ new class extends Component {
 
         UnlinkDiscordAccount::run($account, auth()->user());
 
-        $this->modal('confirm-unlink-discord')->close();
+        Flux::modal('confirm-unlink-discord')->close();
         $this->accountToUnlink = null;
 
         Flux::toast('Discord account unlinked successfully.', variant: 'success');

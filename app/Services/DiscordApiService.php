@@ -22,6 +22,7 @@ class DiscordApiService
     public function getGuildMember(string $discordUserId): ?array
     {
         $response = Http::withHeaders($this->botHeaders())
+            ->timeout(5)
             ->get("{$this->baseUrl}/guilds/{$this->guildId}/members/{$discordUserId}");
 
         if ($response->successful()) {
@@ -38,6 +39,7 @@ class DiscordApiService
         }
 
         $response = Http::withHeaders($this->botHeaders())
+            ->timeout(5)
             ->put("{$this->baseUrl}/guilds/{$this->guildId}/members/{$discordUserId}/roles/{$roleId}");
 
         if (! $response->successful()) {
@@ -59,6 +61,7 @@ class DiscordApiService
         }
 
         $response = Http::withHeaders($this->botHeaders())
+            ->timeout(5)
             ->delete("{$this->baseUrl}/guilds/{$this->guildId}/members/{$discordUserId}/roles/{$roleId}");
 
         if (! $response->successful()) {
@@ -76,6 +79,7 @@ class DiscordApiService
     public function sendDirectMessage(string $discordUserId, string $content): bool
     {
         $channelResponse = Http::withHeaders($this->botHeaders())
+            ->timeout(5)
             ->post("{$this->baseUrl}/users/@me/channels", [
                 'recipient_id' => $discordUserId,
             ]);
@@ -92,6 +96,7 @@ class DiscordApiService
         $channelId = $channelResponse->json('id');
 
         $messageResponse = Http::withHeaders($this->botHeaders())
+            ->timeout(5)
             ->post("{$this->baseUrl}/channels/{$channelId}/messages", [
                 'content' => $content,
             ]);
@@ -110,6 +115,10 @@ class DiscordApiService
     public function removeAllManagedRoles(string $discordUserId): void
     {
         $allRoleIds = array_filter(array_values(config('lighthouse.discord.roles', [])));
+
+        if (empty($allRoleIds)) {
+            return;
+        }
 
         foreach ($allRoleIds as $roleId) {
             $this->removeRole($discordUserId, $roleId);

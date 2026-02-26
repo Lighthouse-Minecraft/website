@@ -67,5 +67,6 @@ it('records activity when syncing', function () {
     SyncDiscordRoles::run($user);
 
     expect(\App\Models\ActivityLog::where('subject_id', $user->id)
+        ->where('subject_type', User::class)
         ->where('action', 'discord_roles_synced')->exists())->toBeTrue();
 });

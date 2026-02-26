@@ -215,7 +215,7 @@ class User extends Authenticatable // implements MustVerifyEmail
 
     public function hasDiscordLinked(): bool
     {
-        return $this->discordAccounts()->where('status', 'active')->exists();
+        return $this->discordAccounts()->active()->exists();
     }
 
     public function canSendPushover(): bool

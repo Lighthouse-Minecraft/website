@@ -35,6 +35,7 @@ it('links a discord account to a user', function () {
 });
 
 it('prevents linking when account limit is reached', function () {
+    config(['lighthouse.max_discord_accounts' => 1]);
     $user = User::factory()->create(['membership_level' => MembershipLevel::Traveler]);
     DiscordAccount::factory()->create(['user_id' => $user->id]);
 
@@ -77,5 +78,6 @@ it('records activity when linking', function () {
     ]);
 
     expect(\App\Models\ActivityLog::where('subject_id', $user->id)
+        ->where('subject_type', User::class)
         ->where('action', 'discord_account_linked')->exists())->toBeTrue();
 });

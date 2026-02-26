@@ -23,6 +23,10 @@ class DiscordChannel
             return;
         }
 
+        if (! method_exists($notifiable, 'discordAccounts')) {
+            return;
+        }
+
         $discordApi = app(DiscordApiService::class);
 
         foreach ($notifiable->discordAccounts()->active()->get() as $account) {

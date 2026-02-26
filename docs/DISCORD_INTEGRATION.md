@@ -310,7 +310,7 @@ duplicated in Blade views — use `@can` / policies only.
 
 ### Environment variables (`.env`)
 
-```
+```env
 DISCORD_CLIENT_ID=
 DISCORD_CLIENT_SECRET=
 DISCORD_BOT_TOKEN=
