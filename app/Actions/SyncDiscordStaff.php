@@ -45,11 +45,13 @@ class SyncDiscordStaff
                 $desiredRoleIds[] = $roleId;
             }
         }
-        $staffRank = $user->staff_rank;
-        if ($staffRank !== null && $staffRank !== StaffRank::None) {
-            $roleId = $staffRank->discordRoleId();
-            if ($roleId) {
-                $desiredRoleIds[] = $roleId;
+        if ($department !== null) {
+            $staffRank = $user->staff_rank;
+            if ($staffRank !== null && $staffRank !== StaffRank::None) {
+                $roleId = $staffRank->discordRoleId();
+                if ($roleId) {
+                    $desiredRoleIds[] = $roleId;
+                }
             }
         }
 

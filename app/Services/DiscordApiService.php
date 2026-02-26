@@ -125,7 +125,7 @@ class DiscordApiService
 
         $currentRoles = $member['roles'] ?? [];
         $managedRoleIds = array_filter($managedRoleIds);
-        $desiredRoleIds = array_filter($desiredRoleIds);
+        $desiredRoleIds = array_intersect(array_filter($desiredRoleIds), $managedRoleIds);
 
         // Only look at managed roles the user currently has
         $managedCurrent = array_intersect($currentRoles, $managedRoleIds);
