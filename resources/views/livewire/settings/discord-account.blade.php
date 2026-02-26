@@ -74,12 +74,17 @@ new class extends Component {
         foreach ($accounts as $account) {
             $member = $discordApi->getGuildMember($account->discord_user_id);
             if ($member) {
-                SyncDiscordRoles::run($user);
-                if ($user->staff_department !== null) {
-                    SyncDiscordStaff::run($user, $user->staff_department);
+                try {
+                    SyncDiscordRoles::run($user);
+                    if ($user->staff_department !== null) {
+                        SyncDiscordStaff::run($user, $user->staff_department);
+                    }
+                    Flux::toast('Discord roles synced successfully!', variant: 'success');
+                } catch (\Exception $e) {
+                    report($e);
+                    Flux::toast('Failed to sync Discord roles. Please try again.', variant: 'danger');
                 }
                 $this->awaitingGuildJoin = false;
-                Flux::toast('Discord roles synced successfully!', variant: 'success');
                 return;
             }
         }
@@ -91,12 +96,16 @@ new class extends Component {
     {
         $user = auth()->user();
 
-        SyncDiscordRoles::run($user);
-        if ($user->staff_department !== null) {
-            SyncDiscordStaff::run($user, $user->staff_department);
+        try {
+            SyncDiscordRoles::run($user);
+            if ($user->staff_department !== null) {
+                SyncDiscordStaff::run($user, $user->staff_department);
+            }
+            Flux::toast('Discord roles synced!', variant: 'success');
+        } catch (\Exception $e) {
+            report($e);
+            Flux::toast('Failed to sync Discord roles. Please try again.', variant: 'danger');
         }
-
-        Flux::toast('Discord roles synced!', variant: 'success');
     }
 
     public function with(): array
@@ -149,7 +158,7 @@ new class extends Component {
                                 </flux:text>
                             </div>
                         </div>
-                        @if($account->status === \App\Enums\DiscordAccountStatus::Active)
+                        @if($account->status === DiscordAccountStatus::Active)
                             <div class="flex items-center gap-2">
                                 <flux:button
                                     wire:click="syncRoles"
