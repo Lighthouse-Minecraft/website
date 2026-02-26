@@ -31,7 +31,7 @@ new class extends Component {
      */
     public function mount(User $user) {
         $this->user = $user;
-        $this->user->load('minecraftAccounts');
+        $this->user->load('minecraftAccounts', 'discordAccounts');
         $this->currentDepartment = $user->staff_department?->name ?? 'None';
         $this->currentDepartmentValue = $user->staff_department?->value ?? null;
         $this->currentTitle = $user->staff_title;
@@ -182,6 +182,38 @@ new class extends Component {
         }
     }
 
+    public function revokeDiscordAccount(int $accountId): void
+    {
+        if (! Auth::user()->isAdmin()) {
+            Flux::toast(
+                text: 'You do not have permission to revoke Discord accounts.',
+                heading: 'Error',
+                variant: 'danger'
+            );
+            return;
+        }
+
+        $account = $this->user->discordAccounts()->findOrFail($accountId);
+
+        try {
+            \App\Actions\RevokeDiscordAccount::run($account, Auth::user());
+        } catch (\Exception $e) {
+            Flux::toast(
+                text: 'Failed to revoke Discord account. Please try again.',
+                heading: 'Error',
+                variant: 'danger'
+            );
+            return;
+        }
+
+        Flux::toast(
+            text: 'Discord account revoked successfully.',
+            heading: 'Success',
+            variant: 'success'
+        );
+        $this->user->refresh();
+    }
+
     /**
      * Promotes the component's user to the next membership level.
      *
@@ -306,6 +338,40 @@ new class extends Component {
         return $levels[$currentIndex + 1] ?? null;
     }
 
+    /**
+     * Get the previous MembershipLevel before the user's current level.
+     *
+     * Returns null if the user is at or below Traveler (we don't demote below Traveler).
+     */
+    public function getPreviousMembershipLevelProperty(): ?MembershipLevel
+    {
+        if ($this->user->membership_level->value <= MembershipLevel::Traveler->value) {
+            return null;
+        }
+
+        $levels = MembershipLevel::cases();
+        $currentIndex = array_search($this->user->membership_level, $levels, strict: true);
+        return $levels[$currentIndex - 1] ?? null;
+    }
+
+    public function demoteUser(): void
+    {
+        if (! Auth::user()->can('manage-stowaway-users')) {
+            Flux::toast(text: 'You do not have permission to demote users.', heading: 'Error', variant: 'danger');
+            return;
+        }
+
+        \App\Actions\DemoteUser::run($this->user);
+        $this->user->refresh();
+
+        Flux::modal('profile-demote-confirm-modal')->close();
+        Flux::toast(
+            text: "Demoted to {$this->user->membership_level->label()} successfully.",
+            heading: 'Demoted',
+            variant: 'success'
+        );
+    }
+
 }; ?>
 
 <div>
@@ -354,6 +420,19 @@ new class extends Component {
                             </flux:button>
                         </flux:modal.trigger>
                     @endif
+
+                    @if(! $user->isInBrig() && $this->previousMembershipLevel !== null)
+                        <flux:modal.trigger name="profile-demote-confirm-modal">
+                            <flux:button
+                                size="sm"
+                                variant="ghost"
+                                icon="arrow-down-circle"
+                                class="text-zinc-500 hover:text-red-400"
+                            >
+                                Demote to {{ $this->previousMembershipLevel->label() }}
+                            </flux:button>
+                        </flux:modal.trigger>
+                    @endif
                 </div>
             @endcan
         </flux:card>
@@ -391,8 +470,8 @@ new class extends Component {
         @endcan
     </div>
 
-    <div class="w-full md:w-1/3 mt-6">
-        <flux:card class="p-6">
+    <div class="w-full flex flex-col md:flex-row gap-4 mt-6">
+        <flux:card class="w-full md:w-1/2 lg:w-1/3 p-6">
             <div class="flex items-center mb-4">
                 <flux:heading size="xl">Minecraft Accounts</flux:heading>
                 @if(auth()->id() === $user->id)
@@ -436,6 +515,47 @@ new class extends Component {
                         </flux:button>
                     </div>
                 @endif
+            @endif
+        </flux:card>
+
+        {{-- Discord Accounts Card --}}
+        <flux:card class="w-full md:w-1/2 lg:w-1/3 p-6">
+            <div class="flex items-center mb-4">
+                <flux:heading size="xl">Discord Accounts</flux:heading>
+                @if(auth()->id() === $user->id)
+                    <flux:spacer />
+                    <flux:link href="{{ route('settings.discord-account') }}" class="text-sm text-zinc-400 hover:text-zinc-200">Manage</flux:link>
+                @endif
+            </div>
+
+            @if($user->discordAccounts->isNotEmpty())
+                <div class="flex flex-col gap-2">
+                    @foreach($user->discordAccounts as $discordAccount)
+                        <div wire:key="discord-account-{{ $discordAccount->id }}" class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <img src="{{ $discordAccount->avatarUrl() }}" alt="{{ $discordAccount->username }}" class="w-8 h-8 rounded-full" />
+                                <div>
+                                    <span class="font-semibold">{{ $discordAccount->displayName() }}</span>
+                                    <flux:text class="text-sm text-zinc-500">
+                                        {{ $discordAccount->username }}
+                                        <flux:badge color="{{ $discordAccount->status->color() }}" size="sm" class="ml-1">{{ $discordAccount->status->label() }}</flux:badge>
+                                    </flux:text>
+                                </div>
+                            </div>
+                            @if(Auth::user()->isAdmin())
+                                <flux:button
+                                    wire:click="revokeDiscordAccount({{ $discordAccount->id }})"
+                                    variant="danger"
+                                    size="sm"
+                                    wire:confirm="Are you sure you want to revoke this Discord account from {{ $user->name }}?">
+                                    Revoke
+                                </flux:button>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <flux:text class="text-zinc-500 dark:text-zinc-400 text-sm">No Discord accounts linked.</flux:text>
             @endif
         </flux:card>
     </div>
@@ -514,6 +634,21 @@ new class extends Component {
             <div class="flex gap-2 justify-end">
                 <flux:button variant="ghost" x-on:click="$flux.modal('profile-promote-confirm-modal').close()">Cancel</flux:button>
                 <flux:button wire:click="promoteUser" variant="primary" icon="arrow-up-circle">Confirm Promotion</flux:button>
+            </div>
+        </div>
+    </flux:modal>
+    @endif
+
+    <!-- Demote Confirmation Modal -->
+    @if($this->previousMembershipLevel !== null)
+    <flux:modal name="profile-demote-confirm-modal" class="w-full md:w-1/2 xl:w-1/3">
+        <div class="space-y-6">
+            <flux:heading size="lg">Confirm Demotion</flux:heading>
+            <flux:text>Are you sure you want to demote <strong>{{ $user->name }}</strong> from <strong>{{ $user->membership_level->label() }}</strong> to <strong>{{ $this->previousMembershipLevel->label() }}</strong>?</flux:text>
+            <flux:text variant="subtle">This will sync any applicable Minecraft and Discord ranks.</flux:text>
+            <div class="flex gap-2 justify-end">
+                <flux:button variant="ghost" x-on:click="$flux.modal('profile-demote-confirm-modal').close()">Cancel</flux:button>
+                <flux:button wire:click="demoteUser" variant="danger" icon="arrow-down-circle">Confirm Demotion</flux:button>
             </div>
         </div>
     </flux:modal>

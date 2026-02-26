@@ -54,11 +54,60 @@ class ReleaseUserFromBrig
             }
         }
 
-        SyncMinecraftPermissions::run($target);
+        try {
+            SyncMinecraftRanks::run($target);
+        } catch (\Exception $e) {
+            Log::error('Failed to sync Minecraft ranks on brig release', [
+                'user_id' => $target->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+        if ($target->staff_department !== null) {
+            try {
+                SyncMinecraftStaff::run($target, $target->staff_department);
+            } catch (\Exception $e) {
+                Log::error('Failed to sync Minecraft staff on brig release', [
+                    'user_id' => $target->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        // Restore Discord accounts from brigged to active and re-sync roles
+        foreach ($target->discordAccounts()->where('status', \App\Enums\DiscordAccountStatus::Brigged)->get() as $discordAccount) {
+            try {
+                $discordAccount->status = \App\Enums\DiscordAccountStatus::Active;
+                $discordAccount->save();
+            } catch (\Exception $e) {
+                Log::error('Failed to restore Discord account on brig release', [
+                    'discord_user_id' => $discordAccount->discord_user_id,
+                    'user_id' => $target->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+        try {
+            SyncDiscordRoles::run($target);
+        } catch (\Exception $e) {
+            Log::error('Failed to sync Discord roles on brig release', [
+                'user_id' => $target->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+        if ($target->staff_department !== null) {
+            try {
+                SyncDiscordStaff::run($target, $target->staff_department);
+            } catch (\Exception $e) {
+                Log::error('Failed to sync Discord staff on brig release', [
+                    'user_id' => $target->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
 
         RecordActivity::handle($target, 'user_released_from_brig', "Released from brig by {$admin->name}. Reason: {$reason}");
 
         $notificationService = app(TicketNotificationService::class);
-        $notificationService->send($target, new UserReleasedFromBrigNotification($target));
+        $notificationService->send($target, new UserReleasedFromBrigNotification($target), 'account');
     }
 }

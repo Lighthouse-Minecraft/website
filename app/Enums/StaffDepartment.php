@@ -20,4 +20,15 @@ enum StaffDepartment: string
             self::Steward => 'Steward',
         };
     }
+
+    public function discordRoleId(): ?string
+    {
+        return match ($this) {
+            self::Command => config('lighthouse.discord.roles.staff_command'),
+            self::Chaplain => config('lighthouse.discord.roles.staff_chaplain'),
+            self::Engineer => config('lighthouse.discord.roles.staff_engineer'),
+            self::Quartermaster => config('lighthouse.discord.roles.staff_quartermaster'),
+            self::Steward => config('lighthouse.discord.roles.staff_steward'),
+        };
+    }
 }

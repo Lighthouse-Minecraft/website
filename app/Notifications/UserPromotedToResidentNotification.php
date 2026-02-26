@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\User;
+use App\Notifications\Channels\DiscordChannel;
 use App\Notifications\Channels\PushoverChannel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -61,6 +62,10 @@ class UserPromotedToResidentNotification extends Notification implements ShouldQ
             $channels[] = PushoverChannel::class;
         }
 
+        if (in_array('discord', $this->allowedChannels)) {
+            $channels[] = DiscordChannel::class;
+        }
+
         return $channels;
     }
 
@@ -95,5 +100,10 @@ class UserPromotedToResidentNotification extends Notification implements ShouldQ
             'title' => 'Welcome, Resident '.$this->user->name.'!',
             'message' => "Congratulations! You've been promoted to Resident. Welcome to full server membership!",
         ];
+    }
+
+    public function toDiscord(object $notifiable): string
+    {
+        return "**Welcome, Resident {$this->user->name}!**\nCongratulations! You've been promoted to Resident — a full server member. We're glad you're here!";
     }
 }

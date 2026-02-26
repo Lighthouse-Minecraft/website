@@ -27,6 +27,7 @@ class RemoveUsersStaffPosition
 
         // Remove the MC staff rank for all active Minecraft accounts
         SyncMinecraftStaff::run($user);
+        SyncDiscordStaff::run($user);
 
         return true;
     }

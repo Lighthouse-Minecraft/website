@@ -18,6 +18,7 @@ class AuthServiceProvider extends ServiceProvider
     protected $policies = [
         \App\Models\Thread::class => \App\Policies\ThreadPolicy::class,
         \App\Models\Message::class => \App\Policies\MessagePolicy::class,
+        \App\Models\DiscordAccount::class => \App\Policies\DiscordAccountPolicy::class,
     ];
 
     /**
@@ -69,6 +70,10 @@ class AuthServiceProvider extends ServiceProvider
 
         Gate::define('view-ready-room-steward', function ($user) {
             return $user->hasRole('Admin') || $user->isAtLeastRank(StaffRank::Officer) || ($user->isAtLeastRank(StaffRank::JrCrew) && $user->isInDepartment(StaffDepartment::Steward));
+        });
+
+        Gate::define('link-discord', function ($user) {
+            return $user->isAtLeastLevel(MembershipLevel::Traveler) && ! $user->in_brig;
         });
     }
 }

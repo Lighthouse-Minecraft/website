@@ -4,6 +4,7 @@ use App\Http\Controllers\AdminControlPanelController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\CommunityUpdatesController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DiscordAuthController;
 use App\Http\Controllers\DonationController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\UserController;
@@ -26,6 +27,10 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('settings/appearance', 'settings.appearance')->name('settings.appearance');
     Volt::route('settings/notifications', 'settings.notifications')->name('settings.notifications');
     Volt::route('settings/minecraft-accounts', 'settings.minecraft-accounts')->name('settings.minecraft-accounts');
+    Volt::route('settings/discord-account', 'settings.discord-account')->name('settings.discord-account');
+
+    Route::get('auth/discord/redirect', [DiscordAuthController::class, 'redirect'])->name('auth.discord.redirect');
+    Route::get('auth/discord/callback', [DiscordAuthController::class, 'callback'])->name('auth.discord.callback');
 });
 
 Route::get('/profile/{user}', [UserController::class, 'show'])

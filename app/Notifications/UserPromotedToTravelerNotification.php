@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\User;
+use App\Notifications\Channels\DiscordChannel;
 use App\Notifications\Channels\PushoverChannel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -61,6 +62,10 @@ class UserPromotedToTravelerNotification extends Notification implements ShouldQ
             $channels[] = PushoverChannel::class;
         }
 
+        if (in_array('discord', $this->allowedChannels)) {
+            $channels[] = DiscordChannel::class;
+        }
+
         return $channels;
     }
 
@@ -92,5 +97,10 @@ class UserPromotedToTravelerNotification extends Notification implements ShouldQ
             'message' => "You've been promoted to Traveler! Set up your Minecraft account to join the server.",
             'url' => url(route('settings.minecraft-accounts')),
         ];
+    }
+
+    public function toDiscord(object $notifiable): string
+    {
+        return "**Welcome to Traveler Status!**\nCongratulations, {$this->user->name}! You've been promoted to Traveler. You can now set up your Minecraft account and link your Discord.\n".url(route('settings.minecraft-accounts'));
     }
 }

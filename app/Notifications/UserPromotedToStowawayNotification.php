@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\User;
+use App\Notifications\Channels\DiscordChannel;
 use App\Notifications\Channels\PushoverChannel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -60,6 +61,10 @@ class UserPromotedToStowawayNotification extends Notification implements ShouldQ
             $channels[] = PushoverChannel::class;
         }
 
+        if (in_array('discord', $this->allowedChannels)) {
+            $channels[] = DiscordChannel::class;
+        }
+
         return $channels;
     }
 
@@ -100,5 +105,10 @@ class UserPromotedToStowawayNotification extends Notification implements ShouldQ
             'message' => $this->newStowaway->name.' has agreed to the rules and is awaiting review.',
             'url' => url(route('profile.show', $this->newStowaway)),
         ];
+    }
+
+    public function toDiscord(object $notifiable): string
+    {
+        return "**New Stowaway User:** {$this->newStowaway->name}\nThey have agreed to the rules and are awaiting review.\n".url(route('profile.show', $this->newStowaway));
     }
 }

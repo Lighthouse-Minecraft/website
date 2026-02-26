@@ -46,4 +46,13 @@ return [
         'verification_token' => env('MINECRAFT_VERIFICATION_TOKEN'),
     ],
 
+    'discord' => [
+        'client_id' => env('DISCORD_CLIENT_ID'),
+        'client_secret' => env('DISCORD_CLIENT_SECRET'),
+        'redirect' => env('DISCORD_REDIRECT_URI', '/auth/discord/callback'),
+        'bot_token' => env('DISCORD_BOT_TOKEN'),
+        'guild_id' => env('DISCORD_GUILD_ID'),
+        'invite_url' => env('DISCORD_INVITE_URL'),
+    ],
+
 ];
