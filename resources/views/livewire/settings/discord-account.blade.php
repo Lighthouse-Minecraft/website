@@ -48,6 +48,7 @@ new class extends Component {
             'linkedAccounts' => $linkedAccounts,
             'maxAccounts' => $maxAccounts,
             'remainingSlots' => $maxAccounts - $linkedAccounts->count(),
+            'inviteUrl' => config('services.discord.invite_url'),
         ];
     }
 }; ?>
@@ -111,6 +112,21 @@ new class extends Component {
         <flux:callout variant="warning">
             You have reached the maximum of {{ $maxAccounts }} linked Discord account{{ $maxAccounts !== 1 ? 's' : '' }}. Unlink an account to link a new one.
         </flux:callout>
+    @endif
+
+    {{-- Discord Server Invite --}}
+    @if($inviteUrl)
+        <flux:card class="p-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <flux:heading size="lg">Join Our Discord Server</flux:heading>
+                    <flux:text class="text-sm text-zinc-500">Join the community server before linking your account.</flux:text>
+                </div>
+                <a href="{{ $inviteUrl }}" target="_blank" rel="noopener noreferrer">
+                    <flux:button variant="primary" size="sm">Join Server</flux:button>
+                </a>
+            </div>
+        </flux:card>
     @endif
 
     {{-- Link Button --}}
