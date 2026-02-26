@@ -133,7 +133,7 @@ new class extends Component
 
             <flux:field class="mt-4">
                 <flux:label>Pushover User Key</flux:label>
-                <flux:input wire:model="pushover_key" type="text" placeholder="Enter your Pushover user key" />
+                <flux:input wire:model.live="pushover_key" type="text" placeholder="Enter your Pushover user key" />
             </flux:field>
         </flux:fieldset>
 
