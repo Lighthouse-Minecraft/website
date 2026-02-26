@@ -10,7 +10,7 @@ class Task extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'assigned_meeting_id', 'section_key', 'status', 'created_by', 'completed_by', 'completed_at', 'completed_meeting_id', 'archived_at', 'archived_meeting_id'];
+    protected $fillable = ['name', 'assigned_meeting_id', 'section_key', 'status', 'created_by', 'completed_by', 'completed_at', 'completed_meeting_id', 'archived_at', 'archived_meeting_id', 'assigned_to_user_id'];
 
     protected $casts = [
         'status' => TaskStatus::class,
@@ -36,5 +36,10 @@ class Task extends Model
     public function assignedMeeting()
     {
         return $this->belongsTo(Meeting::class, 'assigned_meeting_id');
+    }
+
+    public function assignedTo()
+    {
+        return $this->belongsTo(User::class, 'assigned_to_user_id');
     }
 }

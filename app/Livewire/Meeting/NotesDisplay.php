@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Meeting;
 
+use App\Enums\MeetingStatus;
 use App\Models\Meeting;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -26,6 +27,7 @@ class NotesDisplay extends Component
                 ->where('section_key', $this->sectionKey)
                 ->with('createdBy'),
         ])
+            ->where('status', MeetingStatus::Completed)
             ->orderBy('scheduled_time', 'desc')
             ->paginate($this->perPage);
     }
