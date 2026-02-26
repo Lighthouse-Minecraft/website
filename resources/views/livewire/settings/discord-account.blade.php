@@ -1,12 +1,18 @@
 <?php
 
+use App\Actions\SyncDiscordRoles;
+use App\Actions\SyncDiscordStaff;
 use App\Actions\UnlinkDiscordAccount;
+use App\Enums\DiscordAccountStatus;
 use App\Models\DiscordAccount;
+use App\Services\DiscordApiService;
 use Flux\Flux;
 use Livewire\Volt\Component;
 
 new class extends Component {
     public ?int $accountToUnlink = null;
+
+    public bool $awaitingGuildJoin = false;
 
     public function confirmUnlink(int $accountId): void
     {
@@ -37,6 +43,60 @@ new class extends Component {
         $this->accountToUnlink = null;
 
         Flux::toast('Discord account unlinked successfully.', variant: 'success');
+    }
+
+    public function joinServerClicked(): void
+    {
+        $hasLinkedAccounts = auth()->user()
+            ->discordAccounts()
+            ->where('status', DiscordAccountStatus::Active)
+            ->exists();
+
+        if ($hasLinkedAccounts) {
+            $this->awaitingGuildJoin = true;
+        }
+    }
+
+    public function checkGuildMembership(): void
+    {
+        $user = auth()->user();
+        $accounts = $user->discordAccounts()
+            ->where('status', DiscordAccountStatus::Active)
+            ->get();
+
+        if ($accounts->isEmpty()) {
+            $this->awaitingGuildJoin = false;
+            return;
+        }
+
+        $discordApi = app(DiscordApiService::class);
+
+        foreach ($accounts as $account) {
+            $member = $discordApi->getGuildMember($account->discord_user_id);
+            if ($member) {
+                SyncDiscordRoles::run($user);
+                if ($user->staff_department !== null) {
+                    SyncDiscordStaff::run($user, $user->staff_department);
+                }
+                $this->awaitingGuildJoin = false;
+                Flux::toast('Discord roles synced successfully!', variant: 'success');
+                return;
+            }
+        }
+
+        // User hasn't joined yet — the next scheduled check will try again
+    }
+
+    public function syncRoles(): void
+    {
+        $user = auth()->user();
+
+        SyncDiscordRoles::run($user);
+        if ($user->staff_department !== null) {
+            SyncDiscordStaff::run($user, $user->staff_department);
+        }
+
+        Flux::toast('Discord roles synced!', variant: 'success');
     }
 
     public function with(): array
@@ -90,12 +150,20 @@ new class extends Component {
                             </div>
                         </div>
                         @if($account->status === \App\Enums\DiscordAccountStatus::Active)
-                            <flux:button
-                                wire:click="confirmUnlink({{ $account->id }})"
-                                variant="danger"
-                                size="sm">
-                                Unlink
-                            </flux:button>
+                            <div class="flex items-center gap-2">
+                                <flux:button
+                                    wire:click="syncRoles"
+                                    variant="ghost"
+                                    size="sm">
+                                    Sync Roles
+                                </flux:button>
+                                <flux:button
+                                    wire:click="confirmUnlink({{ $account->id }})"
+                                    variant="danger"
+                                    size="sm">
+                                    Unlink
+                                </flux:button>
+                            </div>
                         @endif
                     </div>
                 </flux:card>
@@ -120,11 +188,21 @@ new class extends Component {
             <div class="flex items-center justify-between">
                 <div>
                     <flux:heading size="lg">Join Our Discord Server</flux:heading>
-                    <flux:text class="text-sm text-zinc-500">Join the community server before linking your account.</flux:text>
+                    <flux:text class="text-sm text-zinc-500">Join the community server to get your roles synced.</flux:text>
                 </div>
-                <a href="{{ $inviteUrl }}" target="_blank" rel="noopener noreferrer">
-                    <flux:button variant="primary" size="sm">Join Server</flux:button>
-                </a>
+                <div class="flex items-center gap-3">
+                    @if($awaitingGuildJoin)
+                        <flux:text class="text-sm text-zinc-500 animate-pulse">Checking for join...</flux:text>
+                    @endif
+                    <a href="{{ $inviteUrl }}" target="_blank" rel="noopener noreferrer"
+                       x-on:click="
+                           $wire.joinServerClicked();
+                           setTimeout(() => $wire.checkGuildMembership(), 10000);
+                           setTimeout(() => $wire.checkGuildMembership(), 30000);
+                       ">
+                        <flux:button variant="primary" size="sm">Join Server</flux:button>
+                    </a>
+                </div>
             </div>
         </flux:card>
     @endif
