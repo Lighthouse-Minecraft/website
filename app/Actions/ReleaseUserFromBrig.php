@@ -54,9 +54,23 @@ class ReleaseUserFromBrig
             }
         }
 
-        SyncMinecraftRanks::run($target);
+        try {
+            SyncMinecraftRanks::run($target);
+        } catch (\Exception $e) {
+            Log::error('Failed to sync Minecraft ranks on brig release', [
+                'user_id' => $target->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
         if ($target->staff_department !== null) {
-            SyncMinecraftStaff::run($target, $target->staff_department);
+            try {
+                SyncMinecraftStaff::run($target, $target->staff_department);
+            } catch (\Exception $e) {
+                Log::error('Failed to sync Minecraft staff on brig release', [
+                    'user_id' => $target->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
 
         // Restore Discord accounts from brigged to active and re-sync roles
