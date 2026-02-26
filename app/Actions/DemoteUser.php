@@ -32,7 +32,7 @@ class DemoteUser
 
         RecordActivity::handle($user, 'user_demoted', "Demoted from {$current->label()} to {$previousLevel->label()}.");
 
-        SyncMinecraftPermissions::run($user);
-        SyncDiscordPermissions::run($user);
+        SyncMinecraftRanks::run($user);
+        SyncDiscordRoles::run($user);
     }
 }

@@ -54,7 +54,10 @@ class ReleaseUserFromBrig
             }
         }
 
-        SyncMinecraftPermissions::run($target);
+        SyncMinecraftRanks::run($target);
+        if ($target->staff_department !== null) {
+            SyncMinecraftStaff::run($target, $target->staff_department);
+        }
 
         // Restore Discord accounts from brigged to active and re-sync roles
         foreach ($target->discordAccounts()->where('status', \App\Enums\DiscordAccountStatus::Brigged)->get() as $discordAccount) {
@@ -69,7 +72,10 @@ class ReleaseUserFromBrig
                 ]);
             }
         }
-        SyncDiscordPermissions::run($target);
+        SyncDiscordRoles::run($target);
+        if ($target->staff_department !== null) {
+            SyncDiscordStaff::run($target, $target->staff_department);
+        }
 
         RecordActivity::handle($target, 'user_released_from_brig', "Released from brig by {$admin->name}. Reason: {$reason}");
 

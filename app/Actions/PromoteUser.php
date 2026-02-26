@@ -50,12 +50,12 @@ class PromoteUser
 
         RecordActivity::run($user, 'user_promoted', "Promoted from {$current->label()} to {$nextLevel->label()}.");
 
-        SyncMinecraftPermissions::run($user);
+        SyncMinecraftRanks::run($user);
 
         try {
-            SyncDiscordPermissions::run($user);
+            SyncDiscordRoles::run($user);
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::warning('Failed to sync Discord permissions during promotion', [
+            \Illuminate\Support\Facades\Log::warning('Failed to sync Discord roles during promotion', [
                 'user_id' => $user->id,
                 'error' => $e->getMessage(),
             ]);

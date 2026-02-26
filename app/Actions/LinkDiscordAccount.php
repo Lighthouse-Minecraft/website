@@ -41,8 +41,13 @@ class LinkDiscordAccount
             'verified_at' => Carbon::now(),
         ]);
 
-        // Sync all Discord roles for this user
-        SyncDiscordPermissions::run($user);
+        // Sync Discord membership roles for this user
+        SyncDiscordRoles::run($user);
+
+        // Sync staff roles only if the user is actually staff
+        if ($user->staff_department !== null) {
+            SyncDiscordStaff::run($user, $user->staff_department);
+        }
 
         RecordActivity::run(
             $user,
