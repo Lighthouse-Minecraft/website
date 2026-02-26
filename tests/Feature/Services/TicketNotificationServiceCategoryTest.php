@@ -5,7 +5,9 @@ declare(strict_types=1);
 use App\Enums\EmailDigestFrequency;
 use App\Models\DiscordAccount;
 use App\Models\User;
+use App\Notifications\UserReleasedFromBrigNotification;
 use App\Services\TicketNotificationService;
+use Illuminate\Support\Facades\Notification;
 
 uses()->group('notifications');
 
@@ -114,18 +116,18 @@ it('includes pushover for account category when user has key and preference enab
 });
 
 it('sends to multiple users with category parameter', function () {
-    Illuminate\Support\Facades\Notification::fake();
+    Notification::fake();
 
     $users = User::factory()->count(2)->create([
         'email_digest_frequency' => EmailDigestFrequency::Immediate,
         'notification_preferences' => ['account' => ['email' => true, 'pushover' => false, 'discord' => false]],
     ]);
 
-    $notification = new App\Notifications\UserReleasedFromBrigNotification($users->first());
+    $notification = new UserReleasedFromBrigNotification($users->first());
 
     $service = new TicketNotificationService;
     $service->sendToMany($users, $notification, 'account');
 
-    Illuminate\Support\Facades\Notification::assertSentTo($users->first(), App\Notifications\UserReleasedFromBrigNotification::class);
-    Illuminate\Support\Facades\Notification::assertSentTo($users->last(), App\Notifications\UserReleasedFromBrigNotification::class);
+    Notification::assertSentTo($users->first(), UserReleasedFromBrigNotification::class);
+    Notification::assertSentTo($users->last(), UserReleasedFromBrigNotification::class);
 });
