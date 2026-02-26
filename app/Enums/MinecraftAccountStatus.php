@@ -8,6 +8,7 @@ enum MinecraftAccountStatus: string
     case Active = 'active';
     case Cancelled = 'cancelled';
     case Banned = 'banned';
+    case Removed = 'removed';
 
     /**
      * Get a human-readable label for the enum case.
@@ -21,6 +22,7 @@ enum MinecraftAccountStatus: string
             self::Active => 'Active',
             self::Cancelled => 'Cancelled',
             self::Banned => 'Banned',
+            self::Removed => 'Removed',
         };
     }
 
@@ -36,6 +38,7 @@ enum MinecraftAccountStatus: string
             self::Active => 'green',
             self::Cancelled => 'red',
             self::Banned => 'orange',
+            self::Removed => 'zinc',
         };
     }
 }

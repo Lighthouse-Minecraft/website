@@ -20,7 +20,7 @@ it('regular user cannot view any minecraft accounts', function () {
     expect($user->can('viewAny', MinecraftAccount::class))->toBeFalse();
 });
 
-// === view / create / update / restore / forceDelete always return false ===
+// === view / create / update / restore always return false ===
 
 it('always returns false through policy', function (string $action, bool $needsAccount) {
     $policy = new MinecraftAccountPolicy;
@@ -35,7 +35,6 @@ it('always returns false through policy', function (string $action, bool $needsA
     'create' => ['create', false],
     'update' => ['update', true],
     'restore' => ['restore', true],
-    'forceDelete' => ['forceDelete', true],
 ]);
 
 // === delete ===
@@ -61,4 +60,46 @@ it('other user cannot delete someone elses minecraft account', function () {
     $account = MinecraftAccount::factory()->create(['user_id' => $owner->id]);
 
     expect($user->can('delete', $account))->toBeFalse();
+});
+
+// === reactivate ===
+
+it('user can reactivate their own minecraft account', function () {
+    $user = User::factory()->create();
+    $account = MinecraftAccount::factory()->removed()->create(['user_id' => $user->id]);
+
+    expect($user->can('reactivate', $account))->toBeTrue();
+});
+
+it('admin can reactivate any minecraft account', function () {
+    $admin = loginAsAdmin();
+    $owner = User::factory()->create();
+    $account = MinecraftAccount::factory()->removed()->create(['user_id' => $owner->id]);
+
+    expect($admin->can('reactivate', $account))->toBeTrue();
+});
+
+it('other user cannot reactivate someone elses minecraft account', function () {
+    $user = membershipTraveler();
+    $owner = User::factory()->create();
+    $account = MinecraftAccount::factory()->removed()->create(['user_id' => $owner->id]);
+
+    expect($user->can('reactivate', $account))->toBeFalse();
+});
+
+// === forceDelete ===
+
+it('admin can force delete a minecraft account', function () {
+    $admin = loginAsAdmin();
+    $owner = User::factory()->create();
+    $account = MinecraftAccount::factory()->removed()->create(['user_id' => $owner->id]);
+
+    expect($admin->can('forceDelete', $account))->toBeTrue();
+});
+
+it('regular user cannot force delete a minecraft account', function () {
+    $user = membershipTraveler();
+    $account = MinecraftAccount::factory()->removed()->create(['user_id' => $user->id]);
+
+    expect($user->can('forceDelete', $account))->toBeFalse();
 });

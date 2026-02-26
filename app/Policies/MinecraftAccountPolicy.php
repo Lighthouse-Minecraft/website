@@ -49,6 +49,14 @@ class MinecraftAccountPolicy
     }
 
     /**
+     * Determine whether the user can reactivate a removed account.
+     */
+    public function reactivate(User $user, MinecraftAccount $minecraftAccount): bool
+    {
+        return $user->id === $minecraftAccount->user_id || $user->isAdmin();
+    }
+
+    /**
      * Determine whether the user can restore the model.
      */
     public function restore(User $user, MinecraftAccount $minecraftAccount): bool
@@ -61,6 +69,6 @@ class MinecraftAccountPolicy
      */
     public function forceDelete(User $user, MinecraftAccount $minecraftAccount): bool
     {
-        return false;
+        return $user->isAdmin();
     }
 }

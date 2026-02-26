@@ -182,6 +182,50 @@ new class extends Component {
         }
     }
 
+    public function reactivateMinecraftAccount(int $accountId): void
+    {
+        if (! Auth::user()->isAdmin()) {
+            Flux::toast(
+                text: 'You do not have permission to reactivate Minecraft accounts.',
+                heading: 'Error',
+                variant: 'danger'
+            );
+            return;
+        }
+
+        $account = $this->user->minecraftAccounts()->findOrFail($accountId);
+        $result = \App\Actions\ReactivateMinecraftAccount::run($account, Auth::user());
+
+        if ($result['success']) {
+            Flux::toast(text: $result['message'], heading: 'Success', variant: 'success');
+            $this->user->refresh();
+        } else {
+            Flux::toast(text: $result['message'], heading: 'Error', variant: 'danger');
+        }
+    }
+
+    public function forceDeleteMinecraftAccount(int $accountId): void
+    {
+        if (! Auth::user()->isAdmin()) {
+            Flux::toast(
+                text: 'You do not have permission to permanently delete Minecraft accounts.',
+                heading: 'Error',
+                variant: 'danger'
+            );
+            return;
+        }
+
+        $account = $this->user->minecraftAccounts()->findOrFail($accountId);
+        $result = \App\Actions\ForceDeleteMinecraftAccount::run($account, Auth::user());
+
+        if ($result['success']) {
+            Flux::toast(text: $result['message'], heading: 'Success', variant: 'success');
+            $this->user->refresh();
+        } else {
+            Flux::toast(text: $result['message'], heading: 'Error', variant: 'danger');
+        }
+    }
+
     public function revokeDiscordAccount(int $accountId): void
     {
         if (! Auth::user()->isAdmin()) {
@@ -480,27 +524,56 @@ new class extends Component {
                 @endif
             </div>
 
-            @if($user->minecraftAccounts->isNotEmpty())
+            @php
+                $visibleAccounts = Auth::user()->isAdmin()
+                    ? $user->minecraftAccounts
+                    : $user->minecraftAccounts->filter(fn ($a) => $a->status !== \App\Enums\MinecraftAccountStatus::Removed);
+            @endphp
+            @if($visibleAccounts->isNotEmpty())
                 <div class="flex flex-col gap-2">
-                    @foreach($user->minecraftAccounts as $account)
+                    @foreach($visibleAccounts as $account)
                         <div wire:key="minecraft-account-{{ $account->id }}" class="flex items-center justify-between">
                             <div class="flex items-center gap-3">
                                 @if($account->avatar_url)
-                                    <img src="{{ $account->avatar_url }}" alt="{{ $account->username }}" class="w-8 h-8 rounded" />
+                                    <img src="{{ $account->avatar_url }}" alt="{{ $account->username }}" class="w-8 h-8 rounded {{ $account->status === \App\Enums\MinecraftAccountStatus::Removed ? 'grayscale opacity-75' : '' }}" />
                                 @endif
                                 <div>
-                                    <button wire:click="showAccount({{ $account->id }})" class="font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">{{ $account->username }}</button>
+                                    <div class="flex items-center gap-2">
+                                        <button wire:click="showAccount({{ $account->id }})" class="font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">{{ $account->username }}</button>
+                                        <flux:badge color="{{ $account->status->color() }}" size="sm">{{ $account->status->label() }}</flux:badge>
+                                    </div>
                                     <flux:text class="text-sm text-zinc-500">{{ $account->account_type->label() }}</flux:text>
                                 </div>
                             </div>
                             @if(Auth::user()->isAdmin())
-                                <flux:button
-                                    wire:click="revokeMinecraftAccount({{ $account->id }})"
-                                    variant="danger"
-                                    size="sm"
-                                    wire:confirm="Are you sure you want to revoke this Minecraft account from {{ $user->name }}?">
-                                    Revoke
-                                </flux:button>
+                                @if($account->status === \App\Enums\MinecraftAccountStatus::Removed)
+                                    <div class="flex gap-1">
+                                        <flux:button
+                                            wire:click="reactivateMinecraftAccount({{ $account->id }})"
+                                            variant="primary"
+                                            size="sm"
+                                            wire:confirm="Reactivate this Minecraft account for {{ $user->name }}? It will be re-whitelisted.">
+                                            Reactivate
+                                        </flux:button>
+                                        <flux:button
+                                            wire:click="forceDeleteMinecraftAccount({{ $account->id }})"
+                                            variant="ghost"
+                                            size="sm"
+                                            class="hover:!text-red-600 dark:hover:!text-red-400 hover:!bg-red-50 dark:hover:!bg-red-950"
+                                            wire:confirm="PERMANENTLY delete this Minecraft account? This will release the UUID so it can be registered by anyone. This action cannot be undone.">
+                                            Delete
+                                        </flux:button>
+                                    </div>
+                                @elseif($account->status !== \App\Enums\MinecraftAccountStatus::Cancelled)
+                                    <flux:button
+                                        wire:click="revokeMinecraftAccount({{ $account->id }})"
+                                        variant="ghost"
+                                        size="sm"
+                                        class="hover:!text-red-600 dark:hover:!text-red-400 hover:!bg-red-50 dark:hover:!bg-red-950"
+                                        wire:confirm="Are you sure you want to revoke this Minecraft account from {{ $user->name }}?">
+                                        Revoke
+                                    </flux:button>
+                                @endif
                             @endif
                         </div>
                     @endforeach

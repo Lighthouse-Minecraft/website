@@ -68,6 +68,24 @@ class MinecraftAccount extends Model
         $query->where('status', MinecraftAccountStatus::Cancelled);
     }
 
+    public function scopeRemoved(Builder $query): void
+    {
+        $query->where('status', MinecraftAccountStatus::Removed);
+    }
+
+    /**
+     * Accounts that count toward the user's max-account limit.
+     * Active, Verifying, and Banned count. Removed and Cancelled do not.
+     */
+    public function scopeCountingTowardLimit(Builder $query): void
+    {
+        $query->whereIn('status', [
+            MinecraftAccountStatus::Active,
+            MinecraftAccountStatus::Verifying,
+            MinecraftAccountStatus::Banned,
+        ]);
+    }
+
     // ─── RCON Command Helpers ─────────────────────────────────────────────────
 
     /**

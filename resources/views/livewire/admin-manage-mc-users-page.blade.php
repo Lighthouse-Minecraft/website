@@ -2,6 +2,8 @@
 
 use App\Enums\MinecraftAccountType;
 use App\Models\MinecraftAccount;
+use Flux\Flux;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Livewire\Volt\Component;
 use Livewire\WithPagination;
@@ -58,6 +60,38 @@ new class extends Component {
         }
     }
 
+    public function reactivateMinecraftAccount(int $accountId): void
+    {
+        $this->authorize('viewAny', MinecraftAccount::class);
+
+        $account = MinecraftAccount::findOrFail($accountId);
+        $result = \App\Actions\ReactivateMinecraftAccount::run($account, Auth::user());
+
+        if ($result['success']) {
+            Flux::toast($result['message'], variant: 'success');
+            $this->selectedAccount = null;
+            $this->modal('mc-account-detail')->close();
+        } else {
+            Flux::toast($result['message'], variant: 'danger');
+        }
+    }
+
+    public function forceDeleteMinecraftAccount(int $accountId): void
+    {
+        $this->authorize('viewAny', MinecraftAccount::class);
+
+        $account = MinecraftAccount::findOrFail($accountId);
+        $result = \App\Actions\ForceDeleteMinecraftAccount::run($account, Auth::user());
+
+        if ($result['success']) {
+            Flux::toast($result['message'], variant: 'success');
+            $this->selectedAccount = null;
+            $this->modal('mc-account-detail')->close();
+        } else {
+            Flux::toast($result['message'], variant: 'danger');
+        }
+    }
+
     /**
      * Retrieve a paginated list of MinecraftAccount records joined with their user name,
      * filtered by the search term and ordered according to the component's current sort column and direction.
@@ -70,6 +104,7 @@ new class extends Component {
         $sortColumn = match ($this->sortBy) {
             'user_name' => 'users.name',
             'account_type' => 'minecraft_accounts.account_type',
+            'status' => 'minecraft_accounts.status',
             'uuid' => 'minecraft_accounts.uuid',
             'verified_at' => 'minecraft_accounts.verified_at',
             default => 'minecraft_accounts.username',
@@ -100,6 +135,7 @@ new class extends Component {
             <flux:table.column sortable :sorted="$sortBy === 'username'" :direction="$sortDirection" wire:click="sort('username')">MC Username</flux:table.column>
             <flux:table.column sortable :sorted="$sortBy === 'user_name'" :direction="$sortDirection" wire:click="sort('user_name')">User</flux:table.column>
             <flux:table.column sortable :sorted="$sortBy === 'account_type'" :direction="$sortDirection" wire:click="sort('account_type')">Type</flux:table.column>
+            <flux:table.column sortable :sorted="$sortBy === 'status'" :direction="$sortDirection" wire:click="sort('status')">Status</flux:table.column>
             <flux:table.column sortable :sorted="$sortBy === 'uuid'" :direction="$sortDirection" wire:click="sort('uuid')">UUID</flux:table.column>
             <flux:table.column sortable :sorted="$sortBy === 'verified_at'" :direction="$sortDirection" wire:click="sort('verified_at')">Date Verified</flux:table.column>
         </flux:table.columns>
@@ -124,6 +160,12 @@ new class extends Component {
                     <flux:table.cell class="whitespace-nowrap">
                         <flux:badge variant="pill" size="sm" color="{{ $account->account_type === MinecraftAccountType::Java ? 'green' : 'blue' }}">
                             {{ $account->account_type->label() }}
+                        </flux:badge>
+                    </flux:table.cell>
+
+                    <flux:table.cell class="whitespace-nowrap">
+                        <flux:badge size="sm" color="{{ $account->status->color() }}">
+                            {{ $account->status->label() }}
                         </flux:badge>
                     </flux:table.cell>
 

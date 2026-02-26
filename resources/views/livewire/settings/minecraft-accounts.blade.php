@@ -3,6 +3,7 @@
 use App\Actions\CompleteVerification;
 use App\Actions\ExpireVerification;
 use App\Actions\GenerateVerificationCode;
+use App\Actions\ReactivateMinecraftAccount;
 use App\Actions\UnlinkMinecraftAccount;
 use App\Enums\MinecraftAccountStatus;
 use App\Enums\MinecraftAccountType;
@@ -25,6 +26,8 @@ new class extends Component {
     public ?string $errorMessage = null;
 
     public ?int $accountToUnlink = null;
+
+    public ?int $accountToReactivate = null;
 
     /**
      * Load the authenticated user's Minecraft account by ID and open its detail modal if found.
@@ -264,15 +267,60 @@ new class extends Component {
         }
     }
 
+    public function confirmReactivate(int $accountId): void
+    {
+        $this->accountToReactivate = $accountId;
+        $this->modal('confirm-reactivate')->show();
+    }
+
+    public function reactivateAccount(): void
+    {
+        if (! $this->accountToReactivate) {
+            $this->modal('confirm-reactivate')->close();
+            return;
+        }
+
+        $account = auth()->user()->minecraftAccounts()->find($this->accountToReactivate);
+
+        if (! $account) {
+            $this->modal('confirm-reactivate')->close();
+            $this->accountToReactivate = null;
+            return;
+        }
+
+        $this->authorize('reactivate', $account);
+
+        $result = ReactivateMinecraftAccount::run($account, auth()->user());
+
+        $this->modal('confirm-reactivate')->close();
+        $this->accountToReactivate = null;
+
+        if ($result['success']) {
+            Flux::toast($result['message'], variant: 'success');
+        } else {
+            Flux::toast($result['message'], variant: 'danger');
+        }
+    }
+
     public function with(): array
     {
         $maxAccounts = config('lighthouse.max_minecraft_accounts');
         $linkedAccounts = auth()->user()->fresh()->minecraftAccounts;
+        $countingStatuses = [
+            \App\Enums\MinecraftAccountStatus::Active,
+            \App\Enums\MinecraftAccountStatus::Verifying,
+            \App\Enums\MinecraftAccountStatus::Banned,
+        ];
+        $countingAccounts = $linkedAccounts->filter(fn ($a) => in_array($a->status, $countingStatuses))->count();
+
+        $activeAccounts = $linkedAccounts->filter(fn ($a) => $a->status !== \App\Enums\MinecraftAccountStatus::Removed);
+        $archivedAccounts = $linkedAccounts->filter(fn ($a) => $a->status === \App\Enums\MinecraftAccountStatus::Removed);
 
         return [
-            'linkedAccounts' => $linkedAccounts,
+            'linkedAccounts' => $activeAccounts,
+            'archivedAccounts' => $archivedAccounts,
             'maxAccounts' => $maxAccounts,
-            'remainingSlots' => $maxAccounts - $linkedAccounts->count(),
+            'remainingSlots' => $maxAccounts - $countingAccounts,
         ];
     }
 }; ?>
@@ -314,7 +362,7 @@ new class extends Component {
                                 size="sm">
                                 Remove
                             </flux:button>
-                        @else
+                        @elseif($account->status === \App\Enums\MinecraftAccountStatus::Verifying)
                             <flux:modal.trigger name="confirm-cancel-verification">
                                 <flux:button
                                     variant="danger"
@@ -459,6 +507,46 @@ new class extends Component {
             </form>
         </flux:card>
     @endif
+    {{-- Archived Accounts --}}
+    @if($archivedAccounts->isNotEmpty())
+        <div class="flex flex-col gap-3">
+            <flux:heading size="lg">Archived Accounts</flux:heading>
+            <flux:text class="text-sm text-zinc-500 dark:text-zinc-400">These accounts have been removed from the server but their history is preserved.</flux:text>
+
+            @foreach($archivedAccounts as $account)
+                <flux:card wire:key="archived-account-{{ $account->id }}" class="p-4 opacity-75">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            @if($account->avatar_url)
+                                <img src="{{ $account->avatar_url }}" alt="{{ $account->username }}" class="w-8 h-8 rounded grayscale" />
+                            @endif
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <button wire:click="showAccount({{ $account->id }})" class="font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">{{ $account->username }}</button>
+                                    <flux:badge color="zinc" size="sm">Removed</flux:badge>
+                                </div>
+                                <flux:text class="text-sm text-zinc-500">
+                                    {{ $account->account_type->label() }}
+                                    @if($account->verified_at)
+                                        • Originally verified {{ $account->verified_at->diffForHumans() }}
+                                    @endif
+                                </flux:text>
+                            </div>
+                        </div>
+                        @if($remainingSlots > 0 && !auth()->user()->isInBrig())
+                            <flux:button
+                                wire:click="confirmReactivate({{ $account->id }})"
+                                variant="primary"
+                                size="sm">
+                                Reactivate
+                            </flux:button>
+                        @endif
+                    </div>
+                </flux:card>
+            @endforeach
+        </div>
+    @endif
+
     <x-minecraft.mc-account-detail-modal :account="$selectedAccount" />
 
     {{-- Remove account confirmation modal --}}
@@ -473,6 +561,21 @@ new class extends Component {
                 <flux:button variant="ghost">Cancel</flux:button>
             </flux:modal.close>
             <flux:button variant="danger" wire:click="unlinkAccount">Remove Account</flux:button>
+        </div>
+    </flux:modal>
+
+    {{-- Reactivate account confirmation modal --}}
+    <flux:modal name="confirm-reactivate" class="min-w-[22rem] space-y-6">
+        <div>
+            <flux:heading size="lg">Reactivate Minecraft Account</flux:heading>
+            <flux:text class="mt-2">Are you sure you want to reactivate this account? It will be re-added to the server whitelist and your rank will be synced.</flux:text>
+        </div>
+
+        <div class="flex gap-2 justify-end">
+            <flux:modal.close>
+                <flux:button variant="ghost">Cancel</flux:button>
+            </flux:modal.close>
+            <flux:button variant="primary" wire:click="reactivateAccount">Reactivate Account</flux:button>
         </div>
     </flux:modal>
 

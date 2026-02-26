@@ -95,18 +95,19 @@ class UnlinkMinecraftAccount
             "Removed {$username} from server whitelist"
         );
 
-        // Delete the account
-        $account->delete();
+        // Soft-disable the account (preserve record for audit trail)
+        $account->status = MinecraftAccountStatus::Removed;
+        $account->save();
 
         RecordActivity::handle(
             $user,
-            'minecraft_account_unlinked',
-            "Unlinked {$accountType->label()} account: {$username}"
+            'minecraft_account_removed',
+            "Removed {$accountType->label()} account: {$username}"
         );
 
         return [
             'success' => true,
-            'message' => 'Minecraft account unlinked successfully.',
+            'message' => 'Minecraft account removed successfully.',
         ];
     }
 }

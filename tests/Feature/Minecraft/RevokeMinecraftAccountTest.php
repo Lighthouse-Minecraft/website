@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Actions\RevokeMinecraftAccount;
+use App\Enums\MinecraftAccountStatus;
 use App\Models\MinecraftAccount;
 use App\Models\User;
 use App\Services\MinecraftRconService;
@@ -18,13 +19,14 @@ beforeEach(function () {
     });
 });
 
-test('admin can revoke account', function () {
+test('admin can revoke account by setting status to removed', function () {
     $account = MinecraftAccount::factory()->for($this->regularUser)->create();
 
     $result = $this->action->handle($account, $this->admin);
 
-    expect($result['success'])->toBeTrue();
-    $this->assertDatabaseMissing('minecraft_accounts', ['id' => $account->id]);
+    expect($result['success'])->toBeTrue()
+        ->and($account->fresh()->status)->toBe(MinecraftAccountStatus::Removed);
+    $this->assertDatabaseHas('minecraft_accounts', ['id' => $account->id]);
 });
 
 test('regular user cannot revoke', function () {
