@@ -129,13 +129,13 @@ new class extends Component {
                 </a>
             </flux:card>
         @endif
-    @elsecannot('link-discord')
+    @else
         @if($linkedAccounts->isEmpty())
             <flux:callout variant="info">
                 You'll be able to link your Discord account once you've been promoted to Traveler rank.
             </flux:callout>
         @endif
-    @endcannot
+    @endcan
 
     {{-- Unlink Confirmation Modal --}}
     <flux:modal name="confirm-unlink-discord" class="min-w-[22rem] space-y-6">
