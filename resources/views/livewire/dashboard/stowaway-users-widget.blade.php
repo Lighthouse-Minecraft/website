@@ -11,6 +11,8 @@ new class extends Component {
     public $showUserModal = false;
     public $brigReason = '';
     public $brigDays = null;
+    public $promotedUserName = null;
+    public $promotedUserUrl = null;
 
     /**
      * Fetches Stowaway users who are not in the Brig, ordered by name.
@@ -67,11 +69,11 @@ new class extends Component {
         try {
             \App\Actions\PromoteUser::run($this->selectedUser, MembershipLevel::Traveler);
 
-            Flux::toast("Successfully promoted {$this->selectedUser->name} to Traveler!", 'Success', variant: 'success');
+            $this->promotedUserName = $this->selectedUser->name;
+            $this->promotedUserUrl = route('profile.show', $this->selectedUser);
 
             // Close modal and refresh the component
             $this->closeModal();
-            $this->dispatch('$refresh');
 
         } catch (\Exception $e) {
             Flux::toast('Failed to promote user. Please try again.', 'Error', variant: 'danger');
@@ -144,6 +146,17 @@ new class extends Component {
     <flux:heading size="md" class="mb-4">Stowaway Users</flux:heading>
     <flux:text variant="subtle">Stowaway users are those who have agreed to the Lighthouse Rules and are awaiting promotion to Traveler.</flux:text>
 
+    @if($promotedUserName)
+        <div class="mt-4 flex items-center justify-between gap-2 rounded-lg border border-green-300 bg-green-50 px-4 py-3 text-sm text-green-800 dark:border-green-700 dark:bg-green-900/30 dark:text-green-300">
+            <span>
+                Successfully promoted
+                <a href="{{ $promotedUserUrl }}" class="font-semibold underline hover:no-underline">{{ $promotedUserName }}</a>
+                to Traveler!
+            </span>
+            <button wire:click="$set('promotedUserName', null)" class="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-200">&times;</button>
+        </div>
+    @endif
+
     @if($this->stowawayUsers->count() > 0)
         <flux:table>
             <flux:table.columns>
@@ -176,75 +189,77 @@ new class extends Component {
 
     <!-- User Details Modal -->
     @if($showUserModal && $selectedUser)
-        <flux:modal wire:model="showUserModal" name="user-details-modal" class="w-full lg:w-1/2">
-            <div class="space-y-6">
-                <flux:heading size="lg">User Details</flux:heading>
+        <flux:modal wire:model="showUserModal" name="user-details-modal" class="max-w-lg">
+            <div class="space-y-4">
+                {{-- Header: avatar + name + badge --}}
+                <div class="flex items-center gap-4">
+                    @if($selectedUser->avatarUrl())
+                        <img src="{{ $selectedUser->avatarUrl() }}"
+                             alt="{{ $selectedUser->name }}"
+                             class="w-16 h-16 rounded" />
+                    @else
+                        <flux:avatar name="{{ $selectedUser->name }}" size="xl" />
+                    @endif
 
-                <div class="space-y-4">
                     <div>
-                        <flux:text class="font-medium">Name:</flux:text>
-                        <a href="{{ route('profile.show', $selectedUser) }}" class="text-blue-600 dark:text-blue-400 hover:underline font-medium">
-                            {{ $selectedUser->name }}
-                        </a>
+                        <flux:heading size="xl">
+                            <flux:link href="{{ route('profile.show', $selectedUser) }}">{{ $selectedUser->name }}</flux:link>
+                        </flux:heading>
+                        <div class="flex flex-wrap gap-2 mt-1">
+                            <flux:badge size="sm" color="yellow">{{ $selectedUser->membership_level->label() }}</flux:badge>
+                        </div>
+                    </div>
+                </div>
+
+                <flux:separator />
+
+                <dl class="space-y-3 text-sm">
+                    <div class="flex justify-between gap-4">
+                        <dt class="text-zinc-500 dark:text-zinc-400 font-medium shrink-0">Email</dt>
+                        <dd>{{ $selectedUser->email }}</dd>
                     </div>
 
-                    <div>
-                        <flux:text class="font-medium">Email:</flux:text>
-                        <flux:text>{{ $selectedUser->email }}</flux:text>
-                    </div>
-
-                    <div>
-                        <flux:text class="font-medium">Membership Level:</flux:text>
-                        <flux:text>{{ $selectedUser->membership_level->label() }}</flux:text>
-                    </div>
-
-                    <div>
-                        <flux:text class="font-medium">Joined:</flux:text>
-                        <flux:text>{{ $selectedUser->created_at->format('F j, Y \a\t g:i A') }}</flux:text>
+                    <div class="flex justify-between gap-4">
+                        <dt class="text-zinc-500 dark:text-zinc-400 font-medium shrink-0">Joined</dt>
+                        <dd>{{ $selectedUser->created_at->format('M j, Y g:i A') }}</dd>
                     </div>
 
                     @if($selectedUser->rules_accepted_at)
-                        <div>
-                            <flux:text class="font-medium">Rules Accepted:</flux:text>
-                            <flux:text>{{ $selectedUser->rules_accepted_at->format('F j, Y \a\t g:i A') }}</flux:text>
+                        <div class="flex justify-between gap-4">
+                            <dt class="text-zinc-500 dark:text-zinc-400 font-medium shrink-0">Rules Accepted</dt>
+                            <dd>{{ $selectedUser->rules_accepted_at->format('M j, Y g:i A') }}</dd>
                         </div>
                     @endif
-                </div>
+                </dl>
 
-                <div class="flex gap-2 pt-4">
+                <flux:separator />
+
+                <div class="flex items-center gap-2 justify-between">
                     <flux:button
                         href="/tickets/create-admin?user_id={{ $selectedUser->id }}"
                         variant="ghost"
                         icon="inbox"
-                        title="Create Admin Ticket"
                     >
                         Create Ticket
                     </flux:button>
 
-                    <flux:spacer />
-
-                    <flux:button
-                        wire:click="closeModal"
-                        variant="ghost"
-                    >
-                        Cancel
-                    </flux:button>
-
                     @can('manage-stowaway-users')
-                        <flux:button
-                            wire:click="openBrigModal"
-                            variant="danger"
-                            icon="lock-closed"
-                        >
-                            Put in Brig
-                        </flux:button>
+                        <div class="flex gap-2">
+                            <flux:button
+                                wire:click="openBrigModal"
+                                variant="danger"
+                                icon="lock-closed"
+                            >
+                                Put in Brig
+                            </flux:button>
 
-                        <flux:button
-                            wire:click="promoteToTraveler"
-                            variant="primary"
-                        >
-                            Promote to Traveler
-                        </flux:button>
+                            <flux:button
+                                wire:click="promoteToTraveler"
+                                variant="primary"
+                            >
+                                Promote to Traveler
+                            </flux:button>
+                        </div>
                     @endcan
                 </div>
             </div>

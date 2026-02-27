@@ -220,7 +220,7 @@ class User extends Authenticatable // implements MustVerifyEmail
         return $account?->avatarUrl();
     }
 
-    protected function gravatarUrl(): string
+    public function gravatarUrl(): string
     {
         $hash = md5(strtolower(trim($this->email)));
 
