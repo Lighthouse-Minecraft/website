@@ -18,8 +18,7 @@ class RevokeMinecraftAccount
      */
     public function handle(MinecraftAccount $account, User $admin): array
     {
-        // Verify admin permission
-        if (! $admin->isAdmin()) {
+        if (! $admin->can('revoke', $account)) {
             return [
                 'success' => false,
                 'message' => 'You do not have permission to revoke accounts.',
@@ -78,7 +77,7 @@ class RevokeMinecraftAccount
         RecordActivity::run(
             $affectedUser,
             'minecraft_account_revoked',
-            "Admin {$admin->name} revoked {$accountType->label()} account: {$username}"
+            "{$admin->name} revoked {$accountType->label()} account: {$username}"
         );
 
         return [

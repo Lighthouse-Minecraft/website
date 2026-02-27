@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Enums\MinecraftAccountStatus;
+use App\Enums\StaffDepartment;
 use App\Enums\StaffRank;
 use App\Models\MinecraftAccount;
 use App\Models\User;
@@ -66,6 +67,36 @@ class MinecraftAccountPolicy
     {
         return $minecraftAccount->status === MinecraftAccountStatus::Removed
             && ($user->id === $minecraftAccount->user_id || $user->isAdmin());
+    }
+
+    /**
+     * Determine whether the user can view the account's UUID.
+     */
+    public function viewUuid(User $user, MinecraftAccount $minecraftAccount): bool
+    {
+        return $user->isAdmin()
+            || $user->isInDepartment(StaffDepartment::Engineer)
+            || $user->isAtLeastRank(StaffRank::Officer);
+    }
+
+    /**
+     * Determine whether the user can view staff audit fields (verified_at, last_username_check_at).
+     */
+    public function viewStaffAuditFields(User $user, MinecraftAccount $minecraftAccount): bool
+    {
+        return $user->isAdmin() || $user->staff_department !== null;
+    }
+
+    /**
+     * Determine whether the user can revoke (admin soft-remove) the account.
+     */
+    public function revoke(User $user, MinecraftAccount $minecraftAccount): bool
+    {
+        return $minecraftAccount->status === MinecraftAccountStatus::Active
+            && ($user->isAdmin()
+                || ($user->isAtLeastRank(StaffRank::Officer)
+                    && ($user->isInDepartment(StaffDepartment::Engineer)
+                        || $user->isInDepartment(StaffDepartment::Command))));
     }
 
     /**
