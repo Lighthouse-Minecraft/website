@@ -154,6 +154,30 @@ it('regular user cannot revoke a minecraft account', function () {
     expect($user->can('revoke', $account))->toBeFalse();
 });
 
+it('admin cannot revoke a removed minecraft account', function () {
+    $admin = loginAsAdmin();
+    $owner = User::factory()->create();
+    $account = MinecraftAccount::factory()->removed()->create(['user_id' => $owner->id]);
+
+    expect($admin->can('revoke', $account))->toBeFalse();
+});
+
+it('admin cannot revoke a cancelled minecraft account', function () {
+    $admin = loginAsAdmin();
+    $owner = User::factory()->create();
+    $account = MinecraftAccount::factory()->create(['user_id' => $owner->id, 'status' => \App\Enums\MinecraftAccountStatus::Cancelled]);
+
+    expect($admin->can('revoke', $account))->toBeFalse();
+});
+
+it('admin cannot revoke a verifying minecraft account', function () {
+    $admin = loginAsAdmin();
+    $owner = User::factory()->create();
+    $account = MinecraftAccount::factory()->verifying()->create(['user_id' => $owner->id]);
+
+    expect($admin->can('revoke', $account))->toBeFalse();
+});
+
 // === viewUuid ===
 
 it('admin can view uuid', function () {

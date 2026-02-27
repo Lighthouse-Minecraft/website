@@ -136,7 +136,13 @@ new class extends Component {
      */
     public function showAccount(int $accountId): void
     {
-        $this->selectedAccount = $this->user->minecraftAccounts()->with('user')->find($accountId);
+        $query = $this->user->minecraftAccounts()->with('user');
+
+        if (! Auth::user()->isAdmin()) {
+            $query->where('status', '!=', \App\Enums\MinecraftAccountStatus::Removed);
+        }
+
+        $this->selectedAccount = $query->find($accountId);
 
         if ($this->selectedAccount) {
             Flux::modal('mc-account-detail')->show();
@@ -145,6 +151,12 @@ new class extends Component {
 
     public function confirmRevoke(int $accountId): void
     {
+        $account = $this->user->minecraftAccounts()->find($accountId);
+
+        if (! $account || ! Auth::user()->can('revoke', $account)) {
+            return;
+        }
+
         $this->accountToRevoke = $accountId;
         Flux::modal('confirm-revoke-mc-account')->show();
     }

@@ -92,10 +92,11 @@ class MinecraftAccountPolicy
      */
     public function revoke(User $user, MinecraftAccount $minecraftAccount): bool
     {
-        return $user->isAdmin()
-            || ($user->isAtLeastRank(StaffRank::Officer)
-                && ($user->isInDepartment(StaffDepartment::Engineer)
-                    || $user->isInDepartment(StaffDepartment::Command)));
+        return $minecraftAccount->status === MinecraftAccountStatus::Active
+            && ($user->isAdmin()
+                || ($user->isAtLeastRank(StaffRank::Officer)
+                    && ($user->isInDepartment(StaffDepartment::Engineer)
+                        || $user->isInDepartment(StaffDepartment::Command))));
     }
 
     /**
