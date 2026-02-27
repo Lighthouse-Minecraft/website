@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Actions\UnlinkMinecraftAccount;
+use App\Enums\MinecraftAccountStatus;
 use App\Enums\StaffDepartment;
 use App\Models\MinecraftAccount;
 use App\Models\User;
@@ -18,13 +19,14 @@ beforeEach(function () {
     });
 });
 
-test('unlinks minecraft account', function () {
+test('unlinks minecraft account by setting status to removed', function () {
     $account = MinecraftAccount::factory()->for($this->user)->create();
 
     $result = $this->action->handle($account, $this->user);
 
-    expect($result['success'])->toBeTrue();
-    $this->assertDatabaseMissing('minecraft_accounts', ['id' => $account->id]);
+    expect($result['success'])->toBeTrue()
+        ->and($account->fresh()->status)->toBe(MinecraftAccountStatus::Removed);
+    $this->assertDatabaseHas('minecraft_accounts', ['id' => $account->id]);
 });
 
 test('prevents unlinking other users account', function () {
@@ -88,6 +90,14 @@ test('records activity log', function () {
     $this->assertDatabaseHas('activity_logs', [
         'subject_type' => \App\Models\User::class,
         'subject_id' => $this->user->id,
-        'action' => 'minecraft_account_unlinked',
+        'action' => 'minecraft_account_removed',
     ]);
+});
+
+test('removed account does not count toward account limit', function () {
+    $account = MinecraftAccount::factory()->for($this->user)->create();
+    $this->action->handle($account, $this->user);
+
+    $countingAccounts = $this->user->minecraftAccounts()->countingTowardLimit()->count();
+    expect($countingAccounts)->toBe(0);
 });

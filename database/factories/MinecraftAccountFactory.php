@@ -76,4 +76,15 @@ class MinecraftAccountFactory extends Factory
             'verified_at' => now(),
         ]);
     }
+
+    /**
+     * Indicate that the account has been removed (soft-disabled).
+     */
+    public function removed(): static
+    {
+        return $this->state(fn () => [
+            'status' => MinecraftAccountStatus::Removed,
+            'verified_at' => now()->subDay(),
+        ]);
+    }
 }

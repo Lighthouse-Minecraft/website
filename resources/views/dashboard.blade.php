@@ -35,7 +35,7 @@
                                         <flux:text class="font-medium">Minecraft</flux:text>
                                         <flux:text variant="subtle" class="text-sm">
                                             @if(auth()->user()->minecraftAccounts()->exists())
-                                                {{ auth()->user()->minecraftAccounts()->count() }} account(s) linked
+                                                {{ auth()->user()->minecraftAccounts()->countingTowardLimit()->count() }} account(s) linked
                                             @else
                                                 Link your account to join the server
                                             @endif

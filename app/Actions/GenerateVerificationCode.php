@@ -43,9 +43,9 @@ class GenerateVerificationCode
             ];
         }
 
-        // Check if user has reached max accounts (all statuses count toward the limit)
+        // Check if user has reached max accounts (only Active, Verifying, Banned count)
         $maxAccounts = config('lighthouse.max_minecraft_accounts');
-        if ($user->minecraftAccounts()->count() >= $maxAccounts) {
+        if ($user->minecraftAccounts()->countingTowardLimit()->count() >= $maxAccounts) {
             return [
                 'success' => false,
                 'code' => null,

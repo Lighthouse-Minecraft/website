@@ -2,6 +2,7 @@
 
 namespace App\Actions;
 
+use App\Enums\MinecraftAccountStatus;
 use App\Models\MinecraftAccount;
 use App\Models\User;
 use App\Services\MinecraftRconService;
@@ -40,7 +41,7 @@ class RevokeMinecraftAccount
             ['action' => 'revoke_rank_reset', 'affected_user_id' => $affectedUser->id]
         );
 
-        // Remove from whitelist synchronously; only delete the record if it succeeds
+        // Remove from whitelist synchronously; only soft-disable the record if it succeeds
         $whitelistResult = $rconService->executeCommand(
             $account->whitelistRemoveCommand(),
             'whitelist',
@@ -59,15 +60,16 @@ class RevokeMinecraftAccount
 
             return [
                 'success' => false,
-                'message' => 'Failed to remove player from server whitelist. Account has not been deleted.',
+                'message' => 'Failed to remove player from server whitelist. Account has not been removed.',
             ];
         }
 
-        // Delete the account only after successful whitelist removal
-        $account->delete();
+        // Soft-disable the account (preserve record for audit trail)
+        $account->status = MinecraftAccountStatus::Removed;
+        $account->save();
 
         // Record activity for both admin and affected user
-        RecordActivity::handle(
+        RecordActivity::run(
             $affectedUser,
             'minecraft_account_revoked',
             "Admin {$admin->name} revoked {$accountType->label()} account: {$username}"

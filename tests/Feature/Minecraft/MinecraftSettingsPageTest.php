@@ -91,7 +91,7 @@ test('validates username required', function () {
         ->assertHasErrors(['username' => 'required']);
 });
 
-test('removes linked account', function () {
+test('removes linked account by setting status to removed', function () {
     $account = MinecraftAccount::factory()->for($this->user)->create();
 
     $this->mock(MinecraftRconService::class, function ($mock) {
@@ -103,8 +103,9 @@ test('removes linked account', function () {
         ->call('unlinkAccount')
         ->assertHasNoErrors();
 
-    $this->assertDatabaseMissing('minecraft_accounts', [
+    $this->assertDatabaseHas('minecraft_accounts', [
         'id' => $account->id,
+        'status' => \App\Enums\MinecraftAccountStatus::Removed->value,
     ]);
 });
 
