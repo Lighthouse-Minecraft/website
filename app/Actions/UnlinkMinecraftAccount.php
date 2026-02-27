@@ -57,7 +57,7 @@ class UnlinkMinecraftAccount
             ['action' => 'unlink_rank_reset']
         );
 
-        RecordActivity::handle(
+        RecordActivity::run(
             $user,
             'minecraft_rank_reset_requested',
             "Reset rank to default for {$username}"
@@ -73,7 +73,7 @@ class UnlinkMinecraftAccount
                 ['action' => 'unlink_staff_reset']
             );
 
-            RecordActivity::handle(
+            RecordActivity::run(
                 $user,
                 'minecraft_staff_position_removed',
                 "Removed Minecraft staff position for {$username}"
@@ -96,7 +96,7 @@ class UnlinkMinecraftAccount
             ];
         }
 
-        RecordActivity::handle(
+        RecordActivity::run(
             $user,
             'minecraft_whitelist_removal_requested',
             "Removed {$username} from server whitelist"
@@ -106,7 +106,7 @@ class UnlinkMinecraftAccount
         $account->status = MinecraftAccountStatus::Removed;
         $account->save();
 
-        RecordActivity::handle(
+        RecordActivity::run(
             $user,
             'minecraft_account_removed',
             "Removed {$accountType->label()} account: {$username}"

@@ -69,7 +69,7 @@ class RevokeMinecraftAccount
         $account->save();
 
         // Record activity for both admin and affected user
-        RecordActivity::handle(
+        RecordActivity::run(
             $affectedUser,
             'minecraft_account_revoked',
             "Admin {$admin->name} revoked {$accountType->label()} account: {$username}"
