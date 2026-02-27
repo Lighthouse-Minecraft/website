@@ -80,16 +80,16 @@ test('crew member from non-engineering dept cannot viewAny minecraft accounts', 
     expect($user->can('viewAny', MinecraftAccount::class))->toBeFalse();
 });
 
-test('engineering staff can pass viewACP gate', function () {
+test('engineering staff can pass view-acp gate', function () {
     $user = User::factory()
         ->withStaffPosition(StaffDepartment::Engineer, StaffRank::JrCrew)
         ->create();
 
-    expect($user->can('viewACP'))->toBeTrue();
+    expect($user->can('view-acp'))->toBeTrue();
 });
 
-test('regular user without staff position cannot pass viewACP gate', function () {
+test('regular user without staff position cannot pass view-acp gate', function () {
     $user = User::factory()->create();
 
-    expect($user->can('viewACP'))->toBeFalse();
+    expect($user->can('view-acp'))->toBeFalse();
 });

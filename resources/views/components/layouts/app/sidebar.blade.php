@@ -57,7 +57,7 @@
                         </flux:navlist.item>
                     @endcan
 
-                    @can('viewACP')
+                    @can('view-acp')
                         <flux:navlist.item icon="home" :href="route('acp.index')" :current="request()->routeIs('acp.index')" wire:navigate>Admin Control Panel</flux:navlist.item>
                     @endcan
                 </flux:navlist.group>

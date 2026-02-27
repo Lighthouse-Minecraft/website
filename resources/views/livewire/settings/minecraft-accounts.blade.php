@@ -112,22 +112,10 @@ new class extends Component {
                 ->first();
 
             if ($account) {
-                // Mark cancelled before attempting removal (enters retry pool if server is down)
-                $account->update(['status' => MinecraftAccountStatus::Cancelled]);
-
-                $rconService = app(MinecraftRconService::class);
-                $result = $rconService->executeCommand(
-                    $account->whitelistRemoveCommand(),
-                    'whitelist',
-                    $account->username,
-                    auth()->user(),
-                    ['action' => 'cancel_verification', 'verification_id' => $verification->id]
-                );
-
-                if ($result['success']) {
-                    $account->delete();
-                }
-                // If server offline, account stays 'cancelled' for CleanupExpiredVerifications to retry
+                $this->cancelAndRemoveFromWhitelist($account, [
+                    'action' => 'cancel_verification',
+                    'verification_id' => $verification->id,
+                ]);
             }
 
             $verification->update(['status' => 'expired']);
@@ -362,21 +350,10 @@ new class extends Component {
             $verification->update(['status' => 'expired']);
         }
 
-        // Mark cancelled before attempting whitelist removal
-        $account->update(['status' => MinecraftAccountStatus::Cancelled]);
-
-        $rconService = app(MinecraftRconService::class);
-        $result = $rconService->executeCommand(
-            $account->whitelistRemoveCommand(),
-            'whitelist',
-            $account->username,
-            auth()->user(),
-            ['action' => 'cancel_verification_by_account', 'account_id' => $account->id]
-        );
-
-        if ($result['success']) {
-            $account->delete();
-        }
+        $this->cancelAndRemoveFromWhitelist($account, [
+            'action' => 'cancel_verification_by_account',
+            'account_id' => $account->id,
+        ]);
 
         // Clear the active verification UI so the form resets
         $this->verificationCode = null;
@@ -385,6 +362,24 @@ new class extends Component {
         $this->modal('confirm-remove-verifying')->close();
         $this->accountToRemoveVerifying = null;
         Flux::toast('Verification cancelled and account removed.', variant: 'warning');
+    }
+
+    private function cancelAndRemoveFromWhitelist(MinecraftAccount $account, array $context): void
+    {
+        $account->update(['status' => MinecraftAccountStatus::Cancelled]);
+
+        $rconService = app(MinecraftRconService::class);
+        $result = $rconService->executeCommand(
+            $account->whitelistRemoveCommand(),
+            'whitelist',
+            $account->username,
+            auth()->user(),
+            $context
+        );
+
+        if ($result['success']) {
+            $account->delete();
+        }
     }
 
     public function with(): array

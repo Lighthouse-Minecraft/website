@@ -76,7 +76,7 @@ class AuthServiceProvider extends ServiceProvider
             return $user->isAtLeastLevel(MembershipLevel::Traveler) && ! $user->in_brig;
         });
 
-        Gate::define('viewACP', function ($user) {
+        Gate::define('view-acp', function ($user) {
             return $user->isAdmin()
                 || $user->isAtLeastRank(StaffRank::Officer)
                 || $user->hasRole('Page Editor')
