@@ -219,17 +219,23 @@ new class extends Component
         // Update thread last message time
         $this->thread->update(['last_message_at' => $now]);
 
-        // Auto-assign unassigned tickets when staff replies
+        // Auto-assign unassigned tickets when staff replies (atomic to prevent race)
         if (! $this->thread->assigned_to_user_id
             && auth()->id() !== $this->thread->created_by_user_id
             && auth()->user()->isAtLeastRank(\App\Enums\StaffRank::CrewMember)
             && ! $isInternal) {
-            $this->thread->update(['assigned_to_user_id' => auth()->id()]);
-            \App\Actions\RecordActivity::run(
-                $this->thread,
-                'assignment_changed',
-                'Auto-assigned to ' . auth()->user()->name . ' on first reply'
-            );
+            $affected = \App\Models\Thread::where('id', $this->thread->id)
+                ->whereNull('assigned_to_user_id')
+                ->update(['assigned_to_user_id' => auth()->id()]);
+
+            if ($affected > 0) {
+                $this->thread->refresh();
+                \App\Actions\RecordActivity::run(
+                    $this->thread,
+                    'assignment_changed',
+                    'Auto-assigned to ' . auth()->user()->name . ' on first reply'
+                );
+            }
         }
 
         // Notify participants (except sender, viewers, and for internal notes)

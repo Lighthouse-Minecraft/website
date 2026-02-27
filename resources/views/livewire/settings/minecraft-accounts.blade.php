@@ -306,6 +306,8 @@ new class extends Component {
     {
         $account = auth()->user()->minecraftAccounts()->findOrFail($accountId);
 
+        $this->authorize('setPrimary', $account);
+
         $result = \App\Actions\SetPrimaryMinecraftAccount::run($account);
 
         if ($result) {

@@ -43,10 +43,12 @@ describe('Tickets List Component', function () {
 
         $chaplainThread = Thread::factory()
             ->withDepartment(StaffDepartment::Chaplain)
+            ->withStatus(ThreadStatus::Open)
             ->create(['subject' => 'Chaplain Ticket']);
 
         $engineerThread = Thread::factory()
             ->withDepartment(StaffDepartment::Engineer)
+            ->withStatus(ThreadStatus::Open)
             ->create(['subject' => 'Engineer Ticket']);
 
         actingAs($chaplainStaff);

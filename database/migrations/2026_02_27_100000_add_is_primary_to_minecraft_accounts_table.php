@@ -14,16 +14,17 @@ return new class extends Migration
         });
 
         // Backfill: set the first active account per user as primary
-        DB::statement('
-            UPDATE minecraft_accounts
-            SET is_primary = '.(DB::getDriverName() === 'pgsql' ? 'true' : '1')."
-            WHERE id IN (
-                SELECT MIN(id)
-                FROM minecraft_accounts
-                WHERE status = 'active'
-                GROUP BY user_id
-            )
-        ");
+        $ids = DB::table('minecraft_accounts')
+            ->where('status', 'active')
+            ->groupBy('user_id')
+            ->selectRaw('MIN(id) as id')
+            ->pluck('id');
+
+        if ($ids->isNotEmpty()) {
+            DB::table('minecraft_accounts')
+                ->whereIn('id', $ids)
+                ->update(['is_primary' => true]);
+        }
     }
 
     public function down(): void
