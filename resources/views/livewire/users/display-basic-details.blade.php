@@ -194,16 +194,9 @@ new class extends Component {
 
     public function reactivateMinecraftAccount(int $accountId): void
     {
-        if (! Auth::user()->isAdmin()) {
-            Flux::toast(
-                text: 'You do not have permission to reactivate Minecraft accounts.',
-                heading: 'Error',
-                variant: 'danger'
-            );
-            return;
-        }
-
         $account = $this->user->minecraftAccounts()->findOrFail($accountId);
+        $this->authorize('reactivate', $account);
+
         $result = \App\Actions\ReactivateMinecraftAccount::run($account, Auth::user());
 
         if ($result['success']) {
@@ -216,16 +209,9 @@ new class extends Component {
 
     public function forceDeleteMinecraftAccount(int $accountId): void
     {
-        if (! Auth::user()->isAdmin()) {
-            Flux::toast(
-                text: 'You do not have permission to permanently delete Minecraft accounts.',
-                heading: 'Error',
-                variant: 'danger'
-            );
-            return;
-        }
-
         $account = $this->user->minecraftAccounts()->findOrFail($accountId);
+        $this->authorize('forceDelete', $account);
+
         $result = \App\Actions\ForceDeleteMinecraftAccount::run($account, Auth::user());
 
         if ($result['success']) {
