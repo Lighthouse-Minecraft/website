@@ -447,7 +447,7 @@ new class extends Component {
                             size="sm"
                             variant="ghost"
                             icon="lock-closed"
-                            class="text-zinc-500 hover:text-red-400"
+                            class="hover:!text-red-600 dark:hover:!text-red-400 hover:!bg-red-50 dark:hover:!bg-red-950"
                         >
                             Put in Brig
                         </flux:button>
@@ -471,7 +471,7 @@ new class extends Component {
                                 size="sm"
                                 variant="ghost"
                                 icon="arrow-down-circle"
-                                class="text-zinc-500 hover:text-red-400"
+                                class="hover:!text-red-600 dark:hover:!text-red-400 hover:!bg-red-50 dark:hover:!bg-red-950"
                             >
                                 Demote to {{ $this->previousMembershipLevel->label() }}
                             </flux:button>
@@ -618,8 +618,9 @@ new class extends Component {
                             @if(Auth::user()->isAdmin())
                                 <flux:button
                                     wire:click="revokeDiscordAccount({{ $discordAccount->id }})"
-                                    variant="danger"
+                                    variant="ghost"
                                     size="sm"
+                                    class="hover:!text-red-600 dark:hover:!text-red-400 hover:!bg-red-50 dark:hover:!bg-red-950"
                                     wire:confirm="Are you sure you want to revoke this Discord account from {{ $user->name }}?">
                                     Revoke
                                 </flux:button>
@@ -663,7 +664,7 @@ new class extends Component {
 
             <div class="w-full flex">
                 @if ($user->staff_department)
-                    <flux:button wire:click="removeStaffPosition" variant="danger" class="opacity-80">Remove Staff Position</flux:button>
+                    <flux:button wire:click="removeStaffPosition" variant="ghost" class="hover:!text-red-600 dark:hover:!text-red-400 hover:!bg-red-50 dark:hover:!bg-red-950">Remove Staff Position</flux:button>
                 @endif
                 <flux:spacer />
                 <flux:button wire:click="updateStaffPosition" variant="primary">Save Changes</flux:button>
