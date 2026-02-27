@@ -382,9 +382,11 @@ new class extends Component
 
         \App\Actions\RecordActivity::run($this->thread, 'assignment_changed', $description);
 
-        // Notify both the new assignee and the ticket creator
+        // Notify the new assignee (skip if assigning to yourself) and the ticket creator
         $notificationService = app(TicketNotificationService::class);
-        $notificationService->send($newAssignee, new TicketAssignedNotification($this->thread));
+        if ($newAssignee->id !== auth()->id()) {
+            $notificationService->send($newAssignee, new TicketAssignedNotification($this->thread));
+        }
 
         if ($this->thread->createdBy && $this->thread->createdBy->id !== $newAssignee->id) {
             $notificationService->send($this->thread->createdBy, new TicketAssignedNotification($this->thread));
