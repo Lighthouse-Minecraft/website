@@ -153,3 +153,63 @@ it('regular user cannot revoke a minecraft account', function () {
 
     expect($user->can('revoke', $account))->toBeFalse();
 });
+
+// === viewUuid ===
+
+it('admin can view uuid', function () {
+    $admin = loginAsAdmin();
+    $account = MinecraftAccount::factory()->create();
+
+    expect($admin->can('viewUuid', $account))->toBeTrue();
+});
+
+it('engineer crew member can view uuid', function () {
+    $crew = crewEngineer();
+    $account = MinecraftAccount::factory()->create();
+
+    expect($crew->can('viewUuid', $account))->toBeTrue();
+});
+
+it('officer in any department can view uuid', function () {
+    $officer = officerSteward();
+    $account = MinecraftAccount::factory()->create();
+
+    expect($officer->can('viewUuid', $account))->toBeTrue();
+});
+
+it('regular user cannot view uuid', function () {
+    $user = membershipTraveler();
+    $account = MinecraftAccount::factory()->create();
+
+    expect($user->can('viewUuid', $account))->toBeFalse();
+});
+
+it('non-engineer crew member cannot view uuid', function () {
+    $crew = crewSteward();
+    $account = MinecraftAccount::factory()->create();
+
+    expect($crew->can('viewUuid', $account))->toBeFalse();
+});
+
+// === viewStaffAuditFields ===
+
+it('admin can view staff audit fields', function () {
+    $admin = loginAsAdmin();
+    $account = MinecraftAccount::factory()->create();
+
+    expect($admin->can('viewStaffAuditFields', $account))->toBeTrue();
+});
+
+it('staff member can view staff audit fields', function () {
+    $crew = crewSteward();
+    $account = MinecraftAccount::factory()->create();
+
+    expect($crew->can('viewStaffAuditFields', $account))->toBeTrue();
+});
+
+it('regular user cannot view staff audit fields', function () {
+    $user = membershipTraveler();
+    $account = MinecraftAccount::factory()->create();
+
+    expect($user->can('viewStaffAuditFields', $account))->toBeFalse();
+});

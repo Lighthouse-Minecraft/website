@@ -70,6 +70,24 @@ class MinecraftAccountPolicy
     }
 
     /**
+     * Determine whether the user can view the account's UUID.
+     */
+    public function viewUuid(User $user, MinecraftAccount $minecraftAccount): bool
+    {
+        return $user->isAdmin()
+            || $user->isInDepartment(StaffDepartment::Engineer)
+            || $user->isAtLeastRank(StaffRank::Officer);
+    }
+
+    /**
+     * Determine whether the user can view staff audit fields (verified_at, last_username_check_at).
+     */
+    public function viewStaffAuditFields(User $user, MinecraftAccount $minecraftAccount): bool
+    {
+        return $user->isAdmin() || $user->staff_department !== null;
+    }
+
+    /**
      * Determine whether the user can revoke (admin soft-remove) the account.
      */
     public function revoke(User $user, MinecraftAccount $minecraftAccount): bool

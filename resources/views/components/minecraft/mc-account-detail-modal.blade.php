@@ -35,12 +35,12 @@
 
             @php $tz = auth()->user()->timezone ?? 'UTC'; @endphp
             <dl class="space-y-3 text-sm">
-                @if(auth()->user()->isAdmin() || auth()->user()->isInDepartment(\App\Enums\StaffDepartment::Engineer) || auth()->user()->isAtLeastRank(\App\Enums\StaffRank::Officer))
+                @can('viewUuid', $account)
                     <div class="flex justify-between gap-4">
                         <dt class="text-zinc-500 dark:text-zinc-400 font-medium shrink-0">UUID</dt>
                         <dd class="font-mono text-xs break-all text-right">{{ $account->uuid }}</dd>
                     </div>
-                @endif
+                @endcan
 
                 <div class="flex justify-between gap-4">
                     <dt class="text-zinc-500 dark:text-zinc-400 font-medium shrink-0">Linked User</dt>
@@ -62,7 +62,7 @@
                     </dd>
                 </div>
 
-                @if(auth()->user()->staff_department !== null || auth()->user()->isAdmin())
+                @can('viewStaffAuditFields', $account)
                     @if($account->verified_at)
                         <div class="flex justify-between gap-4">
                             <dt class="text-zinc-500 dark:text-zinc-400 font-medium shrink-0">Verified At</dt>
@@ -80,7 +80,7 @@
                             </dd>
                         </div>
                     @endif
-                @endif
+                @endcan
             </dl>
 
             @canany(['reactivate', 'forceDelete'], $account)

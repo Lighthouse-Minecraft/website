@@ -139,29 +139,37 @@ new class extends Component {
         $this->selectedAccount = $this->user->minecraftAccounts()->with('user')->find($accountId);
 
         if ($this->selectedAccount) {
-            $this->modal('mc-account-detail')->show();
+            Flux::modal('mc-account-detail')->show();
         }
     }
 
     public function confirmRevoke(int $accountId): void
     {
         $this->accountToRevoke = $accountId;
-        $this->modal('confirm-revoke-mc-account')->show();
+        Flux::modal('confirm-revoke-mc-account')->show();
     }
 
     public function revokeMinecraftAccount(): void
     {
         if (! $this->accountToRevoke) {
-            $this->modal('confirm-revoke-mc-account')->close();
+            Flux::modal('confirm-revoke-mc-account')->close();
             return;
         }
 
-        $account = $this->user->minecraftAccounts()->findOrFail($this->accountToRevoke);
+        $account = $this->user->minecraftAccounts()->find($this->accountToRevoke);
+
+        if (! $account) {
+            Flux::modal('confirm-revoke-mc-account')->close();
+            $this->accountToRevoke = null;
+            Flux::toast(text: 'Account not found. It may have already been removed.', heading: 'Error', variant: 'danger');
+            return;
+        }
+
         $this->authorize('revoke', $account);
 
         $result = \App\Actions\RevokeMinecraftAccount::run($account, Auth::user());
 
-        $this->modal('confirm-revoke-mc-account')->close();
+        Flux::modal('confirm-revoke-mc-account')->close();
         $this->accountToRevoke = null;
 
         if ($result['success']) {
@@ -538,23 +546,27 @@ new class extends Component {
                                     <flux:text class="text-sm text-zinc-500">{{ $account->account_type->label() }}</flux:text>
                                 </div>
                             </div>
-                            @if(Auth::user()->isAdmin() && $account->status === \App\Enums\MinecraftAccountStatus::Removed)
+                            @if($account->status === \App\Enums\MinecraftAccountStatus::Removed)
                                 <div class="flex gap-1">
-                                    <flux:button
-                                        wire:click="reactivateMinecraftAccount({{ $account->id }})"
-                                        variant="primary"
-                                        size="sm"
-                                        wire:confirm="Reactivate this Minecraft account for {{ $user->name }}? It will be re-whitelisted.">
-                                        Reactivate
-                                    </flux:button>
-                                    <flux:button
-                                        wire:click="forceDeleteMinecraftAccount({{ $account->id }})"
-                                        variant="ghost"
-                                        size="sm"
-                                        class="hover:!text-red-600 dark:hover:!text-red-400 hover:!bg-red-50 dark:hover:!bg-red-950"
-                                        wire:confirm="PERMANENTLY delete this Minecraft account? This will release the UUID so it can be registered by anyone. This action cannot be undone.">
-                                        Delete
-                                    </flux:button>
+                                    @can('reactivate', $account)
+                                        <flux:button
+                                            wire:click="reactivateMinecraftAccount({{ $account->id }})"
+                                            variant="primary"
+                                            size="sm"
+                                            wire:confirm="Reactivate this Minecraft account for {{ $user->name }}? It will be re-whitelisted.">
+                                            Reactivate
+                                        </flux:button>
+                                    @endcan
+                                    @can('forceDelete', $account)
+                                        <flux:button
+                                            wire:click="forceDeleteMinecraftAccount({{ $account->id }})"
+                                            variant="ghost"
+                                            size="sm"
+                                            class="hover:!text-red-600 dark:hover:!text-red-400 hover:!bg-red-50 dark:hover:!bg-red-950"
+                                            wire:confirm="PERMANENTLY delete this Minecraft account? This will release the UUID so it can be registered by anyone. This action cannot be undone.">
+                                            Delete
+                                        </flux:button>
+                                    @endcan
                                 </div>
                             @elseif($account->status !== \App\Enums\MinecraftAccountStatus::Cancelled && $account->status !== \App\Enums\MinecraftAccountStatus::Removed)
                                 @can('revoke', $account)
