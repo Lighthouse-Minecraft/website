@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\StaffDepartment;
 use App\Enums\StaffRank;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Models\User;
@@ -12,7 +13,10 @@ Gate::define('viewACP', function (?User $user) {
         return false;
     }
 
-    return $user->isAdmin() || $user->isAtLeastRank(StaffRank::Officer) || $user->hasRole('Page Editor');
+    return $user->isAdmin()
+        || $user->isAtLeastRank(StaffRank::Officer)
+        || $user->hasRole('Page Editor')
+        || $user->isInDepartment(StaffDepartment::Engineer);
 });
 
 Route::middleware('guest')->group(function () {

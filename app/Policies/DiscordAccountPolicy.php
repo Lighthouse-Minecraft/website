@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\StaffRank;
 use App\Models\DiscordAccount;
 use App\Models\User;
 
@@ -9,7 +10,7 @@ class DiscordAccountPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->isAdmin();
+        return $user->isAdmin() || $user->isAtLeastRank(StaffRank::Officer);
     }
 
     public function view(User $user, DiscordAccount $discordAccount): bool

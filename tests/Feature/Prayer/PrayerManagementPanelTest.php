@@ -9,7 +9,7 @@ describe('Prayer Management Panel - Display', function () {
     it('should display the Prayer management tab', function () {
         loginAsAdmin();
 
-        get(route('acp.index'))
+        get(route('acp.index', ['category' => 'config']))
             ->assertStatus(200)
             ->assertSee('Prayer Nations');
     })->done();
@@ -18,7 +18,7 @@ describe('Prayer Management Panel - Display', function () {
     it('should display the Prayer Management component', function () {
         loginAsAdmin();
 
-        get(route('acp.index'))
+        get(route('acp.index', ['category' => 'config', 'tab' => 'prayer-manager']))
             ->assertSeeLivewire('prayer.manage-months');
     })->done();
 
@@ -107,7 +107,7 @@ describe('Prayer Management Panel - Permissions', function () {
     it('should allow Command and Chaplain departments to view the panel', function ($user) {
         loginAs($user);
 
-        get(route('acp.index'))
+        get(route('acp.index', ['category' => 'config']))
             ->assertStatus(200)
             ->assertSee('Prayer Nations');
     })->with([
@@ -119,7 +119,7 @@ describe('Prayer Management Panel - Permissions', function () {
     it('should prevent other officer departments from viewing the panel', function ($user) {
         loginAs($user);
 
-        get(route('acp.index'))
+        get(route('acp.index', ['category' => 'config']))
             ->assertDontSee('Prayer Nations');
     })->with([
         'Officer Engineer' => fn () => officerEngineer(),

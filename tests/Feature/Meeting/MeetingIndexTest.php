@@ -37,8 +37,8 @@ describe('Meetings List Page - Load', function () {
     it('has a menu item for meetings', function () {
         loginAsAdmin();
 
-        get(route('acp.index'))
-            ->assertSee('Manage Meetings');
+        get(route('acp.index', ['category' => 'content']))
+            ->assertSee('Meetings');
     });
 
 });

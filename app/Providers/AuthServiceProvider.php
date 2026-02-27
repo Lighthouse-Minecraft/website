@@ -75,5 +75,17 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('link-discord', function ($user) {
             return $user->isAtLeastLevel(MembershipLevel::Traveler) && ! $user->in_brig;
         });
+
+        Gate::define('view-mc-command-log', function ($user) {
+            return $user->isAdmin()
+                || $user->isAtLeastRank(StaffRank::Officer)
+                || $user->isInDepartment(StaffDepartment::Engineer);
+        });
+
+        Gate::define('view-activity-log', function ($user) {
+            return $user->isAdmin()
+                || $user->isAtLeastRank(StaffRank::Officer)
+                || $user->isInDepartment(StaffDepartment::Engineer);
+        });
     }
 }
