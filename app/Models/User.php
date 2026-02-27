@@ -33,6 +33,7 @@ class User extends Authenticatable // implements MustVerifyEmail
         'staff_department',
         'staff_title',
         'timezone',
+        'avatar_preference',
         'pushover_key',
         'email_digest_frequency',
         'notification_preferences',
@@ -148,6 +149,46 @@ class User extends Authenticatable // implements MustVerifyEmail
             ->explode(' ')
             ->map(fn (string $name) => Str::of($name)->substr(0, 1))
             ->implode('');
+    }
+
+    /**
+     * Get the user's avatar URL based on their preference.
+     *
+     * Cascade: auto (MC -> Discord -> null), minecraft, discord, gravatar.
+     * Returns null when no image is available (Flux avatar shows initials).
+     */
+    public function avatarUrl(): ?string
+    {
+        $preference = $this->avatar_preference ?? 'auto';
+
+        return match ($preference) {
+            'minecraft' => $this->minecraftAvatarUrl(),
+            'discord' => $this->discordAvatarUrl(),
+            'gravatar' => $this->gravatarUrl(),
+            default => $this->minecraftAvatarUrl() ?? $this->discordAvatarUrl(),
+        };
+    }
+
+    protected function minecraftAvatarUrl(): ?string
+    {
+        return $this->minecraftAccounts()
+            ->active()
+            ->whereNotNull('avatar_url')
+            ->value('avatar_url');
+    }
+
+    protected function discordAvatarUrl(): ?string
+    {
+        $account = $this->discordAccounts()->active()->first();
+
+        return $account?->avatarUrl();
+    }
+
+    protected function gravatarUrl(): string
+    {
+        $hash = md5(strtolower(trim($this->email)));
+
+        return "https://www.gravatar.com/avatar/{$hash}?d=mp&s=64";
     }
 
     public function roles(): BelongsToMany
@@ -398,8 +439,8 @@ class User extends Authenticatable // implements MustVerifyEmail
                 // Calculate all counts from this ONE result set
                 $myParticipantTickets = $tickets->filter(fn ($t) => $t->participants->where('is_viewer', false)->isNotEmpty());
 
-                // Badge count: non-closed participant tickets + closed participant tickets with unread messages
-                $badgeCount = $myParticipantTickets
+                // Badge count: non-closed participant tickets + closed-unread participant tickets + unassigned visible tickets
+                $participantBadge = $myParticipantTickets
                     ->filter(function ($t) {
                         if ($t->status !== \App\Enums\ThreadStatus::Closed) {
                             return true; // All non-closed participant tickets
@@ -411,6 +452,15 @@ class User extends Authenticatable // implements MustVerifyEmail
                         return ! $participant || ! $participant->last_read_at || $t->last_message_at > $participant->last_read_at;
                     })
                     ->count();
+
+                // Unassigned non-closed tickets visible to this user (need staff attention)
+                $unassignedCount = $tickets
+                    ->whereNull('assigned_to_user_id')
+                    ->where('status', '!=', \App\Enums\ThreadStatus::Closed)
+                    ->reject(fn ($t) => $t->participants->where('is_viewer', false)->isNotEmpty())
+                    ->count();
+
+                $badgeCount = $participantBadge + $unassignedCount;
 
                 return [
                     'badge' => $badgeCount,
@@ -441,7 +491,7 @@ class User extends Authenticatable // implements MustVerifyEmail
                         ->where('status', '!=', \App\Enums\ThreadStatus::Closed)
                         ->count(),
                     'flagged' => $tickets->where('has_open_flags', true)->count(),
-                    'has-unread' => $tickets->filter(function ($t) {
+                    'has-unread' => $unassignedCount > 0 || $tickets->filter(function ($t) {
                         $participant = $t->participants->first();
 
                         return $participant && $participant->is_viewer === false && (! $participant->last_read_at || $t->last_message_at > $participant->last_read_at);

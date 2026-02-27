@@ -36,7 +36,7 @@ describe('Tickets List Component', function () {
             ->assertDontSee('Other Ticket');
     })->done();
 
-    it('shows all department tickets for staff in that department', function () {
+    it('shows all tickets across departments for any staff in open filter', function () {
         $chaplainStaff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
             ->create();
@@ -54,7 +54,7 @@ describe('Tickets List Component', function () {
         Volt::test('ready-room.tickets.tickets-list')
             ->set('filter', 'open')
             ->assertSee('Chaplain Ticket')
-            ->assertDontSee('Engineer Ticket');
+            ->assertSee('Engineer Ticket');
     })->done();
 
     it('shows all tickets for Command Officers', function () {
@@ -78,7 +78,7 @@ describe('Tickets List Component', function () {
             ->assertSee('Engineer Ticket');
     })->done();
 
-    it('shows flagged tickets across departments for Quartermaster', function () {
+    it('shows all tickets for Quartermaster in open filter', function () {
         $quartermaster = User::factory()
             ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::Officer)
             ->create();
@@ -97,7 +97,7 @@ describe('Tickets List Component', function () {
         Volt::test('ready-room.tickets.tickets-list')
             ->set('filter', 'open')
             ->assertSee('Flagged Chaplain Ticket')
-            ->assertDontSee('Unflagged Chaplain Ticket');
+            ->assertSee('Unflagged Chaplain Ticket');
     })->done();
 
     it('filters by open status', function () {
@@ -543,5 +543,28 @@ describe('Tickets List Component', function () {
 
         // Verify cache was cleared
         expect(\Illuminate\Support\Facades\Cache::has($cacheKey))->toBeFalse();
+    })->done();
+
+    it('shows all department tickets in All Open filter for any staff', function () {
+        $chaplainStaff = User::factory()
+            ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->create();
+
+        $chaplainThread = Thread::factory()
+            ->withDepartment(StaffDepartment::Chaplain)
+            ->withStatus(ThreadStatus::Open)
+            ->create(['subject' => 'Chaplain Ticket']);
+
+        $engineerThread = Thread::factory()
+            ->withDepartment(StaffDepartment::Engineer)
+            ->withStatus(ThreadStatus::Open)
+            ->create(['subject' => 'Engineer Ticket']);
+
+        actingAs($chaplainStaff);
+
+        Volt::test('ready-room.tickets.tickets-list')
+            ->set('filter', 'open')
+            ->assertSee('Chaplain Ticket')
+            ->assertSee('Engineer Ticket');
     })->done();
 });
