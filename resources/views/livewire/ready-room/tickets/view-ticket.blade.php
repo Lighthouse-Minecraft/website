@@ -585,7 +585,7 @@ new class extends Component
     <div class="space-y-4">
         @php $tz = auth()->user()->timezone ?? 'UTC'; @endphp
         @foreach($this->messages as $message)
-            <div class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-4 @if($message->kind === \App\Enums\MessageKind::InternalNote) bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800 @elseif($message->kind === \App\Enums\MessageKind::System) bg-zinc-100 dark:bg-zinc-800 @endif">
+            <div wire:key="message-{{ $message->id }}" class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-4 @if($message->kind === \App\Enums\MessageKind::InternalNote) bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800 @elseif($message->kind === \App\Enums\MessageKind::System) bg-zinc-100 dark:bg-zinc-800 @endif">
                 <div class="flex items-start justify-between">
                     <div class="flex items-start gap-3">
                         <flux:avatar size="sm" :src="$message->user->avatarUrl()" initials="{{ $message->user->initials() }}" />
@@ -617,7 +617,7 @@ new class extends Component
                 @if($this->canViewFlagged && $message->flags->isNotEmpty())
                     <div class="mt-4 space-y-2">
                         @foreach($message->flags as $flag)
-                            <div class="rounded border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950 p-3">
+                            <div wire:key="flag-{{ $flag->id }}" class="rounded border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950 p-3">
                                 <div class="flex items-start justify-between">
                                     <div class="text-sm">
                                         <strong>Flagged by <a href="{{ route('profile.show', $flag->flaggedBy) }}" class="text-blue-600 dark:text-blue-400 hover:underline">{{ $flag->flaggedBy->name }}</a></strong> on {{ $flag->created_at->setTimezone($tz)->format('M j, Y g:i A') }}

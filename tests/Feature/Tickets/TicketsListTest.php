@@ -87,11 +87,13 @@ describe('Tickets List Component', function () {
 
         $flaggedChaplainThread = Thread::factory()
             ->withDepartment(StaffDepartment::Chaplain)
+            ->withStatus(ThreadStatus::Open)
             ->flagged()
             ->create(['subject' => 'Flagged Chaplain Ticket']);
 
         $unflaggedChaplainThread = Thread::factory()
             ->withDepartment(StaffDepartment::Chaplain)
+            ->withStatus(ThreadStatus::Open)
             ->create(['subject' => 'Unflagged Chaplain Ticket']);
 
         actingAs($quartermaster);

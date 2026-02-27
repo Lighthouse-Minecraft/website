@@ -14,15 +14,15 @@ return new class extends Migration
         });
 
         // Backfill: set the first active account per user as primary
-        $ids = DB::table('minecraft_accounts')
+        $primaryAccountIds = DB::table('minecraft_accounts')
             ->where('status', 'active')
             ->groupBy('user_id')
             ->selectRaw('MIN(id) as id')
             ->pluck('id');
 
-        if ($ids->isNotEmpty()) {
+        if ($primaryAccountIds->isNotEmpty()) {
             DB::table('minecraft_accounts')
-                ->whereIn('id', $ids)
+                ->whereIn('id', $primaryAccountIds)
                 ->update(['is_primary' => true]);
         }
     }
