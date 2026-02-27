@@ -66,7 +66,7 @@ new class extends Component
     public function messages()
     {
         $messages = $this->thread->messages()
-            ->with(['user', 'flags.flaggedBy', 'flags.reviewedBy'])
+            ->with(['user.minecraftAccounts', 'user.discordAccounts', 'flags.flaggedBy', 'flags.reviewedBy'])
             ->orderBy('created_at')
             ->get();
 
@@ -218,6 +218,25 @@ new class extends Component
 
         // Update thread last message time
         $this->thread->update(['last_message_at' => $now]);
+
+        // Auto-assign unassigned tickets when staff replies (atomic to prevent race)
+        if (! $this->thread->assigned_to_user_id
+            && auth()->id() !== $this->thread->created_by_user_id
+            && auth()->user()->isAtLeastRank(\App\Enums\StaffRank::CrewMember)
+            && ! $isInternal) {
+            $affected = \App\Models\Thread::where('id', $this->thread->id)
+                ->whereNull('assigned_to_user_id')
+                ->update(['assigned_to_user_id' => auth()->id()]);
+
+            if ($affected > 0) {
+                $this->thread->refresh();
+                \App\Actions\RecordActivity::run(
+                    $this->thread,
+                    'assignment_changed',
+                    'Auto-assigned to ' . auth()->user()->name . ' on first reply'
+                );
+            }
+        }
 
         // Notify participants (except sender, viewers, and for internal notes)
         if ($kind !== MessageKind::InternalNote) {
@@ -564,15 +583,16 @@ new class extends Component
 
     {{-- Messages --}}
     <div class="space-y-4">
+        @php $tz = auth()->user()->timezone ?? 'UTC'; @endphp
         @foreach($this->messages as $message)
-            <div class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-4 @if($message->kind === \App\Enums\MessageKind::InternalNote) bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800 @elseif($message->kind === \App\Enums\MessageKind::System) bg-zinc-100 dark:bg-zinc-800 @endif">
+            <div wire:key="message-{{ $message->id }}" class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-4 @if($message->kind === \App\Enums\MessageKind::InternalNote) bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800 @elseif($message->kind === \App\Enums\MessageKind::System) bg-zinc-100 dark:bg-zinc-800 @endif">
                 <div class="flex items-start justify-between">
                     <div class="flex items-start gap-3">
-                        <flux:avatar size="sm" :src="null" initials="{{ $message->user->initials() }}" />
+                        <flux:avatar size="sm" :src="$message->user->avatarUrl()" initials="{{ $message->user->initials() }}" />
                         <div>
-                            <div class="font-semibold">{{ $message->user->name }}</div>
+                            <div class="font-semibold"><a href="{{ route('profile.show', $message->user) }}" class="text-blue-600 dark:text-blue-400 hover:underline">{{ $message->user->name }}</a></div>
                             <div class="text-sm text-zinc-500 dark:text-zinc-400">
-                                {{ $message->created_at->format('M j, Y g:i A') }}
+                                {{ $message->created_at->setTimezone($tz)->format('M j, Y g:i A') }}
                                 @if($message->kind === \App\Enums\MessageKind::InternalNote)
                                     <flux:badge size="sm" color="amber">Internal Note</flux:badge>
                                 @elseif($message->kind === \App\Enums\MessageKind::System)
@@ -597,14 +617,18 @@ new class extends Component
                 @if($this->canViewFlagged && $message->flags->isNotEmpty())
                     <div class="mt-4 space-y-2">
                         @foreach($message->flags as $flag)
-                            <div class="rounded border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950 p-3">
+                            <div wire:key="flag-{{ $flag->id }}" class="rounded border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950 p-3">
                                 <div class="flex items-start justify-between">
                                     <div class="text-sm">
-                                        <strong>Flagged by {{ $flag->flaggedBy->name }}</strong> on {{ $flag->created_at->format('M j, Y g:i A') }}
+                                        <strong>Flagged by <a href="{{ route('profile.show', $flag->flaggedBy) }}" class="text-blue-600 dark:text-blue-400 hover:underline">{{ $flag->flaggedBy->name }}</a></strong> on {{ $flag->created_at->setTimezone($tz)->format('M j, Y g:i A') }}
                                         <div class="mt-1 text-zinc-700 dark:text-zinc-300">{{ $flag->note }}</div>
                                         @if($flag->status->value === 'acknowledged')
                                             <div class="mt-2 text-xs text-zinc-600 dark:text-zinc-400">
-                                                <strong>Acknowledged by {{ $flag->reviewedBy->name }}</strong> on {{ $flag->reviewed_at->format('M j, Y g:i A') }}
+                                                @if($flag->reviewedBy && $flag->reviewed_at)
+                                                    <strong>Acknowledged by <a href="{{ route('profile.show', $flag->reviewedBy) }}" class="text-blue-600 dark:text-blue-400 hover:underline">{{ $flag->reviewedBy->name }}</a></strong> on {{ $flag->reviewed_at->setTimezone($tz)->format('M j, Y g:i A') }}
+                                                @else
+                                                    <strong>Acknowledged</strong>
+                                                @endif
                                                 @if($flag->staff_notes)
                                                     <div class="mt-1">{{ $flag->staff_notes }}</div>
                                                 @endif

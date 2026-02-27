@@ -18,8 +18,8 @@ new class extends Component {
                 Published
                 @if($author)
                     by <span style="display: inline-flex; align-items: center;">
-                        @if(!empty($author->avatar))
-                            <flux:avatar size="xs" src="{{ $author->avatar }}" style="vertical-align: middle; margin-right: 4px;" />
+                        @if($author->avatarUrl())
+                            <flux:avatar size="xs" src="{{ $author->avatarUrl() }}" style="vertical-align: middle; margin-right: 4px;" />
                         @endif
                         <flux:link href="{{ route('profile.show', ['user' => $author]) }}" style="vertical-align: middle;">
                             {{ $author->name }}

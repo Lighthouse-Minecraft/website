@@ -68,6 +68,12 @@ class RevokeMinecraftAccount
         $account->status = MinecraftAccountStatus::Removed;
         $account->save();
 
+        // If this was the primary account, clear the flag and auto-assign a new primary
+        if ($account->is_primary) {
+            $account->update(['is_primary' => false]);
+            AutoAssignPrimaryAccount::run($affectedUser);
+        }
+
         // Record activity for both admin and affected user
         RecordActivity::run(
             $affectedUser,

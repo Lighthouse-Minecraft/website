@@ -101,3 +101,22 @@ test('removed account does not count toward account limit', function () {
     $countingAccounts = $this->user->minecraftAccounts()->countingTowardLimit()->count();
     expect($countingAccounts)->toBe(0);
 });
+
+test('auto-assigns new primary when primary account is unlinked', function () {
+    $primary = MinecraftAccount::factory()->active()->primary()->for($this->user)->create();
+    $other = MinecraftAccount::factory()->active()->for($this->user)->create();
+
+    $this->action->handle($primary, $this->user);
+
+    expect($primary->fresh()->is_primary)->toBeFalse()
+        ->and($other->fresh()->is_primary)->toBeTrue();
+});
+
+test('does not change primary when non-primary account is unlinked', function () {
+    $primary = MinecraftAccount::factory()->active()->primary()->for($this->user)->create();
+    $other = MinecraftAccount::factory()->active()->for($this->user)->create();
+
+    $this->action->handle($other, $this->user);
+
+    expect($primary->fresh()->is_primary)->toBeTrue();
+});

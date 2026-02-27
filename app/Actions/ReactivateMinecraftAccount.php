@@ -65,6 +65,9 @@ class ReactivateMinecraftAccount
         $account->status = MinecraftAccountStatus::Active;
         $account->save();
 
+        // If user has no primary account, make this reactivated one primary
+        AutoAssignPrimaryAccount::run($owner);
+
         SyncMinecraftRanks::run($owner);
 
         if ($owner->staff_department !== null) {

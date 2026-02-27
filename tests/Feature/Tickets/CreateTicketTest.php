@@ -82,6 +82,45 @@ describe('Create Ticket Component', function () {
 
         expect($thread->participants()->where('user_id', $user->id)->exists())->toBeTrue();
     })->done();
+
+    it('staff badge includes unassigned tickets in their visible scope', function () {
+        $chaplainStaff = User::factory()
+            ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->create();
+        $user = User::factory()->create();
+
+        actingAs($user);
+
+        Volt::test('ready-room.tickets.create-ticket')
+            ->set('department', StaffDepartment::Chaplain->value)
+            ->set('subject', 'Badge count test')
+            ->set('message', 'Test message content here')
+            ->call('createTicket');
+
+        // Staff sees unassigned ticket in badge even without being a participant
+        $counts = $chaplainStaff->ticketCounts();
+        expect($counts['badge'])->toBeGreaterThan(0)
+            ->and($counts['has-unread'])->toBeTrue();
+    })->done();
+
+    it('staff badge does not include assigned tickets they are not part of', function () {
+        $chaplainStaff = User::factory()
+            ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->create();
+        $otherStaff = User::factory()
+            ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->create();
+
+        // Create an assigned ticket — not involving $chaplainStaff
+        $thread = Thread::factory()
+            ->withDepartment(StaffDepartment::Chaplain)
+            ->withStatus(ThreadStatus::Open)
+            ->create(['assigned_to_user_id' => $otherStaff->id]);
+
+        // Assigned ticket should NOT appear in chaplainStaff's badge
+        $counts = $chaplainStaff->ticketCounts();
+        expect($counts['badge'])->toBe(0);
+    })->done();
 });
 
 describe('Create Admin Ticket Component', function () {
@@ -160,4 +199,5 @@ describe('Create Admin Ticket Component', function () {
         expect($thread->participants()->where('user_id', $staff->id)->exists())->toBeTrue()
             ->and($thread->participants()->where('user_id', $targetUser->id)->exists())->toBeTrue();
     })->done();
+
 });

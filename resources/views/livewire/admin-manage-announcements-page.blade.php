@@ -23,7 +23,7 @@ new class extends Component {
     public function getAnnouncementsProperty()
     {
         return Announcement::orderBy($this->sortBy, $this->sortDirection)
-            ->with(['author.roles', 'tags', 'categories', 'comments'])
+            ->with(['author.roles', 'author.minecraftAccounts', 'author.discordAccounts', 'tags', 'categories', 'comments'])
             ->paginate(10);
     }
 
@@ -57,8 +57,8 @@ new class extends Component {
                     <flux:table.cell class="flex items-center gap-3">
                         @php($author = $announcement->author) {{-- may be null --}}
                         @if($author)
-                            @if(!empty($author->avatar))
-                                <flux:avatar size="xs" src="{{ $author->avatar }}" />
+                            @if($author->avatarUrl())
+                                <flux:avatar size="xs" src="{{ $author->avatarUrl() }}" />
                             @endif
                             <flux:link href="{{ route('profile.show', ['user' => $author]) }}">
                                 {{ $author->name }}

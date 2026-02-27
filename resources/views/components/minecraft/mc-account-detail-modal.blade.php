@@ -24,6 +24,9 @@
                         <flux:badge size="sm" color="{{ $account->account_type === \App\Enums\MinecraftAccountType::Java ? 'green' : 'blue' }}">
                             {{ $account->account_type->label() }}
                         </flux:badge>
+                        @if($account->is_primary)
+                            <flux:badge size="sm" color="blue">Primary</flux:badge>
+                        @endif
                     </div>
                 </div>
             </div>

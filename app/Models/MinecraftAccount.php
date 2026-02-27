@@ -21,6 +21,7 @@ class MinecraftAccount extends Model
         'avatar_url',
         'account_type',
         'status',
+        'is_primary',
         'verified_at',
         'last_username_check_at',
     ];
@@ -30,6 +31,7 @@ class MinecraftAccount extends Model
         return [
             'account_type' => MinecraftAccountType::class,
             'status' => MinecraftAccountStatus::class,
+            'is_primary' => 'boolean',
             'verified_at' => 'datetime',
             'last_username_check_at' => 'datetime',
         ];
@@ -71,6 +73,11 @@ class MinecraftAccount extends Model
     public function scopeRemoved(Builder $query): void
     {
         $query->where('status', MinecraftAccountStatus::Removed);
+    }
+
+    public function scopePrimary(Builder $query): void
+    {
+        $query->where('is_primary', true);
     }
 
     /**

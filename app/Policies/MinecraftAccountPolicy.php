@@ -41,6 +41,15 @@ class MinecraftAccountPolicy
     }
 
     /**
+     * Determine whether the user can set the account as their primary.
+     */
+    public function setPrimary(User $user, MinecraftAccount $minecraftAccount): bool
+    {
+        return $minecraftAccount->status === MinecraftAccountStatus::Active
+            && ($user->id === $minecraftAccount->user_id || $user->isAdmin());
+    }
+
+    /**
      * Determine whether the user can delete the model.
      */
     public function delete(User $user, MinecraftAccount $minecraftAccount): bool
