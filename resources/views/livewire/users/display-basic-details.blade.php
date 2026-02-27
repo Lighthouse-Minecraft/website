@@ -541,6 +541,9 @@ new class extends Component {
                                     <div class="flex items-center gap-2">
                                         <button wire:click="showAccount({{ $account->id }})" class="font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">{{ $account->username }}</button>
                                         <flux:badge color="{{ $account->status->color() }}" size="sm">{{ $account->status->label() }}</flux:badge>
+                                        @if($account->is_primary)
+                                            <flux:badge color="blue" size="sm">Primary</flux:badge>
+                                        @endif
                                     </div>
                                     <flux:text class="text-sm text-zinc-500">{{ $account->account_type->label() }}</flux:text>
                                 </div>

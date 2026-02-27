@@ -82,3 +82,21 @@ test('records activity log on reactivation', function () {
         'action' => 'minecraft_account_reactivated',
     ]);
 });
+
+test('sets reactivated account as primary when user has no primary', function () {
+    $account = MinecraftAccount::factory()->for($this->user)->removed()->create();
+
+    ReactivateMinecraftAccount::run($account, $this->user);
+
+    expect($account->fresh()->is_primary)->toBeTrue();
+});
+
+test('does not change existing primary when reactivating additional account', function () {
+    $existing = MinecraftAccount::factory()->active()->primary()->for($this->user)->create();
+    $removed = MinecraftAccount::factory()->for($this->user)->removed()->create();
+
+    ReactivateMinecraftAccount::run($removed, $this->user);
+
+    expect($existing->fresh()->is_primary)->toBeTrue()
+        ->and($removed->fresh()->is_primary)->toBeFalse();
+});

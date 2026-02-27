@@ -302,6 +302,19 @@ new class extends Component {
         }
     }
 
+    public function setPrimary(int $accountId): void
+    {
+        $account = auth()->user()->minecraftAccounts()->findOrFail($accountId);
+
+        $result = \App\Actions\SetPrimaryMinecraftAccount::run($account);
+
+        if ($result) {
+            Flux::toast("{$account->username} is now your primary account.", variant: 'success');
+        } else {
+            Flux::toast('Only active accounts can be set as primary.', variant: 'danger');
+        }
+    }
+
     public function with(): array
     {
         $maxAccounts = config('lighthouse.max_minecraft_accounts');
@@ -346,6 +359,9 @@ new class extends Component {
                                     <flux:badge color="{{ $account->status->color() }}" size="sm">
                                         {{ $account->status->label() }}
                                     </flux:badge>
+                                    @if($account->is_primary)
+                                        <flux:badge color="blue" size="sm">Primary</flux:badge>
+                                    @endif
                                 </div>
                                 <flux:text class="text-sm text-zinc-500">
                                     {{ $account->account_type->label() }}
@@ -356,12 +372,22 @@ new class extends Component {
                             </div>
                         </div>
                         @if($account->status === \App\Enums\MinecraftAccountStatus::Active)
-                            <flux:button
-                                wire:click="confirmRemove({{ $account->id }})"
-                                variant="danger"
-                                size="sm">
-                                Remove
-                            </flux:button>
+                            <div class="flex gap-2">
+                                @if(!$account->is_primary)
+                                    <flux:button
+                                        wire:click="setPrimary({{ $account->id }})"
+                                        variant="ghost"
+                                        size="sm">
+                                        Set Primary
+                                    </flux:button>
+                                @endif
+                                <flux:button
+                                    wire:click="confirmRemove({{ $account->id }})"
+                                    variant="danger"
+                                    size="sm">
+                                    Remove
+                                </flux:button>
+                            </div>
                         @elseif($account->status === \App\Enums\MinecraftAccountStatus::Verifying)
                             <flux:modal.trigger name="confirm-cancel-verification">
                                 <flux:button

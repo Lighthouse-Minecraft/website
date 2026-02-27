@@ -171,14 +171,50 @@ class User extends Authenticatable // implements MustVerifyEmail
 
     protected function minecraftAvatarUrl(): ?string
     {
+        // Use already-loaded relation to avoid N+1 queries
+        if ($this->relationLoaded('minecraftAccounts')) {
+            $active = $this->minecraftAccounts
+                ->where('status', \App\Enums\MinecraftAccountStatus::Active)
+                ->whereNotNull('avatar_url');
+
+            return $active->firstWhere('is_primary', true)?->avatar_url
+                ?? $active->first()?->avatar_url;
+        }
+
+        // Prefer the primary active account's avatar
+        $primaryAvatar = $this->minecraftAccounts()
+            ->active()
+            ->primary()
+            ->whereNotNull('avatar_url')
+            ->value('avatar_url');
+
+        if ($primaryAvatar) {
+            return $primaryAvatar;
+        }
+
+        // Fallback: any active account with an avatar
         return $this->minecraftAccounts()
             ->active()
             ->whereNotNull('avatar_url')
             ->value('avatar_url');
     }
 
+    public function primaryMinecraftAccount(): ?MinecraftAccount
+    {
+        return $this->minecraftAccounts()->active()->primary()->first();
+    }
+
     protected function discordAvatarUrl(): ?string
     {
+        // Use already-loaded relation to avoid N+1 queries
+        if ($this->relationLoaded('discordAccounts')) {
+            $account = $this->discordAccounts
+                ->where('status', \App\Enums\DiscordAccountStatus::Active)
+                ->first();
+
+            return $account?->avatarUrl();
+        }
+
         $account = $this->discordAccounts()->active()->first();
 
         return $account?->avatarUrl();

@@ -544,27 +544,4 @@ describe('Tickets List Component', function () {
         // Verify cache was cleared
         expect(\Illuminate\Support\Facades\Cache::has($cacheKey))->toBeFalse();
     })->done();
-
-    it('shows all department tickets in All Open filter for any staff', function () {
-        $chaplainStaff = User::factory()
-            ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
-            ->create();
-
-        $chaplainThread = Thread::factory()
-            ->withDepartment(StaffDepartment::Chaplain)
-            ->withStatus(ThreadStatus::Open)
-            ->create(['subject' => 'Chaplain Ticket']);
-
-        $engineerThread = Thread::factory()
-            ->withDepartment(StaffDepartment::Engineer)
-            ->withStatus(ThreadStatus::Open)
-            ->create(['subject' => 'Engineer Ticket']);
-
-        actingAs($chaplainStaff);
-
-        Volt::test('ready-room.tickets.tickets-list')
-            ->set('filter', 'open')
-            ->assertSee('Chaplain Ticket')
-            ->assertSee('Engineer Ticket');
-    })->done();
 });

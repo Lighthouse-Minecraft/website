@@ -106,6 +106,12 @@ class UnlinkMinecraftAccount
         $account->status = MinecraftAccountStatus::Removed;
         $account->save();
 
+        // If this was the primary account, clear the flag and auto-assign a new primary
+        if ($account->is_primary) {
+            $account->update(['is_primary' => false]);
+            AutoAssignPrimaryAccount::run($user);
+        }
+
         RecordActivity::run(
             $user,
             'minecraft_account_removed',

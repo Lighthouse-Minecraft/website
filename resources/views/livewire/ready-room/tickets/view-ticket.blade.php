@@ -618,7 +618,11 @@ new class extends Component
                                         <div class="mt-1 text-zinc-700 dark:text-zinc-300">{{ $flag->note }}</div>
                                         @if($flag->status->value === 'acknowledged')
                                             <div class="mt-2 text-xs text-zinc-600 dark:text-zinc-400">
-                                                <strong>Acknowledged by <a href="{{ route('profile.show', $flag->reviewedBy) }}" class="text-blue-600 dark:text-blue-400 hover:underline">{{ $flag->reviewedBy->name }}</a></strong> on {{ $flag->reviewed_at->setTimezone($tz)->format('M j, Y g:i A') }}
+                                                @if($flag->reviewedBy && $flag->reviewed_at)
+                                                    <strong>Acknowledged by <a href="{{ route('profile.show', $flag->reviewedBy) }}" class="text-blue-600 dark:text-blue-400 hover:underline">{{ $flag->reviewedBy->name }}</a></strong> on {{ $flag->reviewed_at->setTimezone($tz)->format('M j, Y g:i A') }}
+                                                @else
+                                                    <strong>Acknowledged</strong>
+                                                @endif
                                                 @if($flag->staff_notes)
                                                     <div class="mt-1">{{ $flag->staff_notes }}</div>
                                                 @endif

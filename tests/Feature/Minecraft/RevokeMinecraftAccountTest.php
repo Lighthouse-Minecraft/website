@@ -68,3 +68,13 @@ test('sends sync whitelist remove command', function () {
 
     $this->action->handle($account, $this->admin);
 });
+
+test('auto-assigns new primary when primary account is revoked', function () {
+    $primary = MinecraftAccount::factory()->active()->primary()->for($this->regularUser)->create();
+    $other = MinecraftAccount::factory()->active()->for($this->regularUser)->create();
+
+    $this->action->handle($primary, $this->admin);
+
+    expect($primary->fresh()->is_primary)->toBeFalse()
+        ->and($other->fresh()->is_primary)->toBeTrue();
+});

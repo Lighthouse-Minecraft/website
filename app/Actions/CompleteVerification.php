@@ -98,6 +98,17 @@ class CompleteVerification
                 // Mark verification as completed
                 $verification->update(['status' => 'completed']);
 
+                // If user has no primary account yet, make this one primary
+                $hasPrimary = MinecraftAccount::where('user_id', $account->user_id)
+                    ->where('is_primary', true)
+                    ->active()
+                    ->where('id', '!=', $account->id)
+                    ->exists();
+
+                if (! $hasPrimary) {
+                    $account->update(['is_primary' => true]);
+                }
+
                 // Record activity
                 RecordActivity::handle(
                     $verification->user,

@@ -23,7 +23,7 @@ new class extends Component {
     public function getAnnouncementsProperty()
     {
         return Announcement::orderBy($this->sortBy, $this->sortDirection)
-            ->with(['author.roles', 'tags', 'categories', 'comments'])
+            ->with(['author.roles', 'author.minecraftAccounts', 'author.discordAccounts', 'tags', 'categories', 'comments'])
             ->paginate(10);
     }
 
