@@ -35,7 +35,7 @@ Route::middleware(['auth'])->group(function () {
 
 Route::get('/profile/{user}', [UserController::class, 'show'])
     ->name('profile.show')
-    ->middleware('can:view,user');
+    ->middleware(['auth', 'can:view,user']);
 
 Route::middleware(['auth'])->group(function () {
     Route::get('acp', [AdminControlPanelController::class, 'index'])
@@ -44,11 +44,11 @@ Route::middleware(['auth'])->group(function () {
 
 Route::get('/acp/pages/create', [PageController::class, 'create'])
     ->name('admin.pages.create')
-    ->middleware('can:create,App\Models\Page');
+    ->middleware(['auth', 'can:create,App\Models\Page']);
 
 Route::get('/acp/pages/{page}/edit', [PageController::class, 'edit'])
     ->name('admin.pages.edit')
-    ->middleware('can:update,page');
+    ->middleware(['auth', 'can:update,page']);
 
 // This is for admin announcement links
 Route::prefix('acp/announcements')

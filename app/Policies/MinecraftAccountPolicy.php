@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Enums\MinecraftAccountStatus;
+use App\Enums\StaffRank;
 use App\Models\MinecraftAccount;
 use App\Models\User;
 
@@ -13,7 +14,7 @@ class MinecraftAccountPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->isAdmin();
+        return $user->isAdmin() || $user->isAtLeastRank(StaffRank::Officer);
     }
 
     /**

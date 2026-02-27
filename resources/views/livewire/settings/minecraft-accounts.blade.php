@@ -29,6 +29,8 @@ new class extends Component {
 
     public ?int $accountToReactivate = null;
 
+    public ?int $accountToRemoveVerifying = null;
+
     /**
      * Load the authenticated user's Minecraft account by ID and open its detail modal if found.
      *
@@ -110,22 +112,10 @@ new class extends Component {
                 ->first();
 
             if ($account) {
-                // Mark cancelled before attempting removal (enters retry pool if server is down)
-                $account->update(['status' => MinecraftAccountStatus::Cancelled]);
-
-                $rconService = app(MinecraftRconService::class);
-                $result = $rconService->executeCommand(
-                    $account->whitelistRemoveCommand(),
-                    'whitelist',
-                    $account->username,
-                    auth()->user(),
-                    ['action' => 'cancel_verification', 'verification_id' => $verification->id]
-                );
-
-                if ($result['success']) {
-                    $account->delete();
-                }
-                // If server offline, account stays 'cancelled' for CleanupExpiredVerifications to retry
+                $this->cancelAndRemoveFromWhitelist($account, [
+                    'action' => 'cancel_verification',
+                    'verification_id' => $verification->id,
+                ]);
             }
 
             $verification->update(['status' => 'expired']);
@@ -317,6 +307,81 @@ new class extends Component {
         }
     }
 
+    public function confirmRemoveVerifying(int $accountId): void
+    {
+        $this->accountToRemoveVerifying = $accountId;
+        $this->modal('confirm-remove-verifying')->show();
+    }
+
+    public function removeVerifyingAccount(): void
+    {
+        if (! $this->accountToRemoveVerifying) {
+            $this->modal('confirm-remove-verifying')->close();
+
+            return;
+        }
+
+        $account = auth()->user()->minecraftAccounts()
+            ->where('id', $this->accountToRemoveVerifying)
+            ->where('status', MinecraftAccountStatus::Verifying)
+            ->first();
+
+        if (! $account) {
+            $this->modal('confirm-remove-verifying')->close();
+            $this->accountToRemoveVerifying = null;
+            Flux::toast('Account not found or no longer in verification.', variant: 'danger');
+
+            return;
+        }
+
+        $this->authorize('delete', $account);
+
+        // Expire the associated verification record (try exact match, then normalized)
+        $normalizedUuid = str_replace('-', '', $account->uuid);
+        $verification = MinecraftVerification::where('user_id', auth()->id())
+            ->where(function ($q) use ($account, $normalizedUuid) {
+                $q->where('minecraft_uuid', $account->uuid)
+                    ->orWhereRaw("REPLACE(minecraft_uuid, '-', '') = ?", [$normalizedUuid]);
+            })
+            ->pending()
+            ->first();
+
+        if ($verification) {
+            $verification->update(['status' => 'expired']);
+        }
+
+        $this->cancelAndRemoveFromWhitelist($account, [
+            'action' => 'cancel_verification_by_account',
+            'account_id' => $account->id,
+        ]);
+
+        // Clear the active verification UI so the form resets
+        $this->verificationCode = null;
+        $this->expiresAt = null;
+
+        $this->modal('confirm-remove-verifying')->close();
+        $this->accountToRemoveVerifying = null;
+        Flux::toast('Verification cancelled and account removed.', variant: 'warning');
+    }
+
+    private function cancelAndRemoveFromWhitelist(MinecraftAccount $account, array $context): void
+    {
+        $account->update(['status' => MinecraftAccountStatus::Cancelled]);
+
+        $rconService = app(MinecraftRconService::class);
+        $result = $rconService->executeCommand(
+            $account->whitelistRemoveCommand(),
+            'whitelist',
+            $account->username,
+            auth()->user(),
+            $context
+        );
+
+        if ($result['success']) {
+            $account->delete();
+        }
+    }
+
     public function with(): array
     {
         $maxAccounts = config('lighthouse.max_minecraft_accounts');
@@ -391,13 +456,12 @@ new class extends Component {
                                 </flux:button>
                             </div>
                         @elseif($account->status === \App\Enums\MinecraftAccountStatus::Verifying)
-                            <flux:modal.trigger name="confirm-cancel-verification">
-                                <flux:button
-                                    variant="danger"
-                                    size="sm">
-                                    Remove
-                                </flux:button>
-                            </flux:modal.trigger>
+                            <flux:button
+                                wire:click="confirmRemoveVerifying({{ $account->id }})"
+                                variant="danger"
+                                size="sm">
+                                Remove
+                            </flux:button>
                         @endif
                     </div>
                 </flux:card>
@@ -604,6 +668,21 @@ new class extends Component {
                 <flux:button variant="ghost">Cancel</flux:button>
             </flux:modal.close>
             <flux:button variant="primary" wire:click="reactivateAccount">Reactivate Account</flux:button>
+        </div>
+    </flux:modal>
+
+    {{-- Remove verifying account confirmation modal --}}
+    <flux:modal name="confirm-remove-verifying" class="min-w-[22rem] space-y-6">
+        <div>
+            <flux:heading size="lg">Cancel Verification</flux:heading>
+            <flux:text class="mt-2">Cancel this verification and remove the account? You will need to start over to link this account.</flux:text>
+        </div>
+
+        <div class="flex gap-2 justify-end">
+            <flux:modal.close>
+                <flux:button variant="ghost">Keep Waiting</flux:button>
+            </flux:modal.close>
+            <flux:button variant="danger" wire:click="removeVerifyingAccount">Remove</flux:button>
         </div>
     </flux:modal>
 
