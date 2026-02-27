@@ -81,11 +81,31 @@ new class extends Component {
 
     private function defaultTabFor(string $category): string
     {
+        $user = auth()->user();
+
         return match ($category) {
-            'users' => 'user-manager',
-            'content' => 'page-manager',
-            'logs' => 'mc-command-log',
-            'config' => 'role-manager',
+            'users' => match (true) {
+                $user?->can('viewAny', \App\Models\User::class) => 'user-manager',
+                $user?->can('viewAny', \App\Models\MinecraftAccount::class) => 'mc-user-manager',
+                $user?->can('viewAny', \App\Models\DiscordAccount::class) => 'discord-user-manager',
+                default => 'user-manager',
+            },
+            'content' => match (true) {
+                $user?->can('viewAny', \App\Models\Page::class) => 'page-manager',
+                $user?->can('viewAny', \App\Models\Announcement::class) => 'announcement-manager',
+                $user?->can('viewAny', \App\Models\Meeting::class) => 'meeting-manager',
+                default => 'page-manager',
+            },
+            'logs' => match (true) {
+                $user?->can('view-mc-command-log') => 'mc-command-log',
+                $user?->can('view-activity-log') => 'activity-log',
+                default => 'mc-command-log',
+            },
+            'config' => match (true) {
+                $user?->can('viewAny', \App\Models\Role::class) => 'role-manager',
+                $user?->can('viewAny', \App\Models\PrayerCountry::class) => 'prayer-manager',
+                default => 'role-manager',
+            },
             default => 'user-manager',
         };
     }
@@ -111,7 +131,7 @@ new class extends Component {
     {{-- Users category --}}
     @if($category === 'users')
         <flux:tab.group>
-            <flux:tabs wire:model="tab" variant="segmented" size="sm">
+            <flux:tabs wire:model.live="tab" variant="segmented" size="sm">
                 @can('viewAny', \App\Models\User::class)
                     <flux:tab name="user-manager">Users</flux:tab>
                 @endcan
@@ -144,7 +164,7 @@ new class extends Component {
     {{-- Content category --}}
     @if($category === 'content')
         <flux:tab.group>
-            <flux:tabs wire:model="tab" variant="segmented" size="sm">
+            <flux:tabs wire:model.live="tab" variant="segmented" size="sm">
                 @can('viewAny', \App\Models\Page::class)
                     <flux:tab name="page-manager">Pages</flux:tab>
                 @endcan
@@ -177,7 +197,7 @@ new class extends Component {
     {{-- Logs category --}}
     @if($category === 'logs')
         <flux:tab.group>
-            <flux:tabs wire:model="tab" variant="segmented" size="sm">
+            <flux:tabs wire:model.live="tab" variant="segmented" size="sm">
                 @can('view-mc-command-log')
                     <flux:tab name="mc-command-log">MC Command Log</flux:tab>
                 @endcan
@@ -202,7 +222,7 @@ new class extends Component {
     {{-- Config category --}}
     @if($category === 'config')
         <flux:tab.group>
-            <flux:tabs wire:model="tab" variant="segmented" size="sm">
+            <flux:tabs wire:model.live="tab" variant="segmented" size="sm">
                 @can('viewAny', \App\Models\Role::class)
                     <flux:tab name="role-manager">Roles</flux:tab>
                 @endcan

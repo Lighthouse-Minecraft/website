@@ -378,7 +378,7 @@ new class extends Component {
             $account->delete();
         }
 
-        // Clear the active verification code state if it was for this account
+        // Clear the active verification UI so the form resets
         $this->verificationCode = null;
         $this->expiresAt = null;
 

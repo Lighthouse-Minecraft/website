@@ -64,7 +64,7 @@ describe('Admin Control Panel Tabs Component', function () {
             ->assertSet('tab', 'discord-user-manager');
     });
 
-    it('persists category and tab in URL', function () {
+    it('allows setting category and tab independently', function () {
         $admin = User::factory()->admin()->create();
 
         $this->actingAs($admin);

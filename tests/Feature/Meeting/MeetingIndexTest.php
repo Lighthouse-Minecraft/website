@@ -79,15 +79,15 @@ describe('Meetings List Page - Permissions', function () {
         actingAs($user);
 
         get(route('acp.index'))
-            ->assertDontSee('Manage Meetings');
+            ->assertDontSee('Meetings');
     });
 
     it('is visible to Crew Members', function () {
         $user = User::factory()->withStaffPosition(StaffDepartment::Steward, StaffRank::CrewMember, 'crew')->create();
         actingAs($user);
 
-        get(route('acp.index'))
-            ->assertSee('Manage Meetings');
+        get(route('acp.index', ['category' => 'content']))
+            ->assertSee('Meetings');
     });
 
     it('does not load for members', function () {

@@ -71,7 +71,8 @@ test('cannot remove another users verifying account', function () {
 
     Volt::test('settings.minecraft-accounts')
         ->call('confirmRemoveVerifying', $account->id)
-        ->call('removeVerifyingAccount');
+        ->call('removeVerifyingAccount')
+        ->assertDispatched('toast-show');
 
     // Account should still exist since it wasn't found for this user
     $this->assertDatabaseHas('minecraft_accounts', ['id' => $account->id]);
@@ -84,7 +85,8 @@ test('cannot remove a non-verifying account via removeVerifyingAccount', functio
 
     Volt::test('settings.minecraft-accounts')
         ->call('confirmRemoveVerifying', $account->id)
-        ->call('removeVerifyingAccount');
+        ->call('removeVerifyingAccount')
+        ->assertDispatched('toast-show');
 
     // Active account should still exist
     $this->assertDatabaseHas('minecraft_accounts', [

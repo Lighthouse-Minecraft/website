@@ -1,23 +1,8 @@
 <?php
 
-use App\Enums\StaffDepartment;
-use App\Enums\StaffRank;
 use App\Http\Controllers\Auth\VerifyEmailController;
-use App\Models\User;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
-
-Gate::define('viewACP', function (?User $user) {
-    if (! $user) {
-        return false;
-    }
-
-    return $user->isAdmin()
-        || $user->isAtLeastRank(StaffRank::Officer)
-        || $user->hasRole('Page Editor')
-        || $user->isInDepartment(StaffDepartment::Engineer);
-});
 
 Route::middleware('guest')->group(function () {
     Volt::route('login', 'auth.login')

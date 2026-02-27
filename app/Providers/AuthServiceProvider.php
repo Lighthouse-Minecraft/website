@@ -76,16 +76,20 @@ class AuthServiceProvider extends ServiceProvider
             return $user->isAtLeastLevel(MembershipLevel::Traveler) && ! $user->in_brig;
         });
 
-        Gate::define('view-mc-command-log', function ($user) {
+        Gate::define('viewACP', function ($user) {
             return $user->isAdmin()
                 || $user->isAtLeastRank(StaffRank::Officer)
+                || $user->hasRole('Page Editor')
                 || $user->isInDepartment(StaffDepartment::Engineer);
         });
 
-        Gate::define('view-activity-log', function ($user) {
+        $canViewLogs = function ($user) {
             return $user->isAdmin()
                 || $user->isAtLeastRank(StaffRank::Officer)
                 || $user->isInDepartment(StaffDepartment::Engineer);
-        });
+        };
+
+        Gate::define('view-mc-command-log', $canViewLogs);
+        Gate::define('view-activity-log', $canViewLogs);
     }
 }
