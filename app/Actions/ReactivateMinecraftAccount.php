@@ -71,7 +71,7 @@ class ReactivateMinecraftAccount
             SyncMinecraftStaff::run($owner, $owner->staff_department);
         }
 
-        RecordActivity::handle(
+        RecordActivity::run(
             $owner,
             'minecraft_account_reactivated',
             "Reactivated {$account->account_type->label()} account: {$account->username}"

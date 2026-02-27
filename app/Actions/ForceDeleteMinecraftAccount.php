@@ -37,9 +37,14 @@ class ForceDeleteMinecraftAccount
         $accountType = $account->account_type;
         $affectedUser = $account->user;
 
-        $account->delete();
+        if (! $account->delete()) {
+            return [
+                'success' => false,
+                'message' => "Failed to delete Minecraft account {$username} (ID: {$account->id}).",
+            ];
+        }
 
-        RecordActivity::handle(
+        RecordActivity::run(
             $affectedUser,
             'minecraft_account_permanently_deleted',
             "Admin {$admin->name} permanently deleted {$accountType->label()} account: {$username}"

@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\MinecraftAccountStatus;
 use App\Models\MinecraftAccount;
 use App\Models\User;
 
@@ -53,7 +54,8 @@ class MinecraftAccountPolicy
      */
     public function reactivate(User $user, MinecraftAccount $minecraftAccount): bool
     {
-        return $user->id === $minecraftAccount->user_id || $user->isAdmin();
+        return $minecraftAccount->status === MinecraftAccountStatus::Removed
+            && ($user->id === $minecraftAccount->user_id || $user->isAdmin());
     }
 
     /**
@@ -69,6 +71,7 @@ class MinecraftAccountPolicy
      */
     public function forceDelete(User $user, MinecraftAccount $minecraftAccount): bool
     {
-        return $user->isAdmin();
+        return $minecraftAccount->status === MinecraftAccountStatus::Removed
+            && $user->isAdmin();
     }
 }

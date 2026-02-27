@@ -29,7 +29,7 @@ enum MinecraftAccountStatus: string
     /**
      * Get the color associated with the account status.
      *
-     * @return string The color name for the status: 'yellow' for Verifying, 'green' for Active, 'red' for Cancelled, or 'orange' for Banned.
+     * @return string The color name for the status: 'yellow' for Verifying, 'green' for Active, 'red' for Cancelled, 'orange' for Banned, or 'zinc' for Removed.
      */
     public function color(): string
     {

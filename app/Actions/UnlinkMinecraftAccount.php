@@ -14,8 +14,8 @@ class UnlinkMinecraftAccount
 
     /**
      * Unlink the given Minecraft account from the specified user, execute server-side rank
-     * reset, staff removal (if applicable), and whitelist removal via RCON, then delete the
-     * account record.
+     * reset, staff removal (if applicable), and whitelist removal via RCON, then soft-disable
+     * the account record by setting its status to Removed.
      *
      * If the user does not own the account or the account is not in an active state, the unlink
      * is not performed and an appropriate failure message is returned.
@@ -80,14 +80,21 @@ class UnlinkMinecraftAccount
             );
         }
 
-        // Remove from whitelist using the correct command for account type
-        $rconService->executeCommand(
+        // Remove from whitelist; only soft-disable the account if it succeeds
+        $whitelistResult = $rconService->executeCommand(
             $account->whitelistRemoveCommand(),
             'whitelist',
             $account->username,
             $user,
             ['action' => 'unlink']
         );
+
+        if (! $whitelistResult['success']) {
+            return [
+                'success' => false,
+                'message' => 'Failed to remove player from server whitelist. Account has not been removed.',
+            ];
+        }
 
         RecordActivity::handle(
             $user,

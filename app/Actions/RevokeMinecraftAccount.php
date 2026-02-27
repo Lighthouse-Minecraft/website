@@ -41,7 +41,7 @@ class RevokeMinecraftAccount
             ['action' => 'revoke_rank_reset', 'affected_user_id' => $affectedUser->id]
         );
 
-        // Remove from whitelist synchronously; only delete the record if it succeeds
+        // Remove from whitelist synchronously; only soft-disable the record if it succeeds
         $whitelistResult = $rconService->executeCommand(
             $account->whitelistRemoveCommand(),
             'whitelist',

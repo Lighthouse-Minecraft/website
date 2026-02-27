@@ -62,9 +62,9 @@ new class extends Component {
 
     public function reactivateMinecraftAccount(int $accountId): void
     {
-        $this->authorize('viewAny', MinecraftAccount::class);
-
         $account = MinecraftAccount::findOrFail($accountId);
+        $this->authorize('reactivate', $account);
+
         $result = \App\Actions\ReactivateMinecraftAccount::run($account, Auth::user());
 
         if ($result['success']) {
@@ -78,9 +78,9 @@ new class extends Component {
 
     public function forceDeleteMinecraftAccount(int $accountId): void
     {
-        $this->authorize('viewAny', MinecraftAccount::class);
-
         $account = MinecraftAccount::findOrFail($accountId);
+        $this->authorize('forceDelete', $account);
+
         $result = \App\Actions\ForceDeleteMinecraftAccount::run($account, Auth::user());
 
         if ($result['success']) {
