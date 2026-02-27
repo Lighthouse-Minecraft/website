@@ -5,6 +5,7 @@ use App\Models\Meeting;
 use App\Models\MeetingNote;
 use App\Models\User;
 use Carbon\Carbon;
+use Flux\Flux;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Volt\Component;
 
@@ -102,6 +103,14 @@ new class extends Component {
     public function SaveNote() {
         $this->authorize('updateSave', $this->note);
 
+        // Prevent accidental content wipe
+        if (empty(trim($this->updatedContent ?? '')) && ! empty(trim($this->note->content ?? ''))) {
+            $this->note->refresh();
+            $this->updatedContent = $this->note->content;
+            Flux::toast('Cannot save empty content over existing notes.', variant: 'warning');
+            return;
+        }
+
         $this->note->update([
             'content' => $this->updatedContent,
         ]);
@@ -145,6 +154,13 @@ new class extends Component {
         $this->authorize('updateSave', $this->note);
 
         if ($this->note->content == $this->updatedContent) {
+            return;
+        }
+
+        // Prevent accidental content wipe from stale Livewire state
+        $this->note->refresh();
+        if (empty(trim($this->updatedContent ?? '')) && ! empty(trim($this->note->content ?? ''))) {
+            $this->updatedContent = $this->note->content;
             return;
         }
 

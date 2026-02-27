@@ -94,6 +94,8 @@ new class extends Component {
 
     public function syncRoles(): void
     {
+        $this->authorize('manage-stowaway-users');
+
         $user = auth()->user();
 
         try {
@@ -160,12 +162,14 @@ new class extends Component {
                         </div>
                         @if($account->status === DiscordAccountStatus::Active)
                             <div class="flex items-center gap-2">
-                                <flux:button
-                                    wire:click="syncRoles"
-                                    variant="ghost"
-                                    size="sm">
-                                    Sync Roles
-                                </flux:button>
+                                @can('manage-stowaway-users')
+                                    <flux:button
+                                        wire:click="syncRoles"
+                                        variant="ghost"
+                                        size="sm">
+                                        Sync Roles
+                                    </flux:button>
+                                @endcan
                                 <flux:button
                                     wire:click="confirmUnlink({{ $account->id }})"
                                     variant="danger"

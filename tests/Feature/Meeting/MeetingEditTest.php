@@ -169,7 +169,7 @@ describe('Meeting Edit - Meeting Workflow', function () {
         loginAsAdmin();
 
         livewire('meetings.manage-meeting', ['meeting' => $meeting])
-            ->call('StartMeeting')
+            ->call('StartMeetingConfirmed')
             ->assertSuccessful();
 
         $meeting->refresh();
@@ -188,7 +188,7 @@ describe('Meeting Edit - Meeting Workflow', function () {
         loginAsAdmin();
 
         livewire('meetings.manage-meeting', ['meeting' => $meeting])
-            ->call('StartMeeting')
+            ->call('StartMeetingConfirmed')
             ->assertSuccessful();
 
         $meeting->refresh();

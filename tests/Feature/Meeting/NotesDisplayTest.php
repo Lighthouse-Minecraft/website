@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\MeetingStatus;
 use App\Livewire\Meeting\NotesDisplay;
 use App\Models\Meeting;
 use App\Models\MeetingNote;
@@ -13,9 +14,9 @@ it('can render the notes display component', function () {
     $component->assertStatus(200);
 });
 
-it('displays meetings for the specified section key', function () {
+it('displays completed meetings for the specified section key', function () {
     $admin = loginAsAdmin();
-    $meeting = Meeting::factory()->create(['title' => 'Dev Team Meeting', 'minutes' => 'Global meeting minutes']);
+    $meeting = Meeting::factory()->withStatus(MeetingStatus::Completed)->create(['title' => 'Dev Team Meeting', 'minutes' => 'Global meeting minutes']);
     MeetingNote::factory()->create([
         'meeting_id' => $meeting->id,
         'section_key' => 'development',
@@ -29,7 +30,7 @@ it('displays meetings for the specified section key', function () {
 
 it('shows meeting note content inline for matching department', function () {
     $admin = loginAsAdmin();
-    $meeting = Meeting::factory()->create(['title' => 'Dev Team Meeting']);
+    $meeting = Meeting::factory()->withStatus(MeetingStatus::Completed)->create(['title' => 'Dev Team Meeting']);
     MeetingNote::factory()->create([
         'meeting_id' => $meeting->id,
         'section_key' => 'command',
@@ -42,15 +43,16 @@ it('shows meeting note content inline for matching department', function () {
     $component->assertSee('This is the meeting content.');
 });
 
-it('shows all meetings even when no department note exists', function () {
+it('does not show pending meetings in notes display', function () {
     loginAsAdmin();
-    Meeting::factory()->create(['title' => 'Meeting Without Department Notes']);
+    Meeting::factory()->withStatus(MeetingStatus::Pending)->create(['title' => 'Upcoming Meeting']);
+    Meeting::factory()->withStatus(MeetingStatus::Completed)->create(['title' => 'Past Meeting']);
 
-    $component = Livewire::test(NotesDisplay::class, ['sectionKey' => 'nonexistent']);
+    $component = Livewire::test(NotesDisplay::class, ['sectionKey' => 'development']);
 
     $component
-        ->assertSee('Meeting Without Department Notes')
-        ->assertSee('No Nonexistent notes were recorded for this meeting.');
+        ->assertDontSee('Upcoming Meeting')
+        ->assertSee('Past Meeting');
 });
 
 it('shows message when no meetings exist', function () {
@@ -63,7 +65,7 @@ it('shows message when no meetings exist', function () {
 
 it('paginates the meetings list', function () {
     loginAsAdmin();
-    Meeting::factory()->count(11)->create();
+    Meeting::factory()->withStatus(MeetingStatus::Completed)->count(11)->create();
 
     $component = Livewire::test(NotesDisplay::class, ['sectionKey' => 'development']);
 

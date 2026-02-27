@@ -75,7 +75,8 @@ new class extends Component
                     $query->where('status', 'closed');
                     break;
                 case 'assigned-to-me':
-                    $query->where('assigned_to_user_id', $user->id);
+                    $query->where('assigned_to_user_id', $user->id)
+                        ->where('status', '!=', 'closed');
                     break;
                 case 'unassigned':
                     $query->whereNull('assigned_to_user_id')
