@@ -20,6 +20,7 @@ new class extends Component {
     public string $brigActionReason = '';
     public ?int $brigActionDays = null;
     public ?int $accountToRevoke = null;
+    public ?int $accountToForceDelete = null;
 
     /**
      * Initialize component state for the given user.
@@ -207,12 +208,40 @@ new class extends Component {
         }
     }
 
-    public function forceDeleteMinecraftAccount(int $accountId): void
+    public function confirmForceDelete(int $accountId): void
     {
-        $account = $this->user->minecraftAccounts()->findOrFail($accountId);
+        $account = $this->user->minecraftAccounts()->find($accountId);
+
+        if (! $account || ! Auth::user()->can('forceDelete', $account)) {
+            return;
+        }
+
+        $this->accountToForceDelete = $accountId;
+        Flux::modal('confirm-force-delete-mc-account')->show();
+    }
+
+    public function forceDeleteMinecraftAccount(): void
+    {
+        if (! $this->accountToForceDelete) {
+            Flux::modal('confirm-force-delete-mc-account')->close();
+            return;
+        }
+
+        $account = $this->user->minecraftAccounts()->find($this->accountToForceDelete);
+
+        if (! $account) {
+            Flux::modal('confirm-force-delete-mc-account')->close();
+            $this->accountToForceDelete = null;
+            Flux::toast(text: 'Account not found. It may have already been deleted.', heading: 'Error', variant: 'danger');
+            return;
+        }
+
         $this->authorize('forceDelete', $account);
 
         $result = \App\Actions\ForceDeleteMinecraftAccount::run($account, Auth::user());
+
+        Flux::modal('confirm-force-delete-mc-account')->close();
+        $this->accountToForceDelete = null;
 
         if ($result['success']) {
             Flux::toast(text: $result['message'], heading: 'Success', variant: 'success');
@@ -557,11 +586,10 @@ new class extends Component {
                                     @endcan
                                     @can('forceDelete', $account)
                                         <flux:button
-                                            wire:click="forceDeleteMinecraftAccount({{ $account->id }})"
+                                            wire:click="confirmForceDelete({{ $account->id }})"
                                             variant="ghost"
                                             size="sm"
-                                            class="hover:!text-red-600 dark:hover:!text-red-400 hover:!bg-red-50 dark:hover:!bg-red-950"
-                                            wire:confirm="PERMANENTLY delete this Minecraft account? This will release the UUID so it can be registered by anyone. This action cannot be undone.">
+                                            class="hover:!text-red-600 dark:hover:!text-red-400 hover:!bg-red-50 dark:hover:!bg-red-950">
                                             Delete
                                         </flux:button>
                                     @endcan
@@ -746,6 +774,21 @@ new class extends Component {
                 <flux:button variant="ghost" x-on:click="$flux.modal('profile-release-from-brig-modal').close()">Cancel</flux:button>
                 <flux:button wire:click="confirmReleaseFromBrig" variant="primary">Confirm — Release from Brig</flux:button>
             </div>
+        </div>
+    </flux:modal>
+
+    {{-- Force Delete Minecraft account confirmation modal --}}
+    <flux:modal name="confirm-force-delete-mc-account" class="min-w-[22rem] space-y-6">
+        <div>
+            <flux:heading size="lg">Permanently Delete Minecraft Account</flux:heading>
+            <flux:text class="mt-2">This will <strong>permanently</strong> delete this Minecraft account and release the UUID so it can be registered by anyone. This action cannot be undone.</flux:text>
+        </div>
+
+        <div class="flex gap-2 justify-end">
+            <flux:modal.close>
+                <flux:button variant="ghost">Cancel</flux:button>
+            </flux:modal.close>
+            <flux:button variant="danger" wire:click="forceDeleteMinecraftAccount">Delete Permanently</flux:button>
         </div>
     </flux:modal>
 
