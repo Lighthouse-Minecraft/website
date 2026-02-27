@@ -103,3 +103,53 @@ it('regular user cannot force delete a minecraft account', function () {
 
     expect($user->can('forceDelete', $account))->toBeFalse();
 });
+
+// === revoke ===
+
+it('admin can revoke a minecraft account', function () {
+    $admin = loginAsAdmin();
+    $owner = User::factory()->create();
+    $account = MinecraftAccount::factory()->active()->create(['user_id' => $owner->id]);
+
+    expect($admin->can('revoke', $account))->toBeTrue();
+});
+
+it('engineer officer can revoke a minecraft account', function () {
+    $officer = officerEngineer();
+    $owner = User::factory()->create();
+    $account = MinecraftAccount::factory()->active()->create(['user_id' => $owner->id]);
+
+    expect($officer->can('revoke', $account))->toBeTrue();
+});
+
+it('command officer can revoke a minecraft account', function () {
+    $officer = officerCommand();
+    $owner = User::factory()->create();
+    $account = MinecraftAccount::factory()->active()->create(['user_id' => $owner->id]);
+
+    expect($officer->can('revoke', $account))->toBeTrue();
+});
+
+it('steward officer cannot revoke a minecraft account', function () {
+    $officer = officerSteward();
+    $owner = User::factory()->create();
+    $account = MinecraftAccount::factory()->active()->create(['user_id' => $owner->id]);
+
+    expect($officer->can('revoke', $account))->toBeFalse();
+});
+
+it('engineer crew member cannot revoke a minecraft account', function () {
+    $crew = crewEngineer();
+    $owner = User::factory()->create();
+    $account = MinecraftAccount::factory()->active()->create(['user_id' => $owner->id]);
+
+    expect($crew->can('revoke', $account))->toBeFalse();
+});
+
+it('regular user cannot revoke a minecraft account', function () {
+    $user = membershipTraveler();
+    $owner = User::factory()->create();
+    $account = MinecraftAccount::factory()->active()->create(['user_id' => $owner->id]);
+
+    expect($user->can('revoke', $account))->toBeFalse();
+});

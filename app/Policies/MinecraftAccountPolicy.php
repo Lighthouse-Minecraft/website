@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Enums\MinecraftAccountStatus;
+use App\Enums\StaffDepartment;
 use App\Enums\StaffRank;
 use App\Models\MinecraftAccount;
 use App\Models\User;
@@ -66,6 +67,17 @@ class MinecraftAccountPolicy
     {
         return $minecraftAccount->status === MinecraftAccountStatus::Removed
             && ($user->id === $minecraftAccount->user_id || $user->isAdmin());
+    }
+
+    /**
+     * Determine whether the user can revoke (admin soft-remove) the account.
+     */
+    public function revoke(User $user, MinecraftAccount $minecraftAccount): bool
+    {
+        return $user->isAdmin()
+            || ($user->isAtLeastRank(StaffRank::Officer)
+                && ($user->isInDepartment(StaffDepartment::Engineer)
+                    || $user->isInDepartment(StaffDepartment::Command)));
     }
 
     /**
