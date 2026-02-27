@@ -132,14 +132,10 @@ new class extends Component {
     /**
      * Loads the specified Minecraft account for the managed user into `$selectedAccount` and opens the account detail modal if the account exists.
      *
-     * Performs an authorization check for viewing PII before loading the account.
-     *
      * @param int $accountId The ID of the Minecraft account to load.
      */
     public function showAccount(int $accountId): void
     {
-        $this->authorize('viewPii', $this->user);
-
         $this->selectedAccount = $this->user->minecraftAccounts()->with('user')->find($accountId);
 
         if ($this->selectedAccount) {

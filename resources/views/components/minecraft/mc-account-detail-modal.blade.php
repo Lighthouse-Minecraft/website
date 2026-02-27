@@ -35,10 +35,12 @@
 
             @php $tz = auth()->user()->timezone ?? 'UTC'; @endphp
             <dl class="space-y-3 text-sm">
-                <div class="flex justify-between gap-4">
-                    <dt class="text-zinc-500 dark:text-zinc-400 font-medium shrink-0">UUID</dt>
-                    <dd class="font-mono text-xs break-all text-right">{{ $account->uuid }}</dd>
-                </div>
+                @if(auth()->user()->isAdmin() || auth()->user()->isInDepartment(\App\Enums\StaffDepartment::Engineer) || auth()->user()->isAtLeastRank(\App\Enums\StaffRank::Officer))
+                    <div class="flex justify-between gap-4">
+                        <dt class="text-zinc-500 dark:text-zinc-400 font-medium shrink-0">UUID</dt>
+                        <dd class="font-mono text-xs break-all text-right">{{ $account->uuid }}</dd>
+                    </div>
+                @endif
 
                 <div class="flex justify-between gap-4">
                     <dt class="text-zinc-500 dark:text-zinc-400 font-medium shrink-0">Linked User</dt>
@@ -53,30 +55,32 @@
                     </dd>
                 </div>
 
-                @if($account->verified_at)
-                    <div class="flex justify-between gap-4">
-                        <dt class="text-zinc-500 dark:text-zinc-400 font-medium shrink-0">Verified At</dt>
-                        <dd title="{{ $account->verified_at->setTimezone($tz)->format('Y-m-d H:i:s T') }}">
-                            {{ $account->verified_at->setTimezone($tz)->format('M j, Y g:i A') }}
-                        </dd>
-                    </div>
-                @endif
-
-                @if($account->last_username_check_at)
-                    <div class="flex justify-between gap-4">
-                        <dt class="text-zinc-500 dark:text-zinc-400 font-medium shrink-0">Last Username Check</dt>
-                        <dd title="{{ $account->last_username_check_at->setTimezone($tz)->format('Y-m-d H:i:s T') }}">
-                            {{ $account->last_username_check_at->setTimezone($tz)->format('M j, Y g:i A') }}
-                        </dd>
-                    </div>
-                @endif
-
                 <div class="flex justify-between gap-4">
                     <dt class="text-zinc-500 dark:text-zinc-400 font-medium shrink-0">Created At</dt>
                     <dd title="{{ $account->created_at->setTimezone($tz)->format('Y-m-d H:i:s T') }}">
                         {{ $account->created_at->setTimezone($tz)->format('M j, Y g:i A') }}
                     </dd>
                 </div>
+
+                @if(auth()->user()->staff_department !== null || auth()->user()->isAdmin())
+                    @if($account->verified_at)
+                        <div class="flex justify-between gap-4">
+                            <dt class="text-zinc-500 dark:text-zinc-400 font-medium shrink-0">Verified At</dt>
+                            <dd title="{{ $account->verified_at->setTimezone($tz)->format('Y-m-d H:i:s T') }}">
+                                {{ $account->verified_at->setTimezone($tz)->format('M j, Y g:i A') }}
+                            </dd>
+                        </div>
+                    @endif
+
+                    @if($account->last_username_check_at)
+                        <div class="flex justify-between gap-4">
+                            <dt class="text-zinc-500 dark:text-zinc-400 font-medium shrink-0">Last Username Check</dt>
+                            <dd title="{{ $account->last_username_check_at->setTimezone($tz)->format('Y-m-d H:i:s T') }}">
+                                {{ $account->last_username_check_at->setTimezone($tz)->format('M j, Y g:i A') }}
+                            </dd>
+                        </div>
+                    @endif
+                @endif
             </dl>
 
             @canany(['reactivate', 'forceDelete'], $account)
