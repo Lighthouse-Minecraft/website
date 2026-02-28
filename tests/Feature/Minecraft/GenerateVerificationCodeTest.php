@@ -46,7 +46,7 @@ test('generates verification code for java account', function () {
     ]);
 });
 
-test('generates verification code for bedrock account - normalizes dot prefix', function () {
+test('generates verification code for bedrock account - stores clean gamertag', function () {
     Http::fake([
         'api.geysermc.org/*' => Http::response([
             'xuid' => '2535428197086765',
@@ -62,17 +62,17 @@ test('generates verification code for bedrock account - normalizes dot prefix', 
     $this->assertDatabaseHas('minecraft_verifications', [
         'user_id' => $this->user->id,
         'account_type' => 'bedrock',
-        'minecraft_username' => '.BedrockPlayer',
+        'minecraft_username' => 'BedrockPlayer',
         'status' => 'pending',
     ]);
 
     $this->assertDatabaseHas('minecraft_accounts', [
         'user_id' => $this->user->id,
-        'username' => '.BedrockPlayer',
+        'username' => 'BedrockPlayer',
     ]);
 });
 
-test('bedrock verification does not double-add the dot if user enters it', function () {
+test('bedrock verification strips dot prefix if user enters it', function () {
     Http::fake([
         'api.geysermc.org/*' => Http::response([
             'xuid' => '2535428197086765',
@@ -83,8 +83,9 @@ test('bedrock verification does not double-add the dot if user enters it', funct
 
     expect($result['success'])->toBeTrue();
 
+    // The ltrim strips the dot before API lookup, and no dot is re-added
     $this->assertDatabaseHas('minecraft_verifications', [
-        'minecraft_username' => '.BedrockPlayer',
+        'minecraft_username' => 'BedrockPlayer',
     ]);
 });
 

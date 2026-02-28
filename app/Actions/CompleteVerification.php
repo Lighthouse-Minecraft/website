@@ -67,12 +67,31 @@ class CompleteVerification
         $matched = strcasecmp($verification->minecraft_username, $username) === 0
             && $storedUuid === $normalizedUuid;
 
-        // Bedrock fallback: if standard match failed and a bedrock_username was provided,
-        // strip the single-character Floodgate prefix from the stored username and compare.
+        // Fallback 1: Strip single-character Floodgate prefix from the INCOMING username.
+        // Handles: stored "Ghostridr6007" vs incoming ".Ghostridr6007" (unlinked Bedrock, no dot stored).
+        // Only strip when the first character is a non-alphanumeric Floodgate prefix (e.g. "." or "*").
+        if (! $matched && strlen($username) > 1 && ! ctype_alnum($username[0]) && $storedUuid === $normalizedUuid) {
+            $strippedIncoming = substr($username, 1);
+            if (strcasecmp($verification->minecraft_username, $strippedIncoming) === 0) {
+                $matched = true;
+            }
+        }
+
+        // Fallback 2: If bedrock_username was provided, compare it against the stored
+        // username (with and without prefix stripped). Handles linked Bedrock accounts
+        // where the incoming minecraft_username is the Java identity.
         $usedBedrockFallback = false;
         if (! $matched && $bedrockUsername !== null) {
             $storedUsername = $verification->minecraft_username;
-            if (strlen($storedUsername) > 1) {
+
+            // Direct match: stored "Ghostridr6007" == bedrock_username "Ghostridr6007"
+            if (strcasecmp($storedUsername, $bedrockUsername) === 0) {
+                $matched = true;
+                $usedBedrockFallback = true;
+            }
+            // Strip stored prefix: stored ".Ghostridr6007" -> "Ghostridr6007" == "Ghostridr6007"
+            // Only strip when the first character is a non-alphanumeric Floodgate prefix.
+            elseif (strlen($storedUsername) > 1 && ! ctype_alnum($storedUsername[0])) {
                 $strippedStoredUsername = substr($storedUsername, 1);
                 if (strcasecmp($strippedStoredUsername, $bedrockUsername) === 0) {
                     $matched = true;

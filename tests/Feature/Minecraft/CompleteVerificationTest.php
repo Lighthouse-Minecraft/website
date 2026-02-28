@@ -323,6 +323,71 @@ test('bedrock fallback does not match when bedrock_username is not provided', fu
         ->and($result['message'])->toBe('Username or UUID mismatch.');
 });
 
+test('completes verification for unlinked bedrock with clean gamertag stored and dot-prefixed incoming', function () {
+    // New flow: website stores clean gamertag (no dot)
+    MinecraftVerification::factory()->for($this->user)->pending()->create([
+        'code' => 'CLN123',
+        'account_type' => 'bedrock',
+        'minecraft_username' => 'BedrockPlayer',
+        'minecraft_uuid' => '00000000-0000-0000-0009-01234567890a',
+    ]);
+
+    MinecraftAccount::factory()->for($this->user)->verifying()->create([
+        'username' => 'BedrockPlayer',
+        'uuid' => '00000000-0000-0000-0009-01234567890a',
+        'account_type' => 'bedrock',
+    ]);
+
+    // Plugin sends dot-prefixed name (Floodgate in-game name), same UUID
+    $result = $this->action->handle(
+        'CLN123',
+        '.BedrockPlayer',
+        '00000000-0000-0000-0009-01234567890a',
+    );
+
+    expect($result['success'])->toBeTrue();
+
+    $this->assertDatabaseHas('minecraft_accounts', [
+        'user_id' => $this->user->id,
+        'username' => 'BedrockPlayer',
+        'status' => 'active',
+    ]);
+});
+
+test('completes verification for linked bedrock with clean gamertag via bedrock_username', function () {
+    // New flow: website stores clean gamertag (no dot)
+    MinecraftVerification::factory()->for($this->user)->pending()->create([
+        'code' => 'CLN456',
+        'account_type' => 'bedrock',
+        'minecraft_username' => 'Ghostridr6007',
+        'minecraft_uuid' => '00000000-0000-0000-0009-01234567890a',
+    ]);
+
+    MinecraftAccount::factory()->for($this->user)->verifying()->create([
+        'username' => 'Ghostridr6007',
+        'uuid' => '00000000-0000-0000-0009-01234567890a',
+        'account_type' => 'bedrock',
+    ]);
+
+    // Plugin sends linked Java identity, plus bedrock_username for fallback
+    $result = $this->action->handle(
+        'CLN456',
+        'Ghostridr',
+        'a008f810-1af7-48fa-8a3d-cbc07e29c811',
+        bedrockUsername: 'Ghostridr6007',
+        bedrockXuid: '2535406112136054',
+    );
+
+    expect($result['success'])->toBeTrue();
+
+    $this->assertDatabaseHas('minecraft_accounts', [
+        'user_id' => $this->user->id,
+        'username' => 'Ghostridr6007',
+        'status' => 'active',
+        'bedrock_xuid' => '2535406112136054',
+    ]);
+});
+
 test('syncs staff position when staff member verifies account', function () {
     Notification::fake();
 
