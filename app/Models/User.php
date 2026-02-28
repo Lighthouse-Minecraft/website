@@ -33,6 +33,7 @@ class User extends Authenticatable // implements MustVerifyEmail
         'staff_department',
         'staff_title',
         'timezone',
+        'avatar_preference',
         'pushover_key',
         'email_digest_frequency',
         'notification_preferences',
@@ -150,6 +151,82 @@ class User extends Authenticatable // implements MustVerifyEmail
             ->implode('');
     }
 
+    /**
+     * Get the user's avatar URL based on their preference.
+     *
+     * Cascade: auto (MC -> Discord -> null), minecraft, discord, gravatar.
+     * Returns null when no image is available (Flux avatar shows initials).
+     */
+    public function avatarUrl(): ?string
+    {
+        $preference = $this->avatar_preference ?? 'auto';
+
+        return match ($preference) {
+            'minecraft' => $this->minecraftAvatarUrl(),
+            'discord' => $this->discordAvatarUrl(),
+            'gravatar' => $this->gravatarUrl(),
+            default => $this->minecraftAvatarUrl() ?? $this->discordAvatarUrl(),
+        };
+    }
+
+    protected function minecraftAvatarUrl(): ?string
+    {
+        // Use already-loaded relation to avoid N+1 queries
+        if ($this->relationLoaded('minecraftAccounts')) {
+            $active = $this->minecraftAccounts
+                ->where('status', \App\Enums\MinecraftAccountStatus::Active)
+                ->whereNotNull('avatar_url');
+
+            return $active->firstWhere('is_primary', true)?->avatar_url
+                ?? $active->first()?->avatar_url;
+        }
+
+        // Prefer the primary active account's avatar
+        $primaryAvatar = $this->minecraftAccounts()
+            ->active()
+            ->primary()
+            ->whereNotNull('avatar_url')
+            ->value('avatar_url');
+
+        if ($primaryAvatar) {
+            return $primaryAvatar;
+        }
+
+        // Fallback: any active account with an avatar
+        return $this->minecraftAccounts()
+            ->active()
+            ->whereNotNull('avatar_url')
+            ->value('avatar_url');
+    }
+
+    public function primaryMinecraftAccount(): ?MinecraftAccount
+    {
+        return $this->minecraftAccounts()->active()->primary()->first();
+    }
+
+    protected function discordAvatarUrl(): ?string
+    {
+        // Use already-loaded relation to avoid N+1 queries
+        if ($this->relationLoaded('discordAccounts')) {
+            $account = $this->discordAccounts
+                ->where('status', \App\Enums\DiscordAccountStatus::Active)
+                ->first();
+
+            return $account?->avatarUrl();
+        }
+
+        $account = $this->discordAccounts()->active()->first();
+
+        return $account?->avatarUrl();
+    }
+
+    public function gravatarUrl(): string
+    {
+        $hash = md5(strtolower(trim($this->email)));
+
+        return "https://www.gravatar.com/avatar/{$hash}?d=mp&s=64";
+    }
+
     public function roles(): BelongsToMany
     {
         return $this->belongsToMany(Role::class);
@@ -206,6 +283,16 @@ class User extends Authenticatable // implements MustVerifyEmail
     public function minecraftAccounts(): HasMany
     {
         return $this->hasMany(MinecraftAccount::class);
+    }
+
+    public function discordAccounts(): HasMany
+    {
+        return $this->hasMany(DiscordAccount::class);
+    }
+
+    public function hasDiscordLinked(): bool
+    {
+        return $this->discordAccounts()->active()->exists();
     }
 
     public function canSendPushover(): bool
@@ -388,8 +475,8 @@ class User extends Authenticatable // implements MustVerifyEmail
                 // Calculate all counts from this ONE result set
                 $myParticipantTickets = $tickets->filter(fn ($t) => $t->participants->where('is_viewer', false)->isNotEmpty());
 
-                // Badge count: non-closed participant tickets + closed participant tickets with unread messages
-                $badgeCount = $myParticipantTickets
+                // Badge count: non-closed participant tickets + closed-unread participant tickets + unassigned visible tickets
+                $participantBadge = $myParticipantTickets
                     ->filter(function ($t) {
                         if ($t->status !== \App\Enums\ThreadStatus::Closed) {
                             return true; // All non-closed participant tickets
@@ -401,6 +488,15 @@ class User extends Authenticatable // implements MustVerifyEmail
                         return ! $participant || ! $participant->last_read_at || $t->last_message_at > $participant->last_read_at;
                     })
                     ->count();
+
+                // Unassigned non-closed tickets visible to this user (need staff attention)
+                $unassignedCount = $tickets
+                    ->whereNull('assigned_to_user_id')
+                    ->where('status', '!=', \App\Enums\ThreadStatus::Closed)
+                    ->reject(fn ($t) => $t->participants->where('is_viewer', false)->isNotEmpty())
+                    ->count();
+
+                $badgeCount = $participantBadge + $unassignedCount;
 
                 return [
                     'badge' => $badgeCount,
@@ -424,13 +520,14 @@ class User extends Authenticatable // implements MustVerifyEmail
                         ->count(),
                     'open' => $tickets->where('status', '!=', \App\Enums\ThreadStatus::Closed)->count(),
                     'closed' => $tickets->where('status', \App\Enums\ThreadStatus::Closed)->count(),
-                    'assigned-to-me' => $tickets->where('assigned_to_user_id', $this->id)->count(),
+                    'assigned-to-me' => $tickets->where('assigned_to_user_id', $this->id)
+                        ->where('status', '!=', \App\Enums\ThreadStatus::Closed)->count(),
                     'unassigned' => $tickets
                         ->whereNull('assigned_to_user_id')
                         ->where('status', '!=', \App\Enums\ThreadStatus::Closed)
                         ->count(),
                     'flagged' => $tickets->where('has_open_flags', true)->count(),
-                    'has-unread' => $tickets->filter(function ($t) {
+                    'has-unread' => $unassignedCount > 0 || $tickets->filter(function ($t) {
                         $participant = $t->participants->first();
 
                         return $participant && $participant->is_viewer === false && (! $participant->last_read_at || $t->last_message_at > $participant->last_read_at);

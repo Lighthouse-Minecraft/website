@@ -23,6 +23,10 @@ class AppServiceProvider extends ServiceProvider
                 \App\Services\MinecraftRconService::class,
                 \App\Services\FakeMinecraftRconService::class,
             );
+            $this->app->bind(
+                \App\Services\DiscordApiService::class,
+                \App\Services\FakeDiscordApiService::class,
+            );
         }
     }
 
@@ -40,5 +44,11 @@ class AppServiceProvider extends ServiceProvider
         Notification::extend('minecraft', function ($app) {
             return new \App\Channels\MinecraftChannel;
         });
+
+        // Register Socialite Discord provider
+        Event::listen(
+            \SocialiteProviders\Manager\SocialiteWasCalled::class,
+            [\SocialiteProviders\Discord\DiscordExtendSocialite::class, 'handle']
+        );
     }
 }

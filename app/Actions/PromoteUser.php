@@ -50,7 +50,16 @@ class PromoteUser
 
         RecordActivity::run($user, 'user_promoted', "Promoted from {$current->label()} to {$nextLevel->label()}.");
 
-        SyncMinecraftPermissions::run($user);
+        SyncMinecraftRanks::run($user);
+
+        try {
+            SyncDiscordRoles::run($user);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Failed to sync Discord roles during promotion', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         $notificationService = app(TicketNotificationService::class);
 
@@ -62,12 +71,12 @@ class PromoteUser
             })->whereNotNull('staff_rank')->get();
 
             foreach ($staff as $member) {
-                $notificationService->send($member, clone $notification);
+                $notificationService->send($member, clone $notification, 'staff_alerts');
             }
         } elseif ($nextLevel === MembershipLevel::Traveler) {
-            $notificationService->send($user, new UserPromotedToTravelerNotification($user));
+            $notificationService->send($user, new UserPromotedToTravelerNotification($user), 'account');
         } elseif ($nextLevel === MembershipLevel::Resident) {
-            $notificationService->send($user, new UserPromotedToResidentNotification($user));
+            $notificationService->send($user, new UserPromotedToResidentNotification($user), 'account');
         }
     }
 }

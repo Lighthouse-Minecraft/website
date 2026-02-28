@@ -4,6 +4,7 @@ use App\Http\Controllers\AdminControlPanelController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\CommunityUpdatesController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DiscordAuthController;
 use App\Http\Controllers\DonationController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\UserController;
@@ -26,11 +27,15 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('settings/appearance', 'settings.appearance')->name('settings.appearance');
     Volt::route('settings/notifications', 'settings.notifications')->name('settings.notifications');
     Volt::route('settings/minecraft-accounts', 'settings.minecraft-accounts')->name('settings.minecraft-accounts');
+    Volt::route('settings/discord-account', 'settings.discord-account')->name('settings.discord-account');
+
+    Route::get('auth/discord/redirect', [DiscordAuthController::class, 'redirect'])->name('auth.discord.redirect');
+    Route::get('auth/discord/callback', [DiscordAuthController::class, 'callback'])->name('auth.discord.callback');
 });
 
 Route::get('/profile/{user}', [UserController::class, 'show'])
     ->name('profile.show')
-    ->middleware('can:view,user');
+    ->middleware(['auth', 'can:view,user']);
 
 Route::middleware(['auth'])->group(function () {
     Route::get('acp', [AdminControlPanelController::class, 'index'])
@@ -39,11 +44,11 @@ Route::middleware(['auth'])->group(function () {
 
 Route::get('/acp/pages/create', [PageController::class, 'create'])
     ->name('admin.pages.create')
-    ->middleware('can:create,App\Models\Page');
+    ->middleware(['auth', 'can:create,App\Models\Page']);
 
 Route::get('/acp/pages/{page}/edit', [PageController::class, 'edit'])
     ->name('admin.pages.edit')
-    ->middleware('can:update,page');
+    ->middleware(['auth', 'can:update,page']);
 
 // This is for admin announcement links
 Route::prefix('acp/announcements')
@@ -110,12 +115,17 @@ Route::post('/api/minecraft/verify', function (\Illuminate\Http\Request $request
         'code' => 'required|string|size:6',
         'minecraft_username' => 'required|string',
         'minecraft_uuid' => 'required|string',
+        'is_bedrock' => 'sometimes|boolean',
+        'bedrock_username' => 'sometimes|string',
+        'bedrock_xuid' => 'sometimes|string',
     ]);
 
     $result = \App\Actions\CompleteVerification::run(
         $request->code,
         $request->minecraft_username,
-        $request->minecraft_uuid
+        $request->minecraft_uuid,
+        bedrockUsername: $request->input('bedrock_username'),
+        bedrockXuid: $request->input('bedrock_xuid'),
     );
 
     return response()->json($result);

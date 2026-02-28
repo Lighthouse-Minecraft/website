@@ -24,7 +24,7 @@ new class extends Component
     public function tickets()
     {
         $user = auth()->user();
-        $query = Thread::with(['createdBy', 'assignedTo', 'participants' => function ($q) use ($user) {
+        $query = Thread::with(['createdBy', 'assignedTo.minecraftAccounts', 'assignedTo.discordAccounts', 'participants' => function ($q) use ($user) {
             $q->where('user_id', $user->id);
         }])
             ->orderBy('last_message_at', 'desc');
@@ -41,31 +41,7 @@ new class extends Component
                 $query->where('status', 'closed');
             }
         } elseif ($user->can('viewAll', Thread::class) || $user->can('viewDepartment', Thread::class) || $user->can('viewFlagged', Thread::class)) {
-            // Staff-only filters: apply department/permission visibility
-            if (! $user->can('viewAll', Thread::class)) {
-                // Only apply visibility constraints if at least one condition will be met
-                $hasDepartmentAccess = $user->can('viewDepartment', Thread::class) && $user->staff_department;
-                $hasFlaggedAccess = $user->can('viewFlagged', Thread::class);
-
-                if ($hasDepartmentAccess || $hasFlaggedAccess) {
-                    $query->where(function ($q) use ($user, $hasDepartmentAccess, $hasFlaggedAccess) {
-                        // Department tickets
-                        if ($hasDepartmentAccess) {
-                            $q->where('department', $user->staff_department);
-                        }
-
-                        // Flagged tickets
-                        if ($hasFlaggedAccess) {
-                            $q->orWhere('is_flagged', true);
-                        }
-                    });
-                } else {
-                    // No valid visibility constraints - restrict to no rows
-                    $query->whereRaw('1 = 0');
-                }
-            }
-
-            // Apply status-based filters
+            // Staff-only filters: all staff can see all tickets in these views
             switch ($this->filter) {
                 case 'open':
                     // Show all non-closed tickets (Open, Pending, Resolved)
@@ -75,7 +51,8 @@ new class extends Component
                     $query->where('status', 'closed');
                     break;
                 case 'assigned-to-me':
-                    $query->where('assigned_to_user_id', $user->id);
+                    $query->where('assigned_to_user_id', $user->id)
+                        ->where('status', '!=', 'closed');
                     break;
                 case 'unassigned':
                     $query->whereNull('assigned_to_user_id')
@@ -257,7 +234,7 @@ new class extends Component
                                 {{ $ticket->status->label() }}
                             </flux:badge>
                             @if($ticket->assignedTo)
-                                <flux:avatar size="sm" :src="null" initials="{{ $ticket->assignedTo->initials() }}" />
+                                <flux:avatar size="sm" :src="$ticket->assignedTo->avatarUrl()" initials="{{ $ticket->assignedTo->initials() }}" />
                             @endif
                         </div>
                     </div>

@@ -20,5 +20,15 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        $exceptions->render(function (\Illuminate\Auth\Access\AuthorizationException $e, \Illuminate\Http\Request $request) {
+            if ($request->expectsJson()) {
+                return null;
+            }
+
+            if (! $request->user()) {
+                return redirect()->guest(route('login'));
+            }
+
+            return null;
+        });
     })->create();

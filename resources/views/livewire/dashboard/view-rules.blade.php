@@ -53,8 +53,8 @@ new class extends Component {
             <h2>Honor God</h2>
             <ul>
                 <li>No using God's name in an inappropriate manner</li>
-                <li>No sharing images that depict God or Jesus's face</li>
-                <li>No promoting or encouraging any sinful lifestyle (as defined by Scripture)</li>
+                <li>No sharing images that depict God or Jesus in a disrespectful way</li>
+                <li>No promoting or encouraging any sinful lifestyle (as defined by a traditional view of Scripture)</li>
             </ul>
 
             <h2>Be Respectful of Others</h2>

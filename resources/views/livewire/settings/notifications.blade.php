@@ -14,10 +14,26 @@ new class extends Component
 
     public ?string $pushover_count_reset_at = null;
 
-    // Notification preferences
+    // Notification preferences — Tickets
     public bool $notify_tickets_email = true;
 
     public bool $notify_tickets_pushover = false;
+
+    public bool $notify_tickets_discord = false;
+
+    // Notification preferences — Account Updates
+    public bool $notify_account_email = true;
+
+    public bool $notify_account_pushover = false;
+
+    public bool $notify_account_discord = false;
+
+    // Notification preferences — Staff Alerts
+    public bool $notify_staff_alerts_email = true;
+
+    public bool $notify_staff_alerts_pushover = false;
+
+    public bool $notify_staff_alerts_discord = false;
 
     public function mount(): void
     {
@@ -31,6 +47,15 @@ new class extends Component
         $preferences = $user->notification_preferences ?? [];
         $this->notify_tickets_email = $preferences['tickets']['email'] ?? true;
         $this->notify_tickets_pushover = $preferences['tickets']['pushover'] ?? false;
+        $this->notify_tickets_discord = $preferences['tickets']['discord'] ?? false;
+
+        $this->notify_account_email = $preferences['account']['email'] ?? true;
+        $this->notify_account_pushover = $preferences['account']['pushover'] ?? false;
+        $this->notify_account_discord = $preferences['account']['discord'] ?? false;
+
+        $this->notify_staff_alerts_email = $preferences['staff_alerts']['email'] ?? true;
+        $this->notify_staff_alerts_pushover = $preferences['staff_alerts']['pushover'] ?? false;
+        $this->notify_staff_alerts_discord = $preferences['staff_alerts']['discord'] ?? false;
     }
 
     public function updateNotificationSettings(): void
@@ -42,16 +67,34 @@ new class extends Component
             'email_digest_frequency' => ['required', 'in:immediate,daily,weekly'],
             'notify_tickets_email' => ['boolean'],
             'notify_tickets_pushover' => ['boolean'],
+            'notify_tickets_discord' => ['boolean'],
+            'notify_account_email' => ['boolean'],
+            'notify_account_pushover' => ['boolean'],
+            'notify_account_discord' => ['boolean'],
+            'notify_staff_alerts_email' => ['boolean'],
+            'notify_staff_alerts_pushover' => ['boolean'],
+            'notify_staff_alerts_discord' => ['boolean'],
         ]);
 
         $user->pushover_key = $validated['pushover_key'];
         $user->email_digest_frequency = EmailDigestFrequency::from($validated['email_digest_frequency']);
 
-        // Merge notification preferences to preserve other categories
+        // Save all notification preference categories
         $preferences = $user->notification_preferences ?? [];
         $preferences['tickets'] = [
             'email' => $validated['notify_tickets_email'],
             'pushover' => $validated['notify_tickets_pushover'],
+            'discord' => $validated['notify_tickets_discord'],
+        ];
+        $preferences['account'] = [
+            'email' => $validated['notify_account_email'],
+            'pushover' => $validated['notify_account_pushover'],
+            'discord' => $validated['notify_account_discord'],
+        ];
+        $preferences['staff_alerts'] = [
+            'email' => $validated['notify_staff_alerts_email'],
+            'pushover' => $validated['notify_staff_alerts_pushover'],
+            'discord' => $validated['notify_staff_alerts_discord'],
         ];
         $user->notification_preferences = $preferences;
 
@@ -67,14 +110,14 @@ new class extends Component
 
     <form wire:submit="updateNotificationSettings" class="mt-6 space-y-6">
         <flux:fieldset>
-            <flux:legend>Email Notifications</flux:legend>
+            <flux:legend>Ticket Email Frequency</flux:legend>
             <flux:description>
-                Choose how often you'd like to receive email notifications for ticket activity.
+                Choose how often you'd like to receive email notifications for ticket activity. Other notifications are always sent immediately.
             </flux:description>
 
             <div class="mt-4 space-y-3">
                 <flux:radio.group wire:model="email_digest_frequency" variant="cards">
-                    <flux:radio value="immediate" label="Immediate" description="Get notified right away when there's activity" />
+                    <flux:radio value="immediate" label="Immediate" description="Get notified right away when there's ticket activity" />
                     <flux:radio value="daily" label="Daily Digest" description="Receive a daily summary of ticket activity" />
                     <flux:radio value="weekly" label="Weekly Digest" description="Receive a weekly summary of ticket activity" />
                 </flux:radio.group>
@@ -84,23 +127,14 @@ new class extends Component
         <flux:fieldset>
             <flux:legend>Pushover Notifications (Optional)</flux:legend>
             <flux:description>
-                Enter your Pushover user key to receive mobile push notifications. Limited to 10,000 notifications per month.
+                Enter your Pushover user key to receive mobile push notifications.
                 <a href="https://pushover.net" target="_blank" class="text-blue-600 hover:text-blue-800 dark:text-blue-400">Get your Pushover key</a>
             </flux:description>
 
             <flux:field class="mt-4">
                 <flux:label>Pushover User Key</flux:label>
-                <flux:input wire:model="pushover_key" type="text" placeholder="Enter your Pushover user key" />
+                <flux:input wire:model.live="pushover_key" type="text" placeholder="Enter your Pushover user key" />
             </flux:field>
-
-            @if($pushover_monthly_count > 0)
-                <div class="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
-                    <strong>Usage this month:</strong> {{ number_format($pushover_monthly_count) }} / 10,000 notifications
-                    @if($pushover_count_reset_at)
-                        <span class="text-xs">(Resets {{ $pushover_count_reset_at }})</span>
-                    @endif
-                </div>
-            @endif
         </flux:fieldset>
 
         <flux:fieldset>
@@ -119,9 +153,76 @@ new class extends Component
                     </div>
                     <div class="flex gap-6">
                         <flux:switch wire:model="notify_tickets_email" label="Email" />
-                        <flux:switch wire:model="notify_tickets_pushover" label="Pushover" />
+                        @if($pushover_key)
+                            <flux:switch wire:model="notify_tickets_pushover" label="Pushover" />
+                        @else
+                            <flux:tooltip content="Add your Pushover key above to enable">
+                                <flux:switch wire:model="notify_tickets_pushover" label="Pushover" disabled />
+                            </flux:tooltip>
+                        @endif
+                        @if(auth()->user()->hasDiscordLinked())
+                            <flux:switch wire:model="notify_tickets_discord" label="Discord DM" />
+                        @else
+                            <flux:tooltip content="Link a Discord account in Settings to enable">
+                                <flux:switch wire:model="notify_tickets_discord" label="Discord DM" disabled />
+                            </flux:tooltip>
+                        @endif
                     </div>
                 </div>
+
+                <div class="border border-zinc-200 dark:border-zinc-700 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <div>
+                            <div class="font-medium text-sm text-zinc-900 dark:text-white">Account Updates</div>
+                            <div class="text-xs text-zinc-600 dark:text-zinc-400">Promotions, demotions, and brig notifications</div>
+                        </div>
+                    </div>
+                    <div class="flex gap-6">
+                        <flux:switch wire:model="notify_account_email" label="Email" />
+                        @if($pushover_key)
+                            <flux:switch wire:model="notify_account_pushover" label="Pushover" />
+                        @else
+                            <flux:tooltip content="Add your Pushover key above to enable">
+                                <flux:switch wire:model="notify_account_pushover" label="Pushover" disabled />
+                            </flux:tooltip>
+                        @endif
+                        @if(auth()->user()->hasDiscordLinked())
+                            <flux:switch wire:model="notify_account_discord" label="Discord DM" />
+                        @else
+                            <flux:tooltip content="Link a Discord account in Settings to enable">
+                                <flux:switch wire:model="notify_account_discord" label="Discord DM" disabled />
+                            </flux:tooltip>
+                        @endif
+                    </div>
+                </div>
+
+                @can('manage-stowaway-users')
+                    <div class="border border-zinc-200 dark:border-zinc-700 rounded-lg p-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <div>
+                                <div class="font-medium text-sm text-zinc-900 dark:text-white">Staff Alerts</div>
+                                <div class="text-xs text-zinc-600 dark:text-zinc-400">New members to review and other staff notifications</div>
+                            </div>
+                        </div>
+                        <div class="flex gap-6">
+                            <flux:switch wire:model="notify_staff_alerts_email" label="Email" />
+                            @if($pushover_key)
+                                <flux:switch wire:model="notify_staff_alerts_pushover" label="Pushover" />
+                            @else
+                                <flux:tooltip content="Add your Pushover key above to enable">
+                                    <flux:switch wire:model="notify_staff_alerts_pushover" label="Pushover" disabled />
+                                </flux:tooltip>
+                            @endif
+                            @if(auth()->user()->hasDiscordLinked())
+                                <flux:switch wire:model="notify_staff_alerts_discord" label="Discord DM" />
+                            @else
+                                <flux:tooltip content="Link a Discord account in Settings to enable">
+                                    <flux:switch wire:model="notify_staff_alerts_discord" label="Discord DM" disabled />
+                                </flux:tooltip>
+                            @endif
+                        </div>
+                    </div>
+                @endcan
             </div>
         </flux:fieldset>
 

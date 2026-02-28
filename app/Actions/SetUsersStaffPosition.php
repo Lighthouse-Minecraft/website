@@ -52,6 +52,11 @@ class SetUsersStaffPosition
             SyncMinecraftStaff::run($user, $department);
         }
 
+        // Sync Discord staff roles when department or rank changes
+        if ($existingDepartment !== $department || $existingRank !== $rank) {
+            SyncDiscordStaff::run($user, $department);
+        }
+
         return true;
     }
 }

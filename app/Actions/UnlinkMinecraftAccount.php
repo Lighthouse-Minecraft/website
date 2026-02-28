@@ -14,8 +14,8 @@ class UnlinkMinecraftAccount
 
     /**
      * Unlink the given Minecraft account from the specified user, execute server-side rank
-     * reset, staff removal (if applicable), and whitelist removal via RCON, then delete the
-     * account record.
+     * reset, staff removal (if applicable), and whitelist removal via RCON, then soft-disable
+     * the account record by setting its status to Removed.
      *
      * If the user does not own the account or the account is not in an active state, the unlink
      * is not performed and an appropriate failure message is returned.
@@ -57,7 +57,7 @@ class UnlinkMinecraftAccount
             ['action' => 'unlink_rank_reset']
         );
 
-        RecordActivity::handle(
+        RecordActivity::run(
             $user,
             'minecraft_rank_reset_requested',
             "Reset rank to default for {$username}"
@@ -73,15 +73,15 @@ class UnlinkMinecraftAccount
                 ['action' => 'unlink_staff_reset']
             );
 
-            RecordActivity::handle(
+            RecordActivity::run(
                 $user,
                 'minecraft_staff_position_removed',
                 "Removed Minecraft staff position for {$username}"
             );
         }
 
-        // Remove from whitelist using the correct command for account type
-        $rconService->executeCommand(
+        // Remove from whitelist; only soft-disable the account if it succeeds
+        $whitelistResult = $rconService->executeCommand(
             $account->whitelistRemoveCommand(),
             'whitelist',
             $account->username,
@@ -89,24 +89,38 @@ class UnlinkMinecraftAccount
             ['action' => 'unlink']
         );
 
-        RecordActivity::handle(
+        if (! $whitelistResult['success']) {
+            return [
+                'success' => false,
+                'message' => 'Failed to remove player from server whitelist. Account has not been removed.',
+            ];
+        }
+
+        RecordActivity::run(
             $user,
             'minecraft_whitelist_removal_requested',
             "Removed {$username} from server whitelist"
         );
 
-        // Delete the account
-        $account->delete();
+        // Soft-disable the account (preserve record for audit trail)
+        $account->status = MinecraftAccountStatus::Removed;
+        $account->save();
 
-        RecordActivity::handle(
+        // If this was the primary account, clear the flag and auto-assign a new primary
+        if ($account->is_primary) {
+            $account->update(['is_primary' => false]);
+            AutoAssignPrimaryAccount::run($user);
+        }
+
+        RecordActivity::run(
             $user,
-            'minecraft_account_unlinked',
-            "Unlinked {$accountType->label()} account: {$username}"
+            'minecraft_account_removed',
+            "Removed {$accountType->label()} account: {$username}"
         );
 
         return [
             'success' => true,
-            'message' => 'Minecraft account unlinked successfully.',
+            'message' => 'Minecraft account removed successfully.',
         ];
     }
 }

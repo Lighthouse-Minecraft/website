@@ -46,7 +46,7 @@ class TaskPolicy
      */
     public function update(User $user, Task $task): bool
     {
-        return false;
+        return $user->isAtLeastRank(StaffRank::CrewMember);
     }
 
     /**

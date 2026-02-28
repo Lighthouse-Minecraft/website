@@ -32,4 +32,27 @@ return [
             'new_player_exchange_rate' => (int) env('MC_NEW_PLAYER_LUMEN_EXCHANGE_RATE', 32),
         ],
     ],
+
+    'max_discord_accounts' => (int) env('MAX_DISCORD_ACCOUNTS', 1),
+
+    'discord' => [
+        'roles' => [
+            // Membership levels
+            'traveler' => env('DISCORD_ROLE_TRAVELER'),
+            'resident' => env('DISCORD_ROLE_RESIDENT'),
+            'citizen' => env('DISCORD_ROLE_CITIZEN'),
+            // Staff departments
+            'staff_command' => env('DISCORD_ROLE_STAFF_COMMAND'),
+            'staff_chaplain' => env('DISCORD_ROLE_STAFF_CHAPLAIN'),
+            'staff_engineer' => env('DISCORD_ROLE_STAFF_ENGINEER'),
+            'staff_quartermaster' => env('DISCORD_ROLE_STAFF_QUARTERMASTER'),
+            'staff_steward' => env('DISCORD_ROLE_STAFF_STEWARD'),
+            // Staff ranks
+            'rank_jr_crew' => env('DISCORD_ROLE_RANK_JR_CREW'),
+            'rank_crew_member' => env('DISCORD_ROLE_RANK_CREW_MEMBER'),
+            'rank_officer' => env('DISCORD_ROLE_RANK_OFFICER'),
+            // Special
+            'verified' => env('DISCORD_ROLE_VERIFIED'),
+        ],
+    ],
 ];

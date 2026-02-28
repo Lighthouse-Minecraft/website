@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\Thread;
+use App\Notifications\Channels\DiscordChannel;
 use App\Notifications\Channels\PushoverChannel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -47,6 +48,10 @@ class NewTicketNotification extends Notification implements ShouldQueue
             $channels[] = PushoverChannel::class;
         }
 
+        if (in_array('discord', $this->allowedChannels)) {
+            $channels[] = DiscordChannel::class;
+        }
+
         return $channels;
     }
 
@@ -75,5 +80,10 @@ class NewTicketNotification extends Notification implements ShouldQueue
             'message' => $this->thread->subject,
             'url' => url('/tickets/'.$this->thread->id),
         ];
+    }
+
+    public function toDiscord(object $notifiable): string
+    {
+        return "**New Ticket:** {$this->thread->subject}\n**Department:** {$this->thread->department->label()}\n**From:** {$this->thread->createdBy->name}\n".url('/tickets/'.$this->thread->id);
     }
 }

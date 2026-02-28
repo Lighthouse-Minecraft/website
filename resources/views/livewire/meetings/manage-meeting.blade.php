@@ -36,6 +36,14 @@ new class extends Component {
     }
 
     public function StartMeeting() {
+        $this->authorize('update', $this->meeting);
+
+        $this->modal('start-meeting-confirmation')->show();
+    }
+
+    public function StartMeetingConfirmed() {
+        $this->authorize('update', $this->meeting);
+
         $this->meeting->startMeeting();
 
         // Look up the agenda
@@ -47,6 +55,8 @@ new class extends Component {
         }
 
         $this->pollTime = 60;
+
+        $this->modal('start-meeting-confirmation')->close();
     }
 
     public function joinMeeting(): void
@@ -282,7 +292,38 @@ new class extends Component {
 
         <div class="text-right w-full mt-6">
             @if ($this->meeting->status == MeetingStatus::Pending)
-                <flux:button wire:click="StartMeeting" variant="primary">Start Meeting</flux:button>
+                @can('update', $meeting)
+                    <flux:button wire:click="StartMeeting" variant="primary">Start Meeting</flux:button>
+                @endcan
+
+                {{-- Start Meeting Confirmation Modal --}}
+                <flux:modal name="start-meeting-confirmation" class="min-w-[28rem] !text-left">
+                    <div class="space-y-6">
+                        <div>
+                            <flux:heading size="lg">Start Meeting?</flux:heading>
+
+                            <flux:text class="mt-2">
+                                You're about to start this meeting.
+                            </flux:text>
+                            <flux:callout color="amber" class="mt-2">
+                                <flux:callout.heading>Note:</flux:callout.heading>
+                                <flux:callout.text>
+                                    Once started, the agenda will be locked and department note sections will become available for editing.
+                                </flux:callout.text>
+                            </flux:callout>
+                        </div>
+
+                        <div class="flex gap-2">
+                            <flux:spacer />
+
+                            <flux:modal.close>
+                                <flux:button variant="ghost">Cancel</flux:button>
+                            </flux:modal.close>
+
+                            <flux:button wire:click="StartMeetingConfirmed" variant="primary">Start Meeting</flux:button>
+                        </div>
+                    </div>
+                </flux:modal>
             @endif
         </div>
     </div>

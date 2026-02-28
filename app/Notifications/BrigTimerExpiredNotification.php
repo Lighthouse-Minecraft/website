@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\User;
+use App\Notifications\Channels\DiscordChannel;
 use App\Notifications\Channels\PushoverChannel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -61,6 +62,10 @@ class BrigTimerExpiredNotification extends Notification implements ShouldQueue
             $channels[] = PushoverChannel::class;
         }
 
+        if (in_array('discord', $this->allowedChannels)) {
+            $channels[] = DiscordChannel::class;
+        }
+
         return $channels;
     }
 
@@ -96,5 +101,10 @@ class BrigTimerExpiredNotification extends Notification implements ShouldQueue
             'message' => 'Your brig period has ended. You may now submit an appeal via your dashboard.',
             'url' => route('dashboard'),
         ];
+    }
+
+    public function toDiscord(object $notifiable): string
+    {
+        return "**Brig Period Ended**\nYour mandatory brig period has ended. You can now submit an appeal to have your account reviewed.\n".route('dashboard');
     }
 }

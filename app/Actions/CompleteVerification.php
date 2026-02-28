@@ -31,7 +31,9 @@ class CompleteVerification
     public function handle(
         string $code,
         string $username,
-        string $uuid
+        string $uuid,
+        ?string $bedrockUsername = null,
+        ?string $bedrockXuid = null,
     ): array {
         // Normalize UUID (remove dashes for comparison)
         $normalizedUuid = str_replace('-', '', $uuid);
@@ -61,18 +63,58 @@ class CompleteVerification
         // Normalize stored UUID for comparison
         $storedUuid = str_replace('-', '', $verification->minecraft_uuid);
 
-        // Verify the username and UUID match (case-insensitive username, normalized UUID)
-        if (strcasecmp($verification->minecraft_username, $username) !== 0 || $storedUuid !== $normalizedUuid) {
+        // Standard match: case-insensitive username + normalized UUID
+        $matched = strcasecmp($verification->minecraft_username, $username) === 0
+            && $storedUuid === $normalizedUuid;
+
+        // Fallback 1: Strip single-character Floodgate prefix from the INCOMING username.
+        // Handles: stored "Ghostridr6007" vs incoming ".Ghostridr6007" (unlinked Bedrock, no dot stored).
+        // Only strip when the first character is a non-alphanumeric Floodgate prefix (e.g. "." or "*").
+        if (! $matched && strlen($username) > 1 && ! ctype_alnum($username[0]) && $storedUuid === $normalizedUuid) {
+            $strippedIncoming = substr($username, 1);
+            if (strcasecmp($verification->minecraft_username, $strippedIncoming) === 0) {
+                $matched = true;
+            }
+        }
+
+        // Fallback 2: If bedrock_username was provided, compare it against the stored
+        // username (with and without prefix stripped). Handles linked Bedrock accounts
+        // where the incoming minecraft_username is the Java identity.
+        $usedBedrockFallback = false;
+        if (! $matched && $bedrockUsername !== null) {
+            $storedUsername = $verification->minecraft_username;
+
+            // Direct match: stored "Ghostridr6007" == bedrock_username "Ghostridr6007"
+            if (strcasecmp($storedUsername, $bedrockUsername) === 0) {
+                $matched = true;
+                $usedBedrockFallback = true;
+            }
+            // Strip stored prefix: stored ".Ghostridr6007" -> "Ghostridr6007" == "Ghostridr6007"
+            // Only strip when the first character is a non-alphanumeric Floodgate prefix.
+            elseif (strlen($storedUsername) > 1 && ! ctype_alnum($storedUsername[0])) {
+                $strippedStoredUsername = substr($storedUsername, 1);
+                if (strcasecmp($strippedStoredUsername, $bedrockUsername) === 0) {
+                    $matched = true;
+                    $usedBedrockFallback = true;
+                }
+            }
+        }
+
+        if (! $matched) {
             return [
                 'success' => false,
                 'message' => 'Username or UUID mismatch.',
             ];
         }
 
+        // When bedrock fallback matched, look up the account by the verification's
+        // stored UUID (the Floodgate UUID) instead of the incoming Java linked UUID.
+        $accountLookupUuid = $usedBedrockFallback ? $verification->minecraft_uuid : $uuid;
+
         try {
-            DB::transaction(function () use ($verification, $uuid) {
+            DB::transaction(function () use ($verification, $accountLookupUuid, $bedrockXuid) {
                 // Find the verifying MinecraftAccount created by GenerateVerificationCode
-                $account = MinecraftAccount::whereNormalizedUuid($uuid)
+                $account = MinecraftAccount::whereNormalizedUuid($accountLookupUuid)
                     ->lockForUpdate()
                     ->first();
 
@@ -89,14 +131,32 @@ class CompleteVerification
                 }
 
                 // Promote to active
-                $account->update([
+                $updateData = [
                     'status' => MinecraftAccountStatus::Active,
                     'verified_at' => now(),
                     'last_username_check_at' => now(),
-                ]);
+                ];
+
+                // Store the bedrock XUID if provided and not already set
+                if ($bedrockXuid !== null && $account->bedrock_xuid === null) {
+                    $updateData['bedrock_xuid'] = $bedrockXuid;
+                }
+
+                $account->update($updateData);
 
                 // Mark verification as completed
                 $verification->update(['status' => 'completed']);
+
+                // If user has no primary account yet, make this one primary
+                $hasPrimary = MinecraftAccount::where('user_id', $account->user_id)
+                    ->where('is_primary', true)
+                    ->active()
+                    ->where('id', '!=', $account->id)
+                    ->exists();
+
+                if (! $hasPrimary) {
+                    $account->update(['is_primary' => true]);
+                }
 
                 // Record activity
                 RecordActivity::handle(

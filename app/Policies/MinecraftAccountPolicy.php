@@ -2,6 +2,9 @@
 
 namespace App\Policies;
 
+use App\Enums\MinecraftAccountStatus;
+use App\Enums\StaffDepartment;
+use App\Enums\StaffRank;
 use App\Models\MinecraftAccount;
 use App\Models\User;
 
@@ -12,7 +15,7 @@ class MinecraftAccountPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->isAdmin();
+        return $user->isAdmin() || $user->isAtLeastRank(StaffRank::Officer);
     }
 
     /**
@@ -40,12 +43,60 @@ class MinecraftAccountPolicy
     }
 
     /**
+     * Determine whether the user can set the account as their primary.
+     */
+    public function setPrimary(User $user, MinecraftAccount $minecraftAccount): bool
+    {
+        return $minecraftAccount->status === MinecraftAccountStatus::Active
+            && ($user->id === $minecraftAccount->user_id || $user->isAdmin());
+    }
+
+    /**
      * Determine whether the user can delete the model.
      */
     public function delete(User $user, MinecraftAccount $minecraftAccount): bool
     {
         // Users can delete their own accounts, admins can delete any
         return $user->id === $minecraftAccount->user_id || $user->isAdmin();
+    }
+
+    /**
+     * Determine whether the user can reactivate a removed account.
+     */
+    public function reactivate(User $user, MinecraftAccount $minecraftAccount): bool
+    {
+        return $minecraftAccount->status === MinecraftAccountStatus::Removed
+            && ($user->id === $minecraftAccount->user_id || $user->isAdmin());
+    }
+
+    /**
+     * Determine whether the user can view the account's UUID.
+     */
+    public function viewUuid(User $user, MinecraftAccount $minecraftAccount): bool
+    {
+        return $user->isAdmin()
+            || $user->isInDepartment(StaffDepartment::Engineer)
+            || $user->isAtLeastRank(StaffRank::Officer);
+    }
+
+    /**
+     * Determine whether the user can view staff audit fields (verified_at, last_username_check_at).
+     */
+    public function viewStaffAuditFields(User $user, MinecraftAccount $minecraftAccount): bool
+    {
+        return $user->isAdmin() || $user->staff_department !== null;
+    }
+
+    /**
+     * Determine whether the user can revoke (admin soft-remove) the account.
+     */
+    public function revoke(User $user, MinecraftAccount $minecraftAccount): bool
+    {
+        return $minecraftAccount->status === MinecraftAccountStatus::Active
+            && ($user->isAdmin()
+                || ($user->isAtLeastRank(StaffRank::Officer)
+                    && ($user->isInDepartment(StaffDepartment::Engineer)
+                        || $user->isInDepartment(StaffDepartment::Command))));
     }
 
     /**
@@ -61,6 +112,8 @@ class MinecraftAccountPolicy
      */
     public function forceDelete(User $user, MinecraftAccount $minecraftAccount): bool
     {
-        return false;
+        return ($minecraftAccount->status === MinecraftAccountStatus::Removed
+                || $minecraftAccount->status === MinecraftAccountStatus::Verifying)
+            && $user->isAdmin();
     }
 }

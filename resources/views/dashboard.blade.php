@@ -24,15 +24,50 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     <livewire:dashboard.announcements-widget />
 
-                    @if(auth()->user()->minecraftAccounts()->doesntExist())
-                        <flux:card class="flex flex-col items-center justify-center gap-3 py-8 text-center">
-                            <flux:heading size="md">Minecraft Account</flux:heading>
-                            <flux:text variant="subtle">Link your Minecraft account to join the server.</flux:text>
-                            <flux:button href="{{ route('settings.minecraft-accounts') }}" variant="primary" icon="plus">
-                                Add Your Minecraft Account
-                            </flux:button>
-                        </flux:card>
-                    @endif
+                    <flux:card>
+                        <flux:heading size="md">Account Linking</flux:heading>
+                        <flux:separator variant="subtle" class="my-2" />
+
+                        @if(auth()->user()->isAtLeastLevel(App\Enums\MembershipLevel::Traveler))
+                            <div class="flex flex-col gap-3 mt-2">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <flux:text class="font-medium">Minecraft</flux:text>
+                                        <flux:text variant="subtle" class="text-sm">
+                                            @if(auth()->user()->minecraftAccounts()->exists())
+                                                {{ auth()->user()->minecraftAccounts()->countingTowardLimit()->count() }} account(s) linked
+                                            @else
+                                                Link your account to join the server
+                                            @endif
+                                        </flux:text>
+                                    </div>
+                                    <flux:button href="{{ route('settings.minecraft-accounts') }}" size="xs" variant="primary">
+                                        Manage
+                                    </flux:button>
+                                </div>
+
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <flux:text class="font-medium">Discord</flux:text>
+                                        <flux:text variant="subtle" class="text-sm">
+                                            @if(auth()->user()->discordAccounts()->exists())
+                                                {{ auth()->user()->discordAccounts()->count() }} account(s) linked
+                                            @else
+                                                Link your account for role sync and DM notifications
+                                            @endif
+                                        </flux:text>
+                                    </div>
+                                    <flux:button href="{{ route('settings.discord-account') }}" size="xs" variant="primary">
+                                        Manage
+                                    </flux:button>
+                                </div>
+                            </div>
+                        @else
+                            <flux:text variant="subtle" class="mt-2">
+                                Account linking will be unlocked once staff approves your account and you are promoted to Traveler.
+                            </flux:text>
+                        @endif
+                    </flux:card>
 
                     <flux:card>
                         <flux:heading>Donations</flux:heading>

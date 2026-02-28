@@ -41,7 +41,7 @@ class CheckBrigTimers extends Command
         $notificationService = app(TicketNotificationService::class);
 
         foreach ($users as $user) {
-            $notificationService->send($user, new BrigTimerExpiredNotification($user));
+            $notificationService->send($user, new BrigTimerExpiredNotification($user), 'account');
             $user->update(['brig_timer_notified' => true]);
             $this->line("  Notified: {$user->name}");
         }

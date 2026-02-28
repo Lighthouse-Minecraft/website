@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\MessageFlag;
+use App\Notifications\Channels\DiscordChannel;
 use App\Notifications\Channels\PushoverChannel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -47,6 +48,10 @@ class MessageFlaggedNotification extends Notification implements ShouldQueue
             $channels[] = PushoverChannel::class;
         }
 
+        if (in_array('discord', $this->allowedChannels)) {
+            $channels[] = DiscordChannel::class;
+        }
+
         return $channels;
     }
 
@@ -78,5 +83,10 @@ class MessageFlaggedNotification extends Notification implements ShouldQueue
             'message' => 'A message has been flagged for review',
             'url' => url('/tickets/'.$this->flag->flag_review_ticket_id),
         ];
+    }
+
+    public function toDiscord(object $notifiable): string
+    {
+        return "**Message Flagged for Review**\n**Flagged by:** {$this->flag->flaggedBy->name}\n**Reason:** {$this->flag->note}\n".url('/tickets/'.$this->flag->flag_review_ticket_id);
     }
 }

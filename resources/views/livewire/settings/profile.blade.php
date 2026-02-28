@@ -10,6 +10,7 @@ new class extends Component {
     public string $name = '';
     public string $email = '';
     public string $timezone = '';
+    public string $avatar_preference = 'auto';
     public array $timezones = [];
 
     /**
@@ -20,6 +21,7 @@ new class extends Component {
         $this->name = Auth::user()->name;
         $this->email = Auth::user()->email;
         $this->timezone = Auth::user()->timezone ?? 'America/New_York';
+        $this->avatar_preference = Auth::user()->avatar_preference ?? 'auto';
         $this->timezones = \DateTimeZone::listIdentifiers();
     }
 
@@ -43,6 +45,7 @@ new class extends Component {
             ],
 
             'timezone' => ['required', 'timezone:all'],
+            'avatar_preference' => ['required', 'in:auto,minecraft,discord,gravatar'],
         ]);
 
         $user->fill($validated);
@@ -111,6 +114,13 @@ new class extends Component {
                 @foreach ($timezones as $tz)
                     <flux:select.option>{{ $tz }}</flux:select.option>
                 @endforeach
+            </flux:select>
+
+            <flux:select wire:model="avatar_preference" variant="listbox" label="Avatar Source">
+                <flux:select.option value="auto">Auto (Minecraft → Discord → Initials)</flux:select.option>
+                <flux:select.option value="minecraft">Minecraft Account</flux:select.option>
+                <flux:select.option value="discord">Discord Account</flux:select.option>
+                <flux:select.option value="gravatar">Gravatar</flux:select.option>
             </flux:select>
 
             <div class="flex items-center gap-4">

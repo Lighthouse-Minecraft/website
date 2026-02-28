@@ -18,9 +18,11 @@ class MinecraftAccount extends Model
         'user_id',
         'username',
         'uuid',
+        'bedrock_xuid',
         'avatar_url',
         'account_type',
         'status',
+        'is_primary',
         'verified_at',
         'last_username_check_at',
     ];
@@ -30,6 +32,7 @@ class MinecraftAccount extends Model
         return [
             'account_type' => MinecraftAccountType::class,
             'status' => MinecraftAccountStatus::class,
+            'is_primary' => 'boolean',
             'verified_at' => 'datetime',
             'last_username_check_at' => 'datetime',
         ];
@@ -66,6 +69,29 @@ class MinecraftAccount extends Model
     public function scopeCancelled(Builder $query): void
     {
         $query->where('status', MinecraftAccountStatus::Cancelled);
+    }
+
+    public function scopeRemoved(Builder $query): void
+    {
+        $query->where('status', MinecraftAccountStatus::Removed);
+    }
+
+    public function scopePrimary(Builder $query): void
+    {
+        $query->where('is_primary', true);
+    }
+
+    /**
+     * Accounts that count toward the user's max-account limit.
+     * Active, Verifying, and Banned count. Removed and Cancelled do not.
+     */
+    public function scopeCountingTowardLimit(Builder $query): void
+    {
+        $query->whereIn('status', [
+            MinecraftAccountStatus::Active,
+            MinecraftAccountStatus::Verifying,
+            MinecraftAccountStatus::Banned,
+        ]);
     }
 
     // ─── RCON Command Helpers ─────────────────────────────────────────────────

@@ -204,6 +204,190 @@ test('completes verification for bedrock account with dot-prefix username', func
     expect($result['success'])->toBeTrue();
 });
 
+test('completes verification for linked bedrock account using bedrock fallback', function () {
+    // Website stored the Floodgate identity
+    MinecraftVerification::factory()->for($this->user)->pending()->create([
+        'code' => 'LNK123',
+        'account_type' => 'bedrock',
+        'minecraft_username' => '.Ghostridr6007',
+        'minecraft_uuid' => '00000000-0000-0000-0009-01234567890a',
+    ]);
+
+    MinecraftAccount::factory()->for($this->user)->verifying()->create([
+        'username' => '.Ghostridr6007',
+        'uuid' => '00000000-0000-0000-0009-01234567890a',
+        'account_type' => 'bedrock',
+    ]);
+
+    // Plugin sends the linked Java identity as minecraft_username/uuid,
+    // plus the bedrock_username for fallback matching
+    $result = $this->action->handle(
+        'LNK123',
+        'Ghostridr',                              // linked Java username (won't match stored)
+        'a008f810-1af7-48fa-8a3d-cbc07e29c811',   // linked Java UUID (won't match stored)
+        bedrockUsername: 'Ghostridr6007',
+        bedrockXuid: '2535406112136054',
+    );
+
+    expect($result['success'])->toBeTrue();
+
+    $this->assertDatabaseHas('minecraft_accounts', [
+        'user_id' => $this->user->id,
+        'username' => '.Ghostridr6007',
+        'status' => 'active',
+        'bedrock_xuid' => '2535406112136054',
+    ]);
+});
+
+test('stores bedrock xuid on verification', function () {
+    MinecraftVerification::factory()->for($this->user)->pending()->create([
+        'code' => 'BDX123',
+        'account_type' => 'bedrock',
+        'minecraft_username' => '.BedrockPlayer',
+        'minecraft_uuid' => '00000000-0000-0000-0009-01234567890a',
+    ]);
+
+    MinecraftAccount::factory()->for($this->user)->verifying()->create([
+        'username' => '.BedrockPlayer',
+        'uuid' => '00000000-0000-0000-0009-01234567890a',
+        'account_type' => 'bedrock',
+    ]);
+
+    $result = $this->action->handle(
+        'BDX123',
+        '.BedrockPlayer',
+        '00000000-0000-0000-0009-01234567890a',
+        bedrockXuid: '2535406112136054',
+    );
+
+    expect($result['success'])->toBeTrue();
+
+    $this->assertDatabaseHas('minecraft_accounts', [
+        'uuid' => '00000000-0000-0000-0009-01234567890a',
+        'bedrock_xuid' => '2535406112136054',
+    ]);
+});
+
+test('does not overwrite existing bedrock xuid', function () {
+    MinecraftVerification::factory()->for($this->user)->pending()->create([
+        'code' => 'BDX456',
+        'account_type' => 'bedrock',
+        'minecraft_username' => '.BedrockPlayer',
+        'minecraft_uuid' => '00000000-0000-0000-0009-01234567890a',
+    ]);
+
+    MinecraftAccount::factory()->for($this->user)->verifying()->create([
+        'username' => '.BedrockPlayer',
+        'uuid' => '00000000-0000-0000-0009-01234567890a',
+        'account_type' => 'bedrock',
+        'bedrock_xuid' => 'existing-xuid-value',
+    ]);
+
+    $result = $this->action->handle(
+        'BDX456',
+        '.BedrockPlayer',
+        '00000000-0000-0000-0009-01234567890a',
+        bedrockXuid: 'new-xuid-value',
+    );
+
+    expect($result['success'])->toBeTrue();
+
+    $this->assertDatabaseHas('minecraft_accounts', [
+        'uuid' => '00000000-0000-0000-0009-01234567890a',
+        'bedrock_xuid' => 'existing-xuid-value',
+    ]);
+});
+
+test('bedrock fallback does not match when bedrock_username is not provided', function () {
+    MinecraftVerification::factory()->for($this->user)->pending()->create([
+        'code' => 'NOB123',
+        'account_type' => 'bedrock',
+        'minecraft_username' => '.BedrockPlayer',
+        'minecraft_uuid' => '00000000-0000-0000-0009-01234567890a',
+    ]);
+
+    MinecraftAccount::factory()->for($this->user)->verifying()->create([
+        'username' => '.BedrockPlayer',
+        'uuid' => '00000000-0000-0000-0009-01234567890a',
+        'account_type' => 'bedrock',
+    ]);
+
+    // Send mismatched Java identity without bedrock fallback fields
+    $result = $this->action->handle(
+        'NOB123',
+        'SomeJavaPlayer',
+        'a008f810-1af7-48fa-8a3d-cbc07e29c811',
+    );
+
+    expect($result['success'])->toBeFalse()
+        ->and($result['message'])->toBe('Username or UUID mismatch.');
+});
+
+test('completes verification for unlinked bedrock with clean gamertag stored and dot-prefixed incoming', function () {
+    // New flow: website stores clean gamertag (no dot)
+    MinecraftVerification::factory()->for($this->user)->pending()->create([
+        'code' => 'CLN123',
+        'account_type' => 'bedrock',
+        'minecraft_username' => 'BedrockPlayer',
+        'minecraft_uuid' => '00000000-0000-0000-0009-01234567890a',
+    ]);
+
+    MinecraftAccount::factory()->for($this->user)->verifying()->create([
+        'username' => 'BedrockPlayer',
+        'uuid' => '00000000-0000-0000-0009-01234567890a',
+        'account_type' => 'bedrock',
+    ]);
+
+    // Plugin sends dot-prefixed name (Floodgate in-game name), same UUID
+    $result = $this->action->handle(
+        'CLN123',
+        '.BedrockPlayer',
+        '00000000-0000-0000-0009-01234567890a',
+    );
+
+    expect($result['success'])->toBeTrue();
+
+    $this->assertDatabaseHas('minecraft_accounts', [
+        'user_id' => $this->user->id,
+        'username' => 'BedrockPlayer',
+        'status' => 'active',
+    ]);
+});
+
+test('completes verification for linked bedrock with clean gamertag via bedrock_username', function () {
+    // New flow: website stores clean gamertag (no dot)
+    MinecraftVerification::factory()->for($this->user)->pending()->create([
+        'code' => 'CLN456',
+        'account_type' => 'bedrock',
+        'minecraft_username' => 'Ghostridr6007',
+        'minecraft_uuid' => '00000000-0000-0000-0009-01234567890a',
+    ]);
+
+    MinecraftAccount::factory()->for($this->user)->verifying()->create([
+        'username' => 'Ghostridr6007',
+        'uuid' => '00000000-0000-0000-0009-01234567890a',
+        'account_type' => 'bedrock',
+    ]);
+
+    // Plugin sends linked Java identity, plus bedrock_username for fallback
+    $result = $this->action->handle(
+        'CLN456',
+        'Ghostridr',
+        'a008f810-1af7-48fa-8a3d-cbc07e29c811',
+        bedrockUsername: 'Ghostridr6007',
+        bedrockXuid: '2535406112136054',
+    );
+
+    expect($result['success'])->toBeTrue();
+
+    $this->assertDatabaseHas('minecraft_accounts', [
+        'user_id' => $this->user->id,
+        'username' => 'Ghostridr6007',
+        'status' => 'active',
+        'bedrock_xuid' => '2535406112136054',
+    ]);
+});
+
 test('syncs staff position when staff member verifies account', function () {
     Notification::fake();
 

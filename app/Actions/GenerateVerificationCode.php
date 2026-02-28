@@ -43,9 +43,9 @@ class GenerateVerificationCode
             ];
         }
 
-        // Check if user has reached max accounts (all statuses count toward the limit)
+        // Check if user has reached max accounts (only Active, Verifying, Banned count)
         $maxAccounts = config('lighthouse.max_minecraft_accounts');
-        if ($user->minecraftAccounts()->count() >= $maxAccounts) {
+        if ($user->minecraftAccounts()->countingTowardLimit()->count() >= $maxAccounts) {
             return [
                 'success' => false,
                 'code' => null,
@@ -106,11 +106,6 @@ class GenerateVerificationCode
 
             $uuid = $playerData['floodgate_uuid'] ?? null;
             $verifiedUsername = $playerData['gamertag'] ?? $lookupUsername;
-
-            // Bedrock usernames appear with a leading dot on Floodgate servers.
-            if (! str_starts_with($verifiedUsername, '.')) {
-                $verifiedUsername = '.'.$verifiedUsername;
-            }
 
             if (! $uuid) {
                 return [
@@ -175,7 +170,7 @@ class GenerateVerificationCode
 
         // Validate API-returned values before persisting (defense-in-depth)
         $usernamePattern = $accountType === MinecraftAccountType::Bedrock
-            ? '/^\.?[A-Za-z0-9_ ]{1,16}$/'
+            ? '/^[A-Za-z0-9_ ]{1,16}$/'
             : '/^[A-Za-z0-9_]{3,16}$/';
 
         if (! preg_match($usernamePattern, $verifiedUsername)) {

@@ -45,6 +45,23 @@ class PutUserInBrig
             $account->save();
         }
 
+        // Strip Discord roles and mark accounts as brigged
+        $discordApi = app(\App\Services\DiscordApiService::class);
+        foreach ($target->discordAccounts()->active()->get() as $discordAccount) {
+            try {
+                $discordApi->removeAllManagedRoles($discordAccount->discord_user_id);
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning('Failed to strip Discord roles during brig', [
+                    'discord_user_id' => $discordAccount->discord_user_id,
+                    'user_id' => $target->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            $discordAccount->status = \App\Enums\DiscordAccountStatus::Brigged;
+            $discordAccount->save();
+        }
+
         $description = "Put in the brig by {$admin->name}. Reason: {$reason}.";
         if ($expiresAt) {
             $description .= " Timer set until {$expiresAt->toDateTimeString()}.";
@@ -58,6 +75,6 @@ class PutUserInBrig
         RecordActivity::handle($target, 'user_put_in_brig', $description);
 
         $notificationService = app(TicketNotificationService::class);
-        $notificationService->send($target, new UserPutInBrigNotification($target, $reason, $expiresAt));
+        $notificationService->send($target, new UserPutInBrigNotification($target, $reason, $expiresAt), 'account');
     }
 }

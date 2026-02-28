@@ -499,4 +499,92 @@ describe('View Ticket Component', function () {
         expect($html)->toContain('href="/tickets?filter=my-closed"')
             ->toContain('← Back to Tickets');
     })->done();
+
+    it('auto-assigns unassigned ticket when staff replies', function () {
+        $staff = User::factory()
+            ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->create();
+        $creator = User::factory()->create();
+
+        $thread = Thread::factory()
+            ->withDepartment(StaffDepartment::Chaplain)
+            ->withStatus(ThreadStatus::Open)
+            ->create(['created_by_user_id' => $creator->id, 'assigned_to_user_id' => null]);
+        $thread->addParticipant($creator);
+
+        actingAs($staff);
+
+        Volt::test('ready-room.tickets.view-ticket', ['thread' => $thread])
+            ->set('replyMessage', 'Staff handling this ticket')
+            ->call('sendReply');
+
+        $thread->refresh();
+        expect($thread->assigned_to_user_id)->toBe($staff->id);
+    })->done();
+
+    it('does not change assignment when ticket is already assigned', function () {
+        $staff = User::factory()
+            ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->create();
+        $otherStaff = User::factory()
+            ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->create();
+        $creator = User::factory()->create();
+
+        $thread = Thread::factory()
+            ->withDepartment(StaffDepartment::Chaplain)
+            ->withStatus(ThreadStatus::Open)
+            ->create(['created_by_user_id' => $creator->id, 'assigned_to_user_id' => $otherStaff->id]);
+        $thread->addParticipant($creator);
+
+        actingAs($staff);
+
+        Volt::test('ready-room.tickets.view-ticket', ['thread' => $thread])
+            ->set('replyMessage', 'Another staff replying')
+            ->call('sendReply');
+
+        $thread->refresh();
+        expect($thread->assigned_to_user_id)->toBe($otherStaff->id);
+    })->done();
+
+    it('does not auto-assign when creator replies to own ticket', function () {
+        $creator = User::factory()->create();
+
+        $thread = Thread::factory()
+            ->withStatus(ThreadStatus::Open)
+            ->create(['created_by_user_id' => $creator->id, 'assigned_to_user_id' => null]);
+        $thread->addParticipant($creator);
+
+        actingAs($creator);
+
+        Volt::test('ready-room.tickets.view-ticket', ['thread' => $thread])
+            ->set('replyMessage', 'Creator following up')
+            ->call('sendReply');
+
+        $thread->refresh();
+        expect($thread->assigned_to_user_id)->toBeNull();
+    })->done();
+
+    it('does not auto-assign on internal note', function () {
+        $staff = User::factory()
+            ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->create();
+        $creator = User::factory()->create();
+
+        $thread = Thread::factory()
+            ->withDepartment(StaffDepartment::Chaplain)
+            ->withStatus(ThreadStatus::Open)
+            ->create(['created_by_user_id' => $creator->id, 'assigned_to_user_id' => null]);
+        $thread->addParticipant($creator);
+
+        actingAs($staff);
+
+        Volt::test('ready-room.tickets.view-ticket', ['thread' => $thread])
+            ->set('replyMessage', 'Internal staff note')
+            ->set('isInternalNote', true)
+            ->call('sendReply');
+
+        $thread->refresh();
+        expect($thread->assigned_to_user_id)->toBeNull();
+    })->done();
 });

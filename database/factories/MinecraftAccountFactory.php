@@ -29,6 +29,7 @@ class MinecraftAccountFactory extends Factory
             'avatar_url' => 'https://mc-heads.net/avatar/'.str_replace('-', '', $uuid),
             'account_type' => MinecraftAccountType::Java,
             'status' => MinecraftAccountStatus::Active,
+            'is_primary' => false,
             'verified_at' => now(),
             'last_username_check_at' => null,
         ];
@@ -74,6 +75,27 @@ class MinecraftAccountFactory extends Factory
         return $this->state(fn () => [
             'status' => MinecraftAccountStatus::Active,
             'verified_at' => now(),
+        ]);
+    }
+
+    /**
+     * Indicate that this account is the user's primary account.
+     */
+    public function primary(): static
+    {
+        return $this->state(fn () => [
+            'is_primary' => true,
+        ]);
+    }
+
+    /**
+     * Indicate that the account has been removed (soft-disabled).
+     */
+    public function removed(): static
+    {
+        return $this->state(fn () => [
+            'status' => MinecraftAccountStatus::Removed,
+            'verified_at' => now()->subDay(),
         ]);
     }
 }
