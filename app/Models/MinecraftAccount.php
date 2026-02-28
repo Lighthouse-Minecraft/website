@@ -18,6 +18,7 @@ class MinecraftAccount extends Model
         'user_id',
         'username',
         'uuid',
+        'bedrock_xuid',
         'avatar_url',
         'account_type',
         'status',

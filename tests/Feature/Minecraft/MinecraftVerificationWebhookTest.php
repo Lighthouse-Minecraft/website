@@ -187,6 +187,47 @@ test('accepts uuid with or without dashes', function () {
     ]);
 });
 
+test('completes verification for linked bedrock account via webhook', function () {
+    $verification = MinecraftVerification::factory()->for($this->user)->pending()->create([
+        'code' => 'R4MEZ2',
+        'account_type' => MinecraftAccountType::Bedrock,
+        'minecraft_username' => '.Ghostridr6007',
+        'minecraft_uuid' => '00000000-0000-0000-0009-01234567890a',
+    ]);
+
+    MinecraftAccount::factory()->for($this->user)->verifying()->create([
+        'username' => '.Ghostridr6007',
+        'uuid' => '00000000-0000-0000-0009-01234567890a',
+        'account_type' => MinecraftAccountType::Bedrock,
+    ]);
+
+    $response = $this->postJson('/api/minecraft/verify', [
+        'server_token' => 'test-server-token',
+        'code' => 'R4MEZ2',
+        'minecraft_username' => 'Ghostridr',
+        'minecraft_uuid' => 'a008f810-1af7-48fa-8a3d-cbc07e29c811',
+        'is_bedrock' => true,
+        'bedrock_username' => 'Ghostridr6007',
+        'bedrock_xuid' => '2535406112136054',
+        'is_linked' => true,
+        'linked_java_username' => 'Ghostridr',
+        'linked_java_uuid' => 'a008f810-1af7-48fa-8a3d-cbc07e29c811',
+    ]);
+
+    $response->assertSuccessful()
+        ->assertJson([
+            'success' => true,
+            'message' => 'Minecraft account successfully linked!',
+        ]);
+
+    $this->assertDatabaseHas('minecraft_accounts', [
+        'user_id' => $this->user->id,
+        'username' => '.Ghostridr6007',
+        'status' => 'active',
+        'bedrock_xuid' => '2535406112136054',
+    ]);
+});
+
 test('rate limits requests', function () {
     for ($i = 0; $i < 31; $i++) {
         $response = $this->postJson('/api/minecraft/verify', [

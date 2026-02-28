@@ -115,12 +115,17 @@ Route::post('/api/minecraft/verify', function (\Illuminate\Http\Request $request
         'code' => 'required|string|size:6',
         'minecraft_username' => 'required|string',
         'minecraft_uuid' => 'required|string',
+        'is_bedrock' => 'sometimes|boolean',
+        'bedrock_username' => 'sometimes|string',
+        'bedrock_xuid' => 'sometimes|string',
     ]);
 
     $result = \App\Actions\CompleteVerification::run(
         $request->code,
         $request->minecraft_username,
-        $request->minecraft_uuid
+        $request->minecraft_uuid,
+        bedrockUsername: $request->input('bedrock_username'),
+        bedrockXuid: $request->input('bedrock_xuid'),
     );
 
     return response()->json($result);
