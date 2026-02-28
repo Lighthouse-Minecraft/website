@@ -69,7 +69,8 @@ class CompleteVerification
 
         // Fallback 1: Strip single-character Floodgate prefix from the INCOMING username.
         // Handles: stored "Ghostridr6007" vs incoming ".Ghostridr6007" (unlinked Bedrock, no dot stored).
-        if (! $matched && strlen($username) > 1 && $storedUuid === $normalizedUuid) {
+        // Only strip when the first character is a non-alphanumeric Floodgate prefix (e.g. "." or "*").
+        if (! $matched && strlen($username) > 1 && ! ctype_alnum($username[0]) && $storedUuid === $normalizedUuid) {
             $strippedIncoming = substr($username, 1);
             if (strcasecmp($verification->minecraft_username, $strippedIncoming) === 0) {
                 $matched = true;
@@ -89,7 +90,8 @@ class CompleteVerification
                 $usedBedrockFallback = true;
             }
             // Strip stored prefix: stored ".Ghostridr6007" -> "Ghostridr6007" == "Ghostridr6007"
-            elseif (strlen($storedUsername) > 1) {
+            // Only strip when the first character is a non-alphanumeric Floodgate prefix.
+            elseif (strlen($storedUsername) > 1 && ! ctype_alnum($storedUsername[0])) {
                 $strippedStoredUsername = substr($storedUsername, 1);
                 if (strcasecmp($strippedStoredUsername, $bedrockUsername) === 0) {
                     $matched = true;
