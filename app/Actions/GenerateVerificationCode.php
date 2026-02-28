@@ -107,11 +107,6 @@ class GenerateVerificationCode
             $uuid = $playerData['floodgate_uuid'] ?? null;
             $verifiedUsername = $playerData['gamertag'] ?? $lookupUsername;
 
-            // Bedrock usernames appear with a leading dot on Floodgate servers.
-            if (! str_starts_with($verifiedUsername, '.')) {
-                $verifiedUsername = '.'.$verifiedUsername;
-            }
-
             if (! $uuid) {
                 return [
                     'success' => false,
@@ -175,7 +170,7 @@ class GenerateVerificationCode
 
         // Validate API-returned values before persisting (defense-in-depth)
         $usernamePattern = $accountType === MinecraftAccountType::Bedrock
-            ? '/^\.?[A-Za-z0-9_ ]{1,16}$/'
+            ? '/^[A-Za-z0-9_ ]{1,16}$/'
             : '/^[A-Za-z0-9_]{3,16}$/';
 
         if (! preg_match($usernamePattern, $verifiedUsername)) {
