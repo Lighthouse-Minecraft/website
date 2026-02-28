@@ -12,10 +12,10 @@ class ForceDeleteMinecraftAccount
     use AsAction;
 
     /**
-     * Permanently delete a Removed Minecraft account (admin only).
+     * Permanently delete a Removed or Verifying Minecraft account (admin only).
      *
      * This releases the UUID so it can be re-registered by any user.
-     * Only accounts in Removed status can be force-deleted.
+     * Only accounts in Removed or Verifying status can be force-deleted.
      */
     public function handle(MinecraftAccount $account, User $admin): array
     {
@@ -26,10 +26,10 @@ class ForceDeleteMinecraftAccount
             ];
         }
 
-        if ($account->status !== MinecraftAccountStatus::Removed) {
+        if ($account->status !== MinecraftAccountStatus::Removed && $account->status !== MinecraftAccountStatus::Verifying) {
             return [
                 'success' => false,
-                'message' => 'Only removed accounts can be permanently deleted.',
+                'message' => 'Only removed or verifying accounts can be permanently deleted.',
             ];
         }
 
