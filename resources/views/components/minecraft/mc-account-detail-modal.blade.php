@@ -83,9 +83,18 @@
                 @endcan
             </dl>
 
-            @canany(['reactivate', 'forceDelete'], $account)
+            @canany(['revoke', 'reactivate', 'forceDelete'], $account)
                 <flux:separator />
                 <div class="flex gap-2 justify-end">
+                    @can('revoke', $account)
+                        <flux:button
+                            wire:click="confirmRevoke({{ $account->id }})"
+                            variant="ghost"
+                            size="sm"
+                            class="hover:!text-red-600 dark:hover:!text-red-400 hover:!bg-red-50 dark:hover:!bg-red-950">
+                            Revoke
+                        </flux:button>
+                    @endcan
                     @can('reactivate', $account)
                         <flux:button
                             wire:click="reactivateMinecraftAccount({{ $account->id }})"
@@ -97,10 +106,10 @@
                     @endcan
                     @can('forceDelete', $account)
                         <flux:button
-                            wire:click="forceDeleteMinecraftAccount({{ $account->id }})"
+                            wire:click="confirmForceDelete({{ $account->id }})"
                             variant="ghost"
                             size="sm"
-                            wire:confirm="PERMANENTLY delete this Minecraft account? This will release the UUID so it can be registered by anyone. This action cannot be undone.">
+                            class="hover:!text-red-600 dark:hover:!text-red-400 hover:!bg-red-50 dark:hover:!bg-red-950">
                             Delete Permanently
                         </flux:button>
                     @endcan
