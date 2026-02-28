@@ -493,6 +493,7 @@ The `/tickets/create-admin` route has additional middleware: `can:createAsStaff,
 ## File Map
 
 ### Models
+
 | File | Purpose |
 |------|---------|
 | `app/Models/Thread.php` | Core ticket entity with relationships, visibility, unread tracking |
@@ -501,6 +502,7 @@ The `/tickets/create-admin` route has additional middleware: `can:createAsStaff,
 | `app/Models/MessageFlag.php` | Moderation flags on messages |
 
 ### Enums
+
 | File | Purpose |
 |------|---------|
 | `app/Enums/ThreadType.php` | Thread type (ticket/dm/forum) |
@@ -513,6 +515,7 @@ The `/tickets/create-admin` route has additional middleware: `can:createAsStaff,
 | `app/Enums/EmailDigestFrequency.php` | Email notification frequency preference |
 
 ### Actions
+
 | File | Purpose |
 |------|---------|
 | `app/Actions/FlagMessage.php` | Creates a flag + moderation review ticket (transactional) |
@@ -520,17 +523,20 @@ The `/tickets/create-admin` route has additional middleware: `can:createAsStaff,
 | `app/Actions/RecordActivity.php` | Logs activity entries (used throughout ticket system) |
 
 ### Policies
+
 | File | Purpose |
 |------|---------|
 | `app/Policies/ThreadPolicy.php` | All thread-level authorization |
 | `app/Policies/MessagePolicy.php` | Message viewing and flagging authorization |
 
 ### Services
+
 | File | Purpose |
 |------|---------|
 | `app/Services/TicketNotificationService.php` | Smart notification delivery with channel/digest logic |
 
 ### Notifications
+
 | File | Purpose |
 |------|---------|
 | `app/Notifications/NewTicketNotification.php` | Sent when a ticket is created |
@@ -540,16 +546,19 @@ The `/tickets/create-admin` route has additional middleware: `can:createAsStaff,
 | `app/Notifications/TicketDigestNotification.php` | Periodic digest email |
 
 ### Commands
+
 | File | Purpose |
 |------|---------|
 | `app/Console/Commands/SendTicketDigests.php` | Artisan command for daily/weekly digest emails |
 
 ### Middleware
+
 | File | Purpose |
 |------|---------|
 | `app/Http/Middleware/UpdateLastNotificationRead.php` | Tracks user's last visit to ticket pages |
 
 ### Livewire Volt Components
+
 | File | Purpose |
 |------|---------|
 | `resources/views/livewire/ready-room/tickets/tickets-list.blade.php` | Ticket inbox with filters and badge counts |
@@ -558,6 +567,7 @@ The `/tickets/create-admin` route has additional middleware: `can:createAsStaff,
 | `resources/views/livewire/ready-room/tickets/create-admin-ticket.blade.php` | Admin action ticket creation form |
 
 ### Migrations
+
 | File | Purpose |
 |------|---------|
 | `database/migrations/2026_02_12_214853_create_threads_table.php` | Creates `threads` table |
@@ -567,6 +577,7 @@ The `/tickets/create-admin` route has additional middleware: `can:createAsStaff,
 | `database/migrations/2026_02_14_070835_add_is_viewer_to_thread_participants_table.php` | Adds `is_viewer` column |
 
 ### Factories
+
 | File | Purpose |
 |------|---------|
 | `database/factories/ThreadFactory.php` | Thread factory with states for all subtypes/statuses |
