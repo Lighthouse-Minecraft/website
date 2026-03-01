@@ -16,8 +16,16 @@ Route::get('/', function () {
 })->name('home');
 
 Route::view('dashboard', 'dashboard')
-    ->middleware(['auth', 'verified'])
+    ->middleware(['auth', 'verified', 'ensure-dob'])
     ->name('dashboard');
+
+Volt::route('/birthdate', 'auth.collect-birthdate')
+    ->name('birthdate.show')
+    ->middleware(['auth']);
+
+Volt::route('/parent-portal', 'parent-portal.index')
+    ->name('parent-portal.index')
+    ->middleware(['auth', 'verified', 'ensure-dob']);
 
 Route::middleware(['auth'])->group(function () {
     Route::redirect('settings', 'settings/profile');

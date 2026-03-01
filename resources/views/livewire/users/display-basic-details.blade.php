@@ -441,6 +441,15 @@ new class extends Component {
         );
     }
 
+    public function lockForAgeVerification(): void
+    {
+        $this->authorize('manage-stowaway-users');
+
+        \App\Actions\LockAccountForAgeVerification::run($this->user, Auth::user());
+
+        $this->user->refresh();
+        Flux::toast("{$this->user->name} locked for age verification.", 'Account Locked', variant: 'warning');
+    }
 }; ?>
 
 <div>
@@ -475,6 +484,19 @@ new class extends Component {
                             class="hover:!text-red-600 dark:hover:!text-red-400 hover:!bg-red-50 dark:hover:!bg-red-950"
                         >
                             Put in Brig
+                        </flux:button>
+                    @endif
+
+                    @if(! $user->isInBrig() && $user->id !== Auth::id())
+                        <flux:button
+                            wire:click="lockForAgeVerification"
+                            wire:confirm="Lock {{ $user->name }}'s account for age verification? This will clear their DOB and put them in the brig."
+                            size="sm"
+                            variant="ghost"
+                            icon="shield-exclamation"
+                            class="hover:!text-amber-600 dark:hover:!text-amber-400 hover:!bg-amber-50 dark:hover:!bg-amber-950"
+                        >
+                            Lock for Age Verification
                         </flux:button>
                     @endif
 

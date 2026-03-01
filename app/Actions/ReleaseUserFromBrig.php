@@ -2,6 +2,8 @@
 
 namespace App\Actions;
 
+use App\Enums\BrigType;
+use App\Enums\DiscordAccountStatus;
 use App\Enums\MinecraftAccountStatus;
 use App\Models\User;
 use App\Notifications\UserReleasedFromBrigNotification;
@@ -31,18 +33,26 @@ class ReleaseUserFromBrig
         $target->brig_expires_at = null;
         $target->next_appeal_available_at = null;
         $target->brig_timer_notified = false;
+        $target->brig_type = null;
         $target->save();
+
+        // Determine MC restoration status based on parent toggle
+        $mcRestoreStatus = $target->parent_allows_minecraft
+            ? MinecraftAccountStatus::Active
+            : MinecraftAccountStatus::ParentDisabled;
 
         // Restore all banned Minecraft accounts
         foreach ($target->minecraftAccounts()->where('status', MinecraftAccountStatus::Banned->value)->get() as $account) {
             try {
-                SendMinecraftCommand::run(
-                    $account->whitelistAddCommand(),
-                    'whitelist',
-                    $account->username,
-                    $target
-                );
-                $account->status = MinecraftAccountStatus::Active;
+                if ($mcRestoreStatus === MinecraftAccountStatus::Active) {
+                    SendMinecraftCommand::run(
+                        $account->whitelistAddCommand(),
+                        'whitelist',
+                        $account->username,
+                        $target
+                    );
+                }
+                $account->status = $mcRestoreStatus;
                 $account->save();
             } catch (\Exception $e) {
                 Log::error('Failed to whitelist account on brig release', [
@@ -54,29 +64,36 @@ class ReleaseUserFromBrig
             }
         }
 
-        try {
-            SyncMinecraftRanks::run($target);
-        } catch (\Exception $e) {
-            Log::error('Failed to sync Minecraft ranks on brig release', [
-                'user_id' => $target->id,
-                'error' => $e->getMessage(),
-            ]);
-        }
-        if ($target->staff_department !== null) {
+        if ($mcRestoreStatus === MinecraftAccountStatus::Active) {
             try {
-                SyncMinecraftStaff::run($target, $target->staff_department);
+                SyncMinecraftRanks::run($target);
             } catch (\Exception $e) {
-                Log::error('Failed to sync Minecraft staff on brig release', [
+                Log::error('Failed to sync Minecraft ranks on brig release', [
                     'user_id' => $target->id,
                     'error' => $e->getMessage(),
                 ]);
             }
+            if ($target->staff_department !== null) {
+                try {
+                    SyncMinecraftStaff::run($target, $target->staff_department);
+                } catch (\Exception $e) {
+                    Log::error('Failed to sync Minecraft staff on brig release', [
+                        'user_id' => $target->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
         }
 
-        // Restore Discord accounts from brigged to active and re-sync roles
-        foreach ($target->discordAccounts()->where('status', \App\Enums\DiscordAccountStatus::Brigged)->get() as $discordAccount) {
+        // Determine Discord restoration status based on parent toggle
+        $discordRestoreStatus = $target->parent_allows_discord
+            ? DiscordAccountStatus::Active
+            : DiscordAccountStatus::ParentDisabled;
+
+        // Restore Discord accounts from brigged
+        foreach ($target->discordAccounts()->where('status', DiscordAccountStatus::Brigged)->get() as $discordAccount) {
             try {
-                $discordAccount->status = \App\Enums\DiscordAccountStatus::Active;
+                $discordAccount->status = $discordRestoreStatus;
                 $discordAccount->save();
             } catch (\Exception $e) {
                 Log::error('Failed to restore Discord account on brig release', [
@@ -86,26 +103,41 @@ class ReleaseUserFromBrig
                 ]);
             }
         }
-        try {
-            SyncDiscordRoles::run($target);
-        } catch (\Exception $e) {
-            Log::error('Failed to sync Discord roles on brig release', [
-                'user_id' => $target->id,
-                'error' => $e->getMessage(),
-            ]);
-        }
-        if ($target->staff_department !== null) {
+
+        if ($discordRestoreStatus === DiscordAccountStatus::Active) {
             try {
-                SyncDiscordStaff::run($target, $target->staff_department);
+                SyncDiscordRoles::run($target);
             } catch (\Exception $e) {
-                Log::error('Failed to sync Discord staff on brig release', [
+                Log::error('Failed to sync Discord roles on brig release', [
                     'user_id' => $target->id,
                     'error' => $e->getMessage(),
                 ]);
             }
+            if ($target->staff_department !== null) {
+                try {
+                    SyncDiscordStaff::run($target, $target->staff_department);
+                } catch (\Exception $e) {
+                    Log::error('Failed to sync Discord staff on brig release', [
+                        'user_id' => $target->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
         }
 
         RecordActivity::handle($target, 'user_released_from_brig', "Released from brig by {$admin->name}. Reason: {$reason}");
+
+        // Check if parental hold should re-engage after discipline release
+        if (! $target->parent_allows_site && $target->isMinor()) {
+            $target->in_brig = true;
+            $target->brig_type = BrigType::ParentalDisabled;
+            $target->brig_reason = 'Site access restricted by parent.';
+            $target->brig_expires_at = null;
+            $target->next_appeal_available_at = null;
+            $target->save();
+
+            return;
+        }
 
         $notificationService = app(TicketNotificationService::class);
         $notificationService->send($target, new UserReleasedFromBrigNotification($target), 'account');

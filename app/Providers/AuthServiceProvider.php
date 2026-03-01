@@ -19,6 +19,7 @@ class AuthServiceProvider extends ServiceProvider
         \App\Models\Thread::class => \App\Policies\ThreadPolicy::class,
         \App\Models\Message::class => \App\Policies\MessagePolicy::class,
         \App\Models\DiscordAccount::class => \App\Policies\DiscordAccountPolicy::class,
+        \App\Models\ParentChildLink::class => \App\Policies\ParentChildLinkPolicy::class,
     ];
 
     /**
@@ -73,7 +74,15 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('link-discord', function ($user) {
-            return $user->isAtLeastLevel(MembershipLevel::Traveler) && ! $user->in_brig;
+            return $user->isAtLeastLevel(MembershipLevel::Traveler) && ! $user->in_brig && $user->parent_allows_discord;
+        });
+
+        Gate::define('view-parent-portal', function ($user) {
+            return $user->isAdult() || $user->children()->exists();
+        });
+
+        Gate::define('link-minecraft-account', function ($user) {
+            return ! $user->in_brig && $user->parent_allows_minecraft;
         });
 
         Gate::define('view-acp', function ($user) {
