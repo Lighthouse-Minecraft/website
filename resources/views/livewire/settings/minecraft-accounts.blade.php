@@ -72,6 +72,7 @@ new class extends Component {
 
     public function generateCode(): void
     {
+        $this->authorize('link-minecraft-account');
         $this->errorMessage = null;
         $this->validate([
             'username' => 'required|string|min:3|max:16',
@@ -554,7 +555,11 @@ new class extends Component {
         <flux:callout variant="info">
             You'll be able to link your Minecraft account once an admin has verified your membership and promoted you to Traveler rank.
         </flux:callout>
-    @elseif($remainingSlots > 0 && !$verificationCode && !auth()->user()->isInBrig())
+    @elseif(! auth()->user()->parent_allows_minecraft)
+        <flux:callout variant="warning">
+            Minecraft access has been disabled by your parent or guardian.
+        </flux:callout>
+    @elseif($remainingSlots > 0 && !$verificationCode && Gate::allows('link-minecraft-account'))
         <flux:card class="p-6">
             <flux:heading size="lg" class="mb-4">Link New Account</flux:heading>
 
@@ -625,7 +630,7 @@ new class extends Component {
                                 </flux:text>
                             </div>
                         </div>
-                        @if($remainingSlots > 0 && !auth()->user()->isInBrig())
+                        @if($remainingSlots > 0 && Gate::allows('link-minecraft-account'))
                             <flux:button
                                 wire:click="confirmReactivate({{ $account->id }})"
                                 variant="primary"

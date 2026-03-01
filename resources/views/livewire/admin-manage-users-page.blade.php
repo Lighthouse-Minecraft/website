@@ -23,6 +23,8 @@ new class extends Component {
     public $editUserData = [
         'name' => '',
         'email' => '',
+        'date_of_birth' => '',
+        'parent_email' => '',
     ];
     public array $editUserRoles = [];
     public $allRoles;
@@ -35,10 +37,13 @@ new class extends Component {
     public function openEditModal($userId)
     {
         $user = User::findOrFail($userId);
+        $this->authorize('update', $user);
         $this->editUserId = $user->id;
         $this->editUserData = [
             'name' => $user->name,
             'email' => $user->email,
+            'date_of_birth' => $user->date_of_birth?->format('Y-m-d') ?? '',
+            'parent_email' => $user->parent_email ?? '',
         ];
         $this->editUserRoles = $user->roles->pluck('id')->toArray();
     }
@@ -124,14 +129,19 @@ new class extends Component {
         Validator::make([
             'name' => $this->editUserData['name'],
             'email' => $this->editUserData['email'],
+            'date_of_birth' => $this->editUserData['date_of_birth'] ?: null,
+            'parent_email' => $this->editUserData['parent_email'] ?: null,
             'editUserRoles' => $this->editUserRoles,
         ], [
             'name' => 'required|string|max:255',
             'email' => 'required|email',
+            'date_of_birth' => 'nullable|date|before:today',
+            'parent_email' => 'nullable|email',
             'editUserRoles.*' => 'exists:roles,id',
         ])->validate();
 
         $user = User::with('roles')->findOrFail($this->editUserId);
+        $this->authorize('update', $user);
 
         // Prevent non-admins from adding/removing the Admin role
         $adminRoleId = \App\Models\Role::where('name', 'Admin')->value('id');
@@ -149,7 +159,10 @@ new class extends Component {
             }
         }
 
-        $user->update($this->editUserData);
+        $updateData = $this->editUserData;
+        $updateData['date_of_birth'] = $updateData['date_of_birth'] ?: null;
+        $updateData['parent_email'] = $updateData['parent_email'] ?: null;
+        $user->update($updateData);
         $user->roles()->sync($this->editUserRoles);
 
         $this->editUserId = null;
@@ -227,6 +240,8 @@ new class extends Component {
                     <div class="space-y-6">
                         <flux:input label="Name" wire:model.defer="editUserData.name" required />
                         <flux:input label="Email" type="email" wire:model.defer="editUserData.email" required />
+                        <flux:input label="Date of Birth" type="date" wire:model.defer="editUserData.date_of_birth" />
+                        <flux:input label="Parent Email" type="email" wire:model.defer="editUserData.parent_email" placeholder="Optional" />
 
                         <flux:checkbox.group wire:model.defer="editUserRoles">
                             @foreach($allRoles as $role)

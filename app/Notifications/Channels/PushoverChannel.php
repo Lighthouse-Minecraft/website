@@ -18,7 +18,12 @@ class PushoverChannel
 
         $message = $notification->toPushover($notifiable);
 
-        if (! $message || ! $notifiable->pushover_key) {
+        // Prefer notification-provided key, fall back to notifiable's key
+        $pushoverKey = method_exists($notification, 'getPushoverKey')
+            ? ($notification->getPushoverKey() ?? $notifiable->pushover_key ?? null)
+            : ($notifiable->pushover_key ?? null);
+
+        if (! $message || ! $pushoverKey) {
             return;
         }
 
@@ -30,7 +35,7 @@ class PushoverChannel
 
         Http::asForm()->post('https://api.pushover.net/1/messages.json', [
             'token' => $token,
-            'user' => $notifiable->pushover_key,
+            'user' => $pushoverKey,
             'message' => $message['message'] ?? '',
             'title' => $message['title'] ?? config('app.name'),
             'url' => $message['url'] ?? null,

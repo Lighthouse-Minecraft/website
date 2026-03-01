@@ -9,11 +9,10 @@ enum MinecraftAccountStatus: string
     case Cancelled = 'cancelled';
     case Banned = 'banned';
     case Removed = 'removed';
+    case ParentDisabled = 'parent_disabled';
 
     /**
      * Get a human-readable label for the enum case.
-     *
-     * @return string The human-readable label corresponding to the enum case.
      */
     public function label(): string
     {
@@ -23,13 +22,12 @@ enum MinecraftAccountStatus: string
             self::Cancelled => 'Cancelled',
             self::Banned => 'Banned',
             self::Removed => 'Removed',
+            self::ParentDisabled => 'Disabled by Parent',
         };
     }
 
     /**
      * Get the color associated with the account status.
-     *
-     * @return string The color name for the status: 'yellow' for Verifying, 'green' for Active, 'red' for Cancelled, 'orange' for Banned, or 'zinc' for Removed.
      */
     public function color(): string
     {
@@ -39,6 +37,7 @@ enum MinecraftAccountStatus: string
             self::Cancelled => 'red',
             self::Banned => 'orange',
             self::Removed => 'zinc',
+            self::ParentDisabled => 'purple',
         };
     }
 }

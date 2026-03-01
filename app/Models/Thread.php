@@ -135,6 +135,19 @@ class Thread extends Model
             return true;
         }
 
+        // Parent can view child's tickets (non-staff threads only)
+        if ($this->type === ThreadType::Ticket) {
+            $childIds = $user->children()->pluck('users.id');
+            if ($childIds->isNotEmpty()) {
+                if ($childIds->contains($this->created_by_user_id)) {
+                    return true;
+                }
+                if ($this->participants()->whereIn('user_id', $childIds)->exists()) {
+                    return true;
+                }
+            }
+        }
+
         return false;
     }
 
