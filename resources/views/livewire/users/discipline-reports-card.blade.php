@@ -223,9 +223,6 @@ new class extends Component {
                     <flux:table.column>Category</flux:table.column>
                     <flux:table.column>Description</flux:table.column>
                     <flux:table.column>Severity</flux:table.column>
-                    @if($isStaffViewing)
-                        <flux:table.column>Status</flux:table.column>
-                    @endif
                     <flux:table.column></flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>
@@ -244,20 +241,18 @@ new class extends Component {
                                 @endif
                             </flux:table.cell>
                             <flux:table.cell>
-                                <flux:text class="truncate max-w-xs">{{ Str::limit($report->description, 60) }}</flux:text>
+                                <div class="flex items-center gap-2">
+                                    @if($report->isDraft())
+                                        <flux:badge color="amber" size="sm">Draft</flux:badge>
+                                    @endif
+                                    <flux:text class="truncate max-w-xs">{{ Str::limit($report->description, 60) }}</flux:text>
+                                </div>
                             </flux:table.cell>
                             <flux:table.cell>
                                 <flux:badge color="{{ $report->severity->color() }}" size="sm">
                                     {{ $report->severity->label() }}
                                 </flux:badge>
                             </flux:table.cell>
-                            @if($isStaffViewing)
-                                <flux:table.cell>
-                                    <flux:badge color="{{ $report->status->color() }}" size="sm">
-                                        {{ $report->status->label() }}
-                                    </flux:badge>
-                                </flux:table.cell>
-                            @endif
                             <flux:table.cell>
                                 <div class="flex gap-1 justify-end">
                                     <flux:button size="xs" variant="ghost" wire:click="viewReport({{ $report->id }})">

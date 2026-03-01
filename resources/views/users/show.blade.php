@@ -3,7 +3,7 @@
         <livewire:users.display-basic-details :user="$user" />
     </div>
 
-    <div class="my-6 w-full md:w-1/3">
+    <div class="my-6 w-full md:w-1/2">
         <livewire:users.discipline-reports-card :user="$user" lazy />
     </div>
 
