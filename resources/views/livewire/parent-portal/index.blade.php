@@ -16,9 +16,16 @@ use Livewire\Attributes\Computed;
 use Livewire\Volt\Component;
 
 new class extends Component {
+    public int $targetUserId = 0;
+    public bool $isStaffViewing = false;
+
     public string $newChildName = '';
     public string $newChildEmail = '';
     public string $newChildDob = '';
+
+    public ?int $accountToRemoveId = null;
+    public string $accountToRemoveName = '';
+    public string $accountToRemoveChildName = '';
 
     public array $childMcUsernames = [];
     public array $childMcAccountTypes = [];
@@ -26,15 +33,30 @@ new class extends Component {
     public array $childMcExpiresAt = [];
     public array $childMcErrors = [];
 
-    public function mount(): void
+    public function mount($user = null): void
     {
-        $this->authorize('view-parent-portal');
+        if ($user) {
+            if (! Auth::user()->isAtLeastRank(\App\Enums\StaffRank::Officer)) {
+                abort(403);
+            }
+            $targetUser = $user instanceof User ? $user : User::findOrFail($user);
+            $this->targetUserId = $targetUser->id;
+            $this->isStaffViewing = true;
+        } else {
+            $this->authorize('view-parent-portal');
+            $this->targetUserId = Auth::id();
+        }
         $this->loadChildVerifications();
+    }
+
+    private function getTargetUser(): User
+    {
+        return User::findOrFail($this->targetUserId);
     }
 
     private function loadChildVerifications(): void
     {
-        $childIds = Auth::user()->children()->pluck('child_user_id');
+        $childIds = $this->getTargetUser()->children()->pluck('child_user_id');
 
         if ($childIds->isEmpty()) {
             return;
@@ -54,17 +76,20 @@ new class extends Component {
     #[Computed]
     public function children()
     {
-        return Auth::user()->children()
+        return $this->getTargetUser()->children()
             ->with(['minecraftAccounts', 'discordAccounts'])
             ->get();
     }
 
     public function togglePermission(int $childId, string $permission): void
     {
-        $child = User::findOrFail($childId);
-        $parent = Auth::user();
+        if ($this->isStaffViewing) {
+            return;
+        }
 
-        // Authorize via policy
+        $child = User::findOrFail($childId);
+        $parent = $this->getTargetUser();
+
         if (! $parent->children()->where('child_user_id', $child->id)->exists()) {
             Flux::toast('You do not have permission to manage this account.', 'Unauthorized', variant: 'danger');
             return;
@@ -91,6 +116,10 @@ new class extends Component {
 
     public function createChildAccount(): void
     {
+        if ($this->isStaffViewing) {
+            return;
+        }
+
         $this->authorize('view-parent-portal');
 
         $this->validate([
@@ -107,7 +136,7 @@ new class extends Component {
         }
 
         CreateChildAccount::run(
-            Auth::user(),
+            $this->getTargetUser(),
             $this->newChildName,
             $this->newChildEmail,
             $this->newChildDob,
@@ -121,8 +150,12 @@ new class extends Component {
 
     public function releaseToAdult(int $childId): void
     {
+        if ($this->isStaffViewing) {
+            return;
+        }
+
         $child = User::findOrFail($childId);
-        $parent = Auth::user();
+        $parent = $this->getTargetUser();
 
         if (! $parent->children()->where('child_user_id', $child->id)->exists()) {
             Flux::toast('You do not have permission to manage this account.', 'Unauthorized', variant: 'danger');
@@ -142,8 +175,12 @@ new class extends Component {
 
     public function generateChildMcCode(int $childId): void
     {
+        if ($this->isStaffViewing) {
+            return;
+        }
+
         $child = User::findOrFail($childId);
-        $parent = Auth::user();
+        $parent = $this->getTargetUser();
 
         if (! $parent->children()->where('child_user_id', $child->id)->exists()) {
             Flux::toast('You do not have permission to manage this account.', 'Unauthorized', variant: 'danger');
@@ -208,6 +245,76 @@ new class extends Component {
         }
     }
 
+    public function confirmRemoveChildMcAccount(int $accountId): void
+    {
+        $account = \App\Models\MinecraftAccount::findOrFail($accountId);
+        $this->accountToRemoveId = $accountId;
+        $this->accountToRemoveName = $account->username;
+        $this->accountToRemoveChildName = $account->user->name;
+        Flux::modal('confirm-remove-mc-account')->show();
+    }
+
+    public function removeChildMcAccount(): void
+    {
+        if ($this->isStaffViewing || ! $this->accountToRemoveId) {
+            return;
+        }
+
+        $account = \App\Models\MinecraftAccount::findOrFail($this->accountToRemoveId);
+        $parent = $this->getTargetUser();
+        $child = $account->user;
+
+        if (! $parent->children()->where('child_user_id', $child->id)->exists()) {
+            Flux::toast('You do not have permission to manage this account.', 'Unauthorized', variant: 'danger');
+            return;
+        }
+
+        if ($account->status !== \App\Enums\MinecraftAccountStatus::Active) {
+            Flux::toast('This account cannot be removed in its current state.', 'Error', variant: 'danger');
+            return;
+        }
+
+        $rconService = app(\App\Services\MinecraftRconService::class);
+
+        $rconService->executeCommand(
+            "lh setmember {$account->username} default",
+            'rank', $account->username, $parent,
+            ['action' => 'parent_remove_rank_reset', 'affected_user_id' => $child->id]
+        );
+
+        $whitelistResult = $rconService->executeCommand(
+            $account->whitelistRemoveCommand(),
+            'whitelist', $account->username, $parent,
+            ['action' => 'parent_remove', 'affected_user_id' => $child->id]
+        );
+
+        if (! $whitelistResult['success']) {
+            Flux::toast('Failed to remove from whitelist. Account not removed.', 'Error', variant: 'danger');
+            return;
+        }
+
+        $account->status = \App\Enums\MinecraftAccountStatus::Removed;
+        $account->save();
+
+        if ($account->is_primary) {
+            $account->update(['is_primary' => false]);
+            \App\Actions\AutoAssignPrimaryAccount::run($child);
+        }
+
+        \App\Actions\RecordActivity::run(
+            $child,
+            'minecraft_account_removed_by_parent',
+            "{$parent->name} removed {$account->account_type->label()} account: {$account->username}"
+        );
+
+        Flux::modal('confirm-remove-mc-account')->close();
+        $this->accountToRemoveId = null;
+        $this->accountToRemoveName = '';
+        $this->accountToRemoveChildName = '';
+        unset($this->children);
+        Flux::toast("Minecraft account {$account->username} has been removed.", 'Account Removed', variant: 'success');
+    }
+
     public function getChildTickets(User $child)
     {
         return Thread::where('created_by_user_id', $child->id)
@@ -221,11 +328,19 @@ new class extends Component {
 
 <div>
     <div class="w-full max-w-4xl mx-auto">
+        @if($isStaffViewing)
+            <flux:callout variant="info" class="mb-4">
+                Viewing parent portal for {{ $this->getTargetUser()->name }} (read-only)
+            </flux:callout>
+        @endif
+
         <div class="flex items-center justify-between mb-6">
             <flux:heading size="xl">Parent Portal</flux:heading>
-            <flux:modal.trigger name="create-child-modal">
-                <flux:button variant="primary" icon="plus" size="sm">Add Child Account</flux:button>
-            </flux:modal.trigger>
+            @if(! $isStaffViewing)
+                <flux:modal.trigger name="create-child-modal">
+                    <flux:button variant="primary" icon="plus" size="sm">Add Child Account</flux:button>
+                </flux:modal.trigger>
+            @endif
         </div>
 
         @if($this->children->isEmpty())
@@ -240,7 +355,9 @@ new class extends Component {
                     <flux:card class="p-6">
                         <div class="flex items-start justify-between mb-4">
                             <div>
-                                <flux:heading size="lg">{{ $child->name }}</flux:heading>
+                                <flux:heading size="lg">
+                                    <flux:link href="{{ route('profile.show', $child) }}">{{ $child->name }}</flux:link>
+                                </flux:heading>
                                 <flux:text variant="subtle" class="text-sm">
                                     @if($child->age() !== null)
                                         Age {{ $child->age() }} &middot;
@@ -267,24 +384,36 @@ new class extends Component {
                             <div class="space-y-3">
                                 <div class="flex items-center justify-between">
                                     <flux:text>Use the Site</flux:text>
-                                    <flux:switch
-                                        wire:click="togglePermission({{ $child->id }}, 'use_site')"
-                                        :checked="$child->parent_allows_site"
-                                    />
+                                    @if($isStaffViewing)
+                                        <flux:badge size="sm" color="{{ $child->parent_allows_site ? 'green' : 'red' }}">{{ $child->parent_allows_site ? 'Allowed' : 'Denied' }}</flux:badge>
+                                    @else
+                                        <flux:switch
+                                            wire:click="togglePermission({{ $child->id }}, 'use_site')"
+                                            :checked="$child->parent_allows_site"
+                                        />
+                                    @endif
                                 </div>
                                 <div class="flex items-center justify-between">
                                     <flux:text>Join Minecraft Server</flux:text>
-                                    <flux:switch
-                                        wire:click="togglePermission({{ $child->id }}, 'minecraft')"
-                                        :checked="$child->parent_allows_minecraft"
-                                    />
+                                    @if($isStaffViewing)
+                                        <flux:badge size="sm" color="{{ $child->parent_allows_minecraft ? 'green' : 'red' }}">{{ $child->parent_allows_minecraft ? 'Allowed' : 'Denied' }}</flux:badge>
+                                    @else
+                                        <flux:switch
+                                            wire:click="togglePermission({{ $child->id }}, 'minecraft')"
+                                            :checked="$child->parent_allows_minecraft"
+                                        />
+                                    @endif
                                 </div>
                                 <div class="flex items-center justify-between">
                                     <flux:text>Join Discord Server</flux:text>
-                                    <flux:switch
-                                        wire:click="togglePermission({{ $child->id }}, 'discord')"
-                                        :checked="$child->parent_allows_discord"
-                                    />
+                                    @if($isStaffViewing)
+                                        <flux:badge size="sm" color="{{ $child->parent_allows_discord ? 'green' : 'red' }}">{{ $child->parent_allows_discord ? 'Allowed' : 'Denied' }}</flux:badge>
+                                    @else
+                                        <flux:switch
+                                            wire:click="togglePermission({{ $child->id }}, 'discord')"
+                                            :checked="$child->parent_allows_discord"
+                                        />
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -300,6 +429,15 @@ new class extends Component {
                                     <div class="flex items-center gap-2 mb-1">
                                         <flux:text class="text-sm">Minecraft: {{ $mc->username }}</flux:text>
                                         <flux:badge size="sm" color="{{ $mc->status->color() }}">{{ $mc->status->label() }}</flux:badge>
+                                        @if(! $isStaffViewing && $mc->status === \App\Enums\MinecraftAccountStatus::Active)
+                                            <flux:button
+                                                wire:click="confirmRemoveChildMcAccount({{ $mc->id }})"
+                                                variant="ghost"
+                                                size="sm"
+                                                icon="x-mark"
+                                                class="text-red-500"
+                                            />
+                                        @endif
                                     </div>
                                 @endforeach
                             @else
@@ -318,7 +456,7 @@ new class extends Component {
                             @endif
 
                             {{-- Link Minecraft Account --}}
-                            @if($child->parent_allows_minecraft && ! $child->isInBrig())
+                            @if(! $isStaffViewing && $child->parent_allows_minecraft && ! $child->isInBrig())
                                 <div class="mt-3 pt-3 border-t border-zinc-200 dark:border-zinc-700">
                                     <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 mb-2">Link Minecraft Account</flux:text>
 
@@ -373,7 +511,7 @@ new class extends Component {
                                 <div class="space-y-1">
                                     @foreach($tickets as $ticket)
                                         <div class="flex items-center justify-between text-sm">
-                                            <flux:text>{{ $ticket->subject }}</flux:text>
+                                            <flux:link href="{{ route('tickets.show', $ticket) }}" class="text-sm">{{ $ticket->subject }}</flux:link>
                                             <flux:badge size="sm" color="{{ $ticket->status === \App\Enums\ThreadStatus::Open ? 'green' : 'zinc' }}">{{ $ticket->status->label() }}</flux:badge>
                                         </div>
                                     @endforeach
@@ -383,7 +521,7 @@ new class extends Component {
                             @endif
                         </div>
 
-                        @if($child->age() !== null && $child->age() >= 17)
+                        @if(! $isStaffViewing && $child->age() !== null && $child->age() >= 17)
                             <flux:separator class="my-4" />
                             <flux:button
                                 wire:click="releaseToAdult({{ $child->id }})"
@@ -430,6 +568,19 @@ new class extends Component {
                     <flux:button type="submit" variant="primary">Create Account</flux:button>
                 </div>
             </form>
+        </div>
+    </flux:modal>
+
+    {{-- Remove MC Account Confirmation Modal --}}
+    <flux:modal name="confirm-remove-mc-account" class="min-w-[22rem] space-y-6">
+        <flux:heading size="lg">Remove Minecraft Account</flux:heading>
+        <flux:text>
+            Are you sure you want to remove <strong>{{ $accountToRemoveName }}</strong> from {{ $accountToRemoveChildName }}'s account?
+            This will remove them from the server whitelist.
+        </flux:text>
+        <div class="flex gap-2 justify-end">
+            <flux:button variant="ghost" x-on:click="$flux.modal('confirm-remove-mc-account').close()">Cancel</flux:button>
+            <flux:button wire:click="removeChildMcAccount" variant="danger">Remove Account</flux:button>
         </div>
     </flux:modal>
 </div>

@@ -463,6 +463,15 @@ new class extends Component {
                 @if($user->parents->isNotEmpty())
                     <flux:badge color="purple" size="sm">Child Account</flux:badge>
                 @endif
+                @can('manage-stowaway-users')
+                    @if($user->date_of_birth)
+                        @php
+                            $age = \Carbon\Carbon::parse($user->date_of_birth)->age;
+                            $ageColor = $age < 13 ? 'red' : ($age <= 16 ? 'blue' : 'zinc');
+                        @endphp
+                        <flux:badge color="{{ $ageColor }}" size="sm">Age {{ $age }}</flux:badge>
+                    @endif
+                @endcan
             </div>
             <flux:text>Member Rank: {{ $user->membership_level->label() }}</flux:text>
             <flux:text>Joined on {{ $user->created_at->format('F j, Y') }}</flux:text>
@@ -671,89 +680,98 @@ new class extends Component {
         </flux:card>
     </div>
 
-    {{-- Public Family Card --}}
+    {{-- Family Cards Row --}}
     @if($user->parents->isNotEmpty() || $user->children->isNotEmpty())
-        <flux:card class="w-full mt-6 p-6">
-            <flux:heading size="xl" class="mb-4">Family</flux:heading>
-
-            @if($user->parents->isNotEmpty())
-                <div class="mb-4">
-                    <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-2">Parents</flux:text>
-                    @foreach($user->parents as $parentUser)
-                        <div wire:key="family-parent-{{ $parentUser->id }}" class="mb-1">
-                            <flux:link href="{{ route('profile.show', $parentUser) }}" class="text-sm">{{ $parentUser->name }}</flux:link>
-                        </div>
-                    @endforeach
-                </div>
-            @endif
-
-            @if($user->children->isNotEmpty())
-                <div>
-                    <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-2">Children</flux:text>
-                    @foreach($user->children as $childUser)
-                        <div wire:key="family-child-{{ $childUser->id }}" class="mb-1">
-                            <flux:link href="{{ route('profile.show', $childUser) }}" class="text-sm">{{ $childUser->name }}</flux:link>
-                        </div>
-                    @endforeach
-                </div>
-            @endif
-        </flux:card>
-    @endif
-
-    {{-- Admin Parental Controls Card --}}
-    @can('manage-stowaway-users')
-        @if($user->parents->isNotEmpty() || $user->children->isNotEmpty())
-            <flux:card class="w-full mt-6 p-6">
-                <flux:heading size="xl" class="mb-4">Parental Controls (Staff)</flux:heading>
+        <div class="w-full flex flex-col md:flex-row gap-4 mt-6">
+            {{-- Public Family Card --}}
+            <flux:card class="w-full md:w-1/2 lg:w-1/3 p-6">
+                <flux:heading size="xl" class="mb-4">Family</flux:heading>
 
                 @if($user->parents->isNotEmpty())
-                    @if($user->parent_email)
-                        <div class="mb-4">
-                            <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-1">Parent Email</flux:text>
-                            <flux:text>{{ $user->parent_email }}</flux:text>
-                        </div>
-                    @endif
-
                     <div class="mb-4">
-                        <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-2">Permission States</flux:text>
-                        <div class="flex flex-wrap gap-2">
-                            <flux:badge size="sm" color="{{ $user->parent_allows_site ? 'green' : 'red' }}">
-                                Site: {{ $user->parent_allows_site ? 'Allowed' : 'Denied' }}
-                            </flux:badge>
-                            <flux:badge size="sm" color="{{ $user->parent_allows_minecraft ? 'green' : 'red' }}">
-                                MC: {{ $user->parent_allows_minecraft ? 'Allowed' : 'Denied' }}
-                            </flux:badge>
-                            <flux:badge size="sm" color="{{ $user->parent_allows_discord ? 'green' : 'red' }}">
-                                Discord: {{ $user->parent_allows_discord ? 'Allowed' : 'Denied' }}
-                            </flux:badge>
-                        </div>
+                        <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-2">Parents</flux:text>
+                        @foreach($user->parents as $parentUser)
+                            <div wire:key="family-parent-{{ $parentUser->id }}" class="mb-1">
+                                <flux:link href="{{ route('profile.show', $parentUser) }}" class="text-sm">{{ $parentUser->name }}</flux:link>
+                            </div>
+                        @endforeach
                     </div>
                 @endif
 
                 @if($user->children->isNotEmpty())
                     <div>
-                        <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-2">Children's Permission States</flux:text>
+                        <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-2">Children</flux:text>
                         @foreach($user->children as $childUser)
-                            <div wire:key="admin-child-{{ $childUser->id }}" class="mb-3">
-                                <flux:link href="{{ route('profile.show', $childUser) }}" class="font-medium text-sm">{{ $childUser->name }}</flux:link>
-                                <div class="flex flex-wrap gap-2 mt-1">
-                                    <flux:badge size="sm" color="{{ $childUser->parent_allows_site ? 'green' : 'red' }}">
-                                        Site: {{ $childUser->parent_allows_site ? 'Allowed' : 'Denied' }}
-                                    </flux:badge>
-                                    <flux:badge size="sm" color="{{ $childUser->parent_allows_minecraft ? 'green' : 'red' }}">
-                                        MC: {{ $childUser->parent_allows_minecraft ? 'Allowed' : 'Denied' }}
-                                    </flux:badge>
-                                    <flux:badge size="sm" color="{{ $childUser->parent_allows_discord ? 'green' : 'red' }}">
-                                        Discord: {{ $childUser->parent_allows_discord ? 'Allowed' : 'Denied' }}
-                                    </flux:badge>
-                                </div>
+                            <div wire:key="family-child-{{ $childUser->id }}" class="mb-1">
+                                <flux:link href="{{ route('profile.show', $childUser) }}" class="text-sm">{{ $childUser->name }}</flux:link>
                             </div>
                         @endforeach
                     </div>
                 @endif
             </flux:card>
-        @endif
-    @endcan
+
+            {{-- Admin Parental Controls Card (Staff Only) --}}
+            @can('manage-stowaway-users')
+                <flux:card class="w-full md:w-1/2 lg:w-1/3 p-6">
+                    <flux:heading size="xl" class="mb-4">Parental Controls (Staff)</flux:heading>
+
+                    @if($user->parents->isNotEmpty())
+                        @if($user->parent_email)
+                            <div class="mb-4">
+                                <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-1">Parent Email</flux:text>
+                                <flux:text>{{ $user->parent_email }}</flux:text>
+                            </div>
+                        @endif
+
+                        <div class="mb-4">
+                            <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-2">Permission States</flux:text>
+                            <div class="flex flex-wrap gap-2">
+                                <flux:badge size="sm" color="{{ $user->parent_allows_site ? 'green' : 'red' }}">
+                                    Site: {{ $user->parent_allows_site ? 'Allowed' : 'Denied' }}
+                                </flux:badge>
+                                <flux:badge size="sm" color="{{ $user->parent_allows_minecraft ? 'green' : 'red' }}">
+                                    MC: {{ $user->parent_allows_minecraft ? 'Allowed' : 'Denied' }}
+                                </flux:badge>
+                                <flux:badge size="sm" color="{{ $user->parent_allows_discord ? 'green' : 'red' }}">
+                                    Discord: {{ $user->parent_allows_discord ? 'Allowed' : 'Denied' }}
+                                </flux:badge>
+                            </div>
+                        </div>
+                    @endif
+
+                    @if($user->children->isNotEmpty())
+                        <div>
+                            <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-2">Children's Permission States</flux:text>
+                            @foreach($user->children as $childUser)
+                                <div wire:key="admin-child-{{ $childUser->id }}" class="mb-3">
+                                    <flux:link href="{{ route('profile.show', $childUser) }}" class="font-medium text-sm">{{ $childUser->name }}</flux:link>
+                                    <div class="flex flex-wrap gap-2 mt-1">
+                                        <flux:badge size="sm" color="{{ $childUser->parent_allows_site ? 'green' : 'red' }}">
+                                            Site: {{ $childUser->parent_allows_site ? 'Allowed' : 'Denied' }}
+                                        </flux:badge>
+                                        <flux:badge size="sm" color="{{ $childUser->parent_allows_minecraft ? 'green' : 'red' }}">
+                                            MC: {{ $childUser->parent_allows_minecraft ? 'Allowed' : 'Denied' }}
+                                        </flux:badge>
+                                        <flux:badge size="sm" color="{{ $childUser->parent_allows_discord ? 'green' : 'red' }}">
+                                            Discord: {{ $childUser->parent_allows_discord ? 'Allowed' : 'Denied' }}
+                                        </flux:badge>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+
+                    @if($user->children->isNotEmpty() && Auth::user()->isAtLeastRank(\App\Enums\StaffRank::Officer))
+                        <div class="mt-3">
+                            <flux:link href="{{ route('parent-portal.show', $user) }}" class="text-sm">
+                                View Parent Portal
+                            </flux:link>
+                        </div>
+                    @endif
+                </flux:card>
+            @endcan
+        </div>
+    @endif
 
     <x-minecraft.mc-account-detail-modal :account="$selectedAccount" />
 

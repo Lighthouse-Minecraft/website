@@ -27,6 +27,10 @@ Volt::route('/parent-portal', 'parent-portal.index')
     ->name('parent-portal.index')
     ->middleware(['auth', 'verified', 'ensure-dob']);
 
+Volt::route('/parent-portal/{user}', 'parent-portal.index')
+    ->name('parent-portal.show')
+    ->middleware(['auth', 'verified', 'ensure-dob']);
+
 Route::middleware(['auth'])->group(function () {
     Route::redirect('settings', 'settings/profile');
 
