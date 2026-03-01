@@ -258,7 +258,7 @@ class User extends Authenticatable // implements MustVerifyEmail
 
     public function isMinor(): bool
     {
-        return $this->date_of_birth !== null && $this->date_of_birth->age < 17;
+        return $this->date_of_birth !== null && $this->date_of_birth->age < 18;
     }
 
     public function isUnder13(): bool

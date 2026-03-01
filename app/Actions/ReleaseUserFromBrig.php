@@ -129,12 +129,13 @@ class ReleaseUserFromBrig
 
         // Check if parental hold should re-engage after discipline release
         if (! $target->parent_allows_site && $target->isMinor()) {
-            $target->in_brig = true;
-            $target->brig_type = BrigType::ParentalDisabled;
-            $target->brig_reason = 'Site access restricted by parent.';
-            $target->brig_expires_at = null;
-            $target->next_appeal_available_at = null;
-            $target->save();
+            PutUserInBrig::run(
+                target: $target,
+                admin: $admin,
+                reason: 'Site access restricted by parent.',
+                brigType: BrigType::ParentalDisabled,
+                notify: false,
+            );
 
             return;
         }

@@ -26,6 +26,11 @@ class AccountUnlockedNotification extends Notification implements ShouldQueue
         return $this;
     }
 
+    public function getPushoverKey(): ?string
+    {
+        return $this->pushoverKey;
+    }
+
     public function via(object $notifiable): array
     {
         $channels = [];

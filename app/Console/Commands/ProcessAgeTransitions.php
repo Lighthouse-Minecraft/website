@@ -33,8 +33,12 @@ class ProcessAgeTransitions extends Command
             ->each(function (User $user) {
                 ReleaseUserFromBrig::run($user, $user, 'Automatically released: turned 13 with no parent registered.');
 
-                $notificationService = app(TicketNotificationService::class);
-                $notificationService->send($user, new AccountUnlockedNotification, 'account');
+                // Only send unlock notification if the user was actually released (not re-brigged by parental hold)
+                $user->refresh();
+                if (! $user->isInBrig()) {
+                    $notificationService = app(TicketNotificationService::class);
+                    $notificationService->send($user, new AccountUnlockedNotification, 'account');
+                }
 
                 $this->info("Released user {$user->name} (ID: {$user->id}) — turned 13, no parent.");
             });

@@ -10,6 +10,7 @@ use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules;
 use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
@@ -52,7 +53,11 @@ new #[Layout('components.layouts.auth')] class extends Component {
     public function submitParentEmail(): void
     {
         $this->validate([
-            'parent_email' => ['required', 'email', 'different:email'],
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
+            'password' => ['required', 'string', 'confirmed', Rules\Password::defaults()],
+            'date_of_birth' => ['required', 'date', 'before:today'],
+            'parent_email' => ['required', 'email', Rule::notIn([$this->email])],
         ]);
 
         $this->createAccount();
@@ -97,7 +102,7 @@ new #[Layout('components.layouts.auth')] class extends Component {
                 ->notify(new ParentAccountNotification($user, $requiresApproval));
         }
 
-        // Under 13: put in brig, show confirmation, do NOT log in
+        // Under 13: put in brig, log in (brig card will restrict access)
         if ($age < 13) {
             PutUserInBrig::run(
                 target: $user,
@@ -106,12 +111,9 @@ new #[Layout('components.layouts.auth')] class extends Component {
                 brigType: BrigType::ParentalPending,
                 notify: false,
             );
-
-            $this->step = 3;
-            return;
         }
 
-        // 13+ : log in and redirect
+        // Log in all users and redirect to dashboard
         Auth::login($user);
         $this->redirect(route('dashboard', absolute: false), navigate: true);
     }
@@ -179,7 +181,7 @@ new #[Layout('components.layouts.auth')] class extends Component {
             Already have an account?
             <x-text-link href="{{ route('login') }}">Log in</x-text-link>
         </div>
-    @elseif($step === 2)
+    @else
         <x-auth-header title="Parent or Guardian Email" description="A parent or guardian email is required for users under 17." />
 
         <form wire:submit="submitParentEmail" class="flex flex-col gap-6">
@@ -198,19 +200,6 @@ new #[Layout('components.layouts.auth')] class extends Component {
         <div class="space-x-1 text-center text-sm text-zinc-600 dark:text-zinc-400">
             Already have an account?
             <x-text-link href="{{ route('login') }}">Log in</x-text-link>
-        </div>
-    @else
-        {{-- Step 3: Under-13 confirmation --}}
-        <x-auth-header title="Account Created" description="We've sent an email to your parent or guardian." />
-
-        <flux:card class="text-center py-6 space-y-4">
-            <flux:icon name="shield-check" class="w-12 h-12 text-amber-500 mx-auto" />
-            <flux:text>Your account has been created, but it requires parental approval before you can use the site.</flux:text>
-            <flux:text variant="subtle" class="text-sm">Once your parent creates an account and approves your access, you'll be able to log in.</flux:text>
-        </flux:card>
-
-        <div class="text-center">
-            <x-text-link href="{{ route('login') }}">Back to login</x-text-link>
         </div>
     @endif
 </div>

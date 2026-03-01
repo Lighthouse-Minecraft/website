@@ -144,6 +144,10 @@ new class extends Component {
         <flux:text variant="subtle" class="text-sm">
             Your account has been locked for age verification. Please update your date of birth to continue.
         </flux:text>
+
+        <flux:button href="{{ route('birthdate.show') }}" variant="primary" icon="pencil-square">
+            Update Date of Birth
+        </flux:button>
     </flux:card>
 @else
     {{-- Disciplinary brig (default / BrigType::Discipline / null) --}}

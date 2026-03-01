@@ -6,6 +6,7 @@ use App\Enums\BrigType;
 use App\Notifications\ParentAccountNotification;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
 
@@ -42,8 +43,13 @@ new #[Layout('components.layouts.auth')] class extends Component {
 
     public function submitParentEmail(): void
     {
+        if ($this->step !== 2) {
+            return;
+        }
+
         $this->validate([
-            'parent_email' => ['required', 'email', 'different:' . Auth::user()->email],
+            'date_of_birth' => ['required', 'date', 'before:today'],
+            'parent_email' => ['required', 'email', Rule::notIn([Auth::user()->email])],
         ]);
 
         $user = Auth::user();

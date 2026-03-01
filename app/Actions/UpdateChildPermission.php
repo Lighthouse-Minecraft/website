@@ -19,6 +19,7 @@ class UpdateChildPermission
             'use_site' => $this->toggleSiteAccess($child, $parent, $enabled),
             'minecraft' => $this->toggleMinecraft($child, $parent, $enabled),
             'discord' => $this->toggleDiscord($child, $parent, $enabled),
+            default => throw new \InvalidArgumentException("Unknown permission type: {$permission}"),
         };
     }
 
@@ -57,14 +58,14 @@ class UpdateChildPermission
                         $account->username,
                         $parent
                     );
+                    $account->status = MinecraftAccountStatus::ParentDisabled;
+                    $account->save();
                 } catch (\Exception $e) {
                     Log::warning('Failed to whitelist-remove MC account for parent disable', [
                         'username' => $account->username,
                         'error' => $e->getMessage(),
                     ]);
                 }
-                $account->status = MinecraftAccountStatus::ParentDisabled;
-                $account->save();
             }
         } else {
             foreach ($child->minecraftAccounts()->where('status', MinecraftAccountStatus::ParentDisabled)->get() as $account) {
@@ -75,14 +76,14 @@ class UpdateChildPermission
                         $account->username,
                         $parent
                     );
+                    $account->status = MinecraftAccountStatus::Active;
+                    $account->save();
                 } catch (\Exception $e) {
                     Log::warning('Failed to whitelist-add MC account for parent enable', [
                         'username' => $account->username,
                         'error' => $e->getMessage(),
                     ]);
                 }
-                $account->status = MinecraftAccountStatus::Active;
-                $account->save();
             }
 
             try {
@@ -109,14 +110,14 @@ class UpdateChildPermission
             foreach ($child->discordAccounts()->where('status', DiscordAccountStatus::Active)->get() as $discordAccount) {
                 try {
                     $discordApi->removeAllManagedRoles($discordAccount->discord_user_id);
+                    $discordAccount->status = DiscordAccountStatus::ParentDisabled;
+                    $discordAccount->save();
                 } catch (\Exception $e) {
                     Log::warning('Failed to strip Discord roles for parent disable', [
                         'discord_user_id' => $discordAccount->discord_user_id,
                         'error' => $e->getMessage(),
                     ]);
                 }
-                $discordAccount->status = DiscordAccountStatus::ParentDisabled;
-                $discordAccount->save();
             }
         } else {
             foreach ($child->discordAccounts()->where('status', DiscordAccountStatus::ParentDisabled)->get() as $discordAccount) {

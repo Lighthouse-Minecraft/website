@@ -15,6 +15,15 @@ class ParentChildLink extends Model
         'child_user_id',
     ];
 
+    protected static function booted(): void
+    {
+        static::creating(function (ParentChildLink $link) {
+            if ($link->parent_user_id === $link->child_user_id) {
+                throw new \InvalidArgumentException('A user cannot be their own parent.');
+            }
+        });
+    }
+
     public function parent(): BelongsTo
     {
         return $this->belongsTo(User::class, 'parent_user_id');

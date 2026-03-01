@@ -62,7 +62,7 @@ it('puts under 13 in brig with parental_pending type', function () {
         ->and($user->parent_email)->toBe('parent@example.com');
 });
 
-it('does not log in under 13 user', function () {
+it('logs in under 13 user but puts them in brig', function () {
     $this->mock(MinecraftRconService::class)->shouldReceive('executeCommand')->andReturn(['success' => true, 'response' => null, 'error' => null]);
 
     Volt::test('auth.register')
@@ -74,9 +74,12 @@ it('does not log in under 13 user', function () {
         ->call('register')
         ->set('parent_email', 'parent@example.com')
         ->call('submitParentEmail')
-        ->assertSet('step', 3);
+        ->assertRedirect(route('dashboard', absolute: false));
 
-    $this->assertGuest();
+    $this->assertAuthenticated();
+    $user = User::where('email', 'young2@example.com')->first();
+    expect($user->in_brig)->toBeTrue()
+        ->and($user->brig_type)->toBe(BrigType::ParentalPending);
 });
 
 it('logs in 13-16 user after registration', function () {

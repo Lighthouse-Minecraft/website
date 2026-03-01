@@ -3,6 +3,7 @@
 use App\Actions\CreateChildAccount;
 use App\Actions\GenerateVerificationCode;
 use App\Actions\ReleaseChildToAdult;
+use App\Actions\RemoveChildMinecraftAccount;
 use App\Actions\UpdateChildPermission;
 use App\Enums\MinecraftAccountType;
 use App\Enums\ThreadStatus;
@@ -13,10 +14,14 @@ use App\Models\User;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
 use Livewire\Volt\Component;
 
 new class extends Component {
+    #[Locked]
     public int $targetUserId = 0;
+
+    #[Locked]
     public bool $isStaffViewing = false;
 
     public string $newChildName = '';
@@ -76,14 +81,38 @@ new class extends Component {
     #[Computed]
     public function children()
     {
-        return $this->getTargetUser()->children()
+        $parent = $this->getTargetUser();
+        $children = $parent->children()
             ->with(['minecraftAccounts', 'discordAccounts'])
             ->get();
+
+        // Batch-load recent tickets for all children to avoid N+1
+        if ($children->isNotEmpty()) {
+            $childIds = $children->pluck('id');
+            $tickets = Thread::whereIn('created_by_user_id', $childIds)
+                ->where('type', ThreadType::Ticket)
+                ->whereIn('status', [ThreadStatus::Open, ThreadStatus::Closed, ThreadStatus::Resolved])
+                ->latest()
+                ->get()
+                ->groupBy('created_by_user_id');
+
+            foreach ($children as $child) {
+                $child->setRelation('recentTickets',
+                    ($tickets->get($child->id) ?? collect())->take(10)
+                );
+            }
+        }
+
+        return $children;
     }
 
     public function togglePermission(int $childId, string $permission): void
     {
         if ($this->isStaffViewing) {
+            return;
+        }
+
+        if (! in_array($permission, ['use_site', 'minecraft', 'discord'])) {
             return;
         }
 
@@ -248,6 +277,14 @@ new class extends Component {
     public function confirmRemoveChildMcAccount(int $accountId): void
     {
         $account = \App\Models\MinecraftAccount::findOrFail($accountId);
+        $parent = $this->getTargetUser();
+
+        // Verify the parent owns this child before exposing account info
+        if (! $parent->children()->where('child_user_id', $account->user_id)->exists()) {
+            Flux::toast('You do not have permission to manage this account.', 'Unauthorized', variant: 'danger');
+            return;
+        }
+
         $this->accountToRemoveId = $accountId;
         $this->accountToRemoveName = $account->username;
         $this->accountToRemoveChildName = $account->user->name;
@@ -260,69 +297,21 @@ new class extends Component {
             return;
         }
 
-        $account = \App\Models\MinecraftAccount::findOrFail($this->accountToRemoveId);
         $parent = $this->getTargetUser();
-        $child = $account->user;
 
-        if (! $parent->children()->where('child_user_id', $child->id)->exists()) {
-            Flux::toast('You do not have permission to manage this account.', 'Unauthorized', variant: 'danger');
-            return;
-        }
-
-        if ($account->status !== \App\Enums\MinecraftAccountStatus::Active) {
-            Flux::toast('This account cannot be removed in its current state.', 'Error', variant: 'danger');
-            return;
-        }
-
-        $rconService = app(\App\Services\MinecraftRconService::class);
-
-        $rconService->executeCommand(
-            "lh setmember {$account->username} default",
-            'rank', $account->username, $parent,
-            ['action' => 'parent_remove_rank_reset', 'affected_user_id' => $child->id]
-        );
-
-        $whitelistResult = $rconService->executeCommand(
-            $account->whitelistRemoveCommand(),
-            'whitelist', $account->username, $parent,
-            ['action' => 'parent_remove', 'affected_user_id' => $child->id]
-        );
-
-        if (! $whitelistResult['success']) {
-            Flux::toast('Failed to remove from whitelist. Account not removed.', 'Error', variant: 'danger');
-            return;
-        }
-
-        $account->status = \App\Enums\MinecraftAccountStatus::Removed;
-        $account->save();
-
-        if ($account->is_primary) {
-            $account->update(['is_primary' => false]);
-            \App\Actions\AutoAssignPrimaryAccount::run($child);
-        }
-
-        \App\Actions\RecordActivity::run(
-            $child,
-            'minecraft_account_removed_by_parent',
-            "{$parent->name} removed {$account->account_type->label()} account: {$account->username}"
-        );
+        $result = RemoveChildMinecraftAccount::run($parent, $this->accountToRemoveId);
 
         Flux::modal('confirm-remove-mc-account')->close();
         $this->accountToRemoveId = null;
         $this->accountToRemoveName = '';
         $this->accountToRemoveChildName = '';
-        unset($this->children);
-        Flux::toast("Minecraft account {$account->username} has been removed.", 'Account Removed', variant: 'success');
-    }
 
-    public function getChildTickets(User $child)
-    {
-        return Thread::where('created_by_user_id', $child->id)
-            ->where('type', ThreadType::Ticket)
-            ->whereIn('status', [ThreadStatus::Open, ThreadStatus::Closed, ThreadStatus::Resolved])
-            ->latest()
-            ->limit(10)
-            ->get();
+        if ($result['success']) {
+            unset($this->children);
+            Flux::toast($result['message'], 'Account Removed', variant: 'success');
+        } else {
+            Flux::toast($result['message'], 'Error', variant: 'danger');
+        }
     }
 }; ?>
 
@@ -352,7 +341,7 @@ new class extends Component {
         @else
             <div class="space-y-6">
                 @foreach($this->children as $child)
-                    <flux:card class="p-6">
+                    <flux:card wire:key="child-{{ $child->id }}" class="p-6">
                         <div class="flex items-start justify-between mb-4">
                             <div>
                                 <flux:heading size="lg">
@@ -426,7 +415,7 @@ new class extends Component {
 
                             @if($child->minecraftAccounts->isNotEmpty())
                                 @foreach($child->minecraftAccounts as $mc)
-                                    <div class="flex items-center gap-2 mb-1">
+                                    <div wire:key="mc-{{ $mc->id }}" class="flex items-center gap-2 mb-1">
                                         <flux:text class="text-sm">Minecraft: {{ $mc->username }}</flux:text>
                                         <flux:badge size="sm" color="{{ $mc->status->color() }}">{{ $mc->status->label() }}</flux:badge>
                                         @if(! $isStaffViewing && $mc->status === \App\Enums\MinecraftAccountStatus::Active)
@@ -446,7 +435,7 @@ new class extends Component {
 
                             @if($child->discordAccounts->isNotEmpty())
                                 @foreach($child->discordAccounts as $discord)
-                                    <div class="flex items-center gap-2 mb-1">
+                                    <div wire:key="discord-{{ $discord->id }}" class="flex items-center gap-2 mb-1">
                                         <flux:text class="text-sm">Discord: {{ $discord->discord_username }}</flux:text>
                                         <flux:badge size="sm" color="{{ $discord->status->color() }}">{{ $discord->status->label() }}</flux:badge>
                                     </div>
@@ -506,11 +495,10 @@ new class extends Component {
                         {{-- Tickets --}}
                         <div class="mb-4">
                             <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-2">Recent Tickets</flux:text>
-                            @php $tickets = $this->getChildTickets($child); @endphp
-                            @if($tickets->isNotEmpty())
+                            @if($child->relationLoaded('recentTickets') && $child->recentTickets->isNotEmpty())
                                 <div class="space-y-1">
-                                    @foreach($tickets as $ticket)
-                                        <div class="flex items-center justify-between text-sm">
+                                    @foreach($child->recentTickets as $ticket)
+                                        <div wire:key="ticket-{{ $ticket->id }}" class="flex items-center justify-between text-sm">
                                             <flux:link href="{{ route('tickets.show', $ticket) }}" class="text-sm">{{ $ticket->subject }}</flux:link>
                                             <flux:badge size="sm" color="{{ $ticket->status === \App\Enums\ThreadStatus::Open ? 'green' : 'zinc' }}">{{ $ticket->status->label() }}</flux:badge>
                                         </div>

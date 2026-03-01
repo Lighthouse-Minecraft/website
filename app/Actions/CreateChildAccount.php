@@ -4,6 +4,7 @@ namespace App\Actions;
 
 use App\Models\ParentChildLink;
 use App\Models\User;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -32,7 +33,19 @@ class CreateChildAccount
             'child_user_id' => $child->id,
         ]);
 
-        Password::sendResetLink(['email' => $email]);
+        $resetStatus = Password::sendResetLink(['email' => $email]);
+
+        if ($resetStatus !== Password::RESET_LINK_SENT) {
+            Log::error('Failed to send password reset link for child account', [
+                'child_id' => $child->id,
+                'email' => $email,
+                'status' => $resetStatus,
+            ]);
+
+            $child->delete();
+
+            throw new \RuntimeException('Failed to send password reset email. Child account was not created.');
+        }
 
         RecordActivity::run($child, 'child_account_created', "Account created by parent {$parent->name}.");
 
