@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Enums\BrigType;
 use App\Models\ParentChildLink;
 use App\Models\User;
+use App\Notifications\AccountUnlockedNotification;
 use App\Services\MinecraftRconService;
 use Illuminate\Support\Facades\Notification;
 
@@ -24,6 +25,7 @@ it('releases 13-year-olds with no parent from parental pending brig', function (
     $this->artisan('parent-portal:process-age-transitions')->assertSuccessful();
 
     expect($user->fresh()->in_brig)->toBeFalse();
+    Notification::assertSentTo($user, AccountUnlockedNotification::class);
 });
 
 it('does not release 13-year-olds who have a linked parent', function () {
@@ -41,6 +43,7 @@ it('does not release 13-year-olds who have a linked parent', function () {
     $this->artisan('parent-portal:process-age-transitions')->assertSuccessful();
 
     expect($child->fresh()->in_brig)->toBeTrue();
+    Notification::assertNotSentTo($child, AccountUnlockedNotification::class);
 });
 
 it('does not release users under 13', function () {
@@ -56,6 +59,7 @@ it('does not release users under 13', function () {
     $this->artisan('parent-portal:process-age-transitions')->assertSuccessful();
 
     expect($user->fresh()->in_brig)->toBeTrue();
+    Notification::assertNotSentTo($user, AccountUnlockedNotification::class);
 });
 
 it('does not release users in discipline brig', function () {

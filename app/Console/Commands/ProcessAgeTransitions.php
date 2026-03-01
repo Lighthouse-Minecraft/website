@@ -32,14 +32,18 @@ class ProcessAgeTransitions extends Command
             ->whereDoesntHave('parents')
             ->chunkById(100, function ($users) {
                 foreach ($users as $user) {
-                    ReleaseUserFromBrig::run($user, $user, 'Automatically released: turned 13 with no parent registered.');
+                    try {
+                        ReleaseUserFromBrig::run($user, $user, 'Automatically released: turned 13 with no parent registered.');
 
-                    // Only send unlock notification and log if the user was actually released (not re-brigged by parental hold)
-                    $user->refresh();
-                    if (! $user->isInBrig()) {
-                        $notificationService = app(TicketNotificationService::class);
-                        $notificationService->send($user, new AccountUnlockedNotification, 'account');
-                        $this->info("Released user {$user->name} (ID: {$user->id}) — turned 13, no parent.");
+                        // Only send unlock notification and log if the user was actually released (not re-brigged by parental hold)
+                        $user->refresh();
+                        if (! $user->isInBrig()) {
+                            $notificationService = app(TicketNotificationService::class);
+                            $notificationService->send($user, new AccountUnlockedNotification, 'account');
+                            $this->info("Released user {$user->name} (ID: {$user->id}) — turned 13, no parent.");
+                        }
+                    } catch (\Throwable $e) {
+                        $this->error("Failed to process user {$user->name} (ID: {$user->id}): {$e->getMessage()}");
                     }
                 }
             });
@@ -53,8 +57,12 @@ class ProcessAgeTransitions extends Command
             ->whereHas('parents')
             ->chunkById(100, function ($users) {
                 foreach ($users as $user) {
-                    ReleaseChildToAdult::run($user);
-                    $this->info("Auto-released user {$user->name} (ID: {$user->id}) to adult account — turned 19.");
+                    try {
+                        ReleaseChildToAdult::run($user);
+                        $this->info("Auto-released user {$user->name} (ID: {$user->id}) to adult account — turned 19.");
+                    } catch (\Throwable $e) {
+                        $this->error("Failed to process user {$user->name} (ID: {$user->id}): {$e->getMessage()}");
+                    }
                 }
             });
     }

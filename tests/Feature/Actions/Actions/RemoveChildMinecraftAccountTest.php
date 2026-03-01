@@ -12,7 +12,7 @@ use App\Services\MinecraftRconService;
 uses()->group('parent-portal', 'actions');
 
 it('removes an active minecraft account', function () {
-    $this->mock(MinecraftRconService::class)->shouldReceive('executeCommand')->andReturn(['success' => true, 'response' => null, 'error' => null]);
+    $this->mock(MinecraftRconService::class)->shouldReceive('executeCommand')->twice()->andReturn(['success' => true, 'response' => null, 'error' => null]);
 
     $parent = User::factory()->adult()->create();
     $child = User::factory()->minor()->create();
@@ -67,7 +67,7 @@ it('fails gracefully when whitelist removal fails', function () {
 });
 
 it('records activity after removal', function () {
-    $this->mock(MinecraftRconService::class)->shouldReceive('executeCommand')->andReturn(['success' => true, 'response' => null, 'error' => null]);
+    $this->mock(MinecraftRconService::class)->shouldReceive('executeCommand')->twice()->andReturn(['success' => true, 'response' => null, 'error' => null]);
 
     $parent = User::factory()->adult()->create();
     $child = User::factory()->minor()->create();
