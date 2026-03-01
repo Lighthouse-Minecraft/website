@@ -18,6 +18,7 @@ class DisciplineReport extends Model
         'subject_user_id',
         'reporter_user_id',
         'publisher_user_id',
+        'report_category_id',
         'description',
         'location',
         'witnesses',
@@ -50,6 +51,11 @@ class DisciplineReport extends Model
     public function publisher(): BelongsTo
     {
         return $this->belongsTo(User::class, 'publisher_user_id');
+    }
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(ReportCategory::class, 'report_category_id');
     }
 
     public function scopePublished(Builder $query): Builder

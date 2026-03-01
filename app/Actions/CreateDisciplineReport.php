@@ -8,6 +8,7 @@ use App\Enums\ReportStatus;
 use App\Enums\StaffDepartment;
 use App\Enums\StaffRank;
 use App\Models\DisciplineReport;
+use App\Models\ReportCategory;
 use App\Models\User;
 use App\Notifications\DisciplineReportPendingReviewNotification;
 use App\Services\TicketNotificationService;
@@ -25,10 +26,12 @@ class CreateDisciplineReport
         string $actionsTaken,
         ReportSeverity $severity,
         ?string $witnesses = null,
+        ?ReportCategory $category = null,
     ): DisciplineReport {
         $report = DisciplineReport::create([
             'subject_user_id' => $subject->id,
             'reporter_user_id' => $reporter->id,
+            'report_category_id' => $category?->id,
             'description' => $description,
             'location' => $location,
             'witnesses' => $witnesses,

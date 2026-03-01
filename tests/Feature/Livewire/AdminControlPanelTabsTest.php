@@ -84,11 +84,12 @@ describe('Admin Control Panel Tabs Component', function () {
 
         $this->actingAs($user);
 
+        // Engineer Officers now see Config because ReportCategory viewAny allows Officers+
         livewire('admin-control-panel-tabs')
             ->assertSee('Users')
             ->assertSee('Content')
             ->assertSee('Logs')
-            ->assertDontSee('Config');
+            ->assertSee('Config');
     });
 
     it('defaults to content category when user lacks users permissions', function () {

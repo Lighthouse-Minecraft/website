@@ -8,7 +8,7 @@ use Livewire\Volt\Component;
 new class extends Component {
     public function getRecentReportsProperty()
     {
-        return DisciplineReport::with(['subject', 'reporter'])
+        return DisciplineReport::with(['subject', 'reporter', 'category'])
             ->latest()
             ->limit(5)
             ->get();
@@ -81,6 +81,9 @@ new class extends Component {
                     <flux:link href="{{ route('profile.show', $report->subject) }}">
                         {{ $report->subject->name }}
                     </flux:link>
+                    @if($report->category)
+                        <flux:badge color="{{ $report->category->color }}" size="sm">{{ $report->category->name }}</flux:badge>
+                    @endif
                     <flux:badge color="{{ $report->severity->color() }}" size="sm">{{ $report->severity->label() }}</flux:badge>
                     <flux:badge color="{{ $report->status->color() }}" size="sm">{{ $report->status->label() }}</flux:badge>
                     <flux:spacer />

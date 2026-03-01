@@ -19,6 +19,7 @@ class DisciplineReportFactory extends Factory
             'subject_user_id' => User::factory(),
             'reporter_user_id' => User::factory(),
             'publisher_user_id' => null,
+            'report_category_id' => null,
             'description' => $this->faker->paragraph(),
             'location' => $this->faker->randomElement(ReportLocation::cases()),
             'witnesses' => $this->faker->optional()->sentence(),
@@ -71,6 +72,11 @@ class DisciplineReportFactory extends Factory
     public function byReporter(User $user): static
     {
         return $this->state(fn () => ['reporter_user_id' => $user->id]);
+    }
+
+    public function withCategory(\App\Models\ReportCategory $category): static
+    {
+        return $this->state(fn () => ['report_category_id' => $category->id]);
     }
 
     public function publishedDaysAgo(int $days): static

@@ -7,6 +7,7 @@ use App\Enums\ReportLocation;
 use App\Enums\ReportSeverity;
 use App\Enums\StaffRank;
 use App\Models\DisciplineReport;
+use App\Models\ReportCategory;
 use App\Models\User;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
@@ -26,6 +27,7 @@ new class extends Component {
     public string $formWitnesses = '';
     public string $formActionsTaken = '';
     public string $formSeverity = '';
+    public string $formCategory = '';
 
     // Editing state
     public ?int $editingReportId = null;
@@ -56,6 +58,7 @@ new class extends Component {
     public function getReports()
     {
         $query = DisciplineReport::where('subject_user_id', $this->userId)
+            ->with('category')
             ->latest();
 
         if (! $this->isStaffViewing) {
@@ -82,9 +85,11 @@ new class extends Component {
             'formLocation' => 'required|string',
             'formActionsTaken' => 'required|string|min:5',
             'formSeverity' => 'required|string',
+            'formCategory' => 'nullable|string',
         ]);
 
         $subject = $this->getUser();
+        $category = $this->formCategory ? ReportCategory::find($this->formCategory) : null;
 
         CreateDisciplineReport::run(
             $subject,
@@ -94,6 +99,7 @@ new class extends Component {
             $this->formActionsTaken,
             ReportSeverity::from($this->formSeverity),
             $this->formWitnesses ?: null,
+            $category,
         );
 
         $this->resetForm();
@@ -112,6 +118,7 @@ new class extends Component {
         $this->formWitnesses = $report->witnesses ?? '';
         $this->formActionsTaken = $report->actions_taken;
         $this->formSeverity = $report->severity->value;
+        $this->formCategory = (string) ($report->report_category_id ?? '');
 
         Flux::modal('edit-report-modal')->show();
     }
@@ -126,7 +133,10 @@ new class extends Component {
             'formLocation' => 'required|string',
             'formActionsTaken' => 'required|string|min:5',
             'formSeverity' => 'required|string',
+            'formCategory' => 'nullable|string',
         ]);
+
+        $category = $this->formCategory ? ReportCategory::find($this->formCategory) : null;
 
         UpdateDisciplineReport::run(
             $report,
@@ -136,6 +146,7 @@ new class extends Component {
             $this->formActionsTaken,
             ReportSeverity::from($this->formSeverity),
             $this->formWitnesses ?: null,
+            $category,
         );
 
         $this->resetForm();
@@ -170,6 +181,7 @@ new class extends Component {
         $this->formWitnesses = '';
         $this->formActionsTaken = '';
         $this->formSeverity = '';
+        $this->formCategory = '';
     }
 }; ?>
 
@@ -178,6 +190,7 @@ new class extends Component {
         $user = $this->getUser();
         $reports = $this->getReports();
         $riskScore = $user->disciplineRiskScore();
+        $categories = ReportCategory::orderBy('name')->get();
     @endphp
 
     <flux:card class="w-full">
@@ -207,12 +220,11 @@ new class extends Component {
             <flux:table>
                 <flux:table.columns>
                     <flux:table.column>Date</flux:table.column>
+                    <flux:table.column>Category</flux:table.column>
                     <flux:table.column>Description</flux:table.column>
-                    <flux:table.column>Location</flux:table.column>
                     <flux:table.column>Severity</flux:table.column>
                     @if($isStaffViewing)
                         <flux:table.column>Status</flux:table.column>
-                        <flux:table.column>Reporter</flux:table.column>
                     @endif
                     <flux:table.column></flux:table.column>
                 </flux:table.columns>
@@ -223,12 +235,16 @@ new class extends Component {
                                 {{ ($report->published_at ?? $report->created_at)->format('M j, Y') }}
                             </flux:table.cell>
                             <flux:table.cell>
-                                <flux:text class="truncate max-w-xs">{{ Str::limit($report->description, 60) }}</flux:text>
+                                @if($report->category)
+                                    <flux:badge color="{{ $report->category->color }}" size="sm">
+                                        {{ $report->category->name }}
+                                    </flux:badge>
+                                @else
+                                    <flux:text variant="subtle">—</flux:text>
+                                @endif
                             </flux:table.cell>
                             <flux:table.cell>
-                                <flux:badge color="{{ $report->location->color() }}" size="sm">
-                                    {{ $report->location->label() }}
-                                </flux:badge>
+                                <flux:text class="truncate max-w-xs">{{ Str::limit($report->description, 60) }}</flux:text>
                             </flux:table.cell>
                             <flux:table.cell>
                                 <flux:badge color="{{ $report->severity->color() }}" size="sm">
@@ -241,7 +257,6 @@ new class extends Component {
                                         {{ $report->status->label() }}
                                     </flux:badge>
                                 </flux:table.cell>
-                                <flux:table.cell>{{ $report->reporter->name }}</flux:table.cell>
                             @endif
                             <flux:table.cell>
                                 <div class="flex gap-1 justify-end">
@@ -275,6 +290,15 @@ new class extends Component {
             <flux:text variant="subtle">Report about: {{ $user->name }}</flux:text>
 
             <flux:field>
+                <flux:label>Category</flux:label>
+                <flux:select wire:model="formCategory" placeholder="Select category...">
+                    @foreach($categories as $cat)
+                        <flux:select.option value="{{ $cat->id }}">{{ $cat->name }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+            </flux:field>
+
+            <flux:field>
                 <flux:label>What Happened</flux:label>
                 <flux:textarea wire:model="formDescription" rows="4" placeholder="Describe the incident..." />
                 <flux:error name="formDescription" />
@@ -303,11 +327,11 @@ new class extends Component {
 
             <flux:field>
                 <flux:label>Severity</flux:label>
-                <flux:radio.group wire:model="formSeverity">
+                <flux:select wire:model="formSeverity" placeholder="Select severity...">
                     @foreach(ReportSeverity::cases() as $sev)
-                        <flux:radio value="{{ $sev->value }}" label="{{ $sev->label() }} ({{ $sev->points() }}pt)" />
+                        <flux:select.option value="{{ $sev->value }}">{{ $sev->label() }}</flux:select.option>
                     @endforeach
-                </flux:radio.group>
+                </flux:select>
                 <flux:error name="formSeverity" />
             </flux:field>
 
@@ -322,6 +346,15 @@ new class extends Component {
     <flux:modal name="edit-report-modal" class="w-full md:w-1/2 xl:w-1/3">
         <div class="space-y-6">
             <flux:heading size="lg">Edit Discipline Report</flux:heading>
+
+            <flux:field>
+                <flux:label>Category</flux:label>
+                <flux:select wire:model="formCategory" placeholder="Select category...">
+                    @foreach($categories as $cat)
+                        <flux:select.option value="{{ $cat->id }}">{{ $cat->name }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+            </flux:field>
 
             <flux:field>
                 <flux:label>What Happened</flux:label>
@@ -352,11 +385,11 @@ new class extends Component {
 
             <flux:field>
                 <flux:label>Severity</flux:label>
-                <flux:radio.group wire:model="formSeverity">
+                <flux:select wire:model="formSeverity">
                     @foreach(ReportSeverity::cases() as $sev)
-                        <flux:radio value="{{ $sev->value }}" label="{{ $sev->label() }} ({{ $sev->points() }}pt)" />
+                        <flux:select.option value="{{ $sev->value }}">{{ $sev->label() }}</flux:select.option>
                     @endforeach
-                </flux:radio.group>
+                </flux:select>
                 <flux:error name="formSeverity" />
             </flux:field>
 
@@ -370,19 +403,25 @@ new class extends Component {
     {{-- View Report Modal --}}
     <flux:modal name="view-report-modal" class="w-full md:w-1/2 xl:w-1/3">
         @if($viewingReportId)
-            @php $viewReport = \App\Models\DisciplineReport::with(['reporter', 'publisher'])->find($viewingReportId); @endphp
+            @php $viewReport = \App\Models\DisciplineReport::with(['reporter', 'publisher', 'category'])->find($viewingReportId); @endphp
             @if($viewReport)
                 <div class="space-y-4">
                     <flux:heading size="lg">Discipline Report</flux:heading>
 
                     <div class="grid grid-cols-2 gap-4">
+                        @if($viewReport->category)
+                            <div>
+                                <flux:text class="font-medium text-sm">Category</flux:text>
+                                <flux:badge color="{{ $viewReport->category->color }}">{{ $viewReport->category->name }}</flux:badge>
+                            </div>
+                        @endif
                         <div>
                             <flux:text class="font-medium text-sm">Location</flux:text>
                             <flux:badge color="{{ $viewReport->location->color() }}">{{ $viewReport->location->label() }}</flux:badge>
                         </div>
                         <div>
                             <flux:text class="font-medium text-sm">Severity</flux:text>
-                            <flux:badge color="{{ $viewReport->severity->color() }}">{{ $viewReport->severity->label() }} ({{ $viewReport->severity->points() }}pt)</flux:badge>
+                            <flux:badge color="{{ $viewReport->severity->color() }}">{{ $viewReport->severity->label() }}</flux:badge>
                         </div>
                     </div>
 

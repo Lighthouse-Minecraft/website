@@ -5,6 +5,7 @@ namespace App\Actions;
 use App\Enums\ReportLocation;
 use App\Enums\ReportSeverity;
 use App\Models\DisciplineReport;
+use App\Models\ReportCategory;
 use App\Models\User;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -20,6 +21,7 @@ class UpdateDisciplineReport
         string $actionsTaken,
         ReportSeverity $severity,
         ?string $witnesses = null,
+        ?ReportCategory $category = null,
     ): DisciplineReport {
         $report->update([
             'description' => $description,
@@ -27,6 +29,7 @@ class UpdateDisciplineReport
             'witnesses' => $witnesses,
             'actions_taken' => $actionsTaken,
             'severity' => $severity,
+            'report_category_id' => $category?->id,
         ]);
 
         RecordActivity::run($report->subject, 'discipline_report_updated',

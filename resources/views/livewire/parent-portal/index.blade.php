@@ -106,6 +106,7 @@ new class extends Component {
 
             // Batch-load published discipline reports for all children
             $reports = \App\Models\DisciplineReport::whereIn('subject_user_id', $childIds)
+                ->with('category')
                 ->published()
                 ->latest('published_at')
                 ->get()
@@ -559,7 +560,12 @@ new class extends Component {
                                         <div wire:key="report-{{ $report->id }}" class="flex items-center justify-between cursor-pointer hover:bg-zinc-800 rounded p-2"
                                              wire:click="viewDisciplineReport({{ $report->id }})">
                                             <div class="flex-1 min-w-0 mr-2">
-                                                <flux:text class="text-sm truncate">{{ Str::limit($report->description, 80) }}</flux:text>
+                                                <div class="flex items-center gap-2">
+                                                    @if($report->category)
+                                                        <flux:badge color="{{ $report->category->color }}" size="sm">{{ $report->category->name }}</flux:badge>
+                                                    @endif
+                                                    <flux:text class="text-sm truncate">{{ Str::limit($report->description, 60) }}</flux:text>
+                                                </div>
                                                 <flux:text variant="subtle" class="text-xs">
                                                     {{ $report->published_at->format('M j, Y') }}
                                                 </flux:text>
@@ -626,12 +632,18 @@ new class extends Component {
     {{-- View Discipline Report Modal --}}
     <flux:modal name="view-discipline-report-modal" class="w-full md:w-1/2">
         @if($viewingReportId)
-            @php $viewReport = \App\Models\DisciplineReport::find($viewingReportId); @endphp
+            @php $viewReport = \App\Models\DisciplineReport::with('category')->find($viewingReportId); @endphp
             @if($viewReport)
                 <div class="space-y-4">
                     <flux:heading size="lg">Discipline Report</flux:heading>
 
                     <div class="grid grid-cols-2 gap-4">
+                        @if($viewReport->category)
+                            <div>
+                                <flux:text class="font-medium text-sm">Category</flux:text>
+                                <flux:badge color="{{ $viewReport->category->color }}">{{ $viewReport->category->name }}</flux:badge>
+                            </div>
+                        @endif
                         <div>
                             <flux:text class="font-medium text-sm">Location</flux:text>
                             <flux:badge color="{{ $viewReport->location->color() }}">{{ $viewReport->location->label() }}</flux:badge>

@@ -21,6 +21,7 @@ class AuthServiceProvider extends ServiceProvider
         \App\Models\DiscordAccount::class => \App\Policies\DiscordAccountPolicy::class,
         \App\Models\ParentChildLink::class => \App\Policies\ParentChildLinkPolicy::class,
         \App\Models\DisciplineReport::class => \App\Policies\DisciplineReportPolicy::class,
+        \App\Models\ReportCategory::class => \App\Policies\ReportCategoryPolicy::class,
     ];
 
     /**

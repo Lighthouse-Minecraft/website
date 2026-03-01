@@ -4,6 +4,7 @@ use App\Actions\PublishDisciplineReport;
 use App\Enums\ReportSeverity;
 use App\Enums\ReportStatus;
 use App\Models\DisciplineReport;
+use App\Models\ReportCategory;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Volt\Component;
@@ -19,6 +20,7 @@ new class extends Component {
     public int $perPage = 15;
     public string $filterStatus = '';
     public string $filterSeverity = '';
+    public string $filterCategory = '';
 
     public ?int $viewingReportId = null;
 
@@ -43,11 +45,16 @@ new class extends Component {
         $this->resetPage();
     }
 
+    public function updatedFilterCategory(): void
+    {
+        $this->resetPage();
+    }
+
     public function getReportsProperty()
     {
         $this->authorize('view-discipline-report-log');
 
-        $query = DisciplineReport::with(['subject', 'reporter', 'publisher']);
+        $query = DisciplineReport::with(['subject', 'reporter', 'publisher', 'category']);
 
         if ($this->filterStatus) {
             $query->where('status', $this->filterStatus);
@@ -55,6 +62,10 @@ new class extends Component {
 
         if ($this->filterSeverity) {
             $query->where('severity', $this->filterSeverity);
+        }
+
+        if ($this->filterCategory) {
+            $query->where('report_category_id', $this->filterCategory);
         }
 
         $sortColumn = in_array($this->sortBy, self::ALLOWED_SORTS) ? $this->sortBy : 'created_at';
@@ -81,6 +92,8 @@ new class extends Component {
 }; ?>
 
 <div>
+    @php $categories = ReportCategory::orderBy('name')->get(); @endphp
+
     <div class="flex gap-4 mb-4">
         <flux:select wire:model.live="filterStatus" placeholder="All Statuses" class="w-40">
             <flux:select.option value="">All Statuses</flux:select.option>
@@ -95,11 +108,19 @@ new class extends Component {
                 <flux:select.option value="{{ $severity->value }}">{{ $severity->label() }}</flux:select.option>
             @endforeach
         </flux:select>
+
+        <flux:select wire:model.live="filterCategory" placeholder="All Categories" class="w-48">
+            <flux:select.option value="">All Categories</flux:select.option>
+            @foreach($categories as $cat)
+                <flux:select.option value="{{ $cat->id }}">{{ $cat->name }}</flux:select.option>
+            @endforeach
+        </flux:select>
     </div>
 
     <flux:table>
         <flux:table.columns>
             <flux:table.column>Subject</flux:table.column>
+            <flux:table.column>Category</flux:table.column>
             <flux:table.column>Reporter</flux:table.column>
             <flux:table.column>Location</flux:table.column>
             <flux:table.column sortable :sorted="$sortBy === 'severity'" :direction="$sortDirection" wire:click="sort('severity')">Severity</flux:table.column>
@@ -113,6 +134,13 @@ new class extends Component {
                 <flux:table.row>
                     <flux:table.cell>
                         <flux:link href="{{ route('profile.show', $report->subject) }}">{{ $report->subject->name }}</flux:link>
+                    </flux:table.cell>
+                    <flux:table.cell>
+                        @if($report->category)
+                            <flux:badge color="{{ $report->category->color }}" size="sm">{{ $report->category->name }}</flux:badge>
+                        @else
+                            <flux:text variant="subtle">—</flux:text>
+                        @endif
                     </flux:table.cell>
                     <flux:table.cell>{{ $report->reporter->name }}</flux:table.cell>
                     <flux:table.cell>
@@ -151,7 +179,7 @@ new class extends Component {
     {{-- View Report Modal --}}
     <flux:modal name="acp-view-report-modal" class="w-full md:w-1/2 xl:w-1/3">
         @if($viewingReportId)
-            @php $viewReport = DisciplineReport::with(['subject', 'reporter', 'publisher'])->find($viewingReportId); @endphp
+            @php $viewReport = DisciplineReport::with(['subject', 'reporter', 'publisher', 'category'])->find($viewingReportId); @endphp
             @if($viewReport)
                 <div class="space-y-4">
                     <flux:heading size="lg">Discipline Report #{{ $viewReport->id }}</flux:heading>
@@ -168,13 +196,19 @@ new class extends Component {
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
+                        @if($viewReport->category)
+                            <div>
+                                <flux:text class="font-medium text-sm">Category</flux:text>
+                                <flux:badge color="{{ $viewReport->category->color }}">{{ $viewReport->category->name }}</flux:badge>
+                            </div>
+                        @endif
                         <div>
                             <flux:text class="font-medium text-sm">Location</flux:text>
                             <flux:badge color="{{ $viewReport->location->color() }}">{{ $viewReport->location->label() }}</flux:badge>
                         </div>
                         <div>
                             <flux:text class="font-medium text-sm">Severity</flux:text>
-                            <flux:badge color="{{ $viewReport->severity->color() }}">{{ $viewReport->severity->label() }} ({{ $viewReport->severity->points() }}pt)</flux:badge>
+                            <flux:badge color="{{ $viewReport->severity->color() }}">{{ $viewReport->severity->label() }}</flux:badge>
                         </div>
                     </div>
 
