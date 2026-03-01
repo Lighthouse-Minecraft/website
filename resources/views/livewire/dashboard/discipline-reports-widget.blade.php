@@ -125,10 +125,11 @@ new class extends Component {
                         {{ $entry['user']->name }}
                     </flux:link>
                     <flux:spacer />
-                    <flux:badge color="{{ \App\Models\User::riskScoreColor($entry['total']) }}" size="sm"
-                        x-data x-tooltip.raw="7d: {{ $entry['7d'] }} | 30d: {{ $entry['30d'] }} | 90d: {{ $entry['90d'] }}">
-                        {{ $entry['total'] }}
-                    </flux:badge>
+                    <flux:tooltip content="7d: {{ $entry['7d'] }} | 30d: {{ $entry['30d'] }} | 90d: {{ $entry['90d'] }}">
+                        <flux:badge color="{{ \App\Models\User::riskScoreColor($entry['total']) }}" size="sm">
+                            {{ $entry['total'] }}
+                        </flux:badge>
+                    </flux:tooltip>
                 </div>
             @endforeach
         </div>

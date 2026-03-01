@@ -199,10 +199,11 @@ new class extends Component {
             <flux:spacer />
 
             @if($riskScore['total'] > 0)
-                <flux:badge color="{{ \App\Models\User::riskScoreColor($riskScore['total']) }}" size="sm"
-                    x-data x-tooltip.raw="7d: {{ $riskScore['7d'] }} | 30d: {{ $riskScore['30d'] }} | 90d: {{ $riskScore['90d'] }}">
-                    Risk: {{ $riskScore['total'] }}
-                </flux:badge>
+                <flux:tooltip content="7d: {{ $riskScore['7d'] }} | 30d: {{ $riskScore['30d'] }} | 90d: {{ $riskScore['90d'] }}">
+                    <flux:badge color="{{ \App\Models\User::riskScoreColor($riskScore['total']) }}" size="sm">
+                        Risk: {{ $riskScore['total'] }}
+                    </flux:badge>
+                </flux:tooltip>
             @endif
 
             @if($isStaffViewing)
