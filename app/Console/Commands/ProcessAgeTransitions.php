@@ -31,6 +31,8 @@ class ProcessAgeTransitions extends Command
             ->whereDate('date_of_birth', '<=', now()->subYears(13))
             ->whereDoesntHave('parents')
             ->chunkById(100, function ($users) {
+                $notificationService = app(TicketNotificationService::class);
+
                 foreach ($users as $user) {
                     try {
                         ReleaseUserFromBrig::run($user, $user, 'Automatically released: turned 13 with no parent registered.');
@@ -38,11 +40,11 @@ class ProcessAgeTransitions extends Command
                         // Only send unlock notification and log if the user was actually released (not re-brigged by parental hold)
                         $user->refresh();
                         if (! $user->isInBrig()) {
-                            $notificationService = app(TicketNotificationService::class);
                             $notificationService->send($user, new AccountUnlockedNotification, 'account');
                             $this->info("Released user {$user->name} (ID: {$user->id}) — turned 13, no parent.");
                         }
                     } catch (\Throwable $e) {
+                        report($e);
                         $this->error("Failed to process user {$user->name} (ID: {$user->id}): {$e->getMessage()}");
                     }
                 }
@@ -61,6 +63,7 @@ class ProcessAgeTransitions extends Command
                         ReleaseChildToAdult::run($user);
                         $this->info("Auto-released user {$user->name} (ID: {$user->id}) to adult account — turned 19.");
                     } catch (\Throwable $e) {
+                        report($e);
                         $this->error("Failed to process user {$user->name} (ID: {$user->id}): {$e->getMessage()}");
                     }
                 }
