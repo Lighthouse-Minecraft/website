@@ -344,6 +344,66 @@ class User extends Authenticatable // implements MustVerifyEmail
         return $this->hasMany(DiscordAccount::class);
     }
 
+    public function disciplineReports(): HasMany
+    {
+        return $this->hasMany(DisciplineReport::class, 'subject_user_id');
+    }
+
+    /**
+     * Calculate discipline risk score over 7/30/90-day windows.
+     * Cached for 24 hours; cache is busted when a report is published for this user.
+     *
+     * @return array{7d: int, 30d: int, 90d: int, total: int}
+     */
+    public function disciplineRiskScore(): array
+    {
+        return \Illuminate\Support\Facades\Cache::remember("user.{$this->id}.discipline_risk_score", now()->addDay(), function () {
+            $reports = $this->disciplineReports()
+                ->published()
+                ->where('published_at', '>=', now()->subDays(90))
+                ->get(['severity', 'published_at']);
+
+            $score7 = 0;
+            $score30 = 0;
+            $score90 = 0;
+
+            foreach ($reports as $report) {
+                $points = $report->severity->points();
+                $score90 += $points;
+
+                if ($report->published_at >= now()->subDays(30)) {
+                    $score30 += $points;
+                }
+                if ($report->published_at >= now()->subDays(7)) {
+                    $score7 += $points;
+                }
+            }
+
+            return [
+                '7d' => $score7,
+                '30d' => $score30,
+                '90d' => $score90,
+                'total' => $score7 + $score30 + $score90,
+            ];
+        });
+    }
+
+    public function clearDisciplineRiskScoreCache(): void
+    {
+        \Illuminate\Support\Facades\Cache::forget("user.{$this->id}.discipline_risk_score");
+    }
+
+    public static function riskScoreColor(int $total): string
+    {
+        return match (true) {
+            $total >= 51 => 'red',
+            $total >= 26 => 'orange',
+            $total >= 11 => 'yellow',
+            $total >= 1 => 'green',
+            default => 'zinc',
+        };
+    }
+
     public function hasDiscordLinked(): bool
     {
         return $this->discordAccounts()->active()->exists();

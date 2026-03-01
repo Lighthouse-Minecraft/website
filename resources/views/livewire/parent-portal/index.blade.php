@@ -38,6 +38,8 @@ new class extends Component {
     public array $childMcExpiresAt = [];
     public array $childMcErrors = [];
 
+    public ?int $viewingReportId = null;
+
     public function mount($user = null): void
     {
         if ($user) {
@@ -99,6 +101,19 @@ new class extends Component {
             foreach ($children as $child) {
                 $child->setRelation('recentTickets',
                     ($tickets->get($child->id) ?? collect())->take(10)
+                );
+            }
+
+            // Batch-load published discipline reports for all children
+            $reports = \App\Models\DisciplineReport::whereIn('subject_user_id', $childIds)
+                ->published()
+                ->latest('published_at')
+                ->get()
+                ->groupBy('subject_user_id');
+
+            foreach ($children as $child) {
+                $child->setRelation('publishedDisciplineReports',
+                    ($reports->get($child->id) ?? collect())->take(10)
                 );
             }
         }
@@ -281,6 +296,17 @@ new class extends Component {
             unset($this->childMcVerificationCodes[$childId], $this->childMcExpiresAt[$childId]);
             Flux::toast('Verification code expired. Please generate a new one.', 'Expired', variant: 'danger');
         }
+    }
+
+    public function viewDisciplineReport(int $reportId): void
+    {
+        $report = \App\Models\DisciplineReport::findOrFail($reportId);
+
+        $childIds = $this->getTargetUser()->children()->pluck('child_user_id');
+        abort_unless($childIds->contains($report->subject_user_id) && $report->isPublished(), 403);
+
+        $this->viewingReportId = $reportId;
+        Flux::modal('view-discipline-report-modal')->show();
     }
 
     public function confirmRemoveChildMcAccount(int $accountId): void
@@ -523,6 +549,30 @@ new class extends Component {
                             @endif
                         </div>
 
+                        {{-- Discipline Reports --}}
+                        @if($child->relationLoaded('publishedDisciplineReports') && $child->publishedDisciplineReports->isNotEmpty())
+                            <flux:separator class="my-4" />
+                            <div class="mb-4">
+                                <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-2">Discipline Reports</flux:text>
+                                <div class="space-y-2">
+                                    @foreach($child->publishedDisciplineReports as $report)
+                                        <div wire:key="report-{{ $report->id }}" class="flex items-center justify-between cursor-pointer hover:bg-zinc-800 rounded p-2"
+                                             wire:click="viewDisciplineReport({{ $report->id }})">
+                                            <div class="flex-1 min-w-0 mr-2">
+                                                <flux:text class="text-sm truncate">{{ Str::limit($report->description, 80) }}</flux:text>
+                                                <flux:text variant="subtle" class="text-xs">
+                                                    {{ $report->published_at->format('M j, Y') }}
+                                                </flux:text>
+                                            </div>
+                                            <flux:badge color="{{ $report->severity->color() }}" size="sm">
+                                                {{ $report->severity->label() }}
+                                            </flux:badge>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+
                         @if(! $isStaffViewing && $child->age() !== null && $child->age() >= 17)
                             <flux:separator class="my-4" />
                             <flux:button
@@ -571,6 +621,51 @@ new class extends Component {
                 </div>
             </form>
         </div>
+    </flux:modal>
+
+    {{-- View Discipline Report Modal --}}
+    <flux:modal name="view-discipline-report-modal" class="w-full md:w-1/2">
+        @if($viewingReportId)
+            @php $viewReport = \App\Models\DisciplineReport::find($viewingReportId); @endphp
+            @if($viewReport)
+                <div class="space-y-4">
+                    <flux:heading size="lg">Discipline Report</flux:heading>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <flux:text class="font-medium text-sm">Location</flux:text>
+                            <flux:badge color="{{ $viewReport->location->color() }}">{{ $viewReport->location->label() }}</flux:badge>
+                        </div>
+                        <div>
+                            <flux:text class="font-medium text-sm">Severity</flux:text>
+                            <flux:badge color="{{ $viewReport->severity->color() }}">{{ $viewReport->severity->label() }}</flux:badge>
+                        </div>
+                    </div>
+
+                    <div>
+                        <flux:text class="font-medium text-sm">What Happened</flux:text>
+                        <flux:text>{{ $viewReport->description }}</flux:text>
+                    </div>
+
+                    @if($viewReport->witnesses)
+                        <div>
+                            <flux:text class="font-medium text-sm">Witnesses</flux:text>
+                            <flux:text>{{ $viewReport->witnesses }}</flux:text>
+                        </div>
+                    @endif
+
+                    <div>
+                        <flux:text class="font-medium text-sm">Actions Taken</flux:text>
+                        <flux:text>{{ $viewReport->actions_taken }}</flux:text>
+                    </div>
+
+                    <div>
+                        <flux:text class="font-medium text-sm">Date</flux:text>
+                        <flux:text>{{ $viewReport->published_at->format('M j, Y g:i A') }}</flux:text>
+                    </div>
+                </div>
+            @endif
+        @endif
     </flux:modal>
 
     {{-- Remove MC Account Confirmation Modal --}}

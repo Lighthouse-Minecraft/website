@@ -115,6 +115,10 @@
                 @can('manage-traveler-users')
                     <livewire:dashboard.traveler-users-widget />
                 @endcan
+
+                @can('manage-discipline-reports')
+                    <livewire:dashboard.discipline-reports-widget />
+                @endcan
             </div>
         </div>
     @endif

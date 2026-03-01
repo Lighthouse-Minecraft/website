@@ -3,6 +3,10 @@
         <livewire:users.display-basic-details :user="$user" />
     </div>
 
+    <div class="my-6">
+        <livewire:users.discipline-reports-card :user="$user" lazy />
+    </div>
+
     <div class="w-full my-6 flex justify-end">
         <flux:modal.trigger name="activity-log-modal">
             <flux:button icon="clock" size="sm" variant="ghost">View Activity Log</flux:button>

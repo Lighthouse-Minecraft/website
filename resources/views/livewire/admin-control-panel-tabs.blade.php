@@ -66,6 +66,7 @@ new class extends Component {
         return $user && (
             $user->can('view-mc-command-log')
             || $user->can('view-activity-log')
+            || $user->can('view-discipline-report-log')
         );
     }
 
@@ -99,6 +100,7 @@ new class extends Component {
             'logs' => match (true) {
                 $user?->can('view-mc-command-log') => 'mc-command-log',
                 $user?->can('view-activity-log') => 'activity-log',
+                $user?->can('view-discipline-report-log') => 'discipline-report-log',
                 default => 'mc-command-log',
             },
             'config' => match (true) {
@@ -204,6 +206,9 @@ new class extends Component {
                 @can('view-activity-log')
                     <flux:tab name="activity-log">Activity Log</flux:tab>
                 @endcan
+                @can('view-discipline-report-log')
+                    <flux:tab name="discipline-report-log">Reports Log</flux:tab>
+                @endcan
             </flux:tabs>
 
             <flux:tab.panel name="mc-command-log">
@@ -214,6 +219,11 @@ new class extends Component {
             <flux:tab.panel name="activity-log">
                 @can('view-activity-log')
                     <livewire:admin-manage-activity-log-page />
+                @endcan
+            </flux:tab.panel>
+            <flux:tab.panel name="discipline-report-log">
+                @can('view-discipline-report-log')
+                    <livewire:admin-manage-discipline-reports-page />
                 @endcan
             </flux:tab.panel>
         </flux:tab.group>
