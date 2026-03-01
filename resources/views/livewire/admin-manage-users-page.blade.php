@@ -162,6 +162,9 @@ new class extends Component {
         $updateData = $this->editUserData;
         $updateData['date_of_birth'] = $updateData['date_of_birth'] ?: null;
         $updateData['parent_email'] = $updateData['parent_email'] ?: null;
+        // Note: Admin DOB edits are a raw override — age-dependent brig states
+        // (AgeLock, ParentalPending) are not automatically re-evaluated here.
+        // Use the scheduled ProcessAgeTransitions command for automated transitions.
         $user->update($updateData);
         $user->roles()->sync($this->editUserRoles);
 

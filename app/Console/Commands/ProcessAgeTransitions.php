@@ -14,7 +14,7 @@ class ProcessAgeTransitions extends Command
 {
     protected $signature = 'parent-portal:process-age-transitions';
 
-    protected $description = 'Process age-based transitions: auto-release at 13 (no parent), notify at 17, auto-release at 19';
+    protected $description = 'Process age-based transitions: auto-release at 13 (no parent), auto-release at 19';
 
     public function handle(): void
     {

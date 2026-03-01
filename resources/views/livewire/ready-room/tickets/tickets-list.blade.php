@@ -111,10 +111,10 @@ new class extends Component
         <flux:heading size="xl">Tickets</flux:heading>
         <div class="flex items-center gap-2">
             @can('createAsStaff', Thread::class)
-                <flux:button href="/tickets/create-admin" variant="ghost">Create Admin Ticket</flux:button>
+                <flux:button href="{{ route('tickets.create-admin') }}" variant="ghost">Create Admin Ticket</flux:button>
             @endcan
             @can('create', Thread::class)
-                <flux:button href="/tickets/create" variant="primary">Create Ticket</flux:button>
+                <flux:button href="{{ route('tickets.create') }}" variant="primary">Create Ticket</flux:button>
             @endcan
         </div>
     </div>

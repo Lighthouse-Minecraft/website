@@ -46,3 +46,12 @@ it('blocks discord linking when parent_allows_discord is false', function () {
 
     expect($user->can('link-discord'))->toBeFalse();
 });
+
+it('allows discord linking when parent_allows_discord is true and not in brig', function () {
+    $user = User::factory()->withMembershipLevel(\App\Enums\MembershipLevel::Traveler)->create([
+        'parent_allows_discord' => true,
+        'in_brig' => false,
+    ]);
+
+    expect($user->can('link-discord'))->toBeTrue();
+});
