@@ -7,7 +7,7 @@ new class extends Component {
 
     public function mount()
     {
-        $this->tab = 'my-tasks';
+        $this->tab = 'my-board';
     }
 }; ?>
 
@@ -16,7 +16,7 @@ new class extends Component {
     <flux:tab.group class=" ">
         <div class="text-center flex">
             <flux:tabs variant="segmented" size="xs" wire:model="tab">
-                <flux:tab name="my-tasks">My Tasks</flux:tab>
+                <flux:tab name="my-board">My Board</flux:tab>
 
                 @can('view-ready-room-command')
                     <flux:tab name="command">Command</flux:tab>
@@ -41,8 +41,15 @@ new class extends Component {
         </div>
 
 
-        <flux:tab.panel name="my-tasks">
-            <livewire:dashboard.ready-room-my-tasks />
+        <flux:tab.panel name="my-board">
+            <div class="w-full block md:flex gap-6">
+                <div class="w-full md:w-1/3 lg:w-1/4 mb-6 md:mb-0">
+                    <livewire:dashboard.ready-room-upcoming-meetings />
+                </div>
+                <div class="w-full md:w-2/3 lg:w-3/4">
+                    <livewire:dashboard.ready-room-my-tasks />
+                </div>
+            </div>
         </flux:tab.panel>
 
         @can('view-ready-room-command')
