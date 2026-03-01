@@ -42,13 +42,28 @@ class RevokeMinecraftAccount
 
         // Remove staff position if the affected user holds one
         if ($affectedUser->staff_department !== null) {
-            $rconService->executeCommand(
+            $staffResult = $rconService->executeCommand(
                 "lh removestaff {$account->username}",
                 'rank',
                 $account->username,
                 $admin,
                 ['action' => 'revoke_staff_reset', 'affected_user_id' => $affectedUser->id]
             );
+
+            if (! $staffResult['success']) {
+                Log::error('Failed to remove staff position during account revocation', [
+                    'account_id' => $account->id,
+                    'username' => $username,
+                    'admin' => $admin->name,
+                    'response' => $staffResult['response'] ?? null,
+                    'error' => $staffResult['error'] ?? null,
+                ]);
+
+                return [
+                    'success' => false,
+                    'message' => 'Failed to remove staff position from server. Account has not been revoked.',
+                ];
+            }
 
             RecordActivity::run(
                 $affectedUser,
