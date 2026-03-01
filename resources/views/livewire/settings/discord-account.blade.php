@@ -238,9 +238,15 @@ new class extends Component {
         @endif
     @else
         @if($linkedAccounts->isEmpty())
-            <flux:callout variant="info">
-                You'll be able to link your Discord account once you've been promoted to Traveler rank.
-            </flux:callout>
+            @if(! auth()->user()->parent_allows_discord)
+                <flux:callout variant="warning">
+                    Discord access has been disabled by your parent or guardian.
+                </flux:callout>
+            @else
+                <flux:callout variant="info">
+                    You'll be able to link your Discord account once you've been promoted to Traveler rank.
+                </flux:callout>
+            @endif
         @endif
     @endcan
 

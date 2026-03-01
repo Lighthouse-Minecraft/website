@@ -2,6 +2,8 @@
 
 namespace App\Actions;
 
+use App\Enums\BrigType;
+use App\Enums\DiscordAccountStatus;
 use App\Enums\MinecraftAccountStatus;
 use App\Models\User;
 use App\Notifications\UserPutInBrigNotification;
@@ -16,25 +18,28 @@ class PutUserInBrig
     /**
      * Place a user in the brig and perform related side effects.
      *
-     * Marks the target user as in brig (storing reason, optional expiry, and next-appeal timestamp), bans the user's active or verifying Minecraft accounts, records an activity entry, and notifies the user.
+     * Marks the target user as in brig (storing reason, optional expiry, and next-appeal timestamp), bans the user's active or verifying Minecraft accounts, records an activity entry, and optionally notifies the user.
      *
      * @param  User  $target  The user to put in the brig.
      * @param  User  $admin  The admin performing the action.
      * @param  string  $reason  Reason for placing the user in the brig.
      * @param  Carbon|null  $expiresAt  Optional timestamp when the brig placement expires.
      * @param  Carbon|null  $appealAvailableAt  Optional timestamp when appeals become available.
+     * @param  BrigType  $brigType  The type of brig placement (discipline, parental, age lock).
+     * @param  bool  $notify  Whether to send a notification to the user.
      */
-    public function handle(User $target, User $admin, string $reason, ?Carbon $expiresAt = null, ?Carbon $appealAvailableAt = null): void
+    public function handle(User $target, User $admin, string $reason, ?Carbon $expiresAt = null, ?Carbon $appealAvailableAt = null, BrigType $brigType = BrigType::Discipline, bool $notify = true): void
     {
         $target->in_brig = true;
         $target->brig_reason = $reason;
         $target->brig_expires_at = $expiresAt;
         $target->next_appeal_available_at = $appealAvailableAt;
         $target->brig_timer_notified = false;
+        $target->brig_type = $brigType;
         $target->save();
 
-        // Ban all active/verifying Minecraft accounts
-        foreach ($target->minecraftAccounts()->whereIn('status', [MinecraftAccountStatus::Active, MinecraftAccountStatus::Verifying])->get() as $account) {
+        // Ban all active/verifying/ParentDisabled Minecraft accounts
+        foreach ($target->minecraftAccounts()->whereIn('status', [MinecraftAccountStatus::Active, MinecraftAccountStatus::Verifying, MinecraftAccountStatus::ParentDisabled])->get() as $account) {
             SendMinecraftCommand::run(
                 $account->whitelistRemoveCommand(),
                 'whitelist',
@@ -47,7 +52,7 @@ class PutUserInBrig
 
         // Strip Discord roles and mark accounts as brigged
         $discordApi = app(\App\Services\DiscordApiService::class);
-        foreach ($target->discordAccounts()->active()->get() as $discordAccount) {
+        foreach ($target->discordAccounts()->whereIn('status', [DiscordAccountStatus::Active, DiscordAccountStatus::ParentDisabled])->get() as $discordAccount) {
             try {
                 $discordApi->removeAllManagedRoles($discordAccount->discord_user_id);
             } catch (\Exception $e) {
@@ -58,7 +63,7 @@ class PutUserInBrig
                 ]);
             }
 
-            $discordAccount->status = \App\Enums\DiscordAccountStatus::Brigged;
+            $discordAccount->status = DiscordAccountStatus::Brigged;
             $discordAccount->save();
         }
 
@@ -74,7 +79,9 @@ class PutUserInBrig
 
         RecordActivity::handle($target, 'user_put_in_brig', $description);
 
-        $notificationService = app(TicketNotificationService::class);
-        $notificationService->send($target, new UserPutInBrigNotification($target, $reason, $expiresAt), 'account');
+        if ($notify) {
+            $notificationService = app(TicketNotificationService::class);
+            $notificationService->send($target, new UserPutInBrigNotification($target, $reason, $expiresAt), 'account');
+        }
     }
 }

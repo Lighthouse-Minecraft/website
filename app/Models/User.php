@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\BrigType;
 use App\Enums\EmailDigestFrequency;
 use App\Enums\MembershipLevel;
 use App\Enums\StaffDepartment;
@@ -42,6 +43,12 @@ class User extends Authenticatable // implements MustVerifyEmail
         'brig_expires_at',
         'next_appeal_available_at',
         'brig_timer_notified',
+        'date_of_birth',
+        'parent_email',
+        'brig_type',
+        'parent_allows_site',
+        'parent_allows_minecraft',
+        'parent_allows_discord',
     ];
 
     /**
@@ -80,6 +87,11 @@ class User extends Authenticatable // implements MustVerifyEmail
             'brig_expires_at' => 'datetime',
             'next_appeal_available_at' => 'datetime',
             'brig_timer_notified' => 'boolean',
+            'date_of_birth' => 'date',
+            'brig_type' => BrigType::class,
+            'parent_allows_site' => 'boolean',
+            'parent_allows_minecraft' => 'boolean',
+            'parent_allows_discord' => 'boolean',
         ];
     }
 
@@ -225,6 +237,48 @@ class User extends Authenticatable // implements MustVerifyEmail
         $hash = md5(strtolower(trim($this->email)));
 
         return "https://www.gravatar.com/avatar/{$hash}?d=mp&s=64";
+    }
+
+    public function children(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'parent_child_links', 'parent_user_id', 'child_user_id')
+            ->withTimestamps();
+    }
+
+    public function parents(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'parent_child_links', 'child_user_id', 'parent_user_id')
+            ->withTimestamps();
+    }
+
+    public function isAdult(): bool
+    {
+        return $this->date_of_birth === null || $this->date_of_birth->age >= 18;
+    }
+
+    public function isMinor(): bool
+    {
+        return $this->date_of_birth !== null && $this->date_of_birth->age < 18;
+    }
+
+    public function isUnder13(): bool
+    {
+        return $this->date_of_birth !== null && $this->date_of_birth->age < 13;
+    }
+
+    public function age(): ?int
+    {
+        return $this->date_of_birth?->age;
+    }
+
+    public function hasParents(): bool
+    {
+        return $this->parents()->exists();
+    }
+
+    public function hasChildren(): bool
+    {
+        return $this->children()->exists();
     }
 
     public function roles(): BelongsToMany

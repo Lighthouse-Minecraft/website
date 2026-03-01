@@ -22,6 +22,7 @@ class RegistrationTest extends TestCase
         $response = Volt::test('auth.register')
             ->set('name', 'Test User')
             ->set('email', 'test@example.com')
+            ->set('date_of_birth', now()->subYears(20)->format('Y-m-d'))
             ->set('password', 'password')
             ->set('password_confirmation', 'password')
             ->call('register');
