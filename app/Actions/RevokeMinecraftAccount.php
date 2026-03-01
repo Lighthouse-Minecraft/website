@@ -40,6 +40,38 @@ class RevokeMinecraftAccount
             ['action' => 'revoke_rank_reset', 'affected_user_id' => $affectedUser->id]
         );
 
+        // Remove staff position if the affected user holds one
+        if ($affectedUser->staff_department !== null) {
+            $staffResult = $rconService->executeCommand(
+                "lh removestaff {$account->username}",
+                'rank',
+                $account->username,
+                $admin,
+                ['action' => 'revoke_staff_reset', 'affected_user_id' => $affectedUser->id]
+            );
+
+            if (! $staffResult['success']) {
+                Log::error('Failed to remove staff position during account revocation', [
+                    'account_id' => $account->id,
+                    'username' => $username,
+                    'admin' => $admin->name,
+                    'response' => $staffResult['response'] ?? null,
+                    'error' => $staffResult['error'] ?? null,
+                ]);
+
+                return [
+                    'success' => false,
+                    'message' => 'Failed to remove staff position from server. Account has not been revoked.',
+                ];
+            }
+
+            RecordActivity::run(
+                $affectedUser,
+                'minecraft_staff_position_removed',
+                "{$admin->name} removed Minecraft staff position for {$username}"
+            );
+        }
+
         // Remove from whitelist synchronously; only soft-disable the record if it succeeds
         $whitelistResult = $rconService->executeCommand(
             $account->whitelistRemoveCommand(),
