@@ -9,7 +9,7 @@ use function Pest\Laravel\actingAs;
 
 uses()->group('parent-portal', 'brig');
 
-it('shows parental pending message', function () {
+it('shows parental pending message with contact staff button', function () {
     $user = User::factory()->create([
         'in_brig' => true,
         'brig_type' => BrigType::ParentalPending,
@@ -20,10 +20,11 @@ it('shows parental pending message', function () {
     \Livewire\Volt\Volt::test('dashboard.in-brig-card')
         ->assertSee('Account Pending Approval')
         ->assertSee('parental approval')
+        ->assertSee('Contact Staff')
         ->assertDontSee('Submit Appeal');
 });
 
-it('shows parental disabled message', function () {
+it('shows parental disabled message with contact staff button', function () {
     $user = User::factory()->create([
         'in_brig' => true,
         'brig_type' => BrigType::ParentalDisabled,
@@ -33,6 +34,7 @@ it('shows parental disabled message', function () {
 
     \Livewire\Volt\Volt::test('dashboard.in-brig-card')
         ->assertSee('Account Restricted by Parent')
+        ->assertSee('Contact Staff')
         ->assertDontSee('Submit Appeal');
 });
 

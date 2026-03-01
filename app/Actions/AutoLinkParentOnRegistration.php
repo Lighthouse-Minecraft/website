@@ -11,8 +11,8 @@ class AutoLinkParentOnRegistration
 
     public function handle(User $newUser): void
     {
-        // Check if any child users have this user's email as their parent_email
-        $children = User::where('parent_email', $newUser->email)->get();
+        // Case-insensitive match in case emails were stored with different casing
+        $children = User::whereRaw('LOWER(parent_email) = ?', [strtolower($newUser->email)])->get();
 
         if ($children->isEmpty()) {
             return;

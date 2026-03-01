@@ -441,15 +441,7 @@ new class extends Component {
         );
     }
 
-    public function lockForAgeVerification(): void
-    {
-        $this->authorize('manage-stowaway-users');
 
-        \App\Actions\LockAccountForAgeVerification::run($this->user, Auth::user());
-
-        $this->user->refresh();
-        Flux::toast("{$this->user->name} locked for age verification.", 'Account Locked', variant: 'warning');
-    }
 }; ?>
 
 <div>
@@ -488,16 +480,6 @@ new class extends Component {
                             @elseif(! $user->staff_department && $user->id !== Auth::id())
                                 <flux:menu.item icon="lock-closed" wire:click="openPutInBrigModal">
                                     Put in Brig
-                                </flux:menu.item>
-                            @endif
-
-                            @if(! $user->isInBrig() && $user->id !== Auth::id())
-                                <flux:menu.item
-                                    icon="shield-exclamation"
-                                    wire:click="lockForAgeVerification"
-                                    wire:confirm="Lock {{ $user->name }}'s account for age verification? This will clear their DOB and put them in the brig."
-                                >
-                                    Lock for Age Verification
                                 </flux:menu.item>
                             @endif
 

@@ -15,7 +15,7 @@ uses()->group('parent-portal', 'profile');
 it('shows Child Account badge for user with parents', function () {
     $parent = User::factory()->adult()->create();
     $child = User::factory()->minor()->create();
-    ParentChildLink::create(['parent_user_id' => $parent->id, 'child_user_id' => $child->id]);
+    ParentChildLink::factory()->create(['parent_user_id' => $parent->id, 'child_user_id' => $child->id]);
 
     $viewer = User::factory()->create(['membership_level' => MembershipLevel::Traveler]);
     actingAs($viewer);
@@ -37,7 +37,7 @@ it('does not show Child Account badge for user without parents', function () {
 it('shows Family card for user with parents', function () {
     $parent = User::factory()->adult()->create(['name' => 'Parent McParent']);
     $child = User::factory()->minor()->create();
-    ParentChildLink::create(['parent_user_id' => $parent->id, 'child_user_id' => $child->id]);
+    ParentChildLink::factory()->create(['parent_user_id' => $parent->id, 'child_user_id' => $child->id]);
 
     $viewer = User::factory()->create(['membership_level' => MembershipLevel::Traveler]);
     actingAs($viewer);
@@ -51,7 +51,7 @@ it('shows Family card for user with parents', function () {
 it('shows Family card for user with children', function () {
     $parent = User::factory()->adult()->create();
     $child = User::factory()->minor()->create(['name' => 'Child McChild']);
-    ParentChildLink::create(['parent_user_id' => $parent->id, 'child_user_id' => $child->id]);
+    ParentChildLink::factory()->create(['parent_user_id' => $parent->id, 'child_user_id' => $child->id]);
 
     $viewer = User::factory()->create(['membership_level' => MembershipLevel::Traveler]);
     actingAs($viewer);
@@ -75,7 +75,7 @@ it('does not show Family card for user with no family links', function () {
 it('shows admin Parental Controls card for staff', function () {
     $parent = User::factory()->adult()->create();
     $child = User::factory()->minor()->create(['parent_allows_minecraft' => false]);
-    ParentChildLink::create(['parent_user_id' => $parent->id, 'child_user_id' => $child->id]);
+    ParentChildLink::factory()->create(['parent_user_id' => $parent->id, 'child_user_id' => $child->id]);
 
     $admin = User::factory()->create([
         'membership_level' => MembershipLevel::Citizen,
@@ -93,7 +93,7 @@ it('shows admin Parental Controls card for staff', function () {
 it('hides admin Parental Controls card for non-staff', function () {
     $parent = User::factory()->adult()->create();
     $child = User::factory()->minor()->create();
-    ParentChildLink::create(['parent_user_id' => $parent->id, 'child_user_id' => $child->id]);
+    ParentChildLink::factory()->create(['parent_user_id' => $parent->id, 'child_user_id' => $child->id]);
 
     $viewer = User::factory()->create(['membership_level' => MembershipLevel::Traveler]);
     actingAs($viewer);

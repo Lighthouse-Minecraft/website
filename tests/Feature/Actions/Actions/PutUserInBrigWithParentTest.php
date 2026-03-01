@@ -14,7 +14,7 @@ uses()->group('parent-portal', 'actions', 'brig');
 
 it('sets brig_type on user', function () {
     Notification::fake();
-    $admin = User::factory()->create();
+    $admin = User::factory()->admin()->create();
     $target = User::factory()->create();
 
     $this->mock(MinecraftRconService::class)->shouldReceive('executeCommand')->andReturn(['success' => true, 'response' => null, 'error' => null]);
@@ -26,7 +26,7 @@ it('sets brig_type on user', function () {
 
 it('changes ParentDisabled MC accounts to Banned when brigged', function () {
     Notification::fake();
-    $admin = User::factory()->create();
+    $admin = User::factory()->admin()->create();
     $target = User::factory()->create();
     $account = MinecraftAccount::factory()->create([
         'user_id' => $target->id,
@@ -42,7 +42,7 @@ it('changes ParentDisabled MC accounts to Banned when brigged', function () {
 
 it('defaults to Discipline brig_type', function () {
     Notification::fake();
-    $admin = User::factory()->create();
+    $admin = User::factory()->admin()->create();
     $target = User::factory()->create();
 
     $this->mock(MinecraftRconService::class)->shouldReceive('executeCommand')->andReturn(['success' => true, 'response' => null, 'error' => null]);
@@ -54,7 +54,7 @@ it('defaults to Discipline brig_type', function () {
 
 it('skips notification when notify is false', function () {
     Notification::fake();
-    $admin = User::factory()->create();
+    $admin = User::factory()->admin()->create();
     $target = User::factory()->create();
 
     $this->mock(MinecraftRconService::class)->shouldReceive('executeCommand')->andReturn(['success' => true, 'response' => null, 'error' => null]);

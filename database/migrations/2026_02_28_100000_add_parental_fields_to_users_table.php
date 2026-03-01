@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             $table->date('date_of_birth')->nullable()->after('email');
-            $table->string('parent_email')->nullable()->after('date_of_birth');
+            $table->string('parent_email')->nullable()->after('date_of_birth')->index();
             $table->string('brig_type', 30)->nullable()->after('brig_timer_notified');
             $table->boolean('parent_allows_site')->default(true)->after('brig_type');
             $table->boolean('parent_allows_minecraft')->default(true)->after('parent_allows_site');

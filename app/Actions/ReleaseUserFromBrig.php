@@ -125,10 +125,10 @@ class ReleaseUserFromBrig
             }
         }
 
-        RecordActivity::handle($target, 'user_released_from_brig', "Released from brig by {$admin->name}. Reason: {$reason}");
-
         // Check if parental hold should re-engage after discipline release
         if (! $target->parent_allows_site && $target->isMinor()) {
+            RecordActivity::handle($target, 'user_released_from_brig', "Released from disciplinary brig by {$admin->name}; parental restrictions re-applied. Reason: {$reason}");
+
             PutUserInBrig::run(
                 target: $target,
                 admin: $admin,
@@ -139,6 +139,8 @@ class ReleaseUserFromBrig
 
             return;
         }
+
+        RecordActivity::handle($target, 'user_released_from_brig', "Released from brig by {$admin->name}. Reason: {$reason}");
 
         $notificationService = app(TicketNotificationService::class);
         $notificationService->send($target, new UserReleasedFromBrigNotification($target), 'account');

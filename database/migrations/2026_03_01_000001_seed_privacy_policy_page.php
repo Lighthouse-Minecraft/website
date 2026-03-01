@@ -7,7 +7,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Page::updateOrCreate(
+        // Only seed if no privacy policy page exists — don't overwrite manually edited content
+        Page::firstOrCreate(
             ['slug' => 'privacy-policy'],
             [
                 'title' => 'Privacy Policy',

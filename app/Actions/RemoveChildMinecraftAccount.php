@@ -32,12 +32,7 @@ class RemoveChildMinecraftAccount
 
         $rconService = app(MinecraftRconService::class);
 
-        $rconService->executeCommand(
-            "lh setmember {$account->username} default",
-            'rank', $account->username, $parent,
-            ['action' => 'parent_remove_rank_reset', 'affected_user_id' => $child->id]
-        );
-
+        // Remove from whitelist first — if this fails, bail before any other changes
         $whitelistResult = $rconService->executeCommand(
             $account->whitelistRemoveCommand(),
             'whitelist', $account->username, $parent,
@@ -47,6 +42,12 @@ class RemoveChildMinecraftAccount
         if (! $whitelistResult['success']) {
             return ['success' => false, 'message' => 'Failed to remove from whitelist. Account not removed.'];
         }
+
+        $rconService->executeCommand(
+            "lh setmember {$account->username} default",
+            'rank', $account->username, $parent,
+            ['action' => 'parent_remove_rank_reset', 'affected_user_id' => $child->id]
+        );
 
         $account->status = MinecraftAccountStatus::Removed;
         $account->save();

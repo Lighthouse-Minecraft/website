@@ -30,17 +30,18 @@ class ProcessAgeTransitions extends Command
             ->whereNotNull('date_of_birth')
             ->whereDate('date_of_birth', '<=', now()->subYears(13))
             ->whereDoesntHave('parents')
-            ->each(function (User $user) {
-                ReleaseUserFromBrig::run($user, $user, 'Automatically released: turned 13 with no parent registered.');
+            ->chunkById(100, function ($users) {
+                foreach ($users as $user) {
+                    ReleaseUserFromBrig::run($user, $user, 'Automatically released: turned 13 with no parent registered.');
 
-                // Only send unlock notification if the user was actually released (not re-brigged by parental hold)
-                $user->refresh();
-                if (! $user->isInBrig()) {
-                    $notificationService = app(TicketNotificationService::class);
-                    $notificationService->send($user, new AccountUnlockedNotification, 'account');
+                    // Only send unlock notification and log if the user was actually released (not re-brigged by parental hold)
+                    $user->refresh();
+                    if (! $user->isInBrig()) {
+                        $notificationService = app(TicketNotificationService::class);
+                        $notificationService->send($user, new AccountUnlockedNotification, 'account');
+                        $this->info("Released user {$user->name} (ID: {$user->id}) — turned 13, no parent.");
+                    }
                 }
-
-                $this->info("Released user {$user->name} (ID: {$user->id}) — turned 13, no parent.");
             });
     }
 
@@ -50,10 +51,11 @@ class ProcessAgeTransitions extends Command
         User::whereNotNull('date_of_birth')
             ->whereDate('date_of_birth', '<=', now()->subYears(19))
             ->whereHas('parents')
-            ->each(function (User $user) {
-                ReleaseChildToAdult::run($user);
-
-                $this->info("Auto-released user {$user->name} (ID: {$user->id}) to adult account — turned 19.");
+            ->chunkById(100, function ($users) {
+                foreach ($users as $user) {
+                    ReleaseChildToAdult::run($user);
+                    $this->info("Auto-released user {$user->name} (ID: {$user->id}) to adult account — turned 19.");
+                }
             });
     }
 }

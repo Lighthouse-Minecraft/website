@@ -35,15 +35,15 @@ class AccountUnlockedNotification extends Notification implements ShouldQueue
     {
         $channels = [];
 
-        if (in_array('mail', $this->allowedChannels)) {
+        if (in_array('mail', $this->allowedChannels, true)) {
             $channels[] = 'mail';
         }
 
-        if (in_array('pushover', $this->allowedChannels) && $this->pushoverKey) {
+        if (in_array('pushover', $this->allowedChannels, true) && $this->pushoverKey) {
             $channels[] = PushoverChannel::class;
         }
 
-        if (in_array('discord', $this->allowedChannels)) {
+        if (in_array('discord', $this->allowedChannels, true)) {
             $channels[] = DiscordChannel::class;
         }
 

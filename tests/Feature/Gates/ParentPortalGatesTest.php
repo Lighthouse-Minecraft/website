@@ -16,7 +16,7 @@ it('allows adult to view parent portal', function () {
 it('allows user with children to view parent portal', function () {
     $parent = User::factory()->adult()->create();
     $child = User::factory()->minor()->create();
-    ParentChildLink::create(['parent_user_id' => $parent->id, 'child_user_id' => $child->id]);
+    ParentChildLink::factory()->create(['parent_user_id' => $parent->id, 'child_user_id' => $child->id]);
 
     expect($parent->can('view-parent-portal'))->toBeTrue();
 });

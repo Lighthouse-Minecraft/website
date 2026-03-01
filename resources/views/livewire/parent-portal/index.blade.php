@@ -164,12 +164,18 @@ new class extends Component {
             return;
         }
 
-        CreateChildAccount::run(
-            $this->getTargetUser(),
-            $this->newChildName,
-            $this->newChildEmail,
-            $this->newChildDob,
-        );
+        try {
+            CreateChildAccount::run(
+                $this->getTargetUser(),
+                $this->newChildName,
+                $this->newChildEmail,
+                $this->newChildDob,
+            );
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to create child account', ['error' => $e->getMessage()]);
+            Flux::toast('Could not create child account. Please try again.', 'Error', variant: 'danger');
+            return;
+        }
 
         $this->reset(['newChildName', 'newChildEmail', 'newChildDob']);
         Flux::modal('create-child-modal')->close();
@@ -256,7 +262,10 @@ new class extends Component {
             return;
         }
 
-        $verification = MinecraftVerification::where('code', $code)->first();
+        // Scope lookup to the child to prevent code-guessing across users
+        $verification = MinecraftVerification::where('code', $code)
+            ->where('user_id', $childId)
+            ->first();
 
         if (! $verification) {
             unset($this->childMcVerificationCodes[$childId], $this->childMcExpiresAt[$childId]);
@@ -276,6 +285,11 @@ new class extends Component {
 
     public function confirmRemoveChildMcAccount(int $accountId): void
     {
+        if ($this->isStaffViewing) {
+            Flux::toast('This view is read-only.', 'Unauthorized', variant: 'danger');
+            return;
+        }
+
         $account = \App\Models\MinecraftAccount::findOrFail($accountId);
         $parent = $this->getTargetUser();
 

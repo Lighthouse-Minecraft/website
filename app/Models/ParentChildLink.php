@@ -17,7 +17,7 @@ class ParentChildLink extends Model
 
     protected static function booted(): void
     {
-        static::creating(function (ParentChildLink $link) {
+        static::saving(function (ParentChildLink $link) {
             if ($link->parent_user_id === $link->child_user_id) {
                 throw new \InvalidArgumentException('A user cannot be their own parent.');
             }

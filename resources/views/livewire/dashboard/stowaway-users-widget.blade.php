@@ -251,7 +251,7 @@ new class extends Component {
 
                 <div class="flex items-center gap-2 justify-between">
                     <flux:button
-                        href="/tickets/create-admin?user_id={{ $selectedUser->id }}"
+                        href="{{ route('tickets.create-admin', ['user_id' => $selectedUser->id]) }}"
                         variant="ghost"
                         icon="inbox"
                     >

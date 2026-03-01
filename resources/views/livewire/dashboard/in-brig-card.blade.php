@@ -51,11 +51,15 @@ new class extends Component {
                 return;
             }
 
+            $subject = $lockedUser->brig_type?->isParental()
+                ? 'Staff Contact: '.$lockedUser->name
+                : 'Brig Appeal: '.$lockedUser->name;
+
             $thread = Thread::create([
                 'type' => ThreadType::Ticket,
                 'subtype' => ThreadSubtype::AdminAction,
                 'department' => StaffDepartment::Quartermaster,
-                'subject' => 'Brig Appeal: '.$lockedUser->name,
+                'subject' => $subject,
                 'status' => ThreadStatus::Open,
                 'created_by_user_id' => $lockedUser->id,
                 'last_message_at' => now(),
@@ -70,7 +74,10 @@ new class extends Component {
                 'kind' => MessageKind::Message,
             ]);
 
-            \App\Actions\RecordActivity::handle($thread, 'ticket_opened', 'Brig appeal submitted: '.$thread->subject);
+            $activityDesc = $lockedUser->brig_type?->isParental()
+                ? 'Staff contact submitted: '.$thread->subject
+                : 'Brig appeal submitted: '.$thread->subject;
+            \App\Actions\RecordActivity::handle($thread, 'ticket_opened', $activityDesc);
 
             // Set a 7-day lockout to prevent appeal spam
             $lockedUser->next_appeal_available_at = now()->addDays(7);
@@ -97,12 +104,21 @@ new class extends Component {
 
         $this->appealMessage = '';
         Flux::modal('brig-appeal-modal')->close();
-        Flux::toast('Your appeal has been submitted. You may submit another in 7 days if needed.', 'Appeal Submitted', variant: 'success');
+
+        $isParental = Auth::user()->brig_type?->isParental();
+        Flux::toast(
+            $isParental
+                ? 'Your message has been sent to staff. You may send another in 7 days if needed.'
+                : 'Your appeal has been submitted. You may submit another in 7 days if needed.',
+            $isParental ? 'Message Sent' : 'Appeal Submitted',
+            variant: 'success',
+        );
     }
 }; ?>
 
 @php $user = Auth::user(); @endphp
 
+<div>
 @if($user->brig_type === \App\Enums\BrigType::ParentalPending)
     <flux:card class="w-full max-w-lg mx-auto text-center py-8 px-6 space-y-6">
         <div class="flex flex-col items-center gap-3">
@@ -117,6 +133,17 @@ new class extends Component {
         <flux:text variant="subtle" class="text-sm">
             Once they create an account and approve your access, you'll be able to use the site.
         </flux:text>
+
+        @if($user->canAppeal())
+            <flux:modal.trigger name="brig-appeal-modal">
+                <flux:button variant="primary" icon="chat-bubble-left-ellipsis">Contact Staff</flux:button>
+            </flux:modal.trigger>
+        @elseif($user->next_appeal_available_at)
+            <div class="bg-zinc-50 dark:bg-zinc-800 rounded-lg p-4 text-left">
+                <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-1">Next Contact Available</flux:text>
+                <flux:text class="text-zinc-800 dark:text-zinc-200">You may contact staff again after <strong>{{ $user->next_appeal_available_at->setTimezone($user->timezone ?? 'UTC')->format('F j, Y \a\t g:i A T') }}</strong>.</flux:text>
+            </div>
+        @endif
     </flux:card>
 @elseif($user->brig_type === \App\Enums\BrigType::ParentalDisabled)
     <flux:card class="w-full max-w-lg mx-auto text-center py-8 px-6 space-y-6">
@@ -132,6 +159,17 @@ new class extends Component {
         <flux:text variant="subtle" class="text-sm">
             Please speak with your parent if you believe this is an error.
         </flux:text>
+
+        @if($user->canAppeal())
+            <flux:modal.trigger name="brig-appeal-modal">
+                <flux:button variant="primary" icon="chat-bubble-left-ellipsis">Contact Staff</flux:button>
+            </flux:modal.trigger>
+        @elseif($user->next_appeal_available_at)
+            <div class="bg-zinc-50 dark:bg-zinc-800 rounded-lg p-4 text-left">
+                <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-1">Next Contact Available</flux:text>
+                <flux:text class="text-zinc-800 dark:text-zinc-200">You may contact staff again after <strong>{{ $user->next_appeal_available_at->setTimezone($user->timezone ?? 'UTC')->format('F j, Y \a\t g:i A T') }}</strong>.</flux:text>
+            </div>
+        @endif
     </flux:card>
 @elseif($user->brig_type === \App\Enums\BrigType::AgeLock)
     <flux:card class="w-full max-w-lg mx-auto text-center py-8 px-6 space-y-6">
@@ -184,22 +222,34 @@ new class extends Component {
             <flux:button disabled variant="ghost" icon="chat-bubble-left-ellipsis">Appeal Not Yet Available</flux:button>
         @endif
 
-        <flux:modal name="brig-appeal-modal" class="w-full lg:w-1/2">
-            <div class="space-y-6">
-                <flux:heading size="lg">Submit Brig Appeal</flux:heading>
-                <flux:text variant="subtle">Explain your situation to the Quartermaster. Be respectful and honest. Staff will review your appeal and respond via ticket.</flux:text>
-
-                <flux:field>
-                    <flux:label>Your Appeal <span class="text-red-500">*</span></flux:label>
-                    <flux:textarea wire:model.live="appealMessage" rows="6" placeholder="Explain why you believe the Brig status should be lifted..." />
-                    <flux:error name="appealMessage" />
-                </flux:field>
-
-                <div class="flex gap-2 justify-end">
-                    <flux:button variant="ghost" x-on:click="$flux.modal('brig-appeal-modal').close()">Cancel</flux:button>
-                    <flux:button wire:click="submitAppeal" wire:loading.attr="disabled" wire:target="submitAppeal" variant="primary">Submit Appeal</flux:button>
-                </div>
-            </div>
-        </flux:modal>
     </flux:card>
 @endif
+
+{{-- Shared contact/appeal modal — available to discipline and parental brig types --}}
+@if($user->brig_type?->isDisciplinary() || $user->brig_type?->isParental() || $user->brig_type === null)
+<flux:modal name="brig-appeal-modal" class="w-full lg:w-1/2">
+    <div class="space-y-6">
+        @if($user->brig_type?->isParental())
+            <flux:heading size="lg">Contact Staff</flux:heading>
+            <flux:text variant="subtle">Send a message to the Quartermaster team. Be respectful and honest. Staff will review your message and respond via ticket.</flux:text>
+        @else
+            <flux:heading size="lg">Submit Brig Appeal</flux:heading>
+            <flux:text variant="subtle">Explain your situation to the Quartermaster. Be respectful and honest. Staff will review your appeal and respond via ticket.</flux:text>
+        @endif
+
+        <flux:field>
+            <flux:label>Your Message <span class="text-red-500">*</span></flux:label>
+            <flux:textarea wire:model.live="appealMessage" rows="6" placeholder="{{ $user->brig_type?->isParental() ? 'Describe your situation or question for staff...' : 'Explain why you believe the Brig status should be lifted...' }}" />
+            <flux:error name="appealMessage" />
+        </flux:field>
+
+        <div class="flex gap-2 justify-end">
+            <flux:button variant="ghost" x-on:click="$flux.modal('brig-appeal-modal').close()">Cancel</flux:button>
+            <flux:button wire:click="submitAppeal" wire:loading.attr="disabled" wire:target="submitAppeal" variant="primary">
+                {{ $user->brig_type?->isParental() ? 'Send Message' : 'Submit Appeal' }}
+            </flux:button>
+        </div>
+    </div>
+</flux:modal>
+@endif
+</div>

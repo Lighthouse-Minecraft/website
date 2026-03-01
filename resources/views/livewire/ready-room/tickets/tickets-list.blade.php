@@ -113,7 +113,9 @@ new class extends Component
             @can('createAsStaff', Thread::class)
                 <flux:button href="/tickets/create-admin" variant="ghost">Create Admin Ticket</flux:button>
             @endcan
-            <flux:button href="/tickets/create" variant="primary">Create Ticket</flux:button>
+            @can('create', Thread::class)
+                <flux:button href="/tickets/create" variant="primary">Create Ticket</flux:button>
+            @endcan
         </div>
     </div>
 

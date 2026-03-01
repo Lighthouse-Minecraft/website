@@ -4,6 +4,7 @@ namespace App\Actions;
 
 use App\Models\ParentChildLink;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
@@ -17,28 +18,32 @@ class CreateChildAccount
     {
         $isUnder13 = \Carbon\Carbon::parse($dateOfBirth)->age < 13;
 
-        $child = User::create([
-            'name' => $name,
-            'email' => $email,
-            'password' => bcrypt(Str::random(32)),
-            'date_of_birth' => $dateOfBirth,
-            'parent_email' => $parent->email,
-            'parent_allows_site' => true,
-            'parent_allows_minecraft' => ! $isUnder13,
-            'parent_allows_discord' => ! $isUnder13,
-        ]);
+        $child = DB::transaction(function () use ($parent, $name, $email, $dateOfBirth, $isUnder13) {
+            $child = User::create([
+                'name' => $name,
+                'email' => $email,
+                'password' => bcrypt(Str::random(32)),
+                'date_of_birth' => $dateOfBirth,
+                'parent_email' => $parent->email,
+                'parent_allows_site' => true,
+                'parent_allows_minecraft' => ! $isUnder13,
+                'parent_allows_discord' => ! $isUnder13,
+            ]);
 
-        ParentChildLink::create([
-            'parent_user_id' => $parent->id,
-            'child_user_id' => $child->id,
-        ]);
+            ParentChildLink::create([
+                'parent_user_id' => $parent->id,
+                'child_user_id' => $child->id,
+            ]);
+
+            return $child;
+        });
 
         $resetStatus = Password::sendResetLink(['email' => $email]);
 
         if ($resetStatus !== Password::RESET_LINK_SENT) {
             Log::error('Failed to send password reset link for child account', [
                 'child_id' => $child->id,
-                'email' => $email,
+                'email_hash' => hash('sha256', $email),
                 'status' => $resetStatus,
             ]);
 

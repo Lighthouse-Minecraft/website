@@ -9,6 +9,12 @@ use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Queue\SerializesModels;
 
+/**
+ * Approved exception to TicketNotificationService guideline: This notification is sent to a
+ * parent email address BEFORE a User account exists for the parent. It uses Laravel's
+ * Notification::route('mail', $email) on-demand notification, so TicketNotificationService
+ * (which requires a User model) cannot be used here.
+ */
 class ParentAccountNotification extends Notification implements ShouldQueue
 {
     use Queueable, SerializesModels;

@@ -790,7 +790,7 @@ public function children() {
 
 **Blade layout — card per child:**
 
-```
+```text
 ┌─────────────────────────────────────────┐
 │ ChildName                               │
 │ Age 12 · child@email.com                │

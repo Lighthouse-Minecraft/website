@@ -37,6 +37,7 @@ new class extends Component {
     public function openEditModal($userId)
     {
         $user = User::findOrFail($userId);
+        $this->authorize('update', $user);
         $this->editUserId = $user->id;
         $this->editUserData = [
             'name' => $user->name,
@@ -140,6 +141,7 @@ new class extends Component {
         ])->validate();
 
         $user = User::with('roles')->findOrFail($this->editUserId);
+        $this->authorize('update', $user);
 
         // Prevent non-admins from adding/removing the Admin role
         $adminRoleId = \App\Models\Role::where('name', 'Admin')->value('id');
