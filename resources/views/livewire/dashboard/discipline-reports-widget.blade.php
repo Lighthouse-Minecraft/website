@@ -76,6 +76,7 @@ new class extends Component {
     }
 }; ?>
 
+<div>
 <flux:card>
     <div class="flex items-center gap-3">
         <flux:heading size="md">Discipline Reports</flux:heading>
@@ -210,3 +211,4 @@ new class extends Component {
         @endif
     @endif
 </flux:modal>
+</div>
