@@ -14,6 +14,8 @@ class CreateChildAccount
 
     public function handle(User $parent, string $name, string $email, string $dateOfBirth): User
     {
+        $isUnder13 = \Carbon\Carbon::parse($dateOfBirth)->age < 13;
+
         $child = User::create([
             'name' => $name,
             'email' => $email,
@@ -21,8 +23,8 @@ class CreateChildAccount
             'date_of_birth' => $dateOfBirth,
             'parent_email' => $parent->email,
             'parent_allows_site' => true,
-            'parent_allows_minecraft' => true,
-            'parent_allows_discord' => true,
+            'parent_allows_minecraft' => ! $isUnder13,
+            'parent_allows_discord' => ! $isUnder13,
         ]);
 
         ParentChildLink::create([

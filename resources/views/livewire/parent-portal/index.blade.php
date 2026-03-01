@@ -1,10 +1,13 @@
 <?php
 
 use App\Actions\CreateChildAccount;
+use App\Actions\GenerateVerificationCode;
 use App\Actions\ReleaseChildToAdult;
 use App\Actions\UpdateChildPermission;
+use App\Enums\MinecraftAccountType;
 use App\Enums\ThreadStatus;
 use App\Enums\ThreadType;
+use App\Models\MinecraftVerification;
 use App\Models\Thread;
 use App\Models\User;
 use Flux\Flux;
@@ -17,9 +20,35 @@ new class extends Component {
     public string $newChildEmail = '';
     public string $newChildDob = '';
 
+    public array $childMcUsernames = [];
+    public array $childMcAccountTypes = [];
+    public array $childMcVerificationCodes = [];
+    public array $childMcExpiresAt = [];
+    public array $childMcErrors = [];
+
     public function mount(): void
     {
         $this->authorize('view-parent-portal');
+        $this->loadChildVerifications();
+    }
+
+    private function loadChildVerifications(): void
+    {
+        $childIds = Auth::user()->children()->pluck('child_user_id');
+
+        if ($childIds->isEmpty()) {
+            return;
+        }
+
+        $activeVerifications = MinecraftVerification::whereIn('user_id', $childIds)
+            ->where('status', 'pending')
+            ->where('expires_at', '>', now())
+            ->get();
+
+        foreach ($activeVerifications as $v) {
+            $this->childMcVerificationCodes[$v->user_id] = $v->code;
+            $this->childMcExpiresAt[$v->user_id] = $v->expires_at->toIso8601String();
+        }
     }
 
     #[Computed]
@@ -70,6 +99,13 @@ new class extends Component {
             'newChildDob' => ['required', 'date', 'before:today'],
         ]);
 
+        $childAge = \Carbon\Carbon::parse($this->newChildDob)->age;
+        if ($childAge >= 17) {
+            $this->addError('newChildDob', 'Child accounts are intended for ages 16 and under. Children 17 and older should create their own account.');
+
+            return;
+        }
+
         CreateChildAccount::run(
             Auth::user(),
             $this->newChildName,
@@ -102,6 +138,74 @@ new class extends Component {
 
         Flux::toast("{$child->name} has been released to a full adult account.", 'Released', variant: 'success');
         unset($this->children);
+    }
+
+    public function generateChildMcCode(int $childId): void
+    {
+        $child = User::findOrFail($childId);
+        $parent = Auth::user();
+
+        if (! $parent->children()->where('child_user_id', $child->id)->exists()) {
+            Flux::toast('You do not have permission to manage this account.', 'Unauthorized', variant: 'danger');
+
+            return;
+        }
+
+        if (! $child->parent_allows_minecraft) {
+            Flux::toast('Minecraft access is currently disabled for this child.', 'Not Allowed', variant: 'danger');
+
+            return;
+        }
+
+        $username = $this->childMcUsernames[$childId] ?? '';
+        $accountTypeStr = $this->childMcAccountTypes[$childId] ?? 'java';
+
+        if (strlen($username) < 3 || strlen($username) > 16) {
+            $this->childMcErrors[$childId] = 'Username must be between 3 and 16 characters.';
+
+            return;
+        }
+
+        $accountType = $accountTypeStr === 'bedrock'
+            ? MinecraftAccountType::Bedrock
+            : MinecraftAccountType::Java;
+
+        $result = GenerateVerificationCode::run($child, $accountType, $username);
+
+        if ($result['success']) {
+            $this->childMcVerificationCodes[$childId] = $result['code'];
+            $this->childMcExpiresAt[$childId] = $result['expires_at']->toIso8601String();
+            unset($this->childMcErrors[$childId]);
+            Flux::toast("Verification code generated! Have {$child->name} run /verify {$result['code']} in-game.", 'Code Generated', variant: 'success');
+        } else {
+            $this->childMcErrors[$childId] = $result['error'];
+            Flux::toast($result['error'], 'Error', variant: 'danger');
+        }
+    }
+
+    public function checkChildVerification(int $childId): void
+    {
+        $code = $this->childMcVerificationCodes[$childId] ?? null;
+        if (! $code) {
+            return;
+        }
+
+        $verification = MinecraftVerification::where('code', $code)->first();
+
+        if (! $verification) {
+            unset($this->childMcVerificationCodes[$childId], $this->childMcExpiresAt[$childId]);
+
+            return;
+        }
+
+        if ($verification->status === 'completed') {
+            unset($this->childMcVerificationCodes[$childId], $this->childMcExpiresAt[$childId]);
+            unset($this->children);
+            Flux::toast('Minecraft account verified successfully!', 'Verified', variant: 'success');
+        } elseif ($verification->status === 'expired' || $verification->expires_at < now()) {
+            unset($this->childMcVerificationCodes[$childId], $this->childMcExpiresAt[$childId]);
+            Flux::toast('Verification code expired. Please generate a new one.', 'Expired', variant: 'danger');
+        }
     }
 
     public function getChildTickets(User $child)
@@ -211,6 +315,51 @@ new class extends Component {
                                 @endforeach
                             @else
                                 <flux:text variant="subtle" class="text-sm">No Discord accounts linked</flux:text>
+                            @endif
+
+                            {{-- Link Minecraft Account --}}
+                            @if($child->parent_allows_minecraft && ! $child->isInBrig())
+                                <div class="mt-3 pt-3 border-t border-zinc-200 dark:border-zinc-700">
+                                    <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 mb-2">Link Minecraft Account</flux:text>
+
+                                    @if(isset($this->childMcVerificationCodes[$child->id]))
+                                        <div class="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                                            <flux:text class="text-sm mb-1">Verification code for {{ $child->name }}:</flux:text>
+                                            <div class="font-mono text-2xl font-bold text-blue-600 dark:text-blue-400 tracking-wider my-2">
+                                                {{ $this->childMcVerificationCodes[$child->id] }}
+                                            </div>
+                                            <flux:text class="text-sm">
+                                                Have {{ $child->name }} join the server and run:
+                                                <code class="px-2 py-0.5 bg-zinc-200 dark:bg-zinc-700 rounded text-xs">/verify {{ $this->childMcVerificationCodes[$child->id] }}</code>
+                                            </flux:text>
+                                            <div class="mt-2">
+                                                <flux:button wire:click="checkChildVerification({{ $child->id }})" variant="ghost" size="sm">
+                                                    Check Status
+                                                </flux:button>
+                                            </div>
+                                        </div>
+                                    @else
+                                        <div class="flex items-end gap-2 flex-wrap">
+                                            <div class="flex-1 min-w-[150px]">
+                                                <flux:input
+                                                    wire:model="childMcUsernames.{{ $child->id }}"
+                                                    placeholder="Minecraft username"
+                                                    size="sm"
+                                                />
+                                            </div>
+                                            <flux:select wire:model="childMcAccountTypes.{{ $child->id }}" size="sm" class="w-28">
+                                                <option value="java">Java</option>
+                                                <option value="bedrock">Bedrock</option>
+                                            </flux:select>
+                                            <flux:button wire:click="generateChildMcCode({{ $child->id }})" variant="primary" size="sm">
+                                                Generate Code
+                                            </flux:button>
+                                        </div>
+                                        @if(isset($this->childMcErrors[$child->id]))
+                                            <flux:text class="text-sm text-red-500 mt-1">{{ $this->childMcErrors[$child->id] }}</flux:text>
+                                        @endif
+                                    @endif
+                                </div>
                             @endif
                         </div>
 

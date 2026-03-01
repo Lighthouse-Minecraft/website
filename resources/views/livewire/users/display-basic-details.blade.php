@@ -33,7 +33,7 @@ new class extends Component {
      */
     public function mount(User $user) {
         $this->user = $user;
-        $this->user->load('minecraftAccounts', 'discordAccounts');
+        $this->user->load('minecraftAccounts', 'discordAccounts', 'parents', 'children');
         $this->currentDepartment = $user->staff_department?->name ?? 'None';
         $this->currentDepartmentValue = $user->staff_department?->value ?? null;
         $this->currentTitle = $user->staff_title;
@@ -460,70 +460,55 @@ new class extends Component {
                 @if($user->isInBrig())
                     <flux:badge color="red">In the Brig</flux:badge>
                 @endif
+                @if($user->parents->isNotEmpty())
+                    <flux:badge color="purple" size="sm">Child Account</flux:badge>
+                @endif
             </div>
             <flux:text>Member Rank: {{ $user->membership_level->label() }}</flux:text>
             <flux:text>Joined on {{ $user->created_at->format('F j, Y') }}</flux:text>
 
             @can('manage-stowaway-users')
-                <div class="flex flex-wrap gap-2 pt-3">
-                    @if($user->isInBrig())
-                        <flux:button
-                            wire:click="openReleaseFromBrigModal"
-                            size="sm"
-                            variant="primary"
-                            icon="lock-open"
-                        >
-                            Release from Brig
-                        </flux:button>
-                    @elseif(! $user->staff_department && $user->id !== Auth::id())
-                        <flux:button
-                            wire:click="openPutInBrigModal"
-                            size="sm"
-                            variant="ghost"
-                            icon="lock-closed"
-                            class="hover:!text-red-600 dark:hover:!text-red-400 hover:!bg-red-50 dark:hover:!bg-red-950"
-                        >
-                            Put in Brig
-                        </flux:button>
-                    @endif
+                <div class="pt-3">
+                    <flux:dropdown position="bottom" align="start">
+                        <flux:button variant="ghost" icon="ellipsis-vertical" size="sm">Actions</flux:button>
+                        <flux:menu>
+                            @if($user->isInBrig())
+                                <flux:menu.item icon="lock-open" wire:click="openReleaseFromBrigModal">
+                                    Release from Brig
+                                </flux:menu.item>
+                            @elseif(! $user->staff_department && $user->id !== Auth::id())
+                                <flux:menu.item icon="lock-closed" wire:click="openPutInBrigModal">
+                                    Put in Brig
+                                </flux:menu.item>
+                            @endif
 
-                    @if(! $user->isInBrig() && $user->id !== Auth::id())
-                        <flux:button
-                            wire:click="lockForAgeVerification"
-                            wire:confirm="Lock {{ $user->name }}'s account for age verification? This will clear their DOB and put them in the brig."
-                            size="sm"
-                            variant="ghost"
-                            icon="shield-exclamation"
-                            class="hover:!text-amber-600 dark:hover:!text-amber-400 hover:!bg-amber-50 dark:hover:!bg-amber-950"
-                        >
-                            Lock for Age Verification
-                        </flux:button>
-                    @endif
+                            @if(! $user->isInBrig() && $user->id !== Auth::id())
+                                <flux:menu.item
+                                    icon="shield-exclamation"
+                                    wire:click="lockForAgeVerification"
+                                    wire:confirm="Lock {{ $user->name }}'s account for age verification? This will clear their DOB and put them in the brig."
+                                >
+                                    Lock for Age Verification
+                                </flux:menu.item>
+                            @endif
 
-                    @if(! $user->isInBrig() && $this->nextMembershipLevel !== null)
-                        <flux:modal.trigger name="profile-promote-confirm-modal">
-                            <flux:button
-                                size="sm"
-                                variant="ghost"
-                                icon="arrow-up-circle"
-                            >
-                                Promote to {{ $this->nextMembershipLevel->label() }}
-                            </flux:button>
-                        </flux:modal.trigger>
-                    @endif
+                            @if(! $user->isInBrig() && ($this->nextMembershipLevel !== null || $this->previousMembershipLevel !== null))
+                                <flux:menu.separator />
+                            @endif
 
-                    @if(! $user->isInBrig() && $this->previousMembershipLevel !== null)
-                        <flux:modal.trigger name="profile-demote-confirm-modal">
-                            <flux:button
-                                size="sm"
-                                variant="ghost"
-                                icon="arrow-down-circle"
-                                class="hover:!text-red-600 dark:hover:!text-red-400 hover:!bg-red-50 dark:hover:!bg-red-950"
-                            >
-                                Demote to {{ $this->previousMembershipLevel->label() }}
-                            </flux:button>
-                        </flux:modal.trigger>
-                    @endif
+                            @if(! $user->isInBrig() && $this->nextMembershipLevel !== null)
+                                <flux:menu.item icon="arrow-up-circle" x-on:click="$flux.modal('profile-promote-confirm-modal').show()">
+                                    Promote to {{ $this->nextMembershipLevel->label() }}
+                                </flux:menu.item>
+                            @endif
+
+                            @if(! $user->isInBrig() && $this->previousMembershipLevel !== null)
+                                <flux:menu.item icon="arrow-down-circle" x-on:click="$flux.modal('profile-demote-confirm-modal').show()">
+                                    Demote to {{ $this->previousMembershipLevel->label() }}
+                                </flux:menu.item>
+                            @endif
+                        </flux:menu>
+                    </flux:dropdown>
                 </div>
             @endcan
         </flux:card>
@@ -685,6 +670,90 @@ new class extends Component {
             @endif
         </flux:card>
     </div>
+
+    {{-- Public Family Card --}}
+    @if($user->parents->isNotEmpty() || $user->children->isNotEmpty())
+        <flux:card class="w-full mt-6 p-6">
+            <flux:heading size="xl" class="mb-4">Family</flux:heading>
+
+            @if($user->parents->isNotEmpty())
+                <div class="mb-4">
+                    <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-2">Parents</flux:text>
+                    @foreach($user->parents as $parentUser)
+                        <div wire:key="family-parent-{{ $parentUser->id }}" class="mb-1">
+                            <flux:link href="{{ route('profile.show', $parentUser) }}" class="text-sm">{{ $parentUser->name }}</flux:link>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+
+            @if($user->children->isNotEmpty())
+                <div>
+                    <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-2">Children</flux:text>
+                    @foreach($user->children as $childUser)
+                        <div wire:key="family-child-{{ $childUser->id }}" class="mb-1">
+                            <flux:link href="{{ route('profile.show', $childUser) }}" class="text-sm">{{ $childUser->name }}</flux:link>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+        </flux:card>
+    @endif
+
+    {{-- Admin Parental Controls Card --}}
+    @can('manage-stowaway-users')
+        @if($user->parents->isNotEmpty() || $user->children->isNotEmpty())
+            <flux:card class="w-full mt-6 p-6">
+                <flux:heading size="xl" class="mb-4">Parental Controls (Staff)</flux:heading>
+
+                @if($user->parents->isNotEmpty())
+                    @if($user->parent_email)
+                        <div class="mb-4">
+                            <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-1">Parent Email</flux:text>
+                            <flux:text>{{ $user->parent_email }}</flux:text>
+                        </div>
+                    @endif
+
+                    <div class="mb-4">
+                        <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-2">Permission States</flux:text>
+                        <div class="flex flex-wrap gap-2">
+                            <flux:badge size="sm" color="{{ $user->parent_allows_site ? 'green' : 'red' }}">
+                                Site: {{ $user->parent_allows_site ? 'Allowed' : 'Denied' }}
+                            </flux:badge>
+                            <flux:badge size="sm" color="{{ $user->parent_allows_minecraft ? 'green' : 'red' }}">
+                                MC: {{ $user->parent_allows_minecraft ? 'Allowed' : 'Denied' }}
+                            </flux:badge>
+                            <flux:badge size="sm" color="{{ $user->parent_allows_discord ? 'green' : 'red' }}">
+                                Discord: {{ $user->parent_allows_discord ? 'Allowed' : 'Denied' }}
+                            </flux:badge>
+                        </div>
+                    </div>
+                @endif
+
+                @if($user->children->isNotEmpty())
+                    <div>
+                        <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-2">Children's Permission States</flux:text>
+                        @foreach($user->children as $childUser)
+                            <div wire:key="admin-child-{{ $childUser->id }}" class="mb-3">
+                                <flux:link href="{{ route('profile.show', $childUser) }}" class="font-medium text-sm">{{ $childUser->name }}</flux:link>
+                                <div class="flex flex-wrap gap-2 mt-1">
+                                    <flux:badge size="sm" color="{{ $childUser->parent_allows_site ? 'green' : 'red' }}">
+                                        Site: {{ $childUser->parent_allows_site ? 'Allowed' : 'Denied' }}
+                                    </flux:badge>
+                                    <flux:badge size="sm" color="{{ $childUser->parent_allows_minecraft ? 'green' : 'red' }}">
+                                        MC: {{ $childUser->parent_allows_minecraft ? 'Allowed' : 'Denied' }}
+                                    </flux:badge>
+                                    <flux:badge size="sm" color="{{ $childUser->parent_allows_discord ? 'green' : 'red' }}">
+                                        Discord: {{ $childUser->parent_allows_discord ? 'Allowed' : 'Denied' }}
+                                    </flux:badge>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+            </flux:card>
+        @endif
+    @endcan
 
     <x-minecraft.mc-account-detail-modal :account="$selectedAccount" />
 
