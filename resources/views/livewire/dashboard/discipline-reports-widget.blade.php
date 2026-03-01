@@ -94,6 +94,7 @@ new class extends Component {
         <div class="space-y-2">
             @foreach($this->recentReports as $report)
                 <div class="flex items-center gap-2 text-sm">
+                    <flux:avatar size="xs" :src="$report->subject->avatarUrl()" :initials="$report->subject->initials()" />
                     <flux:link href="{{ route('profile.show', $report->subject) }}">
                         {{ $report->subject->name }}
                     </flux:link>
@@ -121,6 +122,7 @@ new class extends Component {
         <div class="space-y-1">
             @foreach($this->topRiskUsers as $entry)
                 <div class="flex items-center gap-2 text-sm">
+                    <flux:avatar size="xs" :src="$entry['user']->avatarUrl()" :initials="$entry['user']->initials()" />
                     <flux:link href="{{ route('profile.show', $entry['user']) }}">
                         {{ $entry['user']->name }}
                     </flux:link>
@@ -150,62 +152,76 @@ new class extends Component {
         @if($viewReport)
             <div class="space-y-4">
                 <flux:heading size="lg">Discipline Report</flux:heading>
-                <flux:text variant="subtle">Subject: {{ $viewReport->subject->name }}</flux:text>
+
+                <div class="flex items-center gap-3">
+                    <flux:avatar size="sm" :src="$viewReport->subject->avatarUrl()" :initials="$viewReport->subject->initials()" />
+                    <div>
+                        <flux:text class="font-bold text-sm">Subject</flux:text>
+                        <flux:link href="{{ route('profile.show', $viewReport->subject) }}">{{ $viewReport->subject->name }}</flux:link>
+                    </div>
+                </div>
 
                 <div class="grid grid-cols-2 gap-4">
                     @if($viewReport->category)
                         <div>
-                            <flux:text class="font-medium text-sm">Category</flux:text>
+                            <flux:text class="font-bold text-sm">Category</flux:text>
                             <flux:badge color="{{ $viewReport->category->color }}">{{ $viewReport->category->name }}</flux:badge>
                         </div>
                     @endif
                     <div>
-                        <flux:text class="font-medium text-sm">Location</flux:text>
+                        <flux:text class="font-bold text-sm">Location</flux:text>
                         <flux:badge color="{{ $viewReport->location->color() }}">{{ $viewReport->location->label() }}</flux:badge>
                     </div>
                     <div>
-                        <flux:text class="font-medium text-sm">Severity</flux:text>
+                        <flux:text class="font-bold text-sm">Severity</flux:text>
                         <flux:badge color="{{ $viewReport->severity->color() }}">{{ $viewReport->severity->label() }}</flux:badge>
                     </div>
                 </div>
 
                 <div>
-                    <flux:text class="font-medium text-sm">What Happened</flux:text>
+                    <flux:text class="font-bold text-sm">What Happened</flux:text>
                     <flux:text>{{ $viewReport->description }}</flux:text>
                 </div>
 
                 @if($viewReport->witnesses)
                     <div>
-                        <flux:text class="font-medium text-sm">Witnesses</flux:text>
+                        <flux:text class="font-bold text-sm">Witnesses</flux:text>
                         <flux:text>{{ $viewReport->witnesses }}</flux:text>
                     </div>
                 @endif
 
                 <div>
-                    <flux:text class="font-medium text-sm">Actions Taken</flux:text>
+                    <flux:text class="font-bold text-sm">Actions Taken</flux:text>
                     <flux:text>{{ $viewReport->actions_taken }}</flux:text>
                 </div>
 
                 <flux:separator variant="subtle" />
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <flux:text class="font-medium text-sm">Status</flux:text>
+                        <flux:text class="font-bold text-sm">Status</flux:text>
                         <flux:badge color="{{ $viewReport->status->color() }}">{{ $viewReport->status->label() }}</flux:badge>
                     </div>
                     <div>
-                        <flux:text class="font-medium text-sm">Reporter</flux:text>
-                        <flux:text>{{ $viewReport->reporter->name }}</flux:text>
+                        <flux:text class="font-bold text-sm">Reporter</flux:text>
+                        <div class="flex items-center gap-2 mt-1">
+                            <flux:avatar size="xs" :src="$viewReport->reporter->avatarUrl()" :initials="$viewReport->reporter->initials()" />
+                            <flux:link href="{{ route('profile.show', $viewReport->reporter) }}">{{ $viewReport->reporter->name }}</flux:link>
+                        </div>
                     </div>
                 </div>
                 @if($viewReport->publisher)
                     <div>
-                        <flux:text class="font-medium text-sm">Published By</flux:text>
-                        <flux:text>{{ $viewReport->publisher->name }} on {{ $viewReport->published_at->format('M j, Y g:i A') }}</flux:text>
+                        <flux:text class="font-bold text-sm">Published By</flux:text>
+                        <div class="flex items-center gap-2 mt-1">
+                            <flux:avatar size="xs" :src="$viewReport->publisher->avatarUrl()" :initials="$viewReport->publisher->initials()" />
+                            <flux:link href="{{ route('profile.show', $viewReport->publisher) }}">{{ $viewReport->publisher->name }}</flux:link>
+                            <flux:text variant="subtle" class="text-xs">{{ $viewReport->published_at->format('M j, Y g:i A') }}</flux:text>
+                        </div>
                     </div>
                 @endif
 
                 <div>
-                    <flux:text class="font-medium text-sm">Created</flux:text>
+                    <flux:text class="font-bold text-sm">Created</flux:text>
                     <flux:text>{{ $viewReport->created_at->format('M j, Y g:i A') }}</flux:text>
                 </div>
             </div>
