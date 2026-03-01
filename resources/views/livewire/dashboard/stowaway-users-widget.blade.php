@@ -224,6 +224,21 @@ new class extends Component {
                         <dd>{{ $selectedUser->created_at->format('M j, Y g:i A') }}</dd>
                     </div>
 
+                    <div class="flex justify-between gap-4">
+                        <dt class="text-zinc-500 dark:text-zinc-400 font-medium shrink-0">Date of Birth</dt>
+                        <dd>{{ $selectedUser->date_of_birth?->format('M j, Y') ?? 'Not set' }}</dd>
+                    </div>
+
+                    <div class="flex justify-between gap-4">
+                        <dt class="text-zinc-500 dark:text-zinc-400 font-medium shrink-0">Age</dt>
+                        <dd>{{ $selectedUser->age() ?? 'Unknown' }}</dd>
+                    </div>
+
+                    <div class="flex justify-between gap-4">
+                        <dt class="text-zinc-500 dark:text-zinc-400 font-medium shrink-0">Parent Email</dt>
+                        <dd>{{ $selectedUser->parent_email ?? 'None' }}</dd>
+                    </div>
+
                     @if($selectedUser->rules_accepted_at)
                         <div class="flex justify-between gap-4">
                             <dt class="text-zinc-500 dark:text-zinc-400 font-medium shrink-0">Rules Accepted</dt>
