@@ -81,12 +81,12 @@ class MessageFlaggedNotification extends Notification implements ShouldQueue
         return [
             'title' => 'Message Flagged',
             'message' => 'A message has been flagged for review',
-            'url' => route('tickets.show', $this->flag->flag_review_ticket_id),
+            'url' => route('tickets.show', $this->flag->flagReviewTicket),
         ];
     }
 
     public function toDiscord(object $notifiable): string
     {
-        return "**Message Flagged for Review**\n**Flagged by:** {$this->flag->flaggedBy->name}\n**Reason:** {$this->flag->note}\n".route('tickets.show', $this->flag->flag_review_ticket_id);
+        return "**Message Flagged for Review**\n**Flagged by:** {$this->flag->flaggedBy->name}\n**Reason:** {$this->flag->note}\n".route('tickets.show', $this->flag->flagReviewTicket);
     }
 }

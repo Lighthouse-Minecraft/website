@@ -59,10 +59,9 @@ class CreateDisciplineReport
             ->get();
 
         $notificationService = app(TicketNotificationService::class);
-        $notification = new DisciplineReportPendingReviewNotification($report);
 
         foreach ($qmStaff as $staffMember) {
-            $notificationService->send($staffMember, $notification, 'staff_alerts');
+            $notificationService->send($staffMember, new DisciplineReportPendingReviewNotification($report), 'staff_alerts');
         }
     }
 }

@@ -97,7 +97,7 @@ new class extends Component {
 
         return \App\Models\User::query()
             ->with('roles')
-            ->when($this->search, fn ($q) => $q->where(fn ($q) =>
+            ->when(trim($this->search) !== '', fn ($q) => $q->where(fn ($q) =>
                 $q->where('name', 'like', "%{$this->search}%")
                   ->orWhere('email', 'like', "%{$this->search}%")
             ))

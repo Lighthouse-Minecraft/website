@@ -52,12 +52,12 @@ new class extends Component {
         $this->isStaffViewing = $isStaff;
     }
 
-    public function getUser(): User
+    public function getUserProperty(): User
     {
         return User::findOrFail($this->userId);
     }
 
-    public function getReports()
+    public function getReportsProperty()
     {
         $query = DisciplineReport::where('subject_user_id', $this->userId)
             ->with('category')
@@ -68,6 +68,16 @@ new class extends Component {
         }
 
         return $query->get();
+    }
+
+    public function getRiskScoreProperty(): array
+    {
+        return $this->user->disciplineRiskScore();
+    }
+
+    public function getCategoriesProperty()
+    {
+        return ReportCategory::orderBy('name')->get();
     }
 
     public function openCreateModal(): void
@@ -90,7 +100,7 @@ new class extends Component {
             'formCategory' => 'nullable|string',
         ]);
 
-        $subject = $this->getUser();
+        $subject = $this->user;
         $category = $this->formCategory ? ReportCategory::find($this->formCategory) : null;
 
         CreateDisciplineReport::run(
@@ -198,22 +208,15 @@ new class extends Component {
 }; ?>
 
 <div>
-    @php
-        $user = $this->getUser();
-        $reports = $this->getReports();
-        $riskScore = $user->disciplineRiskScore();
-        $categories = ReportCategory::orderBy('name')->get();
-    @endphp
-
     <flux:card class="w-full">
         <div class="flex items-center gap-3">
             <flux:heading size="md">Discipline Reports</flux:heading>
             <flux:spacer />
 
-            @if($riskScore['total'] > 0)
-                <flux:tooltip content="7d: {{ $riskScore['7d'] }} | 30d: {{ $riskScore['30d'] }} | 90d: {{ $riskScore['90d'] }}">
-                    <flux:badge color="{{ \App\Models\User::riskScoreColor($riskScore['total']) }}" size="sm">
-                        Risk: {{ $riskScore['total'] }}
+            @if($this->riskScore['total'] > 0)
+                <flux:tooltip content="7d: {{ $this->riskScore['7d'] }} | 30d: {{ $this->riskScore['30d'] }} | 90d: {{ $this->riskScore['90d'] }}">
+                    <flux:badge color="{{ \App\Models\User::riskScoreColor($this->riskScore['total']) }}" size="sm">
+                        Risk: {{ $this->riskScore['total'] }}
                     </flux:badge>
                 </flux:tooltip>
             @endif
@@ -227,7 +230,7 @@ new class extends Component {
 
         <flux:separator variant="subtle" class="my-2" />
 
-        @if($reports->isEmpty())
+        @if($this->reports->isEmpty())
             <flux:text variant="subtle" class="py-4 text-center">No discipline reports.</flux:text>
         @else
             <flux:table>
@@ -239,7 +242,7 @@ new class extends Component {
                     <flux:table.column></flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>
-                    @foreach($reports as $report)
+                    @foreach($this->reports as $report)
                         <flux:table.row wire:key="report-{{ $report->id }}">
                             <flux:table.cell>
                                 {{ ($report->published_at ?? $report->created_at)->format('M j, Y') }}
@@ -295,12 +298,12 @@ new class extends Component {
     <flux:modal name="create-report-modal" class="w-full md:w-1/2 xl:w-1/3">
         <div class="space-y-6">
             <flux:heading size="lg">Create Discipline Report</flux:heading>
-            <flux:text variant="subtle">Report about: {{ $user->name }}</flux:text>
+            <flux:text variant="subtle">Report about: {{ $this->user->name }}</flux:text>
 
             <flux:field>
                 <flux:label>Category</flux:label>
                 <flux:select wire:model="formCategory" placeholder="Select category...">
-                    @foreach($categories as $cat)
+                    @foreach($this->categories as $cat)
                         <flux:select.option value="{{ $cat->id }}">{{ $cat->name }}</flux:select.option>
                     @endforeach
                 </flux:select>
@@ -358,7 +361,7 @@ new class extends Component {
             <flux:field>
                 <flux:label>Category</flux:label>
                 <flux:select wire:model="formCategory" placeholder="Select category...">
-                    @foreach($categories as $cat)
+                    @foreach($this->categories as $cat)
                         <flux:select.option value="{{ $cat->id }}">{{ $cat->name }}</flux:select.option>
                     @endforeach
                 </flux:select>

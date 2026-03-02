@@ -6,36 +6,20 @@ use App\Models\ReportCategory;
 
 uses()->group('discipline-reports', 'policies');
 
-it('allows admin to manage report categories', function () {
-    $admin = loginAsAdmin();
+it('allows authorized roles to manage report categories', function (Closure $createUser, bool $canManage) {
+    $user = $createUser();
+    if (method_exists($user, 'getAuthIdentifier')) {
+        loginAs($user);
+    }
 
-    expect($admin->can('viewAny', ReportCategory::class))->toBeTrue()
-        ->and($admin->can('create', ReportCategory::class))->toBeTrue();
-});
-
-it('allows command officer to manage report categories', function () {
-    $officer = officerCommand();
-    loginAs($officer);
-
-    expect($officer->can('viewAny', ReportCategory::class))->toBeTrue()
-        ->and($officer->can('create', ReportCategory::class))->toBeTrue();
-});
-
-it('allows officer to manage report categories', function () {
-    $officer = officerQuartermaster();
-    loginAs($officer);
-
-    expect($officer->can('viewAny', ReportCategory::class))->toBeTrue()
-        ->and($officer->can('create', ReportCategory::class))->toBeTrue();
-});
-
-it('prevents crew from managing report categories', function () {
-    $crew = crewQuartermaster();
-    loginAs($crew);
-
-    expect($crew->can('viewAny', ReportCategory::class))->toBeFalse()
-        ->and($crew->can('create', ReportCategory::class))->toBeFalse();
-});
+    expect($user->can('viewAny', ReportCategory::class))->toBe($canManage)
+        ->and($user->can('create', ReportCategory::class))->toBe($canManage);
+})->with([
+    'admin' => [fn () => loginAsAdmin(), true],
+    'command officer' => [fn () => tap(officerCommand(), fn ($u) => loginAs($u)), true],
+    'quartermaster officer' => [fn () => tap(officerQuartermaster(), fn ($u) => loginAs($u)), true],
+    'crew' => [fn () => tap(crewQuartermaster(), fn ($u) => loginAs($u)), false],
+]);
 
 it('prevents deletion of report categories', function () {
     $admin = loginAsAdmin();

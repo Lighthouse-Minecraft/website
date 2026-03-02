@@ -81,7 +81,7 @@ class NewTicketReplyNotification extends Notification implements ShouldQueue
         return [
             'title' => 'New Reply',
             'message' => Str::limit($this->message->body, 100),
-            'url' => route('tickets.show', $this->message->thread_id),
+            'url' => route('tickets.show', $this->message->thread),
         ];
     }
 

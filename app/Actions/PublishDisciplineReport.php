@@ -29,7 +29,7 @@ class PublishDisciplineReport
         $report->subject->clearDisciplineRiskScoreCache();
 
         RecordActivity::run($report->subject, 'discipline_report_published',
-            "Discipline report #{$report->id} published by {$publisher->name}. Severity: {$report->severity->label()}.");
+            "Discipline report #{$report->id} published by {$publisher->name}. Severity: {$report->severity->label()}.", $publisher);
 
         $this->notifySubjectAndParents($report);
 
@@ -46,9 +46,8 @@ class PublishDisciplineReport
             'account'
         );
 
-        $parentNotification = new DisciplineReportPublishedParentNotification($report);
         foreach ($report->subject->parents as $parent) {
-            $notificationService->send($parent, $parentNotification, 'account');
+            $notificationService->send($parent, new DisciplineReportPublishedParentNotification($report), 'account');
         }
     }
 }

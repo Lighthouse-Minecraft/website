@@ -95,6 +95,11 @@ new class extends Component {
             ->find($this->viewingReportId);
     }
 
+    public function getCategoriesProperty()
+    {
+        return ReportCategory::orderBy('name')->get();
+    }
+
     public function publishReport(int $reportId): void
     {
         $report = DisciplineReport::findOrFail($reportId);
@@ -107,8 +112,6 @@ new class extends Component {
 }; ?>
 
 <div>
-    @php $categories = ReportCategory::orderBy('name')->get(); @endphp
-
     <div class="flex gap-4 mb-4">
         <flux:select wire:model.live="filterStatus" placeholder="All Statuses" class="w-40">
             <flux:select.option value="">All Statuses</flux:select.option>
@@ -126,7 +129,7 @@ new class extends Component {
 
         <flux:select wire:model.live="filterCategory" placeholder="All Categories" class="w-48">
             <flux:select.option value="">All Categories</flux:select.option>
-            @foreach($categories as $cat)
+            @foreach($this->categories as $cat)
                 <flux:select.option value="{{ $cat->id }}">{{ $cat->name }}</flux:select.option>
             @endforeach
         </flux:select>
