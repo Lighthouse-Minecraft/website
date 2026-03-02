@@ -4,9 +4,12 @@ use App\Enums\ReportStatus;
 use App\Models\DisciplineReport;
 use App\Models\User;
 use Flux\Flux;
+use Illuminate\Support\Facades\Cache;
+use Livewire\Attributes\Locked;
 use Livewire\Volt\Component;
 
 new class extends Component {
+    #[Locked]
     public ?int $viewingReportId = null;
 
     public function getRecentReportsProperty()
@@ -24,46 +27,61 @@ new class extends Component {
 
     public function getTopRiskUsersProperty()
     {
-        // Get users with published reports in last 90 days, calculate risk in PHP
-        $reportsByUser = DisciplineReport::published()
-            ->where('published_at', '>=', now()->subDays(90))
-            ->with('subject')
-            ->get()
-            ->groupBy('subject_user_id');
+        return Cache::remember('dashboard.top_risk_users', 300, function () {
+            $now = now();
+            $cutoff7 = $now->copy()->subDays(7);
+            $cutoff30 = $now->copy()->subDays(30);
+            $cutoff90 = $now->copy()->subDays(90);
 
-        $riskUsers = [];
-        foreach ($reportsByUser as $userId => $reports) {
-            $score7 = 0;
-            $score30 = 0;
-            $score90 = 0;
+            $reportsByUser = DisciplineReport::published()
+                ->where('published_at', '>=', $cutoff90)
+                ->with('subject')
+                ->get()
+                ->groupBy('subject_user_id');
 
-            foreach ($reports as $report) {
-                $points = $report->severity->points();
-                $score90 += $points;
-                if ($report->published_at >= now()->subDays(30)) {
-                    $score30 += $points;
+            $riskUsers = [];
+            foreach ($reportsByUser as $userId => $reports) {
+                $score7 = 0;
+                $score30 = 0;
+                $score90 = 0;
+
+                foreach ($reports as $report) {
+                    $points = $report->severity->points();
+                    $score90 += $points;
+                    if ($report->published_at >= $cutoff30) {
+                        $score30 += $points;
+                    }
+                    if ($report->published_at >= $cutoff7) {
+                        $score7 += $points;
+                    }
                 }
-                if ($report->published_at >= now()->subDays(7)) {
-                    $score7 += $points;
+
+                $total = $score7 + $score30 + $score90;
+                if ($total > 0) {
+                    $riskUsers[] = [
+                        'user' => $reports->first()->subject,
+                        'total' => $total,
+                        '7d' => $score7,
+                        '30d' => $score30,
+                        '90d' => $score90,
+                    ];
                 }
             }
 
-            $total = $score7 + $score30 + $score90;
-            if ($total > 0) {
-                $riskUsers[] = [
-                    'user' => $reports->first()->subject,
-                    'total' => $total,
-                    '7d' => $score7,
-                    '30d' => $score30,
-                    '90d' => $score90,
-                ];
-            }
+            usort($riskUsers, fn ($a, $b) => $b['total'] <=> $a['total']);
+
+            return array_slice($riskUsers, 0, 5);
+        });
+    }
+
+    public function getViewingReportProperty()
+    {
+        if (! $this->viewingReportId) {
+            return null;
         }
 
-        // Sort by total descending, take top 5
-        usort($riskUsers, fn ($a, $b) => $b['total'] <=> $a['total']);
-
-        return array_slice($riskUsers, 0, 5);
+        return DisciplineReport::with(['subject', 'reporter', 'publisher', 'category'])
+            ->find($this->viewingReportId);
     }
 
     public function viewReport(int $reportId): void
@@ -93,7 +111,7 @@ new class extends Component {
     @else
         <div class="space-y-2">
             @foreach($this->recentReports as $report)
-                <div class="flex items-center gap-2 text-sm">
+                <div wire:key="report-{{ $report->id }}" class="flex items-center gap-2 text-sm">
                     <flux:avatar size="xs" :src="$report->subject->avatarUrl()" :initials="$report->subject->initials()" />
                     <flux:link href="{{ route('profile.show', $report->subject) }}">
                         {{ $report->subject->name }}
@@ -121,7 +139,7 @@ new class extends Component {
         <flux:text class="font-medium text-sm mb-2">Highest Risk</flux:text>
         <div class="space-y-1">
             @foreach($this->topRiskUsers as $entry)
-                <div class="flex items-center gap-2 text-sm">
+                <div wire:key="risk-{{ $entry['user']->id }}" class="flex items-center gap-2 text-sm">
                     <flux:avatar size="xs" :src="$entry['user']->avatarUrl()" :initials="$entry['user']->initials()" />
                     <flux:link href="{{ route('profile.show', $entry['user']) }}">
                         {{ $entry['user']->name }}
@@ -147,8 +165,8 @@ new class extends Component {
 
 {{-- View Report Modal --}}
 <flux:modal name="widget-view-report-modal" class="w-full md:w-1/2 xl:w-1/3">
-    @if($viewingReportId)
-        @php $viewReport = \App\Models\DisciplineReport::with(['subject', 'reporter', 'publisher', 'category'])->find($viewingReportId); @endphp
+    @if($this->viewingReport)
+        @php $viewReport = $this->viewingReport; @endphp
         @if($viewReport)
             <div class="space-y-4">
                 <flux:heading size="lg">Discipline Report</flux:heading>

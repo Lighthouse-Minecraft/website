@@ -11,6 +11,10 @@ class ReportCategoryPolicy
 {
     public function before(User $user, string $ability): ?bool
     {
+        if ($ability === 'delete') {
+            return null;
+        }
+
         if ($user->isAdmin() || ($user->isInDepartment(StaffDepartment::Command) && $user->isAtLeastRank(StaffRank::Officer))) {
             return true;
         }

@@ -37,7 +37,7 @@ class TicketDigestNotification extends Notification implements ShouldQueue
             ->markdown('mail.ticket-digest', [
                 'displayedTickets' => $displayedTickets,
                 'remainingCount' => $remainingCount,
-                'ticketsUrl' => url('/tickets'),
+                'ticketsUrl' => route('tickets.index'),
             ]);
     }
 }

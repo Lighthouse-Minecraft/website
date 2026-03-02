@@ -7,6 +7,7 @@ use App\Models\DisciplineReport;
 use App\Models\ReportCategory;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
+use Livewire\Attributes\Locked;
 use Livewire\Volt\Component;
 use Livewire\WithPagination;
 
@@ -22,6 +23,7 @@ new class extends Component {
     public string $filterSeverity = '';
     public string $filterCategory = '';
 
+    #[Locked]
     public ?int $viewingReportId = null;
 
     public function sort(string $column): void
@@ -76,8 +78,21 @@ new class extends Component {
 
     public function viewReport(int $reportId): void
     {
+        $report = DisciplineReport::findOrFail($reportId);
+        $this->authorize('view', $report);
+
         $this->viewingReportId = $reportId;
         Flux::modal('acp-view-report-modal')->show();
+    }
+
+    public function getViewingReportProperty()
+    {
+        if (! $this->viewingReportId) {
+            return null;
+        }
+
+        return DisciplineReport::with(['subject', 'reporter', 'publisher', 'category'])
+            ->find($this->viewingReportId);
     }
 
     public function publishReport(int $reportId): void
@@ -131,7 +146,7 @@ new class extends Component {
         </flux:table.columns>
         <flux:table.rows>
             @foreach($this->reports as $report)
-                <flux:table.row>
+                <flux:table.row wire:key="report-{{ $report->id }}">
                     <flux:table.cell>
                         <flux:link href="{{ route('profile.show', $report->subject) }}">{{ $report->subject->name }}</flux:link>
                     </flux:table.cell>
@@ -178,8 +193,8 @@ new class extends Component {
 
     {{-- View Report Modal --}}
     <flux:modal name="acp-view-report-modal" class="w-full md:w-1/2 xl:w-1/3">
-        @if($viewingReportId)
-            @php $viewReport = DisciplineReport::with(['subject', 'reporter', 'publisher', 'category'])->find($viewingReportId); @endphp
+        @if($this->viewingReport)
+            @php $viewReport = $this->viewingReport; @endphp
             @if($viewReport)
                 <div class="space-y-4">
                     <flux:heading size="lg">Discipline Report #{{ $viewReport->id }}</flux:heading>

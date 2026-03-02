@@ -38,6 +38,7 @@ new class extends Component {
     public array $childMcExpiresAt = [];
     public array $childMcErrors = [];
 
+    #[Locked]
     public ?int $viewingReportId = null;
 
     public function mount($user = null): void
@@ -299,6 +300,16 @@ new class extends Component {
         }
     }
 
+    public function getViewingDisciplineReportProperty()
+    {
+        if (! $this->viewingReportId) {
+            return null;
+        }
+
+        return \App\Models\DisciplineReport::with('category')
+            ->find($this->viewingReportId);
+    }
+
     public function viewDisciplineReport(int $reportId): void
     {
         $report = \App\Models\DisciplineReport::findOrFail($reportId);
@@ -557,7 +568,7 @@ new class extends Component {
                                 <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-2">Discipline Reports</flux:text>
                                 <div class="space-y-2">
                                     @foreach($child->publishedDisciplineReports as $report)
-                                        <div wire:key="report-{{ $report->id }}" class="flex items-center justify-between cursor-pointer hover:bg-zinc-800 rounded p-2"
+                                        <div wire:key="report-{{ $report->id }}" class="flex items-center justify-between cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded p-2"
                                              wire:click="viewDisciplineReport({{ $report->id }})">
                                             <div class="flex-1 min-w-0 mr-2">
                                                 <div class="flex items-center gap-2">
@@ -631,8 +642,8 @@ new class extends Component {
 
     {{-- View Discipline Report Modal --}}
     <flux:modal name="view-discipline-report-modal" class="w-full md:w-1/2">
-        @if($viewingReportId)
-            @php $viewReport = \App\Models\DisciplineReport::with('category')->find($viewingReportId); @endphp
+        @if($this->viewingDisciplineReport)
+            @php $viewReport = $this->viewingDisciplineReport; @endphp
             @if($viewReport)
                 <div class="space-y-4">
                     <flux:heading size="lg">Discipline Report</flux:heading>

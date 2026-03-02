@@ -11,6 +11,10 @@ class DisciplineReportPolicy
 {
     public function before(User $user, string $ability): ?bool
     {
+        if ($ability === 'delete') {
+            return null;
+        }
+
         if ($user->hasRole('Admin')) {
             return true;
         }

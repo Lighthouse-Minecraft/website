@@ -65,7 +65,7 @@ class TicketAssignedNotification extends Notification implements ShouldQueue
             ->markdown('mail.ticket-assigned', [
                 'thread' => $this->thread,
                 'assignedToName' => $this->thread->assignedTo?->name,
-                'ticketUrl' => url('/tickets/'.$this->thread->id),
+                'ticketUrl' => route('tickets.show', $this->thread),
             ]);
     }
 
@@ -77,12 +77,12 @@ class TicketAssignedNotification extends Notification implements ShouldQueue
         return [
             'title' => 'Ticket Assigned',
             'message' => $this->thread->subject,
-            'url' => url('/tickets/'.$this->thread->id),
+            'url' => route('tickets.show', $this->thread),
         ];
     }
 
     public function toDiscord(object $notifiable): string
     {
-        return "**Ticket Assigned:** {$this->thread->subject}\n**Department:** {$this->thread->department->label()}\n".url('/tickets/'.$this->thread->id);
+        return "**Ticket Assigned:** {$this->thread->subject}\n**Department:** {$this->thread->department->label()}\n".route('tickets.show', $this->thread);
     }
 }

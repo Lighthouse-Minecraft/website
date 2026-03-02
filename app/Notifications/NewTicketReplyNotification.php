@@ -69,7 +69,7 @@ class NewTicketReplyNotification extends Notification implements ShouldQueue
                 'thread' => $thread,
                 'fromName' => $this->message->user->name,
                 'messagePreview' => Str::limit($this->message->body, 100),
-                'ticketUrl' => url('/tickets/'.$thread->id),
+                'ticketUrl' => route('tickets.show', $thread),
             ]);
     }
 
@@ -81,7 +81,7 @@ class NewTicketReplyNotification extends Notification implements ShouldQueue
         return [
             'title' => 'New Reply',
             'message' => Str::limit($this->message->body, 100),
-            'url' => url('/tickets/'.$this->message->thread_id),
+            'url' => route('tickets.show', $this->message->thread_id),
         ];
     }
 
@@ -89,6 +89,6 @@ class NewTicketReplyNotification extends Notification implements ShouldQueue
     {
         $thread = $this->message->thread;
 
-        return "**New Reply:** {$thread->subject}\n**From:** {$this->message->user->name}\n".Str::limit($this->message->body, 200)."\n".url('/tickets/'.$thread->id);
+        return "**New Reply:** {$thread->subject}\n**From:** {$this->message->user->name}\n".Str::limit($this->message->body, 200)."\n".route('tickets.show', $thread);
     }
 }

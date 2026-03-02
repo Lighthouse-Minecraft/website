@@ -15,5 +15,5 @@ You may submit an appeal at any time via the dashboard.
 </x-mail::button>
 @endif
 
-Your Minecraft server and Discord server accesses have been suspended during this period.
+Your Minecraft server and Discord server access has been suspended during this period.
 </x-mail::message>

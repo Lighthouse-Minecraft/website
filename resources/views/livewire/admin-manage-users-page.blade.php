@@ -19,6 +19,7 @@ new class extends Component {
     public $sortDirection = 'asc';
     public $perPage = 15;
     public $filterBrig = '';
+    public $search = '';
     public $editUserId = null;
     public $editUserData = [
         'name' => '',
@@ -74,6 +75,11 @@ new class extends Component {
         $this->resetPage();
     }
 
+    public function updatedSearch()
+    {
+        $this->resetPage();
+    }
+
     /**
      * Get a paginated list of users with their roles, filtered, sorted, and paginated based on the component state.
      *
@@ -91,6 +97,10 @@ new class extends Component {
 
         return \App\Models\User::query()
             ->with('roles')
+            ->when($this->search, fn ($q) => $q->where(fn ($q) =>
+                $q->where('name', 'like', "%{$this->search}%")
+                  ->orWhere('email', 'like', "%{$this->search}%")
+            ))
             ->when($this->filterBrig === 'in_brig', fn ($q) => $q->where('in_brig', true))
             ->when($this->filterBrig === 'not_brig', fn ($q) => $q->where('in_brig', false))
             ->orderBy($sortColumn, $sortDir)
@@ -179,6 +189,7 @@ new class extends Component {
     <div class="flex items-center gap-4">
         <flux:heading size="xl">Manage Users</flux:heading>
         <flux:spacer />
+        <flux:input wire:model.live.debounce.300ms="search" placeholder="Search users..." size="sm" icon="magnifying-glass" class="w-64" />
         <flux:select wire:model.live="filterBrig" size="sm" class="w-48">
             <flux:select.option value="">All Users</flux:select.option>
             <flux:select.option value="in_brig">In the Brig</flux:select.option>

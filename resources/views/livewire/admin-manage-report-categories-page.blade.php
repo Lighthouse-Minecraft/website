@@ -18,7 +18,7 @@ new class extends Component {
     {
         $this->authorize('viewAny', ReportCategory::class);
 
-        return ReportCategory::orderBy('name')->get();
+        return ReportCategory::withCount('disciplineReports')->orderBy('name')->get();
     }
 
     public function createCategory(): void
@@ -88,7 +88,7 @@ new class extends Component {
                         <flux:badge color="{{ $category->color }}" size="sm">{{ $category->name }}</flux:badge>
                     </flux:table.cell>
                     <flux:table.cell>{{ $category->color }}</flux:table.cell>
-                    <flux:table.cell>{{ $category->discipline_reports_count ?? $category->disciplineReports()->count() }}</flux:table.cell>
+                    <flux:table.cell>{{ $category->discipline_reports_count }}</flux:table.cell>
                     <flux:table.cell>
                         @can('update', $category)
                             <flux:modal.trigger wire:click="openEditModal({{ $category->id }})" name="edit-category-modal">

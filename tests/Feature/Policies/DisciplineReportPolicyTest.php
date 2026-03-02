@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use App\Models\DisciplineReport;
 use App\Models\User;
-use App\Policies\DisciplineReportPolicy;
 
 uses()->group('discipline-reports', 'policies');
 
@@ -135,7 +134,5 @@ it('prevents deletion of reports', function () {
     $admin = loginAsAdmin();
     $report = DisciplineReport::factory()->create();
 
-    // Admin before() returns true, so we test the policy method directly
-    $policy = new DisciplineReportPolicy;
-    expect($policy->delete($admin, $report))->toBeFalse();
+    expect($admin->can('delete', $report))->toBeFalse();
 });

@@ -11,6 +11,7 @@ use App\Models\ReportCategory;
 use App\Models\User;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Locked;
 use Livewire\Volt\Component;
 
@@ -33,6 +34,7 @@ new class extends Component {
     public ?int $editingReportId = null;
 
     // Viewing state
+    #[Locked]
     public ?int $viewingReportId = null;
 
     public function mount(User $user): void
@@ -82,9 +84,9 @@ new class extends Component {
 
         $this->validate([
             'formDescription' => 'required|string|min:10',
-            'formLocation' => 'required|string',
+            'formLocation' => ['required', 'string', Rule::enum(ReportLocation::class)],
             'formActionsTaken' => 'required|string|min:5',
-            'formSeverity' => 'required|string',
+            'formSeverity' => ['required', 'string', Rule::enum(ReportSeverity::class)],
             'formCategory' => 'nullable|string',
         ]);
 
@@ -130,9 +132,9 @@ new class extends Component {
 
         $this->validate([
             'formDescription' => 'required|string|min:10',
-            'formLocation' => 'required|string',
+            'formLocation' => ['required', 'string', Rule::enum(ReportLocation::class)],
             'formActionsTaken' => 'required|string|min:5',
-            'formSeverity' => 'required|string',
+            'formSeverity' => ['required', 'string', Rule::enum(ReportSeverity::class)],
             'formCategory' => 'nullable|string',
         ]);
 
@@ -163,6 +165,16 @@ new class extends Component {
         PublishDisciplineReport::run($report, Auth::user());
 
         Flux::toast('Discipline report published.', 'Report Published', variant: 'success');
+    }
+
+    public function getViewingReportProperty()
+    {
+        if (! $this->viewingReportId) {
+            return null;
+        }
+
+        return DisciplineReport::with(['subject', 'reporter', 'publisher', 'category'])
+            ->find($this->viewingReportId);
     }
 
     public function viewReport(int $reportId): void
@@ -228,7 +240,7 @@ new class extends Component {
                 </flux:table.columns>
                 <flux:table.rows>
                     @foreach($reports as $report)
-                        <flux:table.row>
+                        <flux:table.row wire:key="report-{{ $report->id }}">
                             <flux:table.cell>
                                 {{ ($report->published_at ?? $report->created_at)->format('M j, Y') }}
                             </flux:table.cell>
@@ -398,8 +410,8 @@ new class extends Component {
 
     {{-- View Report Modal --}}
     <flux:modal name="view-report-modal" class="w-full md:w-1/2 xl:w-1/3">
-        @if($viewingReportId)
-            @php $viewReport = \App\Models\DisciplineReport::with(['subject', 'reporter', 'publisher', 'category'])->find($viewingReportId); @endphp
+        @if($this->viewingReport)
+            @php $viewReport = $this->viewingReport; @endphp
             @if($viewReport)
                 <div class="space-y-4">
                     <flux:heading size="lg">Discipline Report</flux:heading>

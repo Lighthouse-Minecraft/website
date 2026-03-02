@@ -41,7 +41,5 @@ it('prevents deletion of report categories', function () {
     $admin = loginAsAdmin();
     $category = ReportCategory::factory()->create();
 
-    // Admin before() returns true, so test the policy method directly
-    $policy = new \App\Policies\ReportCategoryPolicy;
-    expect($policy->delete($admin, $category))->toBeFalse();
+    expect($admin->can('delete', $category))->toBeFalse();
 });

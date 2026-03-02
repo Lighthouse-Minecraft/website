@@ -33,7 +33,7 @@ class UpdateDisciplineReport
         ]);
 
         RecordActivity::run($report->subject, 'discipline_report_updated',
-            "Discipline report #{$report->id} updated by {$editor->name}.");
+            "Discipline report #{$report->id} updated by {$editor->name}.", $editor);
 
         return $report->fresh();
     }

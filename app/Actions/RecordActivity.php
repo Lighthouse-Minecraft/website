@@ -13,9 +13,9 @@ class RecordActivity
     // This class will handle the recording of user activities
     // It will use the ActivityLog model to store records in the database
 
-    public static function handle($subject, $action, $description = null)
+    public static function handle($subject, $action, $description = null, ?User $actor = null)
     {
-        $causerId = Auth::check() ? Auth::id() : null;
+        $causerId = $actor?->id ?? (Auth::check() ? Auth::id() : null);
 
         $meta = [
             'ip' => request()->ip(),

@@ -40,6 +40,9 @@ class CreateDisciplineReport
             'status' => ReportStatus::Draft,
         ]);
 
+        RecordActivity::run($subject, 'discipline_report_created',
+            "Discipline report #{$report->id} created by {$reporter->name}. Severity: {$severity->label()}.", $reporter);
+
         // If reporter is not an Officer, notify Quartermaster dept for review
         if (! $reporter->isAtLeastRank(StaffRank::Officer)) {
             $this->notifyQuartermasterDepartment($report);

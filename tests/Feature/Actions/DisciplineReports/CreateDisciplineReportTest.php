@@ -40,7 +40,7 @@ it('creates a draft discipline report', function () {
         ->and($report->publisher_user_id)->toBeNull();
 });
 
-it('does not record activity when draft report is created', function () {
+it('records activity when a discipline report is created', function () {
     $reporter = officerCommand();
     $subject = User::factory()->create();
 
@@ -53,10 +53,11 @@ it('does not record activity when draft report is created', function () {
         ReportSeverity::Moderate,
     );
 
-    $this->assertDatabaseMissing('activity_logs', [
+    $this->assertDatabaseHas('activity_logs', [
         'subject_type' => User::class,
         'subject_id' => $subject->id,
         'action' => 'discipline_report_created',
+        'causer_id' => $reporter->id,
     ]);
 });
 

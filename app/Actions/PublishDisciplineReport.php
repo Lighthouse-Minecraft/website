@@ -16,6 +16,10 @@ class PublishDisciplineReport
 
     public function handle(DisciplineReport $report, User $publisher): DisciplineReport
     {
+        if ($report->status !== ReportStatus::Draft) {
+            return $report;
+        }
+
         $report->update([
             'status' => ReportStatus::Published,
             'publisher_user_id' => $publisher->id,
