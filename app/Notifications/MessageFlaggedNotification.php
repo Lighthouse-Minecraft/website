@@ -65,12 +65,12 @@ class MessageFlaggedNotification extends Notification implements ShouldQueue
 
         return (new MailMessage)
             ->subject('Message Flagged for Review')
-            ->line('A message has been flagged and requires review.')
-            ->line('**Original Ticket:** '.$thread->subject)
-            ->line('**Flagged by:** '.$this->flag->flaggedBy->name)
-            ->line('**Reason:** '.$this->flag->note)
-            ->action('Review Flag', url('/tickets/'.$reviewTicket->id))
-            ->line('Thank you for your service!');
+            ->markdown('mail.message-flagged', [
+                'thread' => $thread,
+                'flaggedByName' => $this->flag->flaggedBy->name,
+                'reason' => $this->flag->note,
+                'reviewUrl' => route('tickets.show', $reviewTicket),
+            ]);
     }
 
     /**
@@ -81,12 +81,12 @@ class MessageFlaggedNotification extends Notification implements ShouldQueue
         return [
             'title' => 'Message Flagged',
             'message' => 'A message has been flagged for review',
-            'url' => url('/tickets/'.$this->flag->flag_review_ticket_id),
+            'url' => route('tickets.show', $this->flag->flagReviewTicket),
         ];
     }
 
     public function toDiscord(object $notifiable): string
     {
-        return "**Message Flagged for Review**\n**Flagged by:** {$this->flag->flaggedBy->name}\n**Reason:** {$this->flag->note}\n".url('/tickets/'.$this->flag->flag_review_ticket_id);
+        return "**Message Flagged for Review**\n**Flagged by:** {$this->flag->flaggedBy->name}\n**Reason:** {$this->flag->note}\n".route('tickets.show', $this->flag->flagReviewTicket);
     }
 }

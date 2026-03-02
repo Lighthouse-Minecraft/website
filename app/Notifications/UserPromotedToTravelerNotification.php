@@ -78,11 +78,10 @@ class UserPromotedToTravelerNotification extends Notification implements ShouldQ
     {
         return (new MailMessage)
             ->subject('Welcome to Traveler Status!')
-            ->line('Congratulations, '.$this->user->name.'!')
-            ->line("You've been promoted to Traveler in the Lighthouse community.")
-            ->line('You can now set up your Minecraft account to join the server. Head to your settings to get started!')
-            ->action('Set Up Minecraft Account', url(route('settings.minecraft-accounts')))
-            ->line("We're glad to have you aboard!");
+            ->markdown('mail.user-promoted-traveler', [
+                'userName' => $this->user->name,
+                'settingsUrl' => route('settings.minecraft-accounts'),
+            ]);
     }
 
     /**

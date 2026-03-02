@@ -77,10 +77,9 @@ class UserReleasedFromBrigNotification extends Notification implements ShouldQue
     {
         return (new MailMessage)
             ->subject('You Have Been Released from the Brig')
-            ->line('Great news! Your Lighthouse account has been released from the Brig.')
-            ->line('Your Minecraft account access has been restored and your server ranks have been re-applied.')
-            ->line('Welcome back — we look forward to seeing you around!')
-            ->action('Go to Dashboard', url('/dashboard'));
+            ->markdown('mail.brig-released', [
+                'dashboardUrl' => route('dashboard'),
+            ]);
     }
 
     /**
@@ -93,12 +92,12 @@ class UserReleasedFromBrigNotification extends Notification implements ShouldQue
         return [
             'title' => 'Released from the Brig!',
             'message' => "You've been released from the Brig. Your Minecraft accounts can access the server again. Welcome back!",
-            'url' => url('/dashboard'),
+            'url' => route('dashboard'),
         ];
     }
 
     public function toDiscord(object $notifiable): string
     {
-        return "**Released from the Brig!**\nYour account has been restored. Your Minecraft and Discord access has been re-enabled. Welcome back!\n".url('/dashboard');
+        return "**Released from the Brig!**\nYour account has been restored. Your Minecraft and Discord access has been re-enabled. Welcome back!\n".route('dashboard');
     }
 }

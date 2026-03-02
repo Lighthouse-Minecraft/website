@@ -81,10 +81,10 @@ class UserPromotedToStowawayNotification extends Notification implements ShouldQ
     {
         return (new MailMessage)
             ->subject('New Stowaway User: '.$this->newStowaway->name)
-            ->line($this->newStowaway->name.' has agreed to the rules and is awaiting Stowaway review.')
-            ->line('Please review their profile and promote or manage their account as appropriate.')
-            ->action('View Profile', url(route('profile.show', $this->newStowaway)))
-            ->line('Thank you for your service!');
+            ->markdown('mail.user-promoted-stowaway', [
+                'newStowawayName' => $this->newStowaway->name,
+                'profileUrl' => route('profile.show', $this->newStowaway),
+            ]);
     }
 
     /**
