@@ -46,14 +46,14 @@ it('toMail has correct subject', function () {
     expect($mail->subject)->toBe('You Have Been Released from the Brig');
 });
 
-it('toMail mentions account restoration', function () {
+it('toMail uses brig-released markdown template', function () {
     $user = User::factory()->create();
     $notification = new UserReleasedFromBrigNotification($user);
 
     $mail = $notification->toMail($user);
 
-    $content = implode(' ', $mail->introLines);
-    expect($content)->toContain('released from the Brig');
+    expect($mail->markdown)->toBe('mail.brig-released')
+        ->and($mail->viewData)->toHaveKey('dashboardUrl');
 });
 
 it('toPushover has correct title', function () {

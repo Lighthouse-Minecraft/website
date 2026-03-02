@@ -60,19 +60,13 @@ class TicketAssignedNotification extends Notification implements ShouldQueue
      */
     public function toMail(object $notifiable): MailMessage
     {
-        $message = (new MailMessage)
+        return (new MailMessage)
             ->subject('Ticket Assigned: '.$this->thread->subject)
-            ->line('A ticket has been assigned to you.')
-            ->line('**Subject:** '.$this->thread->subject)
-            ->line('**Department:** '.$this->thread->department->label());
-
-        if ($this->thread->assignedTo) {
-            $message->line('**Assigned to:** '.$this->thread->assignedTo->name);
-        }
-
-        return $message
-            ->action('View Ticket', url('/tickets/'.$this->thread->id))
-            ->line('Thank you for your service!');
+            ->markdown('mail.ticket-assigned', [
+                'thread' => $this->thread,
+                'assignedToName' => $this->thread->assignedTo?->name,
+                'ticketUrl' => url('/tickets/'.$this->thread->id),
+            ]);
     }
 
     /**

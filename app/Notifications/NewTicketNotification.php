@@ -62,12 +62,10 @@ class NewTicketNotification extends Notification implements ShouldQueue
     {
         return (new MailMessage)
             ->subject('New Ticket: '.$this->thread->subject)
-            ->line('A new ticket has been created in your department.')
-            ->line('**Subject:** '.$this->thread->subject)
-            ->line('**Department:** '.$this->thread->department->label())
-            ->line('**From:** '.$this->thread->createdBy->name)
-            ->action('View Ticket', url('/tickets/'.$this->thread->id))
-            ->line('Thank you for your service!');
+            ->markdown('mail.new-ticket', [
+                'thread' => $this->thread,
+                'ticketUrl' => url('/tickets/'.$this->thread->id),
+            ]);
     }
 
     /**

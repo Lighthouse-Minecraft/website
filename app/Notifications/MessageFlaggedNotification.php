@@ -65,12 +65,12 @@ class MessageFlaggedNotification extends Notification implements ShouldQueue
 
         return (new MailMessage)
             ->subject('Message Flagged for Review')
-            ->line('A message has been flagged and requires review.')
-            ->line('**Original Ticket:** '.$thread->subject)
-            ->line('**Flagged by:** '.$this->flag->flaggedBy->name)
-            ->line('**Reason:** '.$this->flag->note)
-            ->action('Review Flag', url('/tickets/'.$reviewTicket->id))
-            ->line('Thank you for your service!');
+            ->markdown('mail.message-flagged', [
+                'thread' => $thread,
+                'flaggedByName' => $this->flag->flaggedBy->name,
+                'reason' => $this->flag->note,
+                'reviewUrl' => url('/tickets/'.$reviewTicket->id),
+            ]);
     }
 
     /**

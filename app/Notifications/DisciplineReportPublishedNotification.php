@@ -44,11 +44,10 @@ class DisciplineReportPublishedNotification extends Notification implements Shou
     {
         return (new MailMessage)
             ->subject('Discipline Report Filed')
-            ->line('A discipline report has been filed.')
-            ->line("**Severity:** {$this->report->severity->label()}")
-            ->line("**Location:** {$this->report->location->label()}")
-            ->line("**Description:** {$this->report->description}")
-            ->action('View Profile', route('profile.show', $this->report->subject));
+            ->markdown('mail.discipline-report-published', [
+                'report' => $this->report,
+                'profileUrl' => route('profile.show', $this->report->subject),
+            ]);
     }
 
     public function toPushover(object $notifiable): array

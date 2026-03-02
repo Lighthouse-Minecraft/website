@@ -83,22 +83,13 @@ class UserPutInBrigNotification extends Notification implements ShouldQueue
      */
     public function toMail(object $notifiable): MailMessage
     {
-        $mail = (new MailMessage)
+        return (new MailMessage)
             ->subject('You Have Been Placed in the Brig')
-            ->line('Your Lighthouse account has been placed in the Brig by a staff member.')
-            ->line('**Reason:** '.$this->reason);
-
-        if ($this->expiresAt) {
-            $mail->line('**Appeal available after:** '.$this->expiresAt->format('F j, Y \a\t g:i A T'));
-            $mail->line('You will receive a notification when your appeal window opens.');
-        } else {
-            $mail->line('You may submit an appeal at any time via your dashboard.');
-            $mail->action('Go to Dashboard', route('dashboard'));
-        }
-
-        $mail->line('Your Minecraft server access has been suspended during this period.');
-
-        return $mail;
+            ->markdown('mail.brig-placed', [
+                'reason' => $this->reason,
+                'expiresAt' => $this->expiresAt,
+                'dashboardUrl' => route('dashboard'),
+            ]);
     }
 
     /**

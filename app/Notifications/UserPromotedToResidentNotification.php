@@ -79,9 +79,7 @@ class UserPromotedToResidentNotification extends Notification implements ShouldQ
     {
         return (new MailMessage)
             ->subject('Welcome, Resident '.$this->user->name.'!')
-            ->line('Thank you for being a great new member of the Lighthouse community!')
-            ->line("You've been promoted to Resident — a full server member. We're so glad you're here and look forward to growing alongside you.")
-            ->line('Keep being awesome!');
+            ->markdown('mail.user-promoted-resident');
     }
 
     /**

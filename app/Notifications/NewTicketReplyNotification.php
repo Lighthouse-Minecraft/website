@@ -65,12 +65,12 @@ class NewTicketReplyNotification extends Notification implements ShouldQueue
 
         return (new MailMessage)
             ->subject('New Reply: '.$thread->subject)
-            ->line('There is a new reply on a ticket you\'re following.')
-            ->line('**Subject:** '.$thread->subject)
-            ->line('**From:** '.$this->message->user->name)
-            ->line('**Message:** '.Str::limit($this->message->body, 100))
-            ->action('View Ticket', url('/tickets/'.$thread->id))
-            ->line('Thank you for your service!');
+            ->markdown('mail.new-ticket-reply', [
+                'thread' => $thread,
+                'fromName' => $this->message->user->name,
+                'messagePreview' => Str::limit($this->message->body, 100),
+                'ticketUrl' => url('/tickets/'.$thread->id),
+            ]);
     }
 
     /**

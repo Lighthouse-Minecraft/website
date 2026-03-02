@@ -54,9 +54,9 @@ class AccountUnlockedNotification extends Notification implements ShouldQueue
     {
         return (new MailMessage)
             ->subject('Your Lighthouse Account Has Been Unlocked!')
-            ->line('Great news! Your Lighthouse Minecraft account has been unlocked.')
-            ->line('You can now log in and access the community.')
-            ->action('Go to Dashboard', route('dashboard'));
+            ->markdown('mail.account-unlocked', [
+                'dashboardUrl' => route('dashboard'),
+            ]);
     }
 
     public function toPushover(object $notifiable): array

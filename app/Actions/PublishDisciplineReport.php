@@ -6,6 +6,7 @@ use App\Enums\ReportStatus;
 use App\Models\DisciplineReport;
 use App\Models\User;
 use App\Notifications\DisciplineReportPublishedNotification;
+use App\Notifications\DisciplineReportPublishedParentNotification;
 use App\Services\TicketNotificationService;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -34,12 +35,16 @@ class PublishDisciplineReport
     private function notifySubjectAndParents(DisciplineReport $report): void
     {
         $notificationService = app(TicketNotificationService::class);
-        $notification = new DisciplineReportPublishedNotification($report);
 
-        $notificationService->send($report->subject, $notification, 'account');
+        $notificationService->send(
+            $report->subject,
+            new DisciplineReportPublishedNotification($report),
+            'account'
+        );
 
+        $parentNotification = new DisciplineReportPublishedParentNotification($report);
         foreach ($report->subject->parents as $parent) {
-            $notificationService->send($parent, $notification, 'account');
+            $notificationService->send($parent, $parentNotification, 'account');
         }
     }
 }

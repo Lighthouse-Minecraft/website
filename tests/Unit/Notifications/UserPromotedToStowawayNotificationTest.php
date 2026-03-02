@@ -46,14 +46,14 @@ it('toMail subject includes stowaway username', function () {
     expect($mail->subject)->toContain('TestPlayer');
 });
 
-it('toMail body references the new stowaway', function () {
+it('toMail passes stowaway name to template', function () {
     $user = User::factory()->create(['name' => 'JohnDoe']);
     $notification = new UserPromotedToStowawayNotification($user);
 
     $mail = $notification->toMail($user);
 
-    $content = implode(' ', $mail->introLines);
-    expect($content)->toContain('JohnDoe');
+    expect($mail->markdown)->toBe('mail.user-promoted-stowaway')
+        ->and($mail->viewData['newStowawayName'])->toBe('JohnDoe');
 });
 
 it('toPushover title includes stowaway username', function () {

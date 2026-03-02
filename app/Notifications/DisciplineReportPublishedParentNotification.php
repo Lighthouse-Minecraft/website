@@ -9,7 +9,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class DisciplineReportPendingReviewNotification extends Notification implements ShouldQueue
+class DisciplineReportPublishedParentNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
@@ -43,19 +43,20 @@ class DisciplineReportPendingReviewNotification extends Notification implements 
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Discipline Report Pending Review')
-            ->markdown('mail.discipline-report-pending-review', [
+            ->subject('Discipline Report Filed for Your Child')
+            ->markdown('mail.discipline-report-published-parent', [
                 'report' => $this->report,
-                'profileUrl' => route('profile.show', $this->report->subject),
+                'childName' => $this->report->subject->name,
+                'portalUrl' => route('parent-portal.index'),
             ]);
     }
 
     public function toPushover(object $notifiable): array
     {
         return [
-            'title' => 'Discipline Report Needs Review',
-            'message' => "New {$this->report->severity->label()} report about {$this->report->subject->name} by {$this->report->reporter->name}.",
-            'url' => route('profile.show', $this->report->subject),
+            'title' => 'Discipline Report Filed',
+            'message' => "A {$this->report->severity->label()} discipline report has been filed regarding your child {$this->report->subject->name}.",
+            'url' => route('parent-portal.index'),
         ];
     }
 }

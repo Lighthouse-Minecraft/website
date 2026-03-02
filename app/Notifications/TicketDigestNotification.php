@@ -29,28 +29,15 @@ class TicketDigestNotification extends Notification implements ShouldQueue
      */
     public function toMail(object $notifiable): MailMessage
     {
-        $message = (new MailMessage)
+        $displayedTickets = array_slice($this->tickets, 0, 10);
+        $remainingCount = max(0, count($this->tickets) - 10);
+
+        return (new MailMessage)
             ->subject('Ticket Digest - '.now()->format('M j, Y'))
-            ->line('Here\'s a summary of ticket activity:');
-
-        $displayedCount = 0;
-        foreach ($this->tickets as $ticket) {
-            if ($displayedCount >= 10) {
-                break;
-            }
-            $message->line('• **'.$ticket['subject'].'** ('.$ticket['count'].' '
-                .($ticket['count'] === 1 ? 'update' : 'updates').')');
-            $displayedCount++;
-        }
-
-        $remaining = count($this->tickets) - $displayedCount;
-        if ($remaining > 0) {
-            $message->line('...and '.$remaining.' more '
-                .($remaining === 1 ? 'ticket' : 'tickets'));
-        }
-
-        return $message
-            ->action('View All Tickets', url('/tickets'))
-            ->line('Thank you for your service!');
+            ->markdown('mail.ticket-digest', [
+                'displayedTickets' => $displayedTickets,
+                'remainingCount' => $remainingCount,
+                'ticketsUrl' => url('/tickets'),
+            ]);
     }
 }

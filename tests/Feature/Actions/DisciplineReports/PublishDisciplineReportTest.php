@@ -7,6 +7,7 @@ use App\Enums\ReportStatus;
 use App\Models\DisciplineReport;
 use App\Models\User;
 use App\Notifications\DisciplineReportPublishedNotification;
+use App\Notifications\DisciplineReportPublishedParentNotification;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Notification;
 
@@ -58,7 +59,7 @@ it('notifies subject user when report is published', function () {
     Notification::assertSentTo($subject, DisciplineReportPublishedNotification::class);
 });
 
-it('notifies parent accounts when report is published', function () {
+it('sends parent-specific notification to parent accounts', function () {
     Notification::fake();
 
     $publisher = officerCommand();
@@ -70,7 +71,8 @@ it('notifies parent accounts when report is published', function () {
 
     PublishDisciplineReport::run($report, $publisher);
 
-    Notification::assertSentTo($parent, DisciplineReportPublishedNotification::class);
+    Notification::assertSentTo($parent, DisciplineReportPublishedParentNotification::class);
+    Notification::assertNotSentTo($parent, DisciplineReportPublishedNotification::class);
 });
 
 it('clears the subject risk score cache when report is published', function () {

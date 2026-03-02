@@ -44,7 +44,7 @@ it('formats email subject with current date', function () {
     expect($mail->subject)->toBe('Ticket Digest - '.now()->format('M j, Y'));
 });
 
-it('formats email body with ticket bullets', function () {
+it('uses ticket-digest markdown template with correct data', function () {
     $tickets = [
         ['subject' => 'Server Down', 'count' => 3],
         ['subject' => 'Permission Issue', 'count' => 1],
@@ -53,25 +53,13 @@ it('formats email body with ticket bullets', function () {
     $notification = new TicketDigestNotification($tickets);
     $mail = $notification->toMail(new stdClass);
 
-    expect($mail->introLines)->toContain('Here\'s a summary of ticket activity:')
-        ->and($mail->introLines)->toContain('• **Server Down** (3 updates)')
-        ->and($mail->introLines)->toContain('• **Permission Issue** (1 update)');
+    expect($mail->markdown)->toBe('mail.ticket-digest')
+        ->and($mail->viewData['displayedTickets'])->toHaveCount(2)
+        ->and($mail->viewData['displayedTickets'][0]['subject'])->toBe('Server Down')
+        ->and($mail->viewData['remainingCount'])->toBe(0);
 });
 
-it('uses correct singular/plural for update count', function () {
-    $tickets = [
-        ['subject' => 'One Update', 'count' => 1],
-        ['subject' => 'Many Updates', 'count' => 5],
-    ];
-
-    $notification = new TicketDigestNotification($tickets);
-    $mail = $notification->toMail(new stdClass);
-
-    expect($mail->introLines)->toContain('• **One Update** (1 update)')
-        ->and($mail->introLines)->toContain('• **Many Updates** (5 updates)');
-});
-
-it('truncates to 10 tickets maximum', function () {
+it('truncates to 10 tickets maximum in view data', function () {
     $tickets = [];
     for ($i = 1; $i <= 15; $i++) {
         $tickets[] = ['subject' => "Ticket $i", 'count' => 1];
@@ -80,35 +68,11 @@ it('truncates to 10 tickets maximum', function () {
     $notification = new TicketDigestNotification($tickets);
     $mail = $notification->toMail(new stdClass);
 
-    // Should show tickets 1-10
-    expect($mail->introLines)->toContain('• **Ticket 1** (1 update)')
-        ->and($mail->introLines)->toContain('• **Ticket 10** (1 update)');
-
-    // Should NOT show ticket 11
-    $hasTicket11 = false;
-    foreach ($mail->introLines as $line) {
-        if (str_contains($line, 'Ticket 11')) {
-            $hasTicket11 = true;
-            break;
-        }
-    }
-    expect($hasTicket11)->toBeFalse();
+    expect($mail->viewData['displayedTickets'])->toHaveCount(10)
+        ->and($mail->viewData['remainingCount'])->toBe(5);
 });
 
-it('shows "and N more" message when more than 10 tickets', function () {
-    $tickets = [];
-    for ($i = 1; $i <= 15; $i++) {
-        $tickets[] = ['subject' => "Ticket $i", 'count' => 1];
-    }
-
-    $notification = new TicketDigestNotification($tickets);
-    $mail = $notification->toMail(new stdClass);
-
-    expect($mail->introLines)->toContain('...and 5 more tickets');
-});
-
-it('uses correct singular/plural for remaining ticket count', function () {
-    // Test with exactly 11 tickets (1 remaining)
+it('calculates remaining count correctly for 11 tickets', function () {
     $tickets = [];
     for ($i = 1; $i <= 11; $i++) {
         $tickets[] = ['subject' => "Ticket $i", 'count' => 1];
@@ -117,21 +81,10 @@ it('uses correct singular/plural for remaining ticket count', function () {
     $notification = new TicketDigestNotification($tickets);
     $mail = $notification->toMail(new stdClass);
 
-    expect($mail->introLines)->toContain('...and 1 more ticket');
-
-    // Test with 12 tickets (2 remaining)
-    $tickets = [];
-    for ($i = 1; $i <= 12; $i++) {
-        $tickets[] = ['subject' => "Ticket $i", 'count' => 1];
-    }
-
-    $notification = new TicketDigestNotification($tickets);
-    $mail = $notification->toMail(new stdClass);
-
-    expect($mail->introLines)->toContain('...and 2 more tickets');
+    expect($mail->viewData['remainingCount'])->toBe(1);
 });
 
-it('does not show "and N more" when 10 or fewer tickets', function () {
+it('has zero remaining when 10 or fewer tickets', function () {
     $tickets = [];
     for ($i = 1; $i <= 10; $i++) {
         $tickets[] = ['subject' => "Ticket $i", 'count' => 1];
@@ -140,12 +93,5 @@ it('does not show "and N more" when 10 or fewer tickets', function () {
     $notification = new TicketDigestNotification($tickets);
     $mail = $notification->toMail(new stdClass);
 
-    $hasMoreMessage = false;
-    foreach ($mail->introLines as $line) {
-        if (str_contains($line, '...and') && str_contains($line, 'more ticket')) {
-            $hasMoreMessage = true;
-            break;
-        }
-    }
-    expect($hasMoreMessage)->toBeFalse();
+    expect($mail->viewData['remainingCount'])->toBe(0);
 });
