@@ -1,15 +1,15 @@
 <x-mail::message>
-A message has been flagged and requires review.
+    A message has been flagged and requires review.
 
-**Original Ticket:** {{ $thread->subject }}
+    **Original Ticket:** {{ $thread->subject }}
 
-**Flagged by:** {{ $flaggedByName }}
+    **Flagged by:** {{ $flaggedByName }}
 
-**Reason:** {{ $reason }}
+    **Reason:** {{ $reason }}
 
-<x-mail::button :url="$reviewUrl">
-Review Flag
-</x-mail::button>
+    <x-mail::button :url="$reviewUrl">
+        Review Flag
+    </x-mail::button>
 
-Thank you for your service!
+    Thank you for your service!
 </x-mail::message>

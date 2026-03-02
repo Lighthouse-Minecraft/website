@@ -1,17 +1,19 @@
 <x-mail::message>
-@if($requiresApproval)
-{{ $childName }} has requested an account on Lighthouse Minecraft, a Christian Minecraft community for youth.
+    @if($requiresApproval)
+        {{ $childName }} has requested an account on Lighthouse MC, a Christian Minecraft community for youth.
 
-Your approval is required before they can access the community. Because they are under 13, their account is currently on hold.
+        We strive to have a safe and positive environment for all our members, especially our younger players. As part of our commitment to safety, we require parental approval for accounts created by users under the age of 13.
 
-Create your own account to review and manage their permissions through the Parent Portal.
-@else
-{{ $childName }} has created an account on Lighthouse Minecraft, a Christian Minecraft community for youth.
+        As a parent you will have access to the Parent Portal where you can manage your child's permissions, view their linked Minecraft and Discord accounts, and monitor their activity. Please review the information and create your own account to approve or deny this request.
+    @else
+        {{ $childName }} has created an account on Lighthouse MC, a Christian Minecraft community for youth.
 
-As their parent or guardian, you can create your own account to manage their permissions, view their linked accounts, and monitor their activity through the Parent Portal.
-@endif
+        As their parent or guardian, you can create your own account to manage their permissions, view their linked Minecraft and Discord accounts, and monitor their activity through the Parent Portal.
+    @endif
 
-<x-mail::button :url="$registerUrl">
-Create Your Account
-</x-mail::button>
+    At any time you may contact the staff team if you have questions or concerns about your child's account or our community guidelines.
+
+    <x-mail::button :url="$registerUrl">
+        Create Your Account
+    </x-mail::button>
 </x-mail::message>

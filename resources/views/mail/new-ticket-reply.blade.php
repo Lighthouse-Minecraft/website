@@ -1,15 +1,15 @@
 <x-mail::message>
-There is a new reply on a ticket you're following.
+    There is a new reply on a ticket you're following.
 
-**Subject:** {{ $thread->subject }}
+    **Subject:** {{ $thread->subject }}
 
-**From:** {{ $fromName }}
+    **From:** {{ $fromName }}
 
-**Message:** {{ $messagePreview }}
+    **Message:** {{ $messagePreview }}
 
-<x-mail::button :url="$ticketUrl">
-View Ticket
-</x-mail::button>
+    <x-mail::button :url="$ticketUrl">
+        View Ticket
+    </x-mail::button>
 
-Thank you for your service!
+    Thank you for your service!
 </x-mail::message>
