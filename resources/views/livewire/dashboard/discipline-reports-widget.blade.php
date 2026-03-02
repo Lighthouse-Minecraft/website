@@ -167,8 +167,7 @@ new class extends Component {
 <flux:modal name="widget-view-report-modal" class="w-full md:w-1/2 xl:w-1/3">
     @if($this->viewingReport)
         @php $viewReport = $this->viewingReport; @endphp
-        @if($viewReport)
-            <div class="space-y-4">
+        <div class="space-y-4">
                 <flux:heading size="lg">Discipline Report</flux:heading>
 
                 <div class="flex items-center gap-3">
@@ -242,8 +241,7 @@ new class extends Component {
                     <flux:text class="font-bold text-sm">Created</flux:text>
                     <flux:text>{{ $viewReport->created_at->format('M j, Y g:i A') }}</flux:text>
                 </div>
-            </div>
-        @endif
+        </div>
     @endif
 </flux:modal>
 </div>

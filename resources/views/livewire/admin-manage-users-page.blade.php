@@ -75,7 +75,7 @@ new class extends Component {
         $this->resetPage();
     }
 
-    public function updatedSearch()
+    public function updatedSearch(): void
     {
         $this->resetPage();
     }
@@ -97,10 +97,13 @@ new class extends Component {
 
         return \App\Models\User::query()
             ->with('roles')
-            ->when(trim($this->search) !== '', fn ($q) => $q->where(fn ($q) =>
-                $q->where('name', 'like', "%{$this->search}%")
-                  ->orWhere('email', 'like', "%{$this->search}%")
-            ))
+            ->when(trim($this->search) !== '', function ($q) {
+                $term = trim($this->search);
+                $q->where(fn ($q) =>
+                    $q->where('name', 'like', "%{$term}%")
+                      ->orWhere('email', 'like', "%{$term}%")
+                );
+            })
             ->when($this->filterBrig === 'in_brig', fn ($q) => $q->where('in_brig', true))
             ->when($this->filterBrig === 'not_brig', fn ($q) => $q->where('in_brig', false))
             ->orderBy($sortColumn, $sortDir)

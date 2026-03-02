@@ -644,8 +644,7 @@ new class extends Component {
     <flux:modal name="view-discipline-report-modal" class="w-full md:w-1/2">
         @if($this->viewingDisciplineReport)
             @php $viewReport = $this->viewingDisciplineReport; @endphp
-            @if($viewReport)
-                <div class="space-y-4">
+            <div class="space-y-4">
                     <flux:heading size="lg">Discipline Report</flux:heading>
 
                     <div class="grid grid-cols-2 gap-4">
@@ -686,8 +685,7 @@ new class extends Component {
                         <flux:text class="font-medium text-sm">Date</flux:text>
                         <flux:text>{{ $viewReport->published_at->format('M j, Y g:i A') }}</flux:text>
                     </div>
-                </div>
-            @endif
+            </div>
         @endif
     </flux:modal>
 

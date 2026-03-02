@@ -8,9 +8,6 @@ uses()->group('discipline-reports', 'policies');
 
 it('allows authorized roles to manage report categories', function (Closure $createUser, bool $canManage) {
     $user = $createUser();
-    if (method_exists($user, 'getAuthIdentifier')) {
-        loginAs($user);
-    }
 
     expect($user->can('viewAny', ReportCategory::class))->toBe($canManage)
         ->and($user->can('create', ReportCategory::class))->toBe($canManage);
