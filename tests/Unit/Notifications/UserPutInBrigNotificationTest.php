@@ -37,34 +37,33 @@ it('is queued for background processing', function () {
     expect($notification)->toBeInstanceOf(\Illuminate\Contracts\Queue\ShouldQueue::class);
 });
 
-it('toMail contains brig reason', function () {
+it('toMail uses brig-placed markdown template', function () {
     $user = User::factory()->create();
     $notification = new UserPutInBrigNotification($user, 'Griefing the spawn');
 
     $mail = $notification->toMail($user);
 
-    expect(implode(' ', $mail->introLines))->toContain('Griefing the spawn');
+    expect($mail->markdown)->toBe('mail.brig-placed')
+        ->and($mail->viewData['reason'])->toBe('Griefing the spawn');
 });
 
-it('toMail includes appeal-now message when no expiry set', function () {
+it('toMail passes null expiresAt when no expiry set', function () {
     $user = User::factory()->create();
     $notification = new UserPutInBrigNotification($user, 'Bad behavior', null);
 
     $mail = $notification->toMail($user);
 
-    $content = implode(' ', $mail->introLines);
-    expect($content)->toContain('appeal at any time');
+    expect($mail->viewData['expiresAt'])->toBeNull();
 });
 
-it('toMail includes expiry date when expiresAt is set', function () {
+it('toMail passes expiresAt when set', function () {
     $user = User::factory()->create();
     $expiresAt = now()->addDays(7);
     $notification = new UserPutInBrigNotification($user, 'Bad behavior', $expiresAt);
 
     $mail = $notification->toMail($user);
 
-    $content = implode(' ', $mail->introLines);
-    expect($content)->toContain('Appeal available after');
+    expect($mail->viewData['expiresAt'])->toBe($expiresAt);
 });
 
 it('toPushover includes reason in message', function () {

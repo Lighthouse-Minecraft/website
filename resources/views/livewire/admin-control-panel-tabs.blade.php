@@ -66,6 +66,7 @@ new class extends Component {
         return $user && (
             $user->can('view-mc-command-log')
             || $user->can('view-activity-log')
+            || $user->can('view-discipline-report-log')
         );
     }
 
@@ -75,6 +76,7 @@ new class extends Component {
 
         return $user && (
             $user->can('viewAny', \App\Models\Role::class)
+            || $user->can('viewAny', \App\Models\ReportCategory::class)
             || $user->can('viewAny', \App\Models\PrayerCountry::class)
         );
     }
@@ -99,10 +101,12 @@ new class extends Component {
             'logs' => match (true) {
                 $user?->can('view-mc-command-log') => 'mc-command-log',
                 $user?->can('view-activity-log') => 'activity-log',
+                $user?->can('view-discipline-report-log') => 'discipline-report-log',
                 default => 'mc-command-log',
             },
             'config' => match (true) {
                 $user?->can('viewAny', \App\Models\Role::class) => 'role-manager',
+                $user?->can('viewAny', \App\Models\ReportCategory::class) => 'report-category-manager',
                 $user?->can('viewAny', \App\Models\PrayerCountry::class) => 'prayer-manager',
                 default => 'role-manager',
             },
@@ -204,6 +208,9 @@ new class extends Component {
                 @can('view-activity-log')
                     <flux:tab name="activity-log">Activity Log</flux:tab>
                 @endcan
+                @can('view-discipline-report-log')
+                    <flux:tab name="discipline-report-log">Reports Log</flux:tab>
+                @endcan
             </flux:tabs>
 
             <flux:tab.panel name="mc-command-log">
@@ -216,6 +223,11 @@ new class extends Component {
                     <livewire:admin-manage-activity-log-page />
                 @endcan
             </flux:tab.panel>
+            <flux:tab.panel name="discipline-report-log">
+                @can('view-discipline-report-log')
+                    <livewire:admin-manage-discipline-reports-page />
+                @endcan
+            </flux:tab.panel>
         </flux:tab.group>
     @endif
 
@@ -226,6 +238,9 @@ new class extends Component {
                 @can('viewAny', \App\Models\Role::class)
                     <flux:tab name="role-manager">Roles</flux:tab>
                 @endcan
+                @can('viewAny', \App\Models\ReportCategory::class)
+                    <flux:tab name="report-category-manager">Report Categories</flux:tab>
+                @endcan
                 @can('viewAny', \App\Models\PrayerCountry::class)
                     <flux:tab name="prayer-manager">Prayer Nations</flux:tab>
                 @endcan
@@ -234,6 +249,11 @@ new class extends Component {
             <flux:tab.panel name="role-manager">
                 @can('viewAny', \App\Models\Role::class)
                     <livewire:admin-manage-roles-page />
+                @endcan
+            </flux:tab.panel>
+            <flux:tab.panel name="report-category-manager">
+                @can('viewAny', \App\Models\ReportCategory::class)
+                    <livewire:admin-manage-report-categories-page />
                 @endcan
             </flux:tab.panel>
             <flux:tab.panel name="prayer-manager">

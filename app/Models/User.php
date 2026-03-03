@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\BrigType;
 use App\Enums\EmailDigestFrequency;
 use App\Enums\MembershipLevel;
 use App\Enums\StaffDepartment;
@@ -42,6 +43,12 @@ class User extends Authenticatable // implements MustVerifyEmail
         'brig_expires_at',
         'next_appeal_available_at',
         'brig_timer_notified',
+        'date_of_birth',
+        'parent_email',
+        'brig_type',
+        'parent_allows_site',
+        'parent_allows_minecraft',
+        'parent_allows_discord',
     ];
 
     /**
@@ -80,6 +87,11 @@ class User extends Authenticatable // implements MustVerifyEmail
             'brig_expires_at' => 'datetime',
             'next_appeal_available_at' => 'datetime',
             'brig_timer_notified' => 'boolean',
+            'date_of_birth' => 'date',
+            'brig_type' => BrigType::class,
+            'parent_allows_site' => 'boolean',
+            'parent_allows_minecraft' => 'boolean',
+            'parent_allows_discord' => 'boolean',
         ];
     }
 
@@ -227,6 +239,48 @@ class User extends Authenticatable // implements MustVerifyEmail
         return "https://www.gravatar.com/avatar/{$hash}?d=mp&s=64";
     }
 
+    public function children(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'parent_child_links', 'parent_user_id', 'child_user_id')
+            ->withTimestamps();
+    }
+
+    public function parents(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'parent_child_links', 'child_user_id', 'parent_user_id')
+            ->withTimestamps();
+    }
+
+    public function isAdult(): bool
+    {
+        return $this->date_of_birth === null || $this->date_of_birth->age >= 18;
+    }
+
+    public function isMinor(): bool
+    {
+        return $this->date_of_birth !== null && $this->date_of_birth->age < 18;
+    }
+
+    public function isUnder13(): bool
+    {
+        return $this->date_of_birth !== null && $this->date_of_birth->age < 13;
+    }
+
+    public function age(): ?int
+    {
+        return $this->date_of_birth?->age;
+    }
+
+    public function hasParents(): bool
+    {
+        return $this->parents()->exists();
+    }
+
+    public function hasChildren(): bool
+    {
+        return $this->children()->exists();
+    }
+
     public function roles(): BelongsToMany
     {
         return $this->belongsToMany(Role::class);
@@ -288,6 +342,66 @@ class User extends Authenticatable // implements MustVerifyEmail
     public function discordAccounts(): HasMany
     {
         return $this->hasMany(DiscordAccount::class);
+    }
+
+    public function disciplineReports(): HasMany
+    {
+        return $this->hasMany(DisciplineReport::class, 'subject_user_id');
+    }
+
+    /**
+     * Calculate discipline risk score over 7/30/90-day windows.
+     * Cached for 24 hours; cache is busted when a report is published for this user.
+     *
+     * @return array{7d: int, 30d: int, 90d: int, total: int}
+     */
+    public function disciplineRiskScore(): array
+    {
+        return \Illuminate\Support\Facades\Cache::remember("user.{$this->id}.discipline_risk_score", now()->addDay(), function () {
+            $reports = $this->disciplineReports()
+                ->published()
+                ->where('published_at', '>=', now()->subDays(90))
+                ->get(['severity', 'published_at']);
+
+            $score7 = 0;
+            $score30 = 0;
+            $score90 = 0;
+
+            foreach ($reports as $report) {
+                $points = $report->severity->points();
+                $score90 += $points;
+
+                if ($report->published_at >= now()->subDays(30)) {
+                    $score30 += $points;
+                }
+                if ($report->published_at >= now()->subDays(7)) {
+                    $score7 += $points;
+                }
+            }
+
+            return [
+                '7d' => $score7,
+                '30d' => $score30,
+                '90d' => $score90,
+                'total' => $score7 + $score30 + $score90,
+            ];
+        });
+    }
+
+    public function clearDisciplineRiskScoreCache(): void
+    {
+        \Illuminate\Support\Facades\Cache::forget("user.{$this->id}.discipline_risk_score");
+    }
+
+    public static function riskScoreColor(int $total): string
+    {
+        return match (true) {
+            $total >= 51 => 'red',
+            $total >= 26 => 'orange',
+            $total >= 11 => 'yellow',
+            $total >= 1 => 'green',
+            default => 'zinc',
+        };
     }
 
     public function hasDiscordLinked(): bool

@@ -25,7 +25,7 @@ class UserPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->isAdmin() || ($user->isInDepartment(StaffDepartment::Quartermaster) && $user->isAtLeastRank(StaffRank::Officer));
+        return $user->isAtLeastRank(StaffRank::Officer);
     }
 
     /**

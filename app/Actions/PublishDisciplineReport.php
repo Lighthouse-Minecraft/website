@@ -1,0 +1,53 @@
+<?php
+
+namespace App\Actions;
+
+use App\Enums\ReportStatus;
+use App\Models\DisciplineReport;
+use App\Models\User;
+use App\Notifications\DisciplineReportPublishedNotification;
+use App\Notifications\DisciplineReportPublishedParentNotification;
+use App\Services\TicketNotificationService;
+use Lorisleiva\Actions\Concerns\AsAction;
+
+class PublishDisciplineReport
+{
+    use AsAction;
+
+    public function handle(DisciplineReport $report, User $publisher): DisciplineReport
+    {
+        if ($report->status !== ReportStatus::Draft) {
+            return $report;
+        }
+
+        $report->update([
+            'status' => ReportStatus::Published,
+            'publisher_user_id' => $publisher->id,
+            'published_at' => now(),
+        ]);
+
+        $report->subject->clearDisciplineRiskScoreCache();
+
+        RecordActivity::run($report->subject, 'discipline_report_published',
+            "Discipline report #{$report->id} published by {$publisher->name}. Severity: {$report->severity->label()}.", $publisher);
+
+        $this->notifySubjectAndParents($report);
+
+        return $report->fresh();
+    }
+
+    private function notifySubjectAndParents(DisciplineReport $report): void
+    {
+        $notificationService = app(TicketNotificationService::class);
+
+        $notificationService->send(
+            $report->subject,
+            new DisciplineReportPublishedNotification($report),
+            'account'
+        );
+
+        foreach ($report->subject->parents as $parent) {
+            $notificationService->send($parent, new DisciplineReportPublishedParentNotification($report), 'account');
+        }
+    }
+}

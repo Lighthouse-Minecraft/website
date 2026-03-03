@@ -19,10 +19,13 @@ new class extends Component {
     public $sortDirection = 'asc';
     public $perPage = 15;
     public $filterBrig = '';
+    public $search = '';
     public $editUserId = null;
     public $editUserData = [
         'name' => '',
         'email' => '',
+        'date_of_birth' => '',
+        'parent_email' => '',
     ];
     public array $editUserRoles = [];
     public $allRoles;
@@ -35,10 +38,13 @@ new class extends Component {
     public function openEditModal($userId)
     {
         $user = User::findOrFail($userId);
+        $this->authorize('update', $user);
         $this->editUserId = $user->id;
         $this->editUserData = [
             'name' => $user->name,
             'email' => $user->email,
+            'date_of_birth' => $user->date_of_birth?->format('Y-m-d') ?? '',
+            'parent_email' => $user->parent_email ?? '',
         ];
         $this->editUserRoles = $user->roles->pluck('id')->toArray();
     }
@@ -69,6 +75,11 @@ new class extends Component {
         $this->resetPage();
     }
 
+    public function updatedSearch(): void
+    {
+        $this->resetPage();
+    }
+
     /**
      * Get a paginated list of users with their roles, filtered, sorted, and paginated based on the component state.
      *
@@ -86,6 +97,13 @@ new class extends Component {
 
         return \App\Models\User::query()
             ->with('roles')
+            ->when(trim($this->search) !== '', function ($q) {
+                $term = trim($this->search);
+                $q->where(fn ($q) =>
+                    $q->where('name', 'like', "%{$term}%")
+                      ->orWhere('email', 'like', "%{$term}%")
+                );
+            })
             ->when($this->filterBrig === 'in_brig', fn ($q) => $q->where('in_brig', true))
             ->when($this->filterBrig === 'not_brig', fn ($q) => $q->where('in_brig', false))
             ->orderBy($sortColumn, $sortDir)
@@ -124,14 +142,19 @@ new class extends Component {
         Validator::make([
             'name' => $this->editUserData['name'],
             'email' => $this->editUserData['email'],
+            'date_of_birth' => $this->editUserData['date_of_birth'] ?: null,
+            'parent_email' => $this->editUserData['parent_email'] ?: null,
             'editUserRoles' => $this->editUserRoles,
         ], [
             'name' => 'required|string|max:255',
             'email' => 'required|email',
+            'date_of_birth' => 'nullable|date|before:today',
+            'parent_email' => 'nullable|email',
             'editUserRoles.*' => 'exists:roles,id',
         ])->validate();
 
         $user = User::with('roles')->findOrFail($this->editUserId);
+        $this->authorize('update', $user);
 
         // Prevent non-admins from adding/removing the Admin role
         $adminRoleId = \App\Models\Role::where('name', 'Admin')->value('id');
@@ -149,7 +172,13 @@ new class extends Component {
             }
         }
 
-        $user->update($this->editUserData);
+        $updateData = $this->editUserData;
+        $updateData['date_of_birth'] = $updateData['date_of_birth'] ?: null;
+        $updateData['parent_email'] = $updateData['parent_email'] ?: null;
+        // Note: Admin DOB edits are a raw override — age-dependent brig states
+        // (AgeLock, ParentalPending) are not automatically re-evaluated here.
+        // Use the scheduled ProcessAgeTransitions command for automated transitions.
+        $user->update($updateData);
         $user->roles()->sync($this->editUserRoles);
 
         $this->editUserId = null;
@@ -163,6 +192,7 @@ new class extends Component {
     <div class="flex items-center gap-4">
         <flux:heading size="xl">Manage Users</flux:heading>
         <flux:spacer />
+        <flux:input wire:model.live.debounce.300ms="search" placeholder="Search users..." size="sm" icon="magnifying-glass" class="w-64" />
         <flux:select wire:model.live="filterBrig" size="sm" class="w-48">
             <flux:select.option value="">All Users</flux:select.option>
             <flux:select.option value="in_brig">In the Brig</flux:select.option>
@@ -227,6 +257,8 @@ new class extends Component {
                     <div class="space-y-6">
                         <flux:input label="Name" wire:model.defer="editUserData.name" required />
                         <flux:input label="Email" type="email" wire:model.defer="editUserData.email" required />
+                        <flux:input label="Date of Birth" type="date" wire:model.defer="editUserData.date_of_birth" />
+                        <flux:input label="Parent Email" type="email" wire:model.defer="editUserData.parent_email" placeholder="Optional" />
 
                         <flux:checkbox.group wire:model.defer="editUserRoles">
                             @foreach($allRoles as $role)

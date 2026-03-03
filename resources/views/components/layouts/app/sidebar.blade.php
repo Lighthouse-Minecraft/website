@@ -46,6 +46,17 @@
                         </flux:navlist.item>
                     @endauth
 
+                    @can('view-parent-portal')
+                        <flux:navlist.item
+                            icon="user-group"
+                            :href="route('parent-portal.index')"
+                            :current="request()->routeIs('parent-portal.*')"
+                            wire:navigate
+                        >
+                            Parent Portal
+                        </flux:navlist.item>
+                    @endcan
+
                     @can('view-ready-room')
                         <flux:navlist.item
                             icon="building-storefront"

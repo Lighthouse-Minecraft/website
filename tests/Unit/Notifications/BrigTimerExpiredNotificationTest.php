@@ -46,14 +46,14 @@ it('toMail has correct subject', function () {
     expect($mail->subject)->toBe('Your Brig Period Has Ended — You May Now Appeal');
 });
 
-it('toMail mentions appeal can be submitted', function () {
+it('toMail uses brig-timer-expired markdown template', function () {
     $user = User::factory()->create();
     $notification = new BrigTimerExpiredNotification($user);
 
     $mail = $notification->toMail($user);
 
-    $content = implode(' ', $mail->introLines);
-    expect($content)->toContain('appeal');
+    expect($mail->markdown)->toBe('mail.brig-timer-expired')
+        ->and($mail->viewData)->toHaveKey('dashboardUrl');
 });
 
 it('toPushover has correct title', function () {

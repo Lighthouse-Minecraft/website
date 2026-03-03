@@ -37,6 +37,10 @@ class UserFactory extends Factory
             'staff_department' => null,
             'staff_rank' => StaffRank::None,
             'staff_title' => null,
+            'date_of_birth' => now()->subYears(25),
+            'parent_allows_site' => true,
+            'parent_allows_minecraft' => true,
+            'parent_allows_discord' => true,
         ];
     }
 
@@ -81,5 +85,31 @@ class UserFactory extends Factory
             $user->staff_title = $title;
             $user->save();
         });
+    }
+
+    public function withoutDob(): self
+    {
+        return $this->state(fn (array $attributes) => [
+            'date_of_birth' => null,
+        ]);
+    }
+
+    public function minor(int $age = 15): self
+    {
+        return $this->state(fn (array $attributes) => [
+            'date_of_birth' => now()->subYears($age)->subMonth(),
+        ]);
+    }
+
+    public function underThirteen(): self
+    {
+        return $this->minor(12);
+    }
+
+    public function adult(): self
+    {
+        return $this->state(fn (array $attributes) => [
+            'date_of_birth' => now()->subYears(25),
+        ]);
     }
 }

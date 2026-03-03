@@ -32,3 +32,8 @@ Schedule::command('minecraft:refresh-usernames')
 Schedule::command('brig:check-timers')
     ->dailyAt('09:00')
     ->runInBackground();
+
+// Process age-based transitions (13, 19) daily at 2am
+Schedule::command('parent-portal:process-age-transitions')
+    ->dailyAt('02:00')
+    ->runInBackground();

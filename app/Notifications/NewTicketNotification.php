@@ -62,12 +62,10 @@ class NewTicketNotification extends Notification implements ShouldQueue
     {
         return (new MailMessage)
             ->subject('New Ticket: '.$this->thread->subject)
-            ->line('A new ticket has been created in your department.')
-            ->line('**Subject:** '.$this->thread->subject)
-            ->line('**Department:** '.$this->thread->department->label())
-            ->line('**From:** '.$this->thread->createdBy->name)
-            ->action('View Ticket', url('/tickets/'.$this->thread->id))
-            ->line('Thank you for your service!');
+            ->markdown('mail.new-ticket', [
+                'thread' => $this->thread,
+                'ticketUrl' => route('tickets.show', $this->thread),
+            ]);
     }
 
     /**
@@ -78,12 +76,12 @@ class NewTicketNotification extends Notification implements ShouldQueue
         return [
             'title' => 'New Ticket',
             'message' => $this->thread->subject,
-            'url' => url('/tickets/'.$this->thread->id),
+            'url' => route('tickets.show', $this->thread),
         ];
     }
 
     public function toDiscord(object $notifiable): string
     {
-        return "**New Ticket:** {$this->thread->subject}\n**Department:** {$this->thread->department->label()}\n**From:** {$this->thread->createdBy->name}\n".url('/tickets/'.$this->thread->id);
+        return "**New Ticket:** {$this->thread->subject}\n**Department:** {$this->thread->department->label()}\n**From:** {$this->thread->createdBy->name}\n".route('tickets.show', $this->thread);
     }
 }
