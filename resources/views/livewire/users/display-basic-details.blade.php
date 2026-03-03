@@ -2,8 +2,10 @@
 
 use Livewire\Volt\Component;
 use App\Models\MinecraftAccount;
+use App\Models\StaffPosition;
 use App\Models\User;
 use App\Enums\MembershipLevel;
+use App\Enums\StaffRank;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Flux\Flux;
@@ -11,123 +13,45 @@ use Flux\Flux;
 new class extends Component {
     public User $user;
     public ?MinecraftAccount $selectedAccount = null;
-    public $currentDepartment;
-    public $currentDepartmentValue;
-    public $currentTitle;
-    public $currentRank;
-    public $departments;
-    public $ranks;
     public string $brigActionReason = '';
     public ?int $brigActionDays = null;
     public ?int $accountToRevoke = null;
     public ?int $accountToForceDelete = null;
 
-    /**
-     * Initialize component state for the given user.
-     *
-     * Loads the user's Minecraft accounts and populates component properties used by the UI:
-     * the managed User instance, current staff department/title/rank values, and the available
-     * department and rank enum cases.
-     *
-     * @param \App\Models\User $user The user being managed by this component.
-     */
     public function mount(User $user) {
         $this->user = $user;
-        $this->user->load('minecraftAccounts', 'discordAccounts', 'parents', 'children');
-        $this->currentDepartment = $user->staff_department?->name ?? 'None';
-        $this->currentDepartmentValue = $user->staff_department?->value ?? null;
-        $this->currentTitle = $user->staff_title;
-        $this->currentRank = $user->staff_rank?->value;
-        $this->departments = \App\Enums\StaffDepartment::cases();
-        $this->ranks = \App\Enums\StaffRank::cases();
+        $this->user->load('minecraftAccounts', 'discordAccounts', 'parents', 'children', 'staffPosition');
     }
 
-    /**
-     * Update the user's staff position from the component's inputs.
-     *
-     * Validates input, checks authorization, executes the SetUsersStaffPosition action,
-     * shows a success or error toast based on the result, and closes the manage-users-staff-position modal.
-     */
-    public function updateStaffPosition() {
-        if (!Auth::user()->can('updateStaffPosition', $this->user)) {
-            Flux::toast(
-                text: 'You do not have permission to update staff positions.',
-                heading: 'Error',
-                variant: 'danger'
-            );
+    public function assignToPosition(int $positionId): void
+    {
+        $position = StaffPosition::findOrFail($positionId);
+        $this->authorize('assign', $position);
+
+        \App\Actions\AssignStaffPosition::run($position, $this->user);
+
+        $this->user->refresh();
+        $this->user->load('staffPosition');
+        Flux::modal('assign-staff-position')->close();
+        Flux::toast(text: "Assigned to {$position->title}.", heading: 'Assigned', variant: 'success');
+    }
+
+    public function removeFromPosition(): void
+    {
+        $position = $this->user->staffPosition;
+
+        if (! $position) {
+            Flux::toast(text: 'User does not have a staff position.', heading: 'Error', variant: 'danger');
             return;
         }
 
-        $department = $this->currentDepartmentValue
-            ? \App\Enums\StaffDepartment::tryFrom($this->currentDepartmentValue)
-            : null;
+        $this->authorize('assign', $position);
 
-        $rank = $this->currentRank !== null
-            ? \App\Enums\StaffRank::tryFrom((int) $this->currentRank)
-            : null;
+        \App\Actions\UnassignStaffPosition::run($position);
 
-        $this->validate([
-            'currentTitle' => ['required', 'string', 'max:255'],
-            'currentDepartmentValue' => ['required', Rule::enum((\App\Enums\StaffDepartment::class))],
-            'currentRank' => ['required', Rule::enum((\App\Enums\StaffRank::class))],
-        ]);
-
-        $success = \App\Actions\SetUsersStaffPosition::run(
-            $this->user,
-            $this->currentTitle,
-            $department,
-            $rank
-        );
-
-        if ($success) {
-            Flux::toast(
-                text: 'Staff position updated successfully.',
-                heading: 'Success',
-                variant: 'success'
-            );
-        } else {
-            Flux::toast(
-                text: 'Failed to update staff position. Please try again.',
-                heading: 'Error',
-                variant: 'danger'
-            );
-        }
-
-        Flux::modal('manage-users-staff-position')->close();
-    }
-
-    /**
-     * Removes the current user's staff position when the caller is authorized, then provides success or error feedback and closes the Manage Staff Position modal.
-     *
-     * If the caller lacks permission, an error toast is shown and no action is taken.
-     */
-    public function removeStaffPosition() {
-        if (!Auth::user()->can('removeStaffPosition', $this->user)) {
-            Flux::toast(
-                text: 'You do not have permission to remove staff positions.',
-                heading: 'Error',
-                variant: 'danger'
-            );
-            return;
-        }
-
-        $success = \App\Actions\RemoveUsersStaffPosition::run($this->user);
-
-        if ($success) {
-            Flux::toast(
-                text: 'Staff position removed successfully.',
-                heading: 'Success',
-                variant: 'success'
-            );
-        } else {
-            Flux::toast(
-                text: 'Failed to remove staff position. Please try again.',
-                heading: 'Error',
-                variant: 'danger'
-            );
-        }
-
-        Flux::modal('manage-users-staff-position')->close();
+        $this->user->refresh();
+        $this->user->load('staffPosition');
+        Flux::toast(text: 'Staff position removed.', heading: 'Removed', variant: 'success');
     }
 
     /**
@@ -477,7 +401,7 @@ new class extends Component {
                                 <flux:menu.item icon="lock-open" wire:click="openReleaseFromBrigModal">
                                     Release from Brig
                                 </flux:menu.item>
-                            @elseif(! $user->staff_department && $user->id !== Auth::id())
+                            @elseif(! $user->staffPosition && $user->id !== Auth::id())
                                 <flux:menu.item icon="lock-closed" wire:click="openPutInBrigModal">
                                     Put in Brig
                                 </flux:menu.item>
@@ -504,26 +428,39 @@ new class extends Component {
             @endcan
         </flux:card>
 
-        @if($user->staff_department)
+        @if($user->staffPosition)
             <flux:card class="w-full md:w-1/2 lg:w-1/3 mb-6 md:mb-0">
-                <flux:heading size="xl">{{  $user->staff_title }}</flux:heading>
-                <flux:text>Department: {{  $user->staff_department->label() }}</flux:text>
-                <flux:text>Rank: {{  $user->staff_rank->label() }}</flux:text>
+                <flux:heading size="xl">{{ $user->staffPosition->title }}</flux:heading>
+                <flux:text>Department: {{ $user->staffPosition->department->label() }}</flux:text>
+                <flux:text>Rank: {{ $user->staff_rank->label() }}</flux:text>
+                @if($user->staffPosition->description)
+                    <flux:text variant="subtle" class="mt-2">{{ $user->staffPosition->description }}</flux:text>
+                @endif
 
-                @if (Auth::user()->isAdmin())
-                <div class="mt-6 text-center">
-                    <flux:modal.trigger name="manage-users-staff-position">
-                        <flux:button>Manage Staff Position</flux:button>
-                    </flux:modal.trigger>
-                </div>
+                @can('assign', $user->staffPosition)
+                    <div class="mt-4 flex gap-2">
+                        <flux:button wire:click="removeFromPosition" variant="ghost" class="hover:!text-red-600 dark:hover:!text-red-400 hover:!bg-red-50 dark:hover:!bg-red-950">Remove from Staff</flux:button>
+                        <flux:spacer />
+                        <flux:modal.trigger name="assign-staff-position">
+                            <flux:button size="sm">Change Position</flux:button>
+                        </flux:modal.trigger>
+                    </div>
+                @endcan
+
+                @if(Auth::id() === $user->id && $user->isAtLeastRank(StaffRank::CrewMember))
+                    <div class="mt-2">
+                        <flux:link href="{{ route('settings.staff-bio') }}" target="_blank" icon="pencil-square">
+                            Update Staff Bio
+                        </flux:link>
+                    </div>
                 @endif
             </flux:card>
-        @elseif (Auth::user()->isAdmin())
+        @elseif(Auth::user()?->can('viewAny', \App\Models\StaffPosition::class))
             <flux:card class="w-full md:w-1/4 mb-6 md:mb-0">
                 <flux:heading size="xl">Staff Config</flux:heading>
                 <div class="mt-6 text-center">
-                    <flux:modal.trigger name="manage-users-staff-position">
-                        <flux:button>Manage Staff Position</flux:button>
+                    <flux:modal.trigger name="assign-staff-position">
+                        <flux:button>Assign Staff Position</flux:button>
                     </flux:modal.trigger>
                 </div>
             </flux:card>
@@ -755,41 +692,77 @@ new class extends Component {
         </div>
     @endif
 
+    @if($user->staffPosition)
+        <div class="w-full mt-6">
+            <flux:card class="w-full md:w-2/3 lg:w-1/2 p-6 space-y-4">
+                <flux:heading size="lg">Staff Details</flux:heading>
+
+                <div class="flex items-start gap-4">
+                    @if(! $user->isJrCrew() && $user->staffPhotoUrl())
+                        <img src="{{ $user->staffPhotoUrl() }}" alt="{{ $user->name }}" class="w-24 h-24 rounded-lg object-cover flex-shrink-0" />
+                    @elseif($user->avatarUrl())
+                        <img src="{{ $user->avatarUrl() }}" alt="{{ $user->name }}" class="w-16 h-16 rounded-lg flex-shrink-0" />
+                    @endif
+
+                    <div class="space-y-1">
+                        @if(! $user->isJrCrew() && $user->staff_first_name)
+                            <flux:heading size="md">{{ $user->staff_first_name }} {{ $user->staff_last_initial }}.</flux:heading>
+                        @endif
+                        <flux:link href="{{ route('profile.show', $user) }}" wire:navigate class="text-sm text-zinc-500">{{ $user->name }}</flux:link>
+
+                        <div class="flex gap-2 mt-1">
+                            <flux:badge size="sm" color="{{ $user->staff_rank->color() }}">{{ $user->staff_rank->label() }}</flux:badge>
+                            <flux:badge size="sm" color="zinc">{{ $user->staffPosition->department->label() }}</flux:badge>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <flux:heading size="sm">{{ $user->staffPosition->title }}</flux:heading>
+                    @if($user->staffPosition->description)
+                        <flux:text variant="subtle" class="mt-1">{{ $user->staffPosition->description }}</flux:text>
+                    @endif
+                </div>
+
+                @if(! $user->isJrCrew() && $user->staff_bio)
+                    <div>
+                        <flux:heading size="sm" class="mb-1">About</flux:heading>
+                        <flux:text>{{ $user->staff_bio }}</flux:text>
+                    </div>
+                @endif
+            </flux:card>
+        </div>
+    @endif
+
     <x-minecraft.mc-account-detail-modal :account="$selectedAccount" />
 
-    <flux:modal name="manage-users-staff-position" class="w-full md:w-1/2 xl:w-1/3">
+    <flux:modal name="assign-staff-position" class="w-full md:w-1/2 xl:w-1/3">
         <div class="space-y-6">
-            <flux:heading size="lg" class="mb-6">Manage Staff Position</flux:heading>
+            <flux:heading size="lg">Assign Staff Position</flux:heading>
+            <flux:text variant="subtle">Select a vacant position to assign to {{ $user->name }}.</flux:text>
 
-            <flux:input wire:model="currentTitle" label="Title" />
+            @php $availablePositions = \App\Models\StaffPosition::vacant()->ordered()->get(); @endphp
 
-            <flux:radio.group wire:model="currentDepartmentValue" variant="pills" label="Department">
-                @foreach ($departments as $department)
-                    @if ($currentDepartmentValue == $department->name)
-                        <flux:radio value="{{ $department->value }}" :label="$department->label()" checked />
-                    @else
-                        <flux:radio value="{{ $department->value }}" :label="$department->label()" />
-                    @endif
-                @endforeach
-            </flux:radio.group>
+            @if($availablePositions->isEmpty())
+                <flux:text>No vacant positions available. Create one in the ACP first.</flux:text>
+            @else
+                <div class="space-y-2 max-h-64 overflow-y-auto">
+                    @foreach($availablePositions as $pos)
+                        <div wire:key="assign-pos-{{ $pos->id }}" class="flex items-center justify-between p-3 rounded-lg border border-zinc-200 dark:border-zinc-700">
+                            <div>
+                                <span class="font-medium">{{ $pos->title }}</span>
+                                <div class="flex gap-1 mt-1">
+                                    <flux:badge size="sm" color="{{ $pos->rank->color() }}">{{ $pos->rank->label() }}</flux:badge>
+                                    <flux:badge size="sm" color="zinc">{{ $pos->department->label() }}</flux:badge>
+                                </div>
+                            </div>
+                            <flux:button wire:click="assignToPosition({{ $pos->id }})" size="sm" variant="primary">Assign</flux:button>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
 
-            <flux:radio.group wire:model="currentRank" variant="buttons" size="sm" label="Rank">
-                @foreach ($ranks as $rank)
-                    @if ($currentRank == $rank->value)
-                        <flux:radio value="{{  $rank->value }}" :label="$rank->label()" checked />
-                    @else
-                        <flux:radio value="{{  $rank->value }}" :label="$rank->label()" />
-                    @endif
-                @endforeach
-            </flux:radio.group>
-
-            <div class="w-full flex">
-                @if ($user->staff_department)
-                    <flux:button wire:click="removeStaffPosition" variant="ghost" class="hover:!text-red-600 dark:hover:!text-red-400 hover:!bg-red-50 dark:hover:!bg-red-950">Remove Staff Position</flux:button>
-                @endif
-                <flux:spacer />
-                <flux:button wire:click="updateStaffPosition" variant="primary">Save Changes</flux:button>
-            </div>
+            <flux:button variant="ghost" x-on:click="$flux.modal('assign-staff-position').close()">Cancel</flux:button>
         </div>
     </flux:modal>
 

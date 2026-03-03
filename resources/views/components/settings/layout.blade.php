@@ -7,6 +7,9 @@
             <flux:navlist.item href="{{ route('settings.notifications') }}" wire:navigate>Notifications</flux:navlist.item>
             <flux:navlist.item href="{{ route('settings.minecraft-accounts') }}" wire:navigate>Minecraft</flux:navlist.item>
             <flux:navlist.item href="{{ route('settings.discord-account') }}" wire:navigate>Discord</flux:navlist.item>
+            @can('edit-staff-bio')
+                <flux:navlist.item href="{{ route('settings.staff-bio') }}" wire:navigate>Staff Bio</flux:navlist.item>
+            @endcan
         </flux:navlist>
     </div>
 

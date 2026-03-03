@@ -11,6 +11,7 @@ use App\Enums\StaffRank;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
@@ -49,6 +50,10 @@ class User extends Authenticatable // implements MustVerifyEmail
         'parent_allows_site',
         'parent_allows_minecraft',
         'parent_allows_discord',
+        'staff_first_name',
+        'staff_last_initial',
+        'staff_bio',
+        'staff_photo_path',
     ];
 
     /**
@@ -322,6 +327,25 @@ class User extends Authenticatable // implements MustVerifyEmail
     public function isInDepartment(StaffDepartment $department): bool
     {
         return $this->staff_department === $department;
+    }
+
+    public function isJrCrew(): bool
+    {
+        return $this->staff_rank === StaffRank::JrCrew;
+    }
+
+    public function staffPosition(): HasOne
+    {
+        return $this->hasOne(StaffPosition::class);
+    }
+
+    public function staffPhotoUrl(): ?string
+    {
+        if (! $this->staff_photo_path) {
+            return null;
+        }
+
+        return asset('storage/'.$this->staff_photo_path);
     }
 
     public function acknowledgedAnnouncements()

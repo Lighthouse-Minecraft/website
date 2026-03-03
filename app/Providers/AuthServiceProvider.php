@@ -22,6 +22,7 @@ class AuthServiceProvider extends ServiceProvider
         \App\Models\ParentChildLink::class => \App\Policies\ParentChildLinkPolicy::class,
         \App\Models\DisciplineReport::class => \App\Policies\DisciplineReportPolicy::class,
         \App\Models\ReportCategory::class => \App\Policies\ReportCategoryPolicy::class,
+        \App\Models\StaffPosition::class => \App\Policies\StaffPositionPolicy::class,
     ];
 
     /**
@@ -103,6 +104,10 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('view-mc-command-log', $canViewLogs);
         Gate::define('view-activity-log', $canViewLogs);
         Gate::define('view-discipline-report-log', $canViewLogs);
+
+        Gate::define('edit-staff-bio', function ($user) {
+            return $user->isAtLeastRank(StaffRank::CrewMember);
+        });
 
         Gate::define('manage-discipline-reports', function ($user) {
             return $user->hasRole('Admin') || $user->isAtLeastRank(StaffRank::JrCrew);

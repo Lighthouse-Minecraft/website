@@ -40,6 +40,7 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('settings/notifications', 'settings.notifications')->name('settings.notifications');
     Volt::route('settings/minecraft-accounts', 'settings.minecraft-accounts')->name('settings.minecraft-accounts');
     Volt::route('settings/discord-account', 'settings.discord-account')->name('settings.discord-account');
+    Volt::route('settings/staff-bio', 'settings.staff-bio')->name('settings.staff-bio');
 
     Route::get('auth/discord/redirect', [DiscordAuthController::class, 'redirect'])->name('auth.discord.redirect');
     Route::get('auth/discord/callback', [DiscordAuthController::class, 'callback'])->name('auth.discord.callback');
@@ -144,5 +145,7 @@ Route::post('/api/minecraft/verify', function (\Illuminate\Http\Request $request
 })->middleware('throttle:30,1');
 
 require __DIR__.'/auth.php';
+
+Volt::route('/staff', 'staff-page')->name('staff.index');
 
 Route::get('/{slug}', [PageController::class, 'show'])->name('pages.show');
