@@ -424,9 +424,9 @@ new class extends Component {
 
 <div>
     {{-- Row 1: Core Identity --}}
-    <div class="w-full block md:flex md:gap-4">
+    <div class="w-full flex flex-col md:flex-row gap-4">
         {{-- User Info Card --}}
-        <flux:card class="w-full md:w-1/2 lg:w-1/3 p-6 mb-6 md:mb-0 flex flex-col">
+        <flux:card class="w-full md:w-1/2 lg:w-1/3 p-6 flex flex-col">
             <div class="space-y-2 flex-1">
                 <div class="flex items-center gap-3 flex-wrap mb-2">
                     <flux:heading size="xl">{{ $user->name }}</flux:heading>
@@ -495,7 +495,7 @@ new class extends Component {
         </flux:card>
 
         {{-- Linked Accounts Card --}}
-        <flux:card class="w-full md:w-1/2 lg:w-1/3 p-6 mb-6 md:mb-0">
+        <flux:card class="w-full md:w-1/2 lg:w-1/3 p-6">
             <flux:heading size="xl" class="mb-4">Linked Accounts</flux:heading>
 
             {{-- Minecraft Section --}}
@@ -504,7 +504,7 @@ new class extends Component {
                     <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 uppercase tracking-wide">Minecraft</flux:text>
                     @if(auth()->id() === $user->id)
                         <flux:spacer />
-                        <flux:link href="{{ route('settings.minecraft-accounts') }}" class="text-sm text-zinc-400 hover:text-zinc-200">Manage</flux:link>
+                        <flux:button href="{{ route('settings.minecraft-accounts') }}" size="xs" variant="primary">Manage</flux:button>
                     @endif
                 </div>
 
@@ -569,13 +569,6 @@ new class extends Component {
                     </div>
                 @else
                     <flux:text class="text-zinc-500 dark:text-zinc-400 text-sm">No Minecraft accounts linked.</flux:text>
-                    @if(auth()->id() === $user->id)
-                        <div class="mt-2">
-                            <flux:button :href="route('settings.minecraft-accounts')" size="sm" variant="primary">
-                                Add Account
-                            </flux:button>
-                        </div>
-                    @endif
                 @endif
             </div>
 
@@ -587,7 +580,7 @@ new class extends Component {
                     <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 uppercase tracking-wide">Discord</flux:text>
                     @if(auth()->id() === $user->id)
                         <flux:spacer />
-                        <flux:link href="{{ route('settings.discord-account') }}" class="text-sm text-zinc-400 hover:text-zinc-200">Manage</flux:link>
+                        <flux:button href="{{ route('settings.discord-account') }}" size="xs" variant="primary">Manage</flux:button>
                     @endif
                 </div>
 
@@ -626,7 +619,7 @@ new class extends Component {
 
         {{-- Family Card --}}
         @if($user->parents->isNotEmpty() || $user->children->isNotEmpty())
-            <flux:card class="w-full md:w-1/2 lg:w-1/3 p-6 mb-6 md:mb-0 flex flex-col">
+            <flux:card class="w-full md:w-1/2 lg:w-1/3 p-6 flex flex-col">
                 <div class="flex-1">
                     <flux:heading size="xl" class="mb-4">Family</flux:heading>
 
@@ -721,7 +714,7 @@ new class extends Component {
                 @endcan
             @else
                 @can('viewAny', \App\Models\StaffPosition::class)
-                    <flux:card class="w-full md:w-1/4 p-6">
+                    <flux:card class="w-full md:w-1/2 lg:w-1/3 p-6">
                         <flux:heading size="xl">Staff Config</flux:heading>
                         <div class="mt-6 text-center">
                             <flux:modal.trigger name="assign-staff-position">
