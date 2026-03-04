@@ -29,27 +29,27 @@ it('passes child name to template', function () {
         ->and($mail->viewData['report'])->toBe($report);
 });
 
-it('uses conversation wording in subject for trivial/minor severity', function () {
-    $report = DisciplineReport::factory()->published()->minor()->create();
+it('uses conversation wording in subject for trivial/minor severity', function (string $severity) {
+    $report = DisciplineReport::factory()->published()->{$severity}()->create();
     $notification = new DisciplineReportPublishedParentNotification($report);
 
     $mail = $notification->toMail(new stdClass);
 
     expect($mail->subject)->toBe('Staff Conversation Recorded for Your Child');
-});
+})->with(['trivial', 'minor']);
 
-it('uses staff report wording in subject for moderate+ severity', function () {
-    $report = DisciplineReport::factory()->published()->moderate()->create();
+it('uses staff report wording in subject for moderate+ severity', function (string $severity) {
+    $report = DisciplineReport::factory()->published()->{$severity}()->create();
     $notification = new DisciplineReportPublishedParentNotification($report);
 
     $mail = $notification->toMail(new stdClass);
 
     expect($mail->subject)->toBe('Staff Report Recorded for Your Child');
-});
+})->with(['moderate', 'major', 'severe']);
 
-it('pushover message references child with severity-aware wording', function () {
+it('pushover uses conversation wording for trivial/minor severity', function (string $severity) {
     $child = User::factory()->create(['name' => 'ChildPlayer']);
-    $report = DisciplineReport::factory()->published()->minor()->forSubject($child)->create();
+    $report = DisciplineReport::factory()->published()->{$severity}()->forSubject($child)->create();
     $notification = new DisciplineReportPublishedParentNotification($report);
 
     $pushover = $notification->toPushover(new stdClass);
@@ -58,11 +58,11 @@ it('pushover message references child with severity-aware wording', function () 
         ->and($pushover['message'])->toContain('your child')
         ->and($pushover['message'])->toContain('conversation')
         ->and($pushover['title'])->toBe('Staff Conversation Recorded');
-});
+})->with(['trivial', 'minor']);
 
-it('pushover uses staff report wording for moderate+ severity', function () {
+it('pushover uses staff report wording for moderate+ severity', function (string $severity) {
     $child = User::factory()->create(['name' => 'ChildPlayer']);
-    $report = DisciplineReport::factory()->published()->moderate()->forSubject($child)->create();
+    $report = DisciplineReport::factory()->published()->{$severity}()->forSubject($child)->create();
     $notification = new DisciplineReportPublishedParentNotification($report);
 
     $pushover = $notification->toPushover(new stdClass);
@@ -70,7 +70,7 @@ it('pushover uses staff report wording for moderate+ severity', function () {
     expect($pushover['message'])->toContain('ChildPlayer')
         ->and($pushover['message'])->toContain('staff report')
         ->and($pushover['title'])->toBe('Staff Report Recorded');
-});
+})->with(['moderate', 'major', 'severe']);
 
 it('sends via mail channel when allowed', function () {
     $report = DisciplineReport::factory()->published()->create();

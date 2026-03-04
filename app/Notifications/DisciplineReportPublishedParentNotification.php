@@ -43,8 +43,7 @@ class DisciplineReportPublishedParentNotification extends Notification implement
 
     public function toMail(object $notifiable): MailMessage
     {
-        $isConversation = in_array($this->report->severity, [ReportSeverity::Trivial, ReportSeverity::Minor]);
-        $subject = $isConversation
+        $subject = $this->isConversationSeverity()
             ? 'Staff Conversation Recorded for Your Child'
             : 'Staff Report Recorded for Your Child';
 
@@ -59,7 +58,7 @@ class DisciplineReportPublishedParentNotification extends Notification implement
 
     public function toPushover(object $notifiable): array
     {
-        $isConversation = in_array($this->report->severity, [ReportSeverity::Trivial, ReportSeverity::Minor]);
+        $isConversation = $this->isConversationSeverity();
         $type = $isConversation ? 'conversation' : 'staff report';
 
         return [
@@ -67,5 +66,10 @@ class DisciplineReportPublishedParentNotification extends Notification implement
             'message' => "A {$this->report->severity->label()} {$type} has been recorded regarding your child {$this->report->subject->name}.",
             'url' => route('parent-portal.index'),
         ];
+    }
+
+    private function isConversationSeverity(): bool
+    {
+        return in_array($this->report->severity, [ReportSeverity::Trivial, ReportSeverity::Minor]);
     }
 }

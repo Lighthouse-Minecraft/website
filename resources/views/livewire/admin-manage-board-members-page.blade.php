@@ -103,12 +103,11 @@ new class extends Component {
         ]);
 
         $photoPath = $boardMember->photo_path;
+        $oldPhotoPath = null;
         if ($this->editPhoto) {
             $newPath = $this->editPhoto->store('board-member-photos', 'public');
             if ($newPath) {
-                if ($boardMember->photo_path) {
-                    Storage::disk('public')->delete($boardMember->photo_path);
-                }
+                $oldPhotoPath = $boardMember->photo_path;
                 $photoPath = $newPath;
             }
         }
@@ -121,6 +120,10 @@ new class extends Component {
             photoPath: $photoPath,
             sortOrder: $this->editSortOrder,
         );
+
+        if ($oldPhotoPath) {
+            Storage::disk('public')->delete($oldPhotoPath);
+        }
 
         Flux::modal('edit-board-member-modal')->close();
         Flux::toast('Board member updated.', 'Updated', variant: 'success');
@@ -153,7 +156,7 @@ new class extends Component {
         }
 
         return User::where('name', 'like', '%'.trim($this->userSearch).'%')
-            ->whereNotIn('id', BoardMember::whereNotNull('user_id')->pluck('user_id'))
+            ->whereNotIn('id', BoardMember::select('user_id')->whereNotNull('user_id'))
             ->limit(10)
             ->get(['id', 'name']);
     }

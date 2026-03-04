@@ -342,8 +342,14 @@ new class extends Component {
         $this->validate([
             'editChildData.name' => ['required', 'string', 'max:255'],
             'editChildData.email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->editingChildId)],
-            'editChildData.date_of_birth' => ['nullable', 'date', 'before:today'],
+            'editChildData.date_of_birth' => ['required', 'date', 'before:today'],
         ]);
+
+        $childAge = \Carbon\Carbon::parse($this->editChildData['date_of_birth'])->age;
+        if ($childAge > 16) {
+            $this->addError('editChildData.date_of_birth', 'Child accounts are intended for ages 16 and under.');
+            return;
+        }
 
         $parent = $this->getTargetUser();
         $child = User::findOrFail($this->editingChildId);
@@ -356,7 +362,7 @@ new class extends Component {
         $child->update([
             'name' => $this->editChildData['name'],
             'email' => $this->editChildData['email'],
-            'date_of_birth' => $this->editChildData['date_of_birth'] ?: null,
+            'date_of_birth' => $this->editChildData['date_of_birth'],
         ]);
 
         $this->editingChildId = null;
@@ -478,7 +484,7 @@ new class extends Component {
                                     </flux:badge>
                                 @endif
                                 @if(! $isStaffViewing)
-                                    <flux:button wire:click="openEditChildModal({{ $child->id }})" variant="ghost" size="sm" icon="pencil-square" />
+                                    <flux:button wire:click="openEditChildModal({{ $child->id }})" variant="ghost" size="sm" icon="pencil-square" aria-label="Edit {{ $child->name }}" />
                                 @endif
                             </div>
                         </div>

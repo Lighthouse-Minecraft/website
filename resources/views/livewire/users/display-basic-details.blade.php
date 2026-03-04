@@ -452,7 +452,7 @@ new class extends Component {
                 <flux:text>Joined on {{ $user->created_at->format('F j, Y') }}</flux:text>
             </div>
 
-            @if(Auth::user()?->can('update', $user) || Auth::user()?->can('manage-stowaway-users'))
+            @canany(['update', 'manage-stowaway-users'], $user)
                 <div class="pt-3 mt-auto">
                     <flux:dropdown position="bottom" align="start">
                         <flux:button variant="primary" icon="ellipsis-vertical" size="sm">Actions</flux:button>
@@ -493,7 +493,7 @@ new class extends Component {
                         </flux:menu>
                     </flux:dropdown>
                 </div>
-            @endif
+            @endcanany
         </flux:card>
 
         {{-- Linked Accounts Card --}}

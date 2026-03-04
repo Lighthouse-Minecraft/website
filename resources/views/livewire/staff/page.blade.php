@@ -74,7 +74,7 @@ new class extends Component {
         return StaffPosition::with(['user.minecraftAccounts', 'user.discordAccounts'])->find($this->selectedPositionId);
     }
 
-    public function getBoardMembersProperty()
+    public function getBoardMembersProperty(): \Illuminate\Database\Eloquent\Collection
     {
         return BoardMember::with(['user.minecraftAccounts', 'user.discordAccounts'])
             ->ordered()

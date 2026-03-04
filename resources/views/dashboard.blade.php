@@ -35,8 +35,9 @@
                                         <div>
                                             <flux:text class="font-medium">Minecraft</flux:text>
                                             <flux:text variant="subtle" class="text-sm">
-                                                @if(auth()->user()->minecraftAccounts()->exists())
-                                                    {{ auth()->user()->minecraftAccounts()->countingTowardLimit()->count() }} account(s) linked
+                                                @php $mcCount = auth()->user()->minecraftAccounts()->countingTowardLimit()->count(); @endphp
+                                                @if($mcCount > 0)
+                                                    {{ $mcCount }} account(s) linked
                                                 @else
                                                     Link your account to join the server
                                                 @endif
@@ -53,8 +54,9 @@
                                         <div>
                                             <flux:text class="font-medium">Discord</flux:text>
                                             <flux:text variant="subtle" class="text-sm">
-                                                @if(auth()->user()->discordAccounts()->exists())
-                                                    {{ auth()->user()->discordAccounts()->count() }} account(s) linked
+                                                @php $discordCount = auth()->user()->discordAccounts()->count(); @endphp
+                                                @if($discordCount > 0)
+                                                    {{ $discordCount }} account(s) linked
                                                 @else
                                                     Link your account for role sync and DM notifications
                                                 @endif
@@ -68,7 +70,7 @@
                             </div>
                         @else
                             <flux:text variant="subtle" class="mt-2">
-                                Account linking will be available once you become a Stowaway.
+                                Account linking is not currently available for your account.
                             </flux:text>
                         @endcanany
                     </flux:card>
