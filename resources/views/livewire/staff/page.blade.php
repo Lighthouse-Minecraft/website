@@ -9,7 +9,6 @@ use Livewire\Volt\Component;
 new class extends Component {
     public ?int $selectedPositionId = null;
     public ?int $selectedBoardMemberId = null;
-    public bool $viewingBoardMember = false;
 
     public function mount(): void
     {
@@ -32,14 +31,12 @@ new class extends Component {
     {
         $this->selectedPositionId = $id;
         $this->selectedBoardMemberId = null;
-        $this->viewingBoardMember = false;
     }
 
     public function selectBoardMember(int $id): void
     {
         $this->selectedBoardMemberId = $id;
         $this->selectedPositionId = null;
-        $this->viewingBoardMember = true;
     }
 
     public function getDepartmentsProperty(): array
@@ -87,8 +84,7 @@ new class extends Component {
             return null;
         }
 
-        return BoardMember::with(['user.minecraftAccounts', 'user.discordAccounts'])
-            ->find($this->selectedBoardMemberId);
+        return $this->boardMembers->firstWhere('id', $this->selectedBoardMemberId);
     }
 }; ?>
 
@@ -202,8 +198,8 @@ new class extends Component {
                                     wire:keydown.space.prevent="selectBoardMember({{ $member->id }})"
                                     role="button"
                                     tabindex="0"
-                                    aria-pressed="{{ $viewingBoardMember && $selectedBoardMemberId === $member->id ? 'true' : 'false' }}"
-                                    class="p-3 rounded-lg border transition-colors cursor-pointer {{ $viewingBoardMember && $selectedBoardMemberId === $member->id ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : 'border-zinc-200 dark:border-zinc-700 hover:border-blue-300 dark:hover:border-blue-600' }}"
+                                    aria-pressed="{{ $selectedBoardMemberId === $member->id ? 'true' : 'false' }}"
+                                    class="p-3 rounded-lg border transition-colors cursor-pointer {{ $selectedBoardMemberId === $member->id ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : 'border-zinc-200 dark:border-zinc-700 hover:border-blue-300 dark:hover:border-blue-600' }}"
                                 >
                                     <div class="flex flex-col items-center gap-2 text-center">
                                         @if($member->effectivePhotoUrl())
@@ -223,7 +219,7 @@ new class extends Component {
 
             {{-- Staff Details Panel --}}
             <div class="lg:w-1/4 lg:sticky lg:top-4 lg:self-start">
-                @if($this->viewingBoardMember && $this->selectedBoardMember)
+                @if($this->selectedBoardMemberId && $this->selectedBoardMember)
                     @php $bm = $this->selectedBoardMember; @endphp
                     <flux:card class="space-y-4">
                         @if($bm->effectivePhotoUrl())

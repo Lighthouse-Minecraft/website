@@ -732,13 +732,8 @@ new class extends Component {
     {{-- Row 3: Details & Reports --}}
     @php
         $hasStaffDetails = $user->staffPosition !== null;
-        $authUser = Auth::user();
-        $canSeeReports = $authUser->isAtLeastRank(\App\Enums\StaffRank::JrCrew)
-            || $authUser->hasRole('Admin')
-            || $authUser->id === $user->id
-            || $authUser->children()->where('child_user_id', $user->id)->exists();
     @endphp
-    @if($hasStaffDetails || $canSeeReports)
+    @if($hasStaffDetails || Auth::user()->can('view-user-discipline-reports', $user))
         <div class="w-full flex flex-col md:flex-row gap-4 mt-6">
             {{-- Staff Details Card --}}
             @if($hasStaffDetails)
@@ -790,11 +785,11 @@ new class extends Component {
             @endif
 
             {{-- Staff Reports Card --}}
-            @if($canSeeReports)
+            @can('view-user-discipline-reports', $user)
                 <div class="w-full lg:w-1/2">
                     <livewire:users.discipline-reports-card :user="$user" lazy />
                 </div>
-            @endif
+            @endcan
         </div>
     @endif
 

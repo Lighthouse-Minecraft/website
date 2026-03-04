@@ -112,14 +112,21 @@ new class extends Component {
             }
         }
 
-        UpdateBoardMember::run(
-            boardMember: $boardMember,
-            displayName: $this->editDisplayName,
-            title: $this->editTitle ?: null,
-            bio: $this->editBio ?: null,
-            photoPath: $photoPath,
-            sortOrder: $this->editSortOrder,
-        );
+        try {
+            UpdateBoardMember::run(
+                boardMember: $boardMember,
+                displayName: $this->editDisplayName,
+                title: $this->editTitle ?: null,
+                bio: $this->editBio ?: null,
+                photoPath: $photoPath,
+                sortOrder: $this->editSortOrder,
+            );
+        } catch (\Throwable $e) {
+            if ($oldPhotoPath && $photoPath !== $boardMember->photo_path) {
+                Storage::disk('public')->delete($photoPath);
+            }
+            throw $e;
+        }
 
         if ($oldPhotoPath) {
             Storage::disk('public')->delete($oldPhotoPath);

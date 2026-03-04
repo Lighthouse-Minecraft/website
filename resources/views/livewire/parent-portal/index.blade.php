@@ -365,6 +365,8 @@ new class extends Component {
             'date_of_birth' => $this->editChildData['date_of_birth'],
         ]);
 
+        \App\Actions\RecordActivity::run($child, 'update_child_account', "Child account updated by parent {$parent->name}.");
+
         $this->editingChildId = null;
         Flux::modal('edit-child-modal')->close();
         Flux::toast("Account updated for {$child->name}.", 'Updated', variant: 'success');
@@ -753,7 +755,7 @@ new class extends Component {
 
                 <flux:field>
                     <flux:label>Date of Birth</flux:label>
-                    <flux:input wire:model="editChildData.date_of_birth" type="date" />
+                    <flux:input wire:model="editChildData.date_of_birth" type="date" required />
                     <flux:error name="editChildData.date_of_birth" />
                 </flux:field>
 

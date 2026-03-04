@@ -114,6 +114,13 @@ class AuthServiceProvider extends ServiceProvider
             return $user->is_board_member;
         });
 
+        Gate::define('view-user-discipline-reports', function ($user, $targetUser) {
+            return $user->hasRole('Admin')
+                || $user->isAtLeastRank(StaffRank::JrCrew)
+                || $user->id === $targetUser->id
+                || $user->children()->where('child_user_id', $targetUser->id)->exists();
+        });
+
         Gate::define('manage-discipline-reports', function ($user) {
             return $user->hasRole('Admin') || $user->isAtLeastRank(StaffRank::JrCrew);
         });
