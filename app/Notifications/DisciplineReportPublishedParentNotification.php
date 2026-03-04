@@ -43,7 +43,7 @@ class DisciplineReportPublishedParentNotification extends Notification implement
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Discipline Report Filed for Your Child')
+            ->subject('Staff Report Recorded for Your Child')
             ->markdown('mail.discipline-report-published-parent', [
                 'report' => $this->report,
                 'childName' => $this->report->subject->name,
@@ -54,8 +54,8 @@ class DisciplineReportPublishedParentNotification extends Notification implement
     public function toPushover(object $notifiable): array
     {
         return [
-            'title' => 'Discipline Report Filed',
-            'message' => "A {$this->report->severity->label()} discipline report has been filed regarding your child {$this->report->subject->name}.",
+            'title' => 'Staff Report Recorded',
+            'message' => "A {$this->report->severity->label()} staff report has been recorded regarding your child {$this->report->subject->name}.",
             'url' => route('parent-portal.index'),
         ];
     }

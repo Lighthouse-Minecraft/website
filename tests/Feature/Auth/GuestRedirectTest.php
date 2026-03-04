@@ -37,11 +37,11 @@ test('authenticated traveler can view another users profile', function () {
         ->assertOk();
 });
 
-test('authenticated user without permission gets 403 for another users profile', function () {
+test('authenticated stowaway can view another users profile', function () {
     $viewer = User::factory()->create(['membership_level' => MembershipLevel::Stowaway]);
     $target = User::factory()->create();
 
     $this->actingAs($viewer)
         ->get(route('profile.show', $target))
-        ->assertForbidden();
+        ->assertOk();
 });

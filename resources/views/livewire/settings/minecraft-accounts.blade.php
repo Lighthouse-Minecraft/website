@@ -402,6 +402,7 @@ new class extends Component {
             'archivedAccounts' => $archivedAccounts,
             'maxAccounts' => $maxAccounts,
             'remainingSlots' => $maxAccounts - $countingAccounts,
+            'gracePeriodMinutes' => config('lighthouse.minecraft_verification_grace_period_minutes', 30),
         ];
     }
 }; ?>
@@ -551,17 +552,16 @@ new class extends Component {
     @endif
 
     {{-- Add New Account Form --}}
-    @if(auth()->user()->membership_level->minecraftRank() === null)
-        <flux:callout variant="info">
-            You'll be able to link your Minecraft account once an admin has verified your membership and promoted you to Traveler rank.
-        </flux:callout>
-    @elseif(! auth()->user()->parent_allows_minecraft)
+    @if(! auth()->user()->parent_allows_minecraft)
         <flux:callout variant="warning">
             Minecraft access has been disabled by your parent or guardian.
         </flux:callout>
     @elseif($remainingSlots > 0 && !$verificationCode && Gate::allows('link-minecraft-account'))
         <flux:card class="p-6">
             <flux:heading size="lg" class="mb-4">Link New Account</flux:heading>
+            <flux:text class="mb-4 text-sm text-zinc-600 dark:text-zinc-400">
+                After generating a verification code, you'll have {{ $gracePeriodMinutes }} minutes to join the Minecraft server and run the verify command.
+            </flux:text>
 
             <form wire:submit="generateCode" class="space-y-4">
                 @if($errorMessage)

@@ -189,9 +189,8 @@ new class extends Component {
 ?>
 
 <div class="space-y-6">
+    <flux:heading size="xl">Manage Users</flux:heading>
     <div class="flex items-center gap-4">
-        <flux:heading size="xl">Manage Users</flux:heading>
-        <flux:spacer />
         <flux:input wire:model.live.debounce.300ms="search" placeholder="Search users..." size="sm" icon="magnifying-glass" class="w-64" />
         <flux:select wire:model.live="filterBrig" size="sm" class="w-48">
             <flux:select.option value="">All Users</flux:select.option>

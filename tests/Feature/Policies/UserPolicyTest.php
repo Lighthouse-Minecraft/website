@@ -62,13 +62,18 @@ it('traveler can view other profiles', function () {
     expect($viewer->can('view', $target))->toBeTrue();
 });
 
-it('drifter cannot view other profiles', function () {
+it('drifter can view other profiles', function () {
     $viewer = membershipDrifter();
     $target = User::factory()->create();
 
-    // Admin bypass will not apply here; drifter is not admin
-    // Drifters are below Traveler level so view() returns false for others
-    expect($viewer->can('view', $target))->toBeFalse();
+    expect($viewer->can('view', $target))->toBeTrue();
+});
+
+it('stowaway can view other profiles', function () {
+    $viewer = membershipStowaway();
+    $target = User::factory()->create();
+
+    expect($viewer->can('view', $target))->toBeTrue();
 });
 
 // === viewPii ===

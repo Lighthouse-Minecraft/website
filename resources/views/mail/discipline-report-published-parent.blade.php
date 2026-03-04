@@ -1,5 +1,9 @@
 <x-mail::message>
-A discipline report has been filed regarding your child, **{{ $childName }}**.
+@if($report->severity === \App\Enums\ReportSeverity::Trivial || $report->severity === \App\Enums\ReportSeverity::Minor)
+Our staff team had a conversation with your child, **{{ $childName }}**, that we've recorded for our records.
+@else
+A staff report has been recorded regarding your child, **{{ $childName }}**.
+@endif
 
 **Severity:** {{ $report->severity->label() }}
 

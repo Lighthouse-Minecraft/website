@@ -28,7 +28,7 @@
                         <flux:heading size="md">Account Linking</flux:heading>
                         <flux:separator variant="subtle" class="my-2" />
 
-                        @if(auth()->user()->isAtLeastLevel(App\Enums\MembershipLevel::Traveler))
+                        @if(auth()->user()->isAtLeastLevel(App\Enums\MembershipLevel::Stowaway))
                             <div class="flex flex-col gap-3 mt-2">
                                 <div class="flex items-center justify-between">
                                     <div>
@@ -64,7 +64,7 @@
                             </div>
                         @else
                             <flux:text variant="subtle" class="mt-2">
-                                Account linking will be unlocked once staff approves your account and you are promoted to Traveler.
+                                Account linking will be available once you become a Stowaway.
                             </flux:text>
                         @endif
                     </flux:card>

@@ -35,7 +35,7 @@ it('has parent-specific subject line', function () {
 
     $mail = $notification->toMail(new stdClass);
 
-    expect($mail->subject)->toBe('Discipline Report Filed for Your Child');
+    expect($mail->subject)->toBe('Staff Report Recorded for Your Child');
 });
 
 it('pushover message references child', function () {

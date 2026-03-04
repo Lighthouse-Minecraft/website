@@ -78,7 +78,7 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('link-discord', function ($user) {
-            return $user->isAtLeastLevel(MembershipLevel::Traveler) && ! $user->in_brig && $user->parent_allows_discord;
+            return $user->isAtLeastLevel(MembershipLevel::Stowaway) && ! $user->in_brig && $user->parent_allows_discord;
         });
 
         Gate::define('view-parent-portal', function ($user) {
