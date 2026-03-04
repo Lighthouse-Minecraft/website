@@ -57,6 +57,7 @@ new class extends Component {
             || $user->can('viewAny', \App\Models\Announcement::class)
             || $user->can('viewAny', \App\Models\Meeting::class)
             || $user->can('viewAny', \App\Models\StaffPosition::class)
+            || $user->can('viewAny', \App\Models\BoardMember::class)
         );
     }
 
@@ -98,6 +99,7 @@ new class extends Component {
                 $user?->can('viewAny', \App\Models\Announcement::class) => 'announcement-manager',
                 $user?->can('viewAny', \App\Models\Meeting::class) => 'meeting-manager',
                 $user?->can('viewAny', \App\Models\StaffPosition::class) => 'staff-position-manager',
+                $user?->can('viewAny', \App\Models\BoardMember::class) => 'board-member-manager',
                 default => 'page-manager',
             },
             'logs' => match (true) {
@@ -183,6 +185,9 @@ new class extends Component {
                 @can('viewAny', \App\Models\StaffPosition::class)
                     <flux:tab name="staff-position-manager">Staff Positions</flux:tab>
                 @endcan
+                @can('viewAny', \App\Models\BoardMember::class)
+                    <flux:tab name="board-member-manager">Board Members</flux:tab>
+                @endcan
             </flux:tabs>
 
             <flux:tab.panel name="page-manager">
@@ -203,6 +208,11 @@ new class extends Component {
             <flux:tab.panel name="staff-position-manager">
                 @can('viewAny', \App\Models\StaffPosition::class)
                     <livewire:admin-manage-staff-positions-page />
+                @endcan
+            </flux:tab.panel>
+            <flux:tab.panel name="board-member-manager">
+                @can('viewAny', \App\Models\BoardMember::class)
+                    <livewire:admin-manage-board-members-page />
                 @endcan
             </flux:tab.panel>
         </flux:tab.group>

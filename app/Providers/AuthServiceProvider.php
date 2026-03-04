@@ -23,6 +23,7 @@ class AuthServiceProvider extends ServiceProvider
         \App\Models\DisciplineReport::class => \App\Policies\DisciplineReportPolicy::class,
         \App\Models\ReportCategory::class => \App\Policies\ReportCategoryPolicy::class,
         \App\Models\StaffPosition::class => \App\Policies\StaffPositionPolicy::class,
+        \App\Models\BoardMember::class => \App\Policies\BoardMemberPolicy::class,
     ];
 
     /**
@@ -106,7 +107,11 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('view-discipline-report-log', $canViewLogs);
 
         Gate::define('edit-staff-bio', function ($user) {
-            return $user->isAtLeastRank(StaffRank::CrewMember);
+            return $user->isAtLeastRank(StaffRank::CrewMember) || $user->is_board_member;
+        });
+
+        Gate::define('board-member', function ($user) {
+            return $user->is_board_member;
         });
 
         Gate::define('manage-discipline-reports', function ($user) {

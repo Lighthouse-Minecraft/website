@@ -18,6 +18,14 @@ new class extends Component {
     public ?int $accountToRevoke = null;
     public ?int $accountToForceDelete = null;
 
+    public bool $editingUser = false;
+    public array $editUserData = [
+        'name' => '',
+        'email' => '',
+        'date_of_birth' => '',
+        'parent_email' => '',
+    ];
+
     public function mount(User $user) {
         $this->user = $user;
         $this->user->load('minecraftAccounts', 'discordAccounts', 'parents', 'children', 'staffPosition');
@@ -374,6 +382,43 @@ new class extends Component {
         );
     }
 
+    public function openEditUserModal(): void
+    {
+        $this->authorize('update', $this->user);
+
+        $this->editUserData = [
+            'name' => $this->user->name,
+            'email' => $this->user->email,
+            'date_of_birth' => $this->user->date_of_birth?->format('Y-m-d') ?? '',
+            'parent_email' => $this->user->parent_email ?? '',
+        ];
+        $this->editingUser = true;
+        Flux::modal('profile-edit-user-modal')->show();
+    }
+
+    public function saveEditUser(): void
+    {
+        $this->authorize('update', $this->user);
+
+        $this->validate([
+            'editUserData.name' => ['required', 'string', 'max:255'],
+            'editUserData.email' => ['required', 'email', 'max:255'],
+            'editUserData.date_of_birth' => ['nullable', 'date', 'before:today'],
+            'editUserData.parent_email' => ['nullable', 'email'],
+        ]);
+
+        $this->user->update([
+            'name' => $this->editUserData['name'],
+            'email' => $this->editUserData['email'],
+            'date_of_birth' => $this->editUserData['date_of_birth'] ?: null,
+            'parent_email' => $this->editUserData['parent_email'] ?: null,
+        ]);
+
+        $this->user->refresh();
+        $this->editingUser = false;
+        Flux::modal('profile-edit-user-modal')->close();
+        Flux::toast(text: 'User details updated.', heading: 'Updated', variant: 'success');
+    }
 
 }; ?>
 
@@ -401,40 +446,48 @@ new class extends Component {
             <flux:text>Member Rank: {{ $user->membership_level->label() }}</flux:text>
             <flux:text>Joined on {{ $user->created_at->format('F j, Y') }}</flux:text>
 
-            @can('manage-stowaway-users')
+            @if(Auth::user()?->can('update', $user) || Auth::user()?->can('manage-stowaway-users'))
                 <div class="pt-3">
                     <flux:dropdown position="bottom" align="start">
                         <flux:button variant="ghost" icon="ellipsis-vertical" size="sm">Actions</flux:button>
                         <flux:menu>
-                            @if($user->isInBrig())
-                                <flux:menu.item icon="lock-open" wire:click="openReleaseFromBrigModal">
-                                    Release from Brig
+                            @can('update', $user)
+                                <flux:menu.item icon="pencil-square" wire:click="openEditUserModal">
+                                    Edit User
                                 </flux:menu.item>
-                            @elseif(! $user->staffPosition && $user->id !== Auth::id())
-                                <flux:menu.item icon="lock-closed" wire:click="openPutInBrigModal">
-                                    Put in Brig
-                                </flux:menu.item>
-                            @endif
+                            @endcan
 
-                            @if(! $user->isInBrig() && ($this->nextMembershipLevel !== null || $this->previousMembershipLevel !== null))
-                                <flux:menu.separator />
-                            @endif
+                            @can('manage-stowaway-users')
+                                @if($user->isInBrig())
+                                    <flux:menu.item icon="lock-open" wire:click="openReleaseFromBrigModal">
+                                        Release from Brig
+                                    </flux:menu.item>
+                                @elseif(! $user->staffPosition && $user->id !== Auth::id())
+                                    <flux:menu.item icon="lock-closed" wire:click="openPutInBrigModal">
+                                        Put in Brig
+                                    </flux:menu.item>
+                                @endif
 
-                            @if(! $user->isInBrig() && $this->nextMembershipLevel !== null)
-                                <flux:menu.item icon="arrow-up-circle" x-on:click="$flux.modal('profile-promote-confirm-modal').show()">
-                                    Promote to {{ $this->nextMembershipLevel->label() }}
-                                </flux:menu.item>
-                            @endif
+                                @if(! $user->isInBrig() && ($this->nextMembershipLevel !== null || $this->previousMembershipLevel !== null))
+                                    <flux:menu.separator />
+                                @endif
 
-                            @if(! $user->isInBrig() && $this->previousMembershipLevel !== null)
-                                <flux:menu.item icon="arrow-down-circle" x-on:click="$flux.modal('profile-demote-confirm-modal').show()">
-                                    Demote to {{ $this->previousMembershipLevel->label() }}
-                                </flux:menu.item>
-                            @endif
+                                @if(! $user->isInBrig() && $this->nextMembershipLevel !== null)
+                                    <flux:menu.item icon="arrow-up-circle" x-on:click="$flux.modal('profile-promote-confirm-modal').show()">
+                                        Promote to {{ $this->nextMembershipLevel->label() }}
+                                    </flux:menu.item>
+                                @endif
+
+                                @if(! $user->isInBrig() && $this->previousMembershipLevel !== null)
+                                    <flux:menu.item icon="arrow-down-circle" x-on:click="$flux.modal('profile-demote-confirm-modal').show()">
+                                        Demote to {{ $this->previousMembershipLevel->label() }}
+                                    </flux:menu.item>
+                                @endif
+                            @endcan
                         </flux:menu>
                     </flux:dropdown>
                 </div>
-            @endcan
+            @endif
         </flux:card>
 
         @if($user->staffPosition)
@@ -776,6 +829,43 @@ new class extends Component {
             </div>
         </flux:modal>
     @endcan
+
+    <!-- Edit User Modal -->
+    <flux:modal name="profile-edit-user-modal" variant="flyout">
+        <div class="space-y-6">
+            <flux:heading size="xl">Edit User</flux:heading>
+
+            <form wire:submit="saveEditUser" class="space-y-6">
+                <flux:field>
+                    <flux:label>Username</flux:label>
+                    <flux:input wire:model="editUserData.name" required />
+                    <flux:error name="editUserData.name" />
+                </flux:field>
+
+                <flux:field>
+                    <flux:label>Email</flux:label>
+                    <flux:input wire:model="editUserData.email" type="email" required />
+                    <flux:error name="editUserData.email" />
+                </flux:field>
+
+                <flux:field>
+                    <flux:label>Date of Birth</flux:label>
+                    <flux:input wire:model="editUserData.date_of_birth" type="date" />
+                    <flux:error name="editUserData.date_of_birth" />
+                </flux:field>
+
+                <flux:field>
+                    <flux:label>Parent Email</flux:label>
+                    <flux:input wire:model="editUserData.parent_email" type="email" placeholder="Optional" />
+                    <flux:error name="editUserData.parent_email" />
+                </flux:field>
+
+                <div class="flex justify-end">
+                    <flux:button type="submit" variant="primary">Save</flux:button>
+                </div>
+            </form>
+        </div>
+    </flux:modal>
 
     <!-- Put in Brig Modal -->
     <flux:modal name="profile-put-in-brig-modal" class="w-full md:w-1/2 xl:w-1/3">

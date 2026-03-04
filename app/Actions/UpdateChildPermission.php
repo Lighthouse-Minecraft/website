@@ -6,6 +6,7 @@ use App\Enums\BrigType;
 use App\Enums\DiscordAccountStatus;
 use App\Enums\MinecraftAccountStatus;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -17,6 +18,7 @@ class UpdateChildPermission
     {
         match ($permission) {
             'use_site' => $this->toggleSiteAccess($child, $parent, $enabled),
+            'login' => $this->toggleLogin($child, $parent, $enabled),
             'minecraft' => $this->toggleMinecraft($child, $parent, $enabled),
             'discord' => $this->toggleDiscord($child, $parent, $enabled),
             default => throw new \InvalidArgumentException("Unknown permission type: {$permission}"),
@@ -32,7 +34,7 @@ class UpdateChildPermission
             PutUserInBrig::run(
                 target: $child,
                 admin: $parent,
-                reason: 'Site access restricted by parent.',
+                reason: 'Account disabled by parent. All access including Minecraft and Discord is blocked.',
                 brigType: BrigType::ParentalDisabled,
                 notify: false,
             );
@@ -42,6 +44,20 @@ class UpdateChildPermission
 
         $action = $enabled ? 'enabled' : 'disabled';
         RecordActivity::run($child, 'parent_permission_changed', "Site access {$action} by parent {$parent->name}.");
+    }
+
+    private function toggleLogin(User $child, User $parent, bool $enabled): void
+    {
+        $child->parent_allows_login = $enabled;
+        $child->save();
+
+        if (! $enabled) {
+            // Invalidate all active sessions for this child
+            DB::table('sessions')->where('user_id', $child->id)->delete();
+        }
+
+        $action = $enabled ? 'enabled' : 'disabled';
+        RecordActivity::run($child, 'parent_permission_changed', "Website login {$action} by parent {$parent->name}.");
     }
 
     private function toggleMinecraft(User $child, User $parent, bool $enabled): void

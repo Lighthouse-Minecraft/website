@@ -127,9 +127,14 @@ new #[Layout('components.layouts.auth')] class extends Component {
         <x-auth-session-status class="text-center" :status="session('status')" />
 
         <form wire:submit="register" class="flex flex-col gap-6">
-            <!-- Name -->
+            <!-- Username -->
             <div class="grid gap-2">
-                <flux:input wire:model="name" id="name" label="{{ __('Name') }}" type="text" name="name" required autofocus autocomplete="name" placeholder="Online Nickname" />
+                <flux:field>
+                    <flux:label>Username</flux:label>
+                    <flux:description>This will be your public display name on the site.</flux:description>
+                    <flux:input wire:model="name" id="name" type="text" name="name" required autofocus autocomplete="name" placeholder="Online Nickname" />
+                    <flux:error name="name" />
+                </flux:field>
             </div>
 
             <!-- Email Address -->
@@ -139,7 +144,12 @@ new #[Layout('components.layouts.auth')] class extends Component {
 
             <!-- Date of Birth -->
             <div class="grid gap-2">
-                <flux:input wire:model="date_of_birth" id="date_of_birth" label="Date of Birth" type="date" name="date_of_birth" required />
+                <flux:field>
+                    <flux:label>Date of Birth</flux:label>
+                    <flux:description>We use your date of birth to ensure age-appropriate safety settings for our community.</flux:description>
+                    <flux:input wire:model="date_of_birth" id="date_of_birth" type="date" name="date_of_birth" required />
+                    <flux:error name="date_of_birth" />
+                </flux:field>
             </div>
 
             <!-- Password -->
