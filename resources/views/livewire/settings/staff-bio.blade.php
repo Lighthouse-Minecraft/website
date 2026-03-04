@@ -12,6 +12,7 @@ new class extends Component {
     public string $firstName = '';
     public string $lastInitial = '';
     public string $bio = '';
+    public string $phone = '';
     public $photo;
     public ?string $existingPhotoUrl = null;
 
@@ -23,6 +24,7 @@ new class extends Component {
         $this->firstName = $user->staff_first_name ?? '';
         $this->lastInitial = $user->staff_last_initial ?? '';
         $this->bio = $user->staff_bio ?? '';
+        $this->phone = $user->staff_phone ?? '';
         $this->existingPhotoUrl = $user->staffPhotoUrl();
     }
 
@@ -34,6 +36,7 @@ new class extends Component {
             'firstName' => 'nullable|string|max:50',
             'lastInitial' => 'nullable|string|max:1|alpha',
             'bio' => 'nullable|string|max:2000',
+            'phone' => 'nullable|string|max:30',
             'photo' => 'nullable|image|max:2048',
         ]);
 
@@ -51,6 +54,7 @@ new class extends Component {
         $user->staff_first_name = $this->firstName ?: null;
         $user->staff_last_initial = $this->lastInitial ? strtoupper($this->lastInitial) : null;
         $user->staff_bio = $this->bio ?: null;
+        $user->staff_phone = $this->phone ?: null;
         $user->save();
 
         $this->existingPhotoUrl = $user->staffPhotoUrl();
@@ -100,6 +104,13 @@ new class extends Component {
                 <flux:description>A brief introduction about yourself, your interests, and your role.</flux:description>
                 <flux:textarea wire:model="bio" rows="5" placeholder="Tell the community about yourself..." />
                 @error('bio') <flux:error>{{ $message }}</flux:error> @enderror
+            </flux:field>
+
+            <flux:field>
+                <flux:label>Phone Number</flux:label>
+                <flux:description>This is protected information only visible to Officers and Board Members.</flux:description>
+                <flux:input wire:model="phone" placeholder="e.g. (555) 123-4567" />
+                @error('phone') <flux:error>{{ $message }}</flux:error> @enderror
             </flux:field>
 
             <flux:button variant="primary" type="submit">Save Staff Bio</flux:button>

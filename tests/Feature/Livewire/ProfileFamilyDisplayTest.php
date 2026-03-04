@@ -72,9 +72,9 @@ it('does not show Family card for user with no family links', function () {
         ->assertDontSee('Family');
 });
 
-it('shows admin Parental Controls card for staff', function () {
+it('shows Parent Portal link in Family card for staff officers viewing parent profile', function () {
     $parent = User::factory()->adult()->create();
-    $child = User::factory()->minor()->create(['parent_allows_minecraft' => false]);
+    $child = User::factory()->minor()->create();
     ParentChildLink::factory()->create(['parent_user_id' => $parent->id, 'child_user_id' => $child->id]);
 
     $admin = User::factory()->create([
@@ -84,13 +84,12 @@ it('shows admin Parental Controls card for staff', function () {
     ]);
     actingAs($admin);
 
-    Livewire\Volt\Volt::test('users.display-basic-details', ['user' => $child])
-        ->assertSee('Parental Controls (Staff)')
-        ->assertSee('Permission States')
-        ->assertSee('MC: Denied');
+    Livewire\Volt\Volt::test('users.display-basic-details', ['user' => $parent])
+        ->assertSee('Family')
+        ->assertSee('View Parent Portal');
 });
 
-it('hides admin Parental Controls card for non-staff', function () {
+it('hides Parent Portal link from non-staff', function () {
     $parent = User::factory()->adult()->create();
     $child = User::factory()->minor()->create();
     ParentChildLink::factory()->create(['parent_user_id' => $parent->id, 'child_user_id' => $child->id]);
@@ -98,8 +97,9 @@ it('hides admin Parental Controls card for non-staff', function () {
     $viewer = User::factory()->create(['membership_level' => MembershipLevel::Traveler]);
     actingAs($viewer);
 
-    Livewire\Volt\Volt::test('users.display-basic-details', ['user' => $child])
-        ->assertDontSee('Parental Controls (Staff)');
+    Livewire\Volt\Volt::test('users.display-basic-details', ['user' => $parent])
+        ->assertSee('Family')
+        ->assertDontSee('View Parent Portal');
 });
 
 it('shows action dropdown for staff on profile', function () {

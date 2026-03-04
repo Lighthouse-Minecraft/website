@@ -13,6 +13,7 @@ use App\Models\Thread;
 use App\Models\User;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Volt\Component;
@@ -37,6 +38,13 @@ new class extends Component {
     public array $childMcVerificationCodes = [];
     public array $childMcExpiresAt = [];
     public array $childMcErrors = [];
+
+    public ?int $editingChildId = null;
+    public array $editChildData = [
+        'name' => '',
+        'email' => '',
+        'date_of_birth' => '',
+    ];
 
     #[Locked]
     public ?int $viewingReportId = null;
@@ -129,7 +137,7 @@ new class extends Component {
             return;
         }
 
-        if (! in_array($permission, ['use_site', 'minecraft', 'discord'])) {
+        if (! in_array($permission, ['use_site', 'login', 'minecraft', 'discord'])) {
             return;
         }
 
@@ -143,6 +151,7 @@ new class extends Component {
 
         $currentValue = match ($permission) {
             'use_site' => $child->parent_allows_site,
+            'login' => $child->parent_allows_login,
             'minecraft' => $child->parent_allows_minecraft,
             'discord' => $child->parent_allows_discord,
         };
@@ -151,7 +160,8 @@ new class extends Component {
 
         $action = ! $currentValue ? 'enabled' : 'disabled';
         $label = match ($permission) {
-            'use_site' => 'Site access',
+            'use_site' => 'Account',
+            'login' => 'Website login',
             'minecraft' => 'Minecraft access',
             'discord' => 'Discord access',
         };
@@ -300,6 +310,69 @@ new class extends Component {
         }
     }
 
+    public function openEditChildModal(int $childId): void
+    {
+        if ($this->isStaffViewing) {
+            return;
+        }
+
+        $parent = $this->getTargetUser();
+        $child = User::findOrFail($childId);
+
+        if (! $parent->children()->where('child_user_id', $child->id)->exists()) {
+            Flux::toast('You do not have permission to edit this account.', 'Unauthorized', variant: 'danger');
+            return;
+        }
+
+        $this->editingChildId = $child->id;
+        $this->editChildData = [
+            'name' => $child->name,
+            'email' => $child->email,
+            'date_of_birth' => $child->date_of_birth?->format('Y-m-d') ?? '',
+        ];
+        Flux::modal('edit-child-modal')->show();
+    }
+
+    public function saveChild(): void
+    {
+        if ($this->isStaffViewing || ! $this->editingChildId) {
+            return;
+        }
+
+        $this->validate([
+            'editChildData.name' => ['required', 'string', 'max:255'],
+            'editChildData.email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->editingChildId)],
+            'editChildData.date_of_birth' => ['required', 'date', 'before:today'],
+        ]);
+
+        $childAge = \Carbon\Carbon::parse($this->editChildData['date_of_birth'])->age;
+        if ($childAge > 16) {
+            $this->addError('editChildData.date_of_birth', 'Child accounts are intended for ages 16 and under.');
+            return;
+        }
+
+        $parent = $this->getTargetUser();
+        $child = User::findOrFail($this->editingChildId);
+
+        if (! $parent->children()->where('child_user_id', $child->id)->exists()) {
+            Flux::toast('You do not have permission to edit this account.', 'Unauthorized', variant: 'danger');
+            return;
+        }
+
+        $child->update([
+            'name' => $this->editChildData['name'],
+            'email' => $this->editChildData['email'],
+            'date_of_birth' => $this->editChildData['date_of_birth'],
+        ]);
+
+        \App\Actions\RecordActivity::run($child, 'update_child_account', "Child account updated by parent {$parent->name}.");
+
+        $this->editingChildId = null;
+        Flux::modal('edit-child-modal')->close();
+        Flux::toast("Account updated for {$child->name}.", 'Updated', variant: 'success');
+        unset($this->children);
+    }
+
     public function getViewingDisciplineReportProperty()
     {
         if (! $this->viewingReportId) {
@@ -406,11 +479,16 @@ new class extends Component {
                                     {{ $child->email }}
                                 </flux:text>
                             </div>
-                            @if($child->isInBrig())
-                                <flux:badge color="{{ $child->brig_type?->isDisciplinary() ? 'red' : 'amber' }}" size="sm">
-                                    {{ $child->brig_type?->label() ?? 'In the Brig' }}
-                                </flux:badge>
-                            @endif
+                            <div class="flex items-center gap-2">
+                                @if($child->isInBrig())
+                                    <flux:badge color="{{ $child->brig_type?->isDisciplinary() ? 'red' : 'amber' }}" size="sm">
+                                        {{ $child->brig_type?->label() ?? 'In the Brig' }}
+                                    </flux:badge>
+                                @endif
+                                @if(! $isStaffViewing)
+                                    <flux:button wire:click="openEditChildModal({{ $child->id }})" variant="ghost" size="sm" icon="pencil-square" aria-label="Edit {{ $child->name }}" />
+                                @endif
+                            </div>
                         </div>
 
                         @if($child->isInBrig() && $child->brig_reason)
@@ -423,34 +501,49 @@ new class extends Component {
                         <div class="mb-4">
                             <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-2">Permissions</flux:text>
                             <div class="space-y-3">
-                                <div class="flex items-center justify-between">
-                                    <flux:text>Use the Site</flux:text>
+                                <div wire:key="perm-{{ $child->id }}-site" class="flex items-center justify-between">
+                                    <flux:text>Enable Account</flux:text>
                                     @if($isStaffViewing)
                                         <flux:badge size="sm" color="{{ $child->parent_allows_site ? 'green' : 'red' }}">{{ $child->parent_allows_site ? 'Allowed' : 'Denied' }}</flux:badge>
                                     @else
                                         <flux:switch
+                                            wire:key="switch-{{ $child->id }}-site"
                                             wire:click="togglePermission({{ $child->id }}, 'use_site')"
                                             :checked="$child->parent_allows_site"
                                         />
                                     @endif
                                 </div>
-                                <div class="flex items-center justify-between">
+                                <div wire:key="perm-{{ $child->id }}-login" class="flex items-center justify-between">
+                                    <flux:text>Login to Website</flux:text>
+                                    @if($isStaffViewing)
+                                        <flux:badge size="sm" color="{{ $child->parent_allows_login ? 'green' : 'red' }}">{{ $child->parent_allows_login ? 'Allowed' : 'Denied' }}</flux:badge>
+                                    @else
+                                        <flux:switch
+                                            wire:key="switch-{{ $child->id }}-login"
+                                            wire:click="togglePermission({{ $child->id }}, 'login')"
+                                            :checked="$child->parent_allows_login"
+                                        />
+                                    @endif
+                                </div>
+                                <div wire:key="perm-{{ $child->id }}-minecraft" class="flex items-center justify-between">
                                     <flux:text>Join Minecraft Server</flux:text>
                                     @if($isStaffViewing)
                                         <flux:badge size="sm" color="{{ $child->parent_allows_minecraft ? 'green' : 'red' }}">{{ $child->parent_allows_minecraft ? 'Allowed' : 'Denied' }}</flux:badge>
                                     @else
                                         <flux:switch
+                                            wire:key="switch-{{ $child->id }}-minecraft"
                                             wire:click="togglePermission({{ $child->id }}, 'minecraft')"
                                             :checked="$child->parent_allows_minecraft"
                                         />
                                     @endif
                                 </div>
-                                <div class="flex items-center justify-between">
+                                <div wire:key="perm-{{ $child->id }}-discord" class="flex items-center justify-between">
                                     <flux:text>Join Discord Server</flux:text>
                                     @if($isStaffViewing)
                                         <flux:badge size="sm" color="{{ $child->parent_allows_discord ? 'green' : 'red' }}">{{ $child->parent_allows_discord ? 'Allowed' : 'Denied' }}</flux:badge>
                                     @else
                                         <flux:switch
+                                            wire:key="switch-{{ $child->id }}-discord"
                                             wire:click="togglePermission({{ $child->id }}, 'discord')"
                                             :checked="$child->parent_allows_discord"
                                         />
@@ -615,8 +708,9 @@ new class extends Component {
 
             <form wire:submit="createChildAccount" class="space-y-4">
                 <flux:field>
-                    <flux:label>Name</flux:label>
-                    <flux:input wire:model="newChildName" required placeholder="Child's name or nickname" />
+                    <flux:label>Username</flux:label>
+                    <flux:description>This will be their public display name on the site — use an online nickname, not their real name.</flux:description>
+                    <flux:input wire:model="newChildName" required placeholder="Online nickname" />
                     <flux:error name="newChildName" />
                 </flux:field>
 
@@ -635,6 +729,39 @@ new class extends Component {
                 <div class="flex gap-2 justify-end">
                     <flux:button variant="ghost" x-on:click="$flux.modal('create-child-modal').close()">Cancel</flux:button>
                     <flux:button type="submit" variant="primary">Create Account</flux:button>
+                </div>
+            </form>
+        </div>
+    </flux:modal>
+
+    {{-- Edit Child Modal --}}
+    <flux:modal name="edit-child-modal" class="w-full md:w-96">
+        <div class="space-y-6">
+            <flux:heading size="lg">Edit Child Account</flux:heading>
+
+            <form wire:submit="saveChild" class="space-y-4">
+                <flux:field>
+                    <flux:label>Username</flux:label>
+                    <flux:description>Public display name — use an online nickname, not their real name.</flux:description>
+                    <flux:input wire:model="editChildData.name" required />
+                    <flux:error name="editChildData.name" />
+                </flux:field>
+
+                <flux:field>
+                    <flux:label>Email</flux:label>
+                    <flux:input wire:model="editChildData.email" type="email" required />
+                    <flux:error name="editChildData.email" />
+                </flux:field>
+
+                <flux:field>
+                    <flux:label>Date of Birth</flux:label>
+                    <flux:input wire:model="editChildData.date_of_birth" type="date" required />
+                    <flux:error name="editChildData.date_of_birth" />
+                </flux:field>
+
+                <div class="flex gap-2 justify-end">
+                    <flux:button variant="ghost" x-on:click="$flux.modal('edit-child-modal').close()">Cancel</flux:button>
+                    <flux:button type="submit" variant="primary">Save</flux:button>
                 </div>
             </form>
         </div>

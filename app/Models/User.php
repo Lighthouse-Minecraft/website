@@ -48,12 +48,15 @@ class User extends Authenticatable // implements MustVerifyEmail
         'parent_email',
         'brig_type',
         'parent_allows_site',
+        'parent_allows_login',
         'parent_allows_minecraft',
         'parent_allows_discord',
         'staff_first_name',
         'staff_last_initial',
         'staff_bio',
+        'staff_phone',
         'staff_photo_path',
+        'is_board_member',
     ];
 
     /**
@@ -95,8 +98,10 @@ class User extends Authenticatable // implements MustVerifyEmail
             'date_of_birth' => 'date',
             'brig_type' => BrigType::class,
             'parent_allows_site' => 'boolean',
+            'parent_allows_login' => 'boolean',
             'parent_allows_minecraft' => 'boolean',
             'parent_allows_discord' => 'boolean',
+            'is_board_member' => 'boolean',
         ];
     }
 
@@ -337,6 +342,16 @@ class User extends Authenticatable // implements MustVerifyEmail
     public function staffPosition(): HasOne
     {
         return $this->hasOne(StaffPosition::class);
+    }
+
+    public function boardMembership(): HasOne
+    {
+        return $this->hasOne(BoardMember::class);
+    }
+
+    public function isBoardMember(): bool
+    {
+        return (bool) $this->is_board_member;
     }
 
     public function staffPhotoUrl(): ?string

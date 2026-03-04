@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Actions\AssignStaffPosition;
 use App\Enums\StaffDepartment;
+use App\Models\BoardMember;
 use App\Models\StaffPosition;
 use App\Models\User;
 use App\Services\MinecraftRconService;
@@ -62,4 +63,47 @@ it('does not display departments with no positions', function () {
     $response->assertOk()
         ->assertSee('Command Department')
         ->assertDontSee('Engineer Department');
+});
+
+it('displays board members section on the public page', function () {
+    BoardMember::factory()->create([
+        'display_name' => 'Board Test User',
+        'title' => 'Board Chair',
+    ]);
+
+    $this->get(route('staff.index'))
+        ->assertOk()
+        ->assertSee('Board of Directors')
+        ->assertSee('Board Test User')
+        ->assertSee('Board Chair');
+});
+
+it('does not display board members section when no board members exist', function () {
+    $this->get(route('staff.index'))
+        ->assertOk()
+        ->assertDontSee('Board of Directors');
+});
+
+it('shows linked board member with user staff name', function () {
+    $user = User::factory()->create([
+        'staff_first_name' => 'Jane',
+        'staff_last_initial' => 'D',
+    ]);
+    BoardMember::factory()->linkedTo($user->id)->create([
+        'display_name' => 'Fallback Name',
+    ]);
+
+    $this->get(route('staff.index'))
+        ->assertOk()
+        ->assertSee('Jane D.');
+});
+
+it('shows unlinked board member with display name', function () {
+    BoardMember::factory()->create([
+        'display_name' => 'External Board Member',
+    ]);
+
+    $this->get(route('staff.index'))
+        ->assertOk()
+        ->assertSee('External Board Member');
 });

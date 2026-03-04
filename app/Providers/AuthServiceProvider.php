@@ -23,6 +23,7 @@ class AuthServiceProvider extends ServiceProvider
         \App\Models\DisciplineReport::class => \App\Policies\DisciplineReportPolicy::class,
         \App\Models\ReportCategory::class => \App\Policies\ReportCategoryPolicy::class,
         \App\Models\StaffPosition::class => \App\Policies\StaffPositionPolicy::class,
+        \App\Models\BoardMember::class => \App\Policies\BoardMemberPolicy::class,
     ];
 
     /**
@@ -77,7 +78,7 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('link-discord', function ($user) {
-            return $user->isAtLeastLevel(MembershipLevel::Traveler) && ! $user->in_brig && $user->parent_allows_discord;
+            return $user->isAtLeastLevel(MembershipLevel::Stowaway) && ! $user->in_brig && $user->parent_allows_discord;
         });
 
         Gate::define('view-parent-portal', function ($user) {
@@ -85,7 +86,7 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('link-minecraft-account', function ($user) {
-            return ! $user->in_brig && $user->parent_allows_minecraft;
+            return $user->isAtLeastLevel(MembershipLevel::Stowaway) && ! $user->in_brig && $user->parent_allows_minecraft;
         });
 
         Gate::define('view-acp', function ($user) {
@@ -106,7 +107,18 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('view-discipline-report-log', $canViewLogs);
 
         Gate::define('edit-staff-bio', function ($user) {
-            return $user->isAtLeastRank(StaffRank::CrewMember);
+            return $user->isAtLeastRank(StaffRank::CrewMember) || $user->is_board_member;
+        });
+
+        Gate::define('board-member', function ($user) {
+            return $user->is_board_member;
+        });
+
+        Gate::define('view-user-discipline-reports', function ($user, $targetUser) {
+            return $user->hasRole('Admin')
+                || $user->isAtLeastRank(StaffRank::JrCrew)
+                || $user->id === $targetUser->id
+                || $user->children()->where('child_user_id', $targetUser->id)->exists();
         });
 
         Gate::define('manage-discipline-reports', function ($user) {

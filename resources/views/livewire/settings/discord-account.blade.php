@@ -244,7 +244,7 @@ new class extends Component {
                 </flux:callout>
             @else
                 <flux:callout variant="info">
-                    You'll be able to link your Discord account once you've been promoted to Traveler rank.
+                    You'll be able to link your Discord account once you've been promoted to Stowaway rank.
                 </flux:callout>
             @endif
         @endif

@@ -43,14 +43,13 @@ test('shows verification form when no active verification', function () {
         ->assertSee('Link New Account');
 });
 
-test('shows promotion callout instead of form for users below traveler rank', function () {
+test('stowaway can see link form for minecraft accounts', function () {
     $stowaway = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create();
     $this->actingAs($stowaway);
 
     $this->get('/settings/minecraft-accounts')
         ->assertSuccessful()
-        ->assertSee('promoted you to Traveler rank')
-        ->assertDontSee('Link New Account');
+        ->assertSee('Link New Account');
 });
 
 test('generates verification code', function () {

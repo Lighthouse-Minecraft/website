@@ -18,6 +18,14 @@ new class extends Component {
     public ?int $accountToRevoke = null;
     public ?int $accountToForceDelete = null;
 
+    public bool $editingUser = false;
+    public array $editUserData = [
+        'name' => '',
+        'email' => '',
+        'date_of_birth' => '',
+        'parent_email' => '',
+    ];
+
     public function mount(User $user) {
         $this->user = $user;
         $this->user->load('minecraftAccounts', 'discordAccounts', 'parents', 'children', 'staffPosition');
@@ -374,377 +382,418 @@ new class extends Component {
         );
     }
 
+    public function openEditUserModal(): void
+    {
+        $this->authorize('update', $this->user);
+
+        $this->editUserData = [
+            'name' => $this->user->name,
+            'email' => $this->user->email,
+            'date_of_birth' => $this->user->date_of_birth?->format('Y-m-d') ?? '',
+            'parent_email' => $this->user->parent_email ?? '',
+        ];
+        $this->editingUser = true;
+        Flux::modal('profile-edit-user-modal')->show();
+    }
+
+    public function saveEditUser(): void
+    {
+        $this->authorize('update', $this->user);
+
+        $this->validate([
+            'editUserData.name' => ['required', 'string', 'max:255'],
+            'editUserData.email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->user->id)],
+            'editUserData.date_of_birth' => ['nullable', 'date', 'before:today'],
+            'editUserData.parent_email' => ['nullable', 'email'],
+        ]);
+
+        $this->user->update([
+            'name' => $this->editUserData['name'],
+            'email' => $this->editUserData['email'],
+            'date_of_birth' => $this->editUserData['date_of_birth'] ?: null,
+            'parent_email' => $this->editUserData['parent_email'] ?: null,
+        ]);
+
+        \App\Actions\RecordActivity::run($this->user, 'update_profile', 'User profile updated.');
+
+        $this->user->refresh();
+        $this->editingUser = false;
+        Flux::modal('profile-edit-user-modal')->close();
+        Flux::toast(text: 'User details updated.', heading: 'Updated', variant: 'success');
+    }
 
 }; ?>
 
 <div>
-    <div class="w-full block md:flex md:gap-4">
-        <flux:card class="w-full md:w-1/2 lg:w-1/3 p-6 space-y-2 mb-6 md:mb-0">
-            <div class="flex items-center gap-3 flex-wrap mb-2">
-                <flux:heading size="xl">{{ $user->name }}</flux:heading>
-                @if($user->isInBrig())
-                    <flux:badge color="red">In the Brig</flux:badge>
-                @endif
-                @if($user->parents->isNotEmpty())
-                    <flux:badge color="purple" size="sm">Child Account</flux:badge>
-                @endif
-                @can('manage-stowaway-users')
-                    @if($user->date_of_birth)
-                        @php
-                            $age = \Carbon\Carbon::parse($user->date_of_birth)->age;
-                            $ageColor = $age < 13 ? 'red' : ($age <= 16 ? 'blue' : 'zinc');
-                        @endphp
-                        <flux:badge color="{{ $ageColor }}" size="sm">Age {{ $age }}</flux:badge>
+    {{-- Row 1: Core Identity --}}
+    <div class="w-full flex flex-col md:flex-row gap-4">
+        {{-- User Info Card --}}
+        <flux:card class="w-full md:w-1/2 lg:w-1/3 p-6 flex flex-col">
+            <div class="space-y-2 flex-1">
+                <div class="flex items-center gap-3 flex-wrap mb-2">
+                    <flux:heading size="xl">{{ $user->name }}</flux:heading>
+                    @if($user->isInBrig())
+                        <flux:badge color="red">In the Brig</flux:badge>
                     @endif
-                @endcan
+                    @if($user->parents->isNotEmpty())
+                        <flux:badge color="purple" size="sm">Child Account</flux:badge>
+                    @endif
+                    @can('manage-stowaway-users')
+                        @if($user->date_of_birth)
+                            @php
+                                $age = \Carbon\Carbon::parse($user->date_of_birth)->age;
+                                $ageColor = $age < 13 ? 'red' : ($age <= 16 ? 'blue' : 'zinc');
+                            @endphp
+                            <flux:badge color="{{ $ageColor }}" size="sm">Age {{ $age }}</flux:badge>
+                        @endif
+                    @endcan
+                </div>
+                <flux:text>Member Rank: {{ $user->membership_level->label() }}</flux:text>
+                <flux:text>Joined on {{ $user->created_at->format('F j, Y') }}</flux:text>
             </div>
-            <flux:text>Member Rank: {{ $user->membership_level->label() }}</flux:text>
-            <flux:text>Joined on {{ $user->created_at->format('F j, Y') }}</flux:text>
 
-            @can('manage-stowaway-users')
-                <div class="pt-3">
+            @canany(['update', 'manage-stowaway-users'], $user)
+                <div class="pt-3 mt-auto">
                     <flux:dropdown position="bottom" align="start">
-                        <flux:button variant="ghost" icon="ellipsis-vertical" size="sm">Actions</flux:button>
+                        <flux:button variant="primary" icon="ellipsis-vertical" size="sm">Actions</flux:button>
                         <flux:menu>
-                            @if($user->isInBrig())
-                                <flux:menu.item icon="lock-open" wire:click="openReleaseFromBrigModal">
-                                    Release from Brig
+                            @can('update', $user)
+                                <flux:menu.item icon="pencil-square" wire:click="openEditUserModal">
+                                    Edit User
                                 </flux:menu.item>
-                            @elseif(! $user->staffPosition && $user->id !== Auth::id())
-                                <flux:menu.item icon="lock-closed" wire:click="openPutInBrigModal">
-                                    Put in Brig
-                                </flux:menu.item>
-                            @endif
+                            @endcan
 
-                            @if(! $user->isInBrig() && ($this->nextMembershipLevel !== null || $this->previousMembershipLevel !== null))
-                                <flux:menu.separator />
-                            @endif
+                            @can('manage-stowaway-users')
+                                @if($user->isInBrig())
+                                    <flux:menu.item icon="lock-open" wire:click="openReleaseFromBrigModal">
+                                        Release from Brig
+                                    </flux:menu.item>
+                                @elseif(! $user->staffPosition && $user->id !== Auth::id())
+                                    <flux:menu.item icon="lock-closed" wire:click="openPutInBrigModal">
+                                        Put in Brig
+                                    </flux:menu.item>
+                                @endif
 
-                            @if(! $user->isInBrig() && $this->nextMembershipLevel !== null)
-                                <flux:menu.item icon="arrow-up-circle" x-on:click="$flux.modal('profile-promote-confirm-modal').show()">
-                                    Promote to {{ $this->nextMembershipLevel->label() }}
-                                </flux:menu.item>
-                            @endif
+                                @if(! $user->isInBrig() && ($this->nextMembershipLevel !== null || $this->previousMembershipLevel !== null))
+                                    <flux:menu.separator />
+                                @endif
 
-                            @if(! $user->isInBrig() && $this->previousMembershipLevel !== null)
-                                <flux:menu.item icon="arrow-down-circle" x-on:click="$flux.modal('profile-demote-confirm-modal').show()">
-                                    Demote to {{ $this->previousMembershipLevel->label() }}
-                                </flux:menu.item>
-                            @endif
+                                @if(! $user->isInBrig() && $this->nextMembershipLevel !== null)
+                                    <flux:menu.item icon="arrow-up-circle" x-on:click="$flux.modal('profile-promote-confirm-modal').show()">
+                                        Promote to {{ $this->nextMembershipLevel->label() }}
+                                    </flux:menu.item>
+                                @endif
+
+                                @if(! $user->isInBrig() && $this->previousMembershipLevel !== null)
+                                    <flux:menu.item icon="arrow-down-circle" x-on:click="$flux.modal('profile-demote-confirm-modal').show()">
+                                        Demote to {{ $this->previousMembershipLevel->label() }}
+                                    </flux:menu.item>
+                                @endif
+                            @endcan
                         </flux:menu>
                     </flux:dropdown>
                 </div>
-            @endcan
+            @endcanany
         </flux:card>
 
-        @if($user->staffPosition)
-            <flux:card class="w-full md:w-1/2 lg:w-1/3 mb-6 md:mb-0">
-                <flux:heading size="xl">{{ $user->staffPosition->title }}</flux:heading>
-                <flux:text>Department: {{ $user->staffPosition->department->label() }}</flux:text>
-                <flux:text>Rank: {{ $user->staff_rank->label() }}</flux:text>
-                @if($user->staffPosition->description)
-                    <flux:text variant="subtle" class="mt-2">{{ $user->staffPosition->description }}</flux:text>
-                @endif
-
-                @can('assign', $user->staffPosition)
-                    <div class="mt-4 flex gap-2">
-                        <flux:button wire:click="removeFromPosition" variant="ghost" class="hover:!text-red-600 dark:hover:!text-red-400 hover:!bg-red-50 dark:hover:!bg-red-950">Remove from Staff</flux:button>
-                        <flux:spacer />
-                        <flux:modal.trigger name="assign-staff-position">
-                            <flux:button size="sm">Change Position</flux:button>
-                        </flux:modal.trigger>
-                    </div>
-                @endcan
-
-                @if(Auth::id() === $user->id && $user->isAtLeastRank(StaffRank::CrewMember))
-                    <div class="mt-2">
-                        <flux:link href="{{ route('settings.staff-bio') }}" target="_blank" icon="pencil-square">
-                            Update Staff Bio
-                        </flux:link>
-                    </div>
-                @endif
-            </flux:card>
-        @else
-            @can('viewAny', \App\Models\StaffPosition::class)
-                <flux:card class="w-full md:w-1/4 mb-6 md:mb-0">
-                    <flux:heading size="xl">Staff Config</flux:heading>
-                    <div class="mt-6 text-center">
-                        <flux:modal.trigger name="assign-staff-position">
-                            <flux:button>Assign Staff Position</flux:button>
-                        </flux:modal.trigger>
-                    </div>
-                </flux:card>
-            @endcan
-        @endif
-
-        @can('viewPii', $user)
-            <flux:card class="w-full md:w-1/2 lg:w-1/3 p-6 space-y-2">
-                <flux:heading size="xl" class="mb-4">Contact Information</flux:heading>
-                <flux:text>Email: {{ $user->email }}</flux:text>
-            </flux:card>
-        @endcan
-    </div>
-
-    <div class="w-full flex flex-col md:flex-row gap-4 mt-6">
+        {{-- Linked Accounts Card --}}
         <flux:card class="w-full md:w-1/2 lg:w-1/3 p-6">
-            <div class="flex items-center mb-4">
-                <flux:heading size="xl">Minecraft Accounts</flux:heading>
-                @if(auth()->id() === $user->id)
-                    <flux:spacer />
-                    <flux:link href="{{ route('settings.minecraft-accounts') }}" class="text-sm text-zinc-400 hover:text-zinc-200">Manage</flux:link>
-                @endif
-            </div>
+            <flux:heading size="xl" class="mb-4">Linked Accounts</flux:heading>
 
-            @php
-                $visibleAccounts = Auth::user()->isAdmin()
-                    ? $user->minecraftAccounts
-                    : $user->minecraftAccounts->filter(fn ($a) => $a->status !== \App\Enums\MinecraftAccountStatus::Removed);
-            @endphp
-            @if($visibleAccounts->isNotEmpty())
-                <div class="flex flex-col gap-2">
-                    @foreach($visibleAccounts as $account)
-                        <div wire:key="minecraft-account-{{ $account->id }}" class="flex items-center justify-between">
-                            <div class="flex items-center gap-3">
-                                @if($account->avatar_url)
-                                    <img src="{{ $account->avatar_url }}" alt="{{ $account->username }}" class="w-8 h-8 rounded {{ $account->status === \App\Enums\MinecraftAccountStatus::Removed ? 'grayscale opacity-75' : '' }}" />
-                                @endif
-                                <div>
-                                    <div class="flex items-center gap-2">
-                                        <button wire:click="showAccount({{ $account->id }})" class="font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">{{ $account->username }}</button>
-                                        <flux:badge color="{{ $account->status->color() }}" size="sm">{{ $account->status->label() }}</flux:badge>
-                                        @if($account->is_primary)
-                                            <flux:badge color="blue" size="sm">Primary</flux:badge>
-                                        @endif
+            {{-- Minecraft Section --}}
+            <div class="mb-4">
+                <div class="flex items-center mb-2">
+                    <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 uppercase tracking-wide">Minecraft</flux:text>
+                    @if(auth()->id() === $user->id)
+                        <flux:spacer />
+                        <flux:button href="{{ route('settings.minecraft-accounts') }}" size="xs" variant="primary">Manage</flux:button>
+                    @endif
+                </div>
+
+                @php
+                    $visibleAccounts = Auth::user()->isAdmin()
+                        ? $user->minecraftAccounts
+                        : $user->minecraftAccounts->filter(fn ($a) => $a->status !== \App\Enums\MinecraftAccountStatus::Removed);
+                @endphp
+                @if($visibleAccounts->isNotEmpty())
+                    <div class="flex flex-col gap-2">
+                        @foreach($visibleAccounts as $account)
+                            <div wire:key="minecraft-account-{{ $account->id }}" class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    @if($account->avatar_url)
+                                        <img src="{{ $account->avatar_url }}" alt="{{ $account->username }}" class="w-8 h-8 rounded {{ $account->status === \App\Enums\MinecraftAccountStatus::Removed ? 'grayscale opacity-75' : '' }}" />
+                                    @endif
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <button wire:click="showAccount({{ $account->id }})" class="font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">{{ $account->username }}</button>
+                                            <flux:badge color="{{ $account->status->color() }}" size="sm">{{ $account->status->label() }}</flux:badge>
+                                            @if($account->is_primary)
+                                                <flux:badge color="blue" size="sm">Primary</flux:badge>
+                                            @endif
+                                        </div>
+                                        <flux:text class="text-sm text-zinc-500">{{ $account->account_type->label() }}</flux:text>
                                     </div>
-                                    <flux:text class="text-sm text-zinc-500">{{ $account->account_type->label() }}</flux:text>
                                 </div>
-                            </div>
-                            @if($account->status === \App\Enums\MinecraftAccountStatus::Removed)
-                                <div class="flex gap-1">
-                                    @can('reactivate', $account)
+                                @if($account->status === \App\Enums\MinecraftAccountStatus::Removed)
+                                    <div class="flex gap-1">
+                                        @can('reactivate', $account)
+                                            <flux:button
+                                                wire:click="reactivateMinecraftAccount({{ $account->id }})"
+                                                variant="primary"
+                                                size="sm"
+                                                wire:confirm="Reactivate this Minecraft account for {{ $user->name }}? It will be re-whitelisted.">
+                                                Reactivate
+                                            </flux:button>
+                                        @endcan
+                                        @can('forceDelete', $account)
+                                            <flux:button
+                                                wire:click="confirmForceDelete({{ $account->id }})"
+                                                variant="ghost"
+                                                size="sm"
+                                                class="hover:!text-red-600 dark:hover:!text-red-400 hover:!bg-red-50 dark:hover:!bg-red-950">
+                                                Delete
+                                            </flux:button>
+                                        @endcan
+                                    </div>
+                                @elseif($account->status !== \App\Enums\MinecraftAccountStatus::Cancelled && $account->status !== \App\Enums\MinecraftAccountStatus::Removed)
+                                    @can('revoke', $account)
                                         <flux:button
-                                            wire:click="reactivateMinecraftAccount({{ $account->id }})"
-                                            variant="primary"
-                                            size="sm"
-                                            wire:confirm="Reactivate this Minecraft account for {{ $user->name }}? It will be re-whitelisted.">
-                                            Reactivate
-                                        </flux:button>
-                                    @endcan
-                                    @can('forceDelete', $account)
-                                        <flux:button
-                                            wire:click="confirmForceDelete({{ $account->id }})"
+                                            wire:click="confirmRevoke({{ $account->id }})"
                                             variant="ghost"
                                             size="sm"
                                             class="hover:!text-red-600 dark:hover:!text-red-400 hover:!bg-red-50 dark:hover:!bg-red-950">
-                                            Delete
+                                            Revoke
                                         </flux:button>
                                     @endcan
-                                </div>
-                            @elseif($account->status !== \App\Enums\MinecraftAccountStatus::Cancelled && $account->status !== \App\Enums\MinecraftAccountStatus::Removed)
-                                @can('revoke', $account)
-                                    <flux:button
-                                        wire:click="confirmRevoke({{ $account->id }})"
-                                        variant="ghost"
-                                        size="sm"
-                                        class="hover:!text-red-600 dark:hover:!text-red-400 hover:!bg-red-50 dark:hover:!bg-red-950">
-                                        Revoke
-                                    </flux:button>
-                                @endcan
-                            @endif
-                        </div>
-                    @endforeach
-                </div>
-            @else
-                <flux:text class="text-zinc-500 dark:text-zinc-400 text-sm">No Minecraft accounts linked.</flux:text>
-
-                @if(auth()->id() === $user->id)
-                    <div class="mt-4">
-                        <flux:button :href="route('settings.minecraft-accounts')" size="sm" variant="primary">
-                            Add Account
-                        </flux:button>
+                                @endif
+                            </div>
+                        @endforeach
                     </div>
-                @endif
-            @endif
-        </flux:card>
-
-        {{-- Discord Accounts Card --}}
-        <flux:card class="w-full md:w-1/2 lg:w-1/3 p-6">
-            <div class="flex items-center mb-4">
-                <flux:heading size="xl">Discord Accounts</flux:heading>
-                @if(auth()->id() === $user->id)
-                    <flux:spacer />
-                    <flux:link href="{{ route('settings.discord-account') }}" class="text-sm text-zinc-400 hover:text-zinc-200">Manage</flux:link>
+                @else
+                    <flux:text class="text-zinc-500 dark:text-zinc-400 text-sm">No Minecraft accounts linked.</flux:text>
                 @endif
             </div>
 
-            @if($user->discordAccounts->isNotEmpty())
-                <div class="flex flex-col gap-2">
-                    @foreach($user->discordAccounts as $discordAccount)
-                        <div wire:key="discord-account-{{ $discordAccount->id }}" class="flex items-center justify-between">
-                            <div class="flex items-center gap-3">
-                                <img src="{{ $discordAccount->avatarUrl() }}" alt="{{ $discordAccount->username }}" class="w-8 h-8 rounded-full" />
-                                <div>
-                                    <span class="font-semibold">{{ $discordAccount->displayName() }}</span>
-                                    <flux:text class="text-sm text-zinc-500">
-                                        {{ $discordAccount->username }}
-                                        <flux:badge color="{{ $discordAccount->status->color() }}" size="sm" class="ml-1">{{ $discordAccount->status->label() }}</flux:badge>
-                                    </flux:text>
-                                </div>
-                            </div>
-                            @if(Auth::user()->isAdmin())
-                                <flux:button
-                                    wire:click="revokeDiscordAccount({{ $discordAccount->id }})"
-                                    variant="ghost"
-                                    size="sm"
-                                    class="hover:!text-red-600 dark:hover:!text-red-400 hover:!bg-red-50 dark:hover:!bg-red-950"
-                                    wire:confirm="Are you sure you want to revoke this Discord account from {{ $user->name }}?">
-                                    Revoke
-                                </flux:button>
-                            @endif
-                        </div>
-                    @endforeach
+            <flux:separator />
+
+            {{-- Discord Section --}}
+            <div class="mt-4">
+                <div class="flex items-center mb-2">
+                    <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 uppercase tracking-wide">Discord</flux:text>
+                    @if(auth()->id() === $user->id)
+                        <flux:spacer />
+                        <flux:button href="{{ route('settings.discord-account') }}" size="xs" variant="primary">Manage</flux:button>
+                    @endif
                 </div>
-            @else
-                <flux:text class="text-zinc-500 dark:text-zinc-400 text-sm">No Discord accounts linked.</flux:text>
-            @endif
+
+                @if($user->discordAccounts->isNotEmpty())
+                    <div class="flex flex-col gap-2">
+                        @foreach($user->discordAccounts as $discordAccount)
+                            <div wire:key="discord-account-{{ $discordAccount->id }}" class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <img src="{{ $discordAccount->avatarUrl() }}" alt="{{ $discordAccount->username }}" class="w-8 h-8 rounded-full" />
+                                    <div>
+                                        <span class="font-semibold">{{ $discordAccount->displayName() }}</span>
+                                        <flux:text class="text-sm text-zinc-500">
+                                            {{ $discordAccount->username }}
+                                            <flux:badge color="{{ $discordAccount->status->color() }}" size="sm" class="ml-1">{{ $discordAccount->status->label() }}</flux:badge>
+                                        </flux:text>
+                                    </div>
+                                </div>
+                                @if(Auth::user()->isAdmin())
+                                    <flux:button
+                                        wire:click="revokeDiscordAccount({{ $discordAccount->id }})"
+                                        variant="ghost"
+                                        size="sm"
+                                        class="hover:!text-red-600 dark:hover:!text-red-400 hover:!bg-red-50 dark:hover:!bg-red-950"
+                                        wire:confirm="Are you sure you want to revoke this Discord account from {{ $user->name }}?">
+                                        Revoke
+                                    </flux:button>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <flux:text class="text-zinc-500 dark:text-zinc-400 text-sm">No Discord accounts linked.</flux:text>
+                @endif
+            </div>
         </flux:card>
-    </div>
 
-    {{-- Family Cards Row --}}
-    @if($user->parents->isNotEmpty() || $user->children->isNotEmpty())
-        <div class="w-full flex flex-col md:flex-row gap-4 mt-6">
-            {{-- Public Family Card --}}
-            <flux:card class="w-full md:w-1/2 lg:w-1/3 p-6">
-                <flux:heading size="xl" class="mb-4">Family</flux:heading>
-
-                @if($user->parents->isNotEmpty())
-                    <div class="mb-4">
-                        <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-2">Parents</flux:text>
-                        @foreach($user->parents as $parentUser)
-                            <div wire:key="family-parent-{{ $parentUser->id }}" class="mb-1">
-                                <flux:link href="{{ route('profile.show', $parentUser) }}" class="text-sm">{{ $parentUser->name }}</flux:link>
-                            </div>
-                        @endforeach
-                    </div>
-                @endif
-
-                @if($user->children->isNotEmpty())
-                    <div>
-                        <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-2">Children</flux:text>
-                        @foreach($user->children as $childUser)
-                            <div wire:key="family-child-{{ $childUser->id }}" class="mb-1">
-                                <flux:link href="{{ route('profile.show', $childUser) }}" class="text-sm">{{ $childUser->name }}</flux:link>
-                            </div>
-                        @endforeach
-                    </div>
-                @endif
-            </flux:card>
-
-            {{-- Admin Parental Controls Card (Staff Only) --}}
-            @can('manage-stowaway-users')
-                <flux:card class="w-full md:w-1/2 lg:w-1/3 p-6">
-                    <flux:heading size="xl" class="mb-4">Parental Controls (Staff)</flux:heading>
+        {{-- Family Card --}}
+        @if($user->parents->isNotEmpty() || $user->children->isNotEmpty())
+            <flux:card class="w-full md:w-1/2 lg:w-1/3 p-6 flex flex-col">
+                <div class="flex-1">
+                    <flux:heading size="xl" class="mb-4">Family</flux:heading>
 
                     @if($user->parents->isNotEmpty())
-                        @if($user->parent_email)
-                            <div class="mb-4">
-                                <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-1">Parent Email</flux:text>
-                                <flux:text>{{ $user->parent_email }}</flux:text>
-                            </div>
-                        @endif
-
                         <div class="mb-4">
-                            <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-2">Permission States</flux:text>
-                            <div class="flex flex-wrap gap-2">
-                                <flux:badge size="sm" color="{{ $user->parent_allows_site ? 'green' : 'red' }}">
-                                    Site: {{ $user->parent_allows_site ? 'Allowed' : 'Denied' }}
-                                </flux:badge>
-                                <flux:badge size="sm" color="{{ $user->parent_allows_minecraft ? 'green' : 'red' }}">
-                                    MC: {{ $user->parent_allows_minecraft ? 'Allowed' : 'Denied' }}
-                                </flux:badge>
-                                <flux:badge size="sm" color="{{ $user->parent_allows_discord ? 'green' : 'red' }}">
-                                    Discord: {{ $user->parent_allows_discord ? 'Allowed' : 'Denied' }}
-                                </flux:badge>
-                            </div>
-                        </div>
-                    @endif
-
-                    @if($user->children->isNotEmpty())
-                        <div>
-                            <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-2">Children's Permission States</flux:text>
-                            @foreach($user->children as $childUser)
-                                <div wire:key="admin-child-{{ $childUser->id }}" class="mb-3">
-                                    <flux:link href="{{ route('profile.show', $childUser) }}" class="font-medium text-sm">{{ $childUser->name }}</flux:link>
-                                    <div class="flex flex-wrap gap-2 mt-1">
-                                        <flux:badge size="sm" color="{{ $childUser->parent_allows_site ? 'green' : 'red' }}">
-                                            Site: {{ $childUser->parent_allows_site ? 'Allowed' : 'Denied' }}
-                                        </flux:badge>
-                                        <flux:badge size="sm" color="{{ $childUser->parent_allows_minecraft ? 'green' : 'red' }}">
-                                            MC: {{ $childUser->parent_allows_minecraft ? 'Allowed' : 'Denied' }}
-                                        </flux:badge>
-                                        <flux:badge size="sm" color="{{ $childUser->parent_allows_discord ? 'green' : 'red' }}">
-                                            Discord: {{ $childUser->parent_allows_discord ? 'Allowed' : 'Denied' }}
-                                        </flux:badge>
-                                    </div>
+                            <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-2">Parents</flux:text>
+                            @foreach($user->parents as $parentUser)
+                                <div wire:key="family-parent-{{ $parentUser->id }}" class="mb-1">
+                                    <flux:link href="{{ route('profile.show', $parentUser) }}" class="text-sm">{{ $parentUser->name }}</flux:link>
                                 </div>
                             @endforeach
                         </div>
                     @endif
 
+                    @if($user->children->isNotEmpty())
+                        <div>
+                            <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-2">Children</flux:text>
+                            @foreach($user->children as $childUser)
+                                <div wire:key="family-child-{{ $childUser->id }}" class="mb-1">
+                                    <flux:link href="{{ route('profile.show', $childUser) }}" class="text-sm">{{ $childUser->name }}</flux:link>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+
+                @can('manage-stowaway-users')
                     @if($user->children->isNotEmpty() && Auth::user()->isAtLeastRank(\App\Enums\StaffRank::Officer))
-                        <div class="mt-3">
+                        <div class="pt-3 mt-auto">
                             <flux:link href="{{ route('parent-portal.show', $user) }}" class="text-sm">
                                 View Parent Portal
                             </flux:link>
                         </div>
                     @endif
+                @endcan
+            </flux:card>
+        @endif
+    </div>
+
+    {{-- Row 2: Staff Management --}}
+    @php
+        $showContactInfo = Auth::user()->can('viewPii', $user) || (Auth::user()->can('viewStaffPhone', $user) && $user->staff_phone);
+        $showStaffMgmt = $user->staffPosition
+            ? Auth::user()->can('assign', $user->staffPosition)
+            : Auth::user()->can('viewAny', \App\Models\StaffPosition::class);
+    @endphp
+    @if($showContactInfo || $showStaffMgmt)
+        <div class="w-full flex flex-col md:flex-row gap-4 mt-6">
+            {{-- Contact Info Card --}}
+            @can('viewPii', $user)
+                <flux:card class="w-full md:w-1/2 lg:w-1/3 p-6 space-y-2">
+                    <flux:heading size="xl" class="mb-4">Contact Information</flux:heading>
+                    <flux:text>Email: {{ $user->email }}</flux:text>
+                    @can('viewStaffPhone', $user)
+                        @if($user->staff_phone)
+                            <flux:text>Phone: {{ $user->staff_phone }}</flux:text>
+                        @endif
+                    @endcan
                 </flux:card>
+            @endcan
+
+            @cannot('viewPii', $user)
+                @can('viewStaffPhone', $user)
+                    @if($user->staff_phone)
+                        <flux:card class="w-full md:w-1/2 lg:w-1/3 p-6 space-y-2">
+                            <flux:heading size="xl" class="mb-4">Contact Information</flux:heading>
+                            <flux:text>Phone: {{ $user->staff_phone }}</flux:text>
+                        </flux:card>
+                    @endif
+                @endcan
+            @endcannot
+
+            {{-- Staff Management Card --}}
+            @if($user->staffPosition)
+                @can('assign', $user->staffPosition)
+                    <flux:card class="w-full md:w-1/2 lg:w-1/3 p-6">
+                        <flux:heading size="xl">{{ $user->staffPosition->title }}</flux:heading>
+                        <flux:text>Department: {{ $user->staffPosition->department->label() }}</flux:text>
+                        <flux:text>Rank: {{ $user->staff_rank->label() }}</flux:text>
+                        @if($user->staffPosition->description)
+                            <flux:text variant="subtle" class="mt-2">{{ $user->staffPosition->description }}</flux:text>
+                        @endif
+
+                        <div class="mt-4 flex gap-2">
+                            <flux:button wire:click="removeFromPosition" variant="ghost" class="hover:!text-red-600 dark:hover:!text-red-400 hover:!bg-red-50 dark:hover:!bg-red-950">Remove from Staff</flux:button>
+                            <flux:spacer />
+                            <flux:modal.trigger name="assign-staff-position">
+                                <flux:button size="sm">Change Position</flux:button>
+                            </flux:modal.trigger>
+                        </div>
+                    </flux:card>
+                @endcan
+            @else
+                @can('viewAny', \App\Models\StaffPosition::class)
+                    <flux:card class="w-full md:w-1/2 lg:w-1/3 p-6">
+                        <flux:heading size="xl">Staff Config</flux:heading>
+                        <div class="mt-6 text-center">
+                            <flux:modal.trigger name="assign-staff-position">
+                                <flux:button>Assign Staff Position</flux:button>
+                            </flux:modal.trigger>
+                        </div>
+                    </flux:card>
+                @endcan
+            @endif
+        </div>
+    @endif
+
+    {{-- Row 3: Details & Reports --}}
+    @php
+        $hasStaffDetails = $user->staffPosition !== null;
+    @endphp
+    @if($hasStaffDetails || Auth::user()->can('view-user-discipline-reports', $user))
+        <div class="w-full flex flex-col md:flex-row gap-4 mt-6">
+            {{-- Staff Details Card --}}
+            @if($hasStaffDetails)
+                <flux:card class="w-full lg:w-1/2 p-6 space-y-4">
+                    <flux:heading size="lg">Staff Details</flux:heading>
+
+                    <div class="flex items-start gap-4">
+                        @if(! $user->isJrCrew() && $user->staffPhotoUrl())
+                            <img src="{{ $user->staffPhotoUrl() }}" alt="{{ $user->name }}" class="w-24 h-24 rounded-lg object-cover flex-shrink-0" />
+                        @elseif($user->avatarUrl())
+                            <img src="{{ $user->avatarUrl() }}" alt="{{ $user->name }}" class="w-16 h-16 rounded-lg flex-shrink-0" />
+                        @endif
+
+                        <div class="space-y-1">
+                            @if(! $user->isJrCrew() && $user->staff_first_name)
+                                <flux:heading size="md">{{ $user->staff_first_name }} {{ $user->staff_last_initial }}.</flux:heading>
+                            @endif
+                            <flux:link href="{{ route('profile.show', $user) }}" wire:navigate class="text-sm text-zinc-500">{{ $user->name }}</flux:link>
+
+                            <div class="flex gap-2 mt-1">
+                                <flux:badge size="sm" color="{{ $user->staff_rank->color() }}">{{ $user->staff_rank->label() }}</flux:badge>
+                                <flux:badge size="sm" color="zinc">{{ $user->staffPosition->department->label() }}</flux:badge>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <flux:heading size="sm">{{ $user->staffPosition->title }}</flux:heading>
+                        @if($user->staffPosition->description)
+                            <flux:text variant="subtle" class="mt-1">{{ $user->staffPosition->description }}</flux:text>
+                        @endif
+                    </div>
+
+                    @if(! $user->isJrCrew() && $user->staff_bio)
+                        <div>
+                            <flux:heading size="sm" class="mb-1">About</flux:heading>
+                            <flux:text>{{ $user->staff_bio }}</flux:text>
+                        </div>
+                    @endif
+
+                    @if(Auth::id() === $user->id && $user->isAtLeastRank(StaffRank::CrewMember))
+                        <div>
+                            <flux:link href="{{ route('settings.staff-bio') }}" target="_blank" icon="pencil-square">
+                                Update Staff Bio
+                            </flux:link>
+                        </div>
+                    @endif
+                </flux:card>
+            @endif
+
+            {{-- Staff Reports Card --}}
+            @can('view-user-discipline-reports', $user)
+                <div class="w-full lg:w-1/2">
+                    <livewire:users.discipline-reports-card :user="$user" lazy />
+                </div>
             @endcan
         </div>
     @endif
 
-    @if($user->staffPosition)
-        <div class="w-full mt-6">
-            <flux:card class="w-full md:w-2/3 lg:w-1/2 p-6 space-y-4">
-                <flux:heading size="lg">Staff Details</flux:heading>
-
-                <div class="flex items-start gap-4">
-                    @if(! $user->isJrCrew() && $user->staffPhotoUrl())
-                        <img src="{{ $user->staffPhotoUrl() }}" alt="{{ $user->name }}" class="w-24 h-24 rounded-lg object-cover flex-shrink-0" />
-                    @elseif($user->avatarUrl())
-                        <img src="{{ $user->avatarUrl() }}" alt="{{ $user->name }}" class="w-16 h-16 rounded-lg flex-shrink-0" />
-                    @endif
-
-                    <div class="space-y-1">
-                        @if(! $user->isJrCrew() && $user->staff_first_name)
-                            <flux:heading size="md">{{ $user->staff_first_name }} {{ $user->staff_last_initial }}.</flux:heading>
-                        @endif
-                        <flux:link href="{{ route('profile.show', $user) }}" wire:navigate class="text-sm text-zinc-500">{{ $user->name }}</flux:link>
-
-                        <div class="flex gap-2 mt-1">
-                            <flux:badge size="sm" color="{{ $user->staff_rank->color() }}">{{ $user->staff_rank->label() }}</flux:badge>
-                            <flux:badge size="sm" color="zinc">{{ $user->staffPosition->department->label() }}</flux:badge>
-                        </div>
-                    </div>
-                </div>
-
-                <div>
-                    <flux:heading size="sm">{{ $user->staffPosition->title }}</flux:heading>
-                    @if($user->staffPosition->description)
-                        <flux:text variant="subtle" class="mt-1">{{ $user->staffPosition->description }}</flux:text>
-                    @endif
-                </div>
-
-                @if(! $user->isJrCrew() && $user->staff_bio)
-                    <div>
-                        <flux:heading size="sm" class="mb-1">About</flux:heading>
-                        <flux:text>{{ $user->staff_bio }}</flux:text>
-                    </div>
-                @endif
-            </flux:card>
-        </div>
-    @endif
-
+    {{-- Modals --}}
     <x-minecraft.mc-account-detail-modal :account="$selectedAccount" />
 
     @can('viewAny', \App\Models\StaffPosition::class)
@@ -776,6 +825,43 @@ new class extends Component {
             </div>
         </flux:modal>
     @endcan
+
+    <!-- Edit User Modal -->
+    <flux:modal name="profile-edit-user-modal" variant="flyout">
+        <div class="space-y-6">
+            <flux:heading size="xl">Edit User</flux:heading>
+
+            <form wire:submit="saveEditUser" class="space-y-6">
+                <flux:field>
+                    <flux:label>Username</flux:label>
+                    <flux:input wire:model="editUserData.name" required />
+                    <flux:error name="editUserData.name" />
+                </flux:field>
+
+                <flux:field>
+                    <flux:label>Email</flux:label>
+                    <flux:input wire:model="editUserData.email" type="email" required />
+                    <flux:error name="editUserData.email" />
+                </flux:field>
+
+                <flux:field>
+                    <flux:label>Date of Birth</flux:label>
+                    <flux:input wire:model="editUserData.date_of_birth" type="date" />
+                    <flux:error name="editUserData.date_of_birth" />
+                </flux:field>
+
+                <flux:field>
+                    <flux:label>Parent Email</flux:label>
+                    <flux:input wire:model="editUserData.parent_email" type="email" placeholder="Optional" />
+                    <flux:error name="editUserData.parent_email" />
+                </flux:field>
+
+                <div class="flex justify-end">
+                    <flux:button type="submit" variant="primary">Save</flux:button>
+                </div>
+            </form>
+        </div>
+    </flux:modal>
 
     <!-- Put in Brig Modal -->
     <flux:modal name="profile-put-in-brig-modal" class="w-full md:w-1/2 xl:w-1/3">
