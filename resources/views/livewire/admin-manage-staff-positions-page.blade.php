@@ -40,7 +40,7 @@ new class extends Component {
 
         $this->validate([
             'newTitle' => 'required|string|max:255',
-            'newDepartment' => 'required|string',
+            'newDepartment' => ['required', 'string', Rule::in(array_column(StaffDepartment::cases(), 'value'))],
             'newRank' => ['required', 'integer', Rule::in([StaffRank::CrewMember->value, StaffRank::Officer->value])],
             'newDescription' => 'nullable|string|max:2000',
             'newResponsibilities' => 'nullable|string|max:2000',
@@ -85,7 +85,7 @@ new class extends Component {
 
         $this->validate([
             'editTitle' => 'required|string|max:255',
-            'editDepartment' => 'required|string',
+            'editDepartment' => ['required', 'string', Rule::in(array_column(StaffDepartment::cases(), 'value'))],
             'editRank' => ['required', 'integer', Rule::in([StaffRank::CrewMember->value, StaffRank::Officer->value])],
             'editDescription' => 'nullable|string|max:2000',
             'editResponsibilities' => 'nullable|string|max:2000',
@@ -137,7 +137,7 @@ new class extends Component {
         </flux:table.columns>
         <flux:table.rows>
             @foreach($this->positions as $position)
-                <flux:table.row>
+                <flux:table.row wire:key="position-row-{{ $position->id }}">
                     <flux:table.cell>{{ $position->sort_order }}</flux:table.cell>
                     <flux:table.cell class="font-medium">{{ $position->title }}</flux:table.cell>
                     <flux:table.cell>{{ $position->department->label() }}</flux:table.cell>

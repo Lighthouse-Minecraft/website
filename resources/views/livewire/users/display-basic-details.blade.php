@@ -54,6 +54,15 @@ new class extends Component {
         Flux::toast(text: 'Staff position removed.', heading: 'Removed', variant: 'success');
     }
 
+    public function getAvailablePositionsProperty()
+    {
+        if (! Auth::user()?->can('viewAny', StaffPosition::class)) {
+            return collect();
+        }
+
+        return StaffPosition::vacant()->ordered()->get();
+    }
+
     /**
      * Loads the specified Minecraft account for the managed user into `$selectedAccount` and opens the account detail modal if the account exists.
      *
@@ -738,35 +747,35 @@ new class extends Component {
 
     <x-minecraft.mc-account-detail-modal :account="$selectedAccount" />
 
-    <flux:modal name="assign-staff-position" class="w-full md:w-1/2 xl:w-1/3">
-        <div class="space-y-6">
-            <flux:heading size="lg">Assign Staff Position</flux:heading>
-            <flux:text variant="subtle">Select a vacant position to assign to {{ $user->name }}.</flux:text>
+    @can('viewAny', \App\Models\StaffPosition::class)
+        <flux:modal name="assign-staff-position" class="w-full md:w-1/2 xl:w-1/3">
+            <div class="space-y-6">
+                <flux:heading size="lg">Assign Staff Position</flux:heading>
+                <flux:text variant="subtle">Select a vacant position to assign to {{ $user->name }}.</flux:text>
 
-            @php $availablePositions = \App\Models\StaffPosition::vacant()->ordered()->get(); @endphp
-
-            @if($availablePositions->isEmpty())
-                <flux:text>No vacant positions available. Create one in the ACP first.</flux:text>
-            @else
-                <div class="space-y-2 max-h-64 overflow-y-auto">
-                    @foreach($availablePositions as $pos)
-                        <div wire:key="assign-pos-{{ $pos->id }}" class="flex items-center justify-between p-3 rounded-lg border border-zinc-200 dark:border-zinc-700">
-                            <div>
-                                <span class="font-medium">{{ $pos->title }}</span>
-                                <div class="flex gap-1 mt-1">
-                                    <flux:badge size="sm" color="{{ $pos->rank->color() }}">{{ $pos->rank->label() }}</flux:badge>
-                                    <flux:badge size="sm" color="zinc">{{ $pos->department->label() }}</flux:badge>
+                @if($this->availablePositions->isEmpty())
+                    <flux:text>No vacant positions available. Create one in the ACP first.</flux:text>
+                @else
+                    <div class="space-y-2 max-h-64 overflow-y-auto">
+                        @foreach($this->availablePositions as $pos)
+                            <div wire:key="assign-pos-{{ $pos->id }}" class="flex items-center justify-between p-3 rounded-lg border border-zinc-200 dark:border-zinc-700">
+                                <div>
+                                    <span class="font-medium">{{ $pos->title }}</span>
+                                    <div class="flex gap-1 mt-1">
+                                        <flux:badge size="sm" color="{{ $pos->rank->color() }}">{{ $pos->rank->label() }}</flux:badge>
+                                        <flux:badge size="sm" color="zinc">{{ $pos->department->label() }}</flux:badge>
+                                    </div>
                                 </div>
+                                <flux:button wire:click="assignToPosition({{ $pos->id }})" size="sm" variant="primary">Assign</flux:button>
                             </div>
-                            <flux:button wire:click="assignToPosition({{ $pos->id }})" size="sm" variant="primary">Assign</flux:button>
-                        </div>
-                    @endforeach
-                </div>
-            @endif
+                        @endforeach
+                    </div>
+                @endif
 
-            <flux:button variant="ghost" x-on:click="$flux.modal('assign-staff-position').close()">Cancel</flux:button>
-        </div>
-    </flux:modal>
+                <flux:button variant="ghost" x-on:click="$flux.modal('assign-staff-position').close()">Cancel</flux:button>
+            </div>
+        </flux:modal>
+    @endcan
 
     <!-- Put in Brig Modal -->
     <flux:modal name="profile-put-in-brig-modal" class="w-full md:w-1/2 xl:w-1/3">

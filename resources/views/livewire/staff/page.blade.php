@@ -83,6 +83,10 @@ new class extends Component {
                                     <div
                                         wire:key="staff-{{ $pos->id }}"
                                         wire:click="selectPosition({{ $pos->id }})"
+                                        wire:keydown.enter="selectPosition({{ $pos->id }})"
+                                        role="button"
+                                        tabindex="0"
+                                        aria-pressed="{{ $selectedPositionId === $pos->id ? 'true' : 'false' }}"
                                         class="p-3 rounded-lg border transition-colors cursor-pointer {{ $selectedPositionId === $pos->id ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : 'border-zinc-200 dark:border-zinc-700 hover:border-blue-300 dark:hover:border-blue-600' }}"
                                     >
                                         @if($pos->isFilled())
@@ -115,6 +119,10 @@ new class extends Component {
                                     <div
                                         wire:key="staff-{{ $pos->id }}"
                                         wire:click="selectPosition({{ $pos->id }})"
+                                        wire:keydown.enter="selectPosition({{ $pos->id }})"
+                                        role="button"
+                                        tabindex="0"
+                                        aria-pressed="{{ $selectedPositionId === $pos->id ? 'true' : 'false' }}"
                                         class="p-3 rounded-lg border transition-colors cursor-pointer {{ $selectedPositionId === $pos->id ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : 'border-zinc-200 dark:border-zinc-700 hover:border-blue-300 dark:hover:border-blue-600' }}"
                                     >
                                         @if($pos->isFilled())
