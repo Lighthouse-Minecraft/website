@@ -455,15 +455,17 @@ new class extends Component {
                     </div>
                 @endif
             </flux:card>
-        @elseif(Auth::user()?->can('viewAny', \App\Models\StaffPosition::class))
-            <flux:card class="w-full md:w-1/4 mb-6 md:mb-0">
-                <flux:heading size="xl">Staff Config</flux:heading>
-                <div class="mt-6 text-center">
-                    <flux:modal.trigger name="assign-staff-position">
-                        <flux:button>Assign Staff Position</flux:button>
-                    </flux:modal.trigger>
-                </div>
-            </flux:card>
+        @else
+            @can('viewAny', \App\Models\StaffPosition::class)
+                <flux:card class="w-full md:w-1/4 mb-6 md:mb-0">
+                    <flux:heading size="xl">Staff Config</flux:heading>
+                    <div class="mt-6 text-center">
+                        <flux:modal.trigger name="assign-staff-position">
+                            <flux:button>Assign Staff Position</flux:button>
+                        </flux:modal.trigger>
+                    </div>
+                </flux:card>
+            @endcan
         @endif
 
         @can('viewPii', $user)

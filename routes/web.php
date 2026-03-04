@@ -146,6 +146,6 @@ Route::post('/api/minecraft/verify', function (\Illuminate\Http\Request $request
 
 require __DIR__.'/auth.php';
 
-Volt::route('/staff', 'staff-page')->name('staff.index');
+Volt::route('/staff', 'staff.page')->name('staff.index');
 
 Route::get('/{slug}', [PageController::class, 'show'])->name('pages.show');

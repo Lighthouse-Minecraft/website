@@ -45,8 +45,8 @@ new class extends Component {
 
             $grouped[] = [
                 'department' => $dept,
-                'officers' => $deptPositions->where('rank', StaffRank::Officer)->sortBy('title')->values(),
-                'crew' => $deptPositions->filter(fn ($p) => in_array($p->rank, [StaffRank::CrewMember, StaffRank::JrCrew]))->sortBy('title')->values(),
+                'officers' => $deptPositions->where('rank', StaffRank::Officer)->values(),
+                'crew' => $deptPositions->filter(fn ($p) => in_array($p->rank, [StaffRank::CrewMember, StaffRank::JrCrew]))->values(),
             ];
         }
 
@@ -64,8 +64,6 @@ new class extends Component {
 }; ?>
 
 <section>
-    @include('partials.settings-heading')
-
     <div class="w-full px-4 py-8 mx-auto sm:px-6 lg:px-8">
         <flux:heading size="2xl" class="mb-8">Our Team</flux:heading>
 

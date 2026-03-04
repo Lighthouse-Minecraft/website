@@ -3,6 +3,7 @@
 namespace App\Actions;
 
 use App\Models\StaffPosition;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class UnassignStaffPosition
@@ -19,16 +20,18 @@ class UnassignStaffPosition
 
         $positionTitle = $position->title;
 
-        // Clear the position assignment
-        $position->update(['user_id' => null]);
+        DB::transaction(function () use ($position, $user, $positionTitle) {
+            // Clear the position assignment
+            $position->update(['user_id' => null]);
 
-        // Remove user's staff position fields via existing action
-        RemoveUsersStaffPosition::run($user);
+            // Remove user's staff position fields via existing action
+            RemoveUsersStaffPosition::run($user);
 
-        RecordActivity::run(
-            $position,
-            'staff_position_unassigned',
-            "Unassigned {$user->name} from position: {$positionTitle}"
-        );
+            RecordActivity::run(
+                $position,
+                'staff_position_unassigned',
+                "Unassigned {$user->name} from position: {$positionTitle}"
+            );
+        });
     }
 }

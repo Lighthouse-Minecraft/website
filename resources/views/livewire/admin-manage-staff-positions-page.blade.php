@@ -4,6 +4,7 @@ use App\Enums\StaffDepartment;
 use App\Enums\StaffRank;
 use App\Models\StaffPosition;
 use Flux\Flux;
+use Illuminate\Validation\Rule;
 use Livewire\Volt\Component;
 
 new class extends Component {
@@ -26,7 +27,7 @@ new class extends Component {
     public int $editSortOrder = 0;
     public ?int $editId = null;
 
-    public function positions()
+    public function getPositionsProperty()
     {
         $this->authorize('viewAny', StaffPosition::class);
 
@@ -40,7 +41,7 @@ new class extends Component {
         $this->validate([
             'newTitle' => 'required|string|max:255',
             'newDepartment' => 'required|string',
-            'newRank' => 'required|integer|in:2,3',
+            'newRank' => ['required', 'integer', Rule::in([StaffRank::CrewMember->value, StaffRank::Officer->value])],
             'newDescription' => 'nullable|string|max:2000',
             'newResponsibilities' => 'nullable|string|max:2000',
             'newRequirements' => 'nullable|string|max:2000',
@@ -60,7 +61,6 @@ new class extends Component {
         Flux::modal('create-position-modal')->close();
         Flux::toast('Staff position created.', 'Created', variant: 'success');
         $this->reset(['newTitle', 'newDepartment', 'newRank', 'newDescription', 'newResponsibilities', 'newRequirements', 'newSortOrder']);
-        $this->newRank = 2;
     }
 
     public function openEditModal(int $id): void
@@ -86,7 +86,7 @@ new class extends Component {
         $this->validate([
             'editTitle' => 'required|string|max:255',
             'editDepartment' => 'required|string',
-            'editRank' => 'required|integer|in:2,3',
+            'editRank' => ['required', 'integer', Rule::in([StaffRank::CrewMember->value, StaffRank::Officer->value])],
             'editDescription' => 'nullable|string|max:2000',
             'editResponsibilities' => 'nullable|string|max:2000',
             'editRequirements' => 'nullable|string|max:2000',
@@ -136,7 +136,7 @@ new class extends Component {
             <flux:table.column></flux:table.column>
         </flux:table.columns>
         <flux:table.rows>
-            @foreach($this->positions() as $position)
+            @foreach($this->positions as $position)
                 <flux:table.row>
                     <flux:table.cell>{{ $position->sort_order }}</flux:table.cell>
                     <flux:table.cell class="font-medium">{{ $position->title }}</flux:table.cell>

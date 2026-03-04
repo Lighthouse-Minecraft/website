@@ -81,7 +81,7 @@ new class extends Component {
             @if($existingPhotoUrl)
                 <div class="flex items-center gap-4">
                     <img src="{{ $existingPhotoUrl }}" alt="Staff photo" class="w-20 h-20 rounded-lg object-cover" />
-                    <flux:button wire:click="removePhoto" variant="ghost" size="sm">Remove Photo</flux:button>
+                    <flux:button type="button" wire:click="removePhoto" variant="ghost" size="sm">Remove Photo</flux:button>
                 </div>
             @endif
 
