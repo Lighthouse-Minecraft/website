@@ -13,6 +13,7 @@ use App\Models\Thread;
 use App\Models\User;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Volt\Component;
@@ -340,7 +341,7 @@ new class extends Component {
 
         $this->validate([
             'editChildData.name' => ['required', 'string', 'max:255'],
-            'editChildData.email' => ['required', 'email', 'max:255'],
+            'editChildData.email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->editingChildId)],
             'editChildData.date_of_birth' => ['nullable', 'date', 'before:today'],
         ]);
 

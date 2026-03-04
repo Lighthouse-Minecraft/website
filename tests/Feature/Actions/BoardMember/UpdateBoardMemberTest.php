@@ -34,5 +34,7 @@ it('records activity when updating', function () {
 
     $this->assertDatabaseHas('activity_logs', [
         'action' => 'board_member_updated',
+        'subject_id' => $boardMember->id,
+        'subject_type' => BoardMember::class,
     ]);
 });

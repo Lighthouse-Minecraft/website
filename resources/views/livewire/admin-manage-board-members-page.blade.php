@@ -9,6 +9,7 @@ use App\Models\BoardMember;
 use App\Models\User;
 use Flux\Flux;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Attributes\Computed;
 use Livewire\Volt\Component;
 use Livewire\WithFileUploads;
 
@@ -36,6 +37,7 @@ new class extends Component {
     public ?int $linkUserId = null;
     public string $userSearch = '';
 
+    #[Computed]
     public function boardMembers()
     {
         $this->authorize('viewAny', BoardMember::class);
@@ -102,10 +104,13 @@ new class extends Component {
 
         $photoPath = $boardMember->photo_path;
         if ($this->editPhoto) {
-            if ($boardMember->photo_path) {
-                Storage::disk('public')->delete($boardMember->photo_path);
+            $newPath = $this->editPhoto->store('board-member-photos', 'public');
+            if ($newPath) {
+                if ($boardMember->photo_path) {
+                    Storage::disk('public')->delete($boardMember->photo_path);
+                }
+                $photoPath = $newPath;
             }
-            $photoPath = $this->editPhoto->store('board-member-photos', 'public');
         }
 
         UpdateBoardMember::run(
@@ -148,6 +153,7 @@ new class extends Component {
         }
 
         return User::where('name', 'like', '%'.trim($this->userSearch).'%')
+            ->whereNotIn('id', BoardMember::whereNotNull('user_id')->pluck('user_id'))
             ->limit(10)
             ->get(['id', 'name']);
     }
@@ -196,7 +202,7 @@ new class extends Component {
             <flux:table.column></flux:table.column>
         </flux:table.columns>
         <flux:table.rows>
-            @foreach($this->boardMembers() as $member)
+            @foreach($this->boardMembers as $member)
                 <flux:table.row wire:key="board-member-{{ $member->id }}">
                     <flux:table.cell>{{ $member->sort_order }}</flux:table.cell>
                     <flux:table.cell class="font-medium">{{ $member->display_name }}</flux:table.cell>

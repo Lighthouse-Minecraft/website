@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Enums\ReportSeverity;
 use App\Models\DisciplineReport;
 use App\Notifications\Channels\PushoverChannel;
 use Illuminate\Bus\Queueable;
@@ -42,8 +43,13 @@ class DisciplineReportPublishedParentNotification extends Notification implement
 
     public function toMail(object $notifiable): MailMessage
     {
+        $isConversation = in_array($this->report->severity, [ReportSeverity::Trivial, ReportSeverity::Minor]);
+        $subject = $isConversation
+            ? 'Staff Conversation Recorded for Your Child'
+            : 'Staff Report Recorded for Your Child';
+
         return (new MailMessage)
-            ->subject('Staff Report Recorded for Your Child')
+            ->subject($subject)
             ->markdown('mail.discipline-report-published-parent', [
                 'report' => $this->report,
                 'childName' => $this->report->subject->name,
@@ -53,9 +59,12 @@ class DisciplineReportPublishedParentNotification extends Notification implement
 
     public function toPushover(object $notifiable): array
     {
+        $isConversation = in_array($this->report->severity, [ReportSeverity::Trivial, ReportSeverity::Minor]);
+        $type = $isConversation ? 'conversation' : 'staff report';
+
         return [
-            'title' => 'Staff Report Recorded',
-            'message' => "A {$this->report->severity->label()} staff report has been recorded regarding your child {$this->report->subject->name}.",
+            'title' => $isConversation ? 'Staff Conversation Recorded' : 'Staff Report Recorded',
+            'message' => "A {$this->report->severity->label()} {$type} has been recorded regarding your child {$this->report->subject->name}.",
             'url' => route('parent-portal.index'),
         ];
     }

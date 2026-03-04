@@ -70,7 +70,7 @@ class BoardMember extends Model
         return null;
     }
 
-    public function scopeOrdered($query)
+    public function scopeOrdered(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
     {
         return $query->orderBy('sort_order')->orderBy('display_name');
     }

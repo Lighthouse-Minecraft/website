@@ -51,7 +51,7 @@ class UpdateChildPermission
         $child->parent_allows_login = $enabled;
         $child->save();
 
-        if (! $enabled) {
+        if (! $enabled && config('session.driver') === 'database') {
             // Invalidate all active sessions for this child
             DB::table('sessions')->where('user_id', $child->id)->delete();
         }

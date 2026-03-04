@@ -31,6 +31,16 @@ it('blocks brigged users from discord redirect', function () {
         ->assertForbidden();
 });
 
+it('allows stowaway rank to access discord redirect', function () {
+    $user = User::factory()->create(['membership_level' => MembershipLevel::Stowaway]);
+
+    $response = $this->actingAs($user)
+        ->get(route('auth.discord.redirect'));
+
+    expect($response->status())->toBe(302);
+    expect($response->headers->get('Location'))->toContain('discord.com');
+});
+
 it('allows eligible users to access discord redirect', function () {
     $user = User::factory()->create(['membership_level' => MembershipLevel::Traveler]);
 

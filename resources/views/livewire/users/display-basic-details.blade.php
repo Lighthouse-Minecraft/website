@@ -402,7 +402,7 @@ new class extends Component {
 
         $this->validate([
             'editUserData.name' => ['required', 'string', 'max:255'],
-            'editUserData.email' => ['required', 'email', 'max:255'],
+            'editUserData.email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->user->id)],
             'editUserData.date_of_birth' => ['nullable', 'date', 'before:today'],
             'editUserData.parent_email' => ['nullable', 'email'],
         ]);
@@ -413,6 +413,8 @@ new class extends Component {
             'date_of_birth' => $this->editUserData['date_of_birth'] ?: null,
             'parent_email' => $this->editUserData['parent_email'] ?: null,
         ]);
+
+        \App\Actions\RecordActivity::run($this->user, 'update_profile', 'User profile updated.');
 
         $this->user->refresh();
         $this->editingUser = false;
