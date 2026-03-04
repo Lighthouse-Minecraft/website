@@ -28,45 +28,49 @@
                         <flux:heading size="md">Account Linking</flux:heading>
                         <flux:separator variant="subtle" class="my-2" />
 
-                        @if(auth()->user()->isAtLeastLevel(App\Enums\MembershipLevel::Stowaway))
+                        @canany(['link-minecraft-account', 'link-discord'])
                             <div class="flex flex-col gap-3 mt-2">
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <flux:text class="font-medium">Minecraft</flux:text>
-                                        <flux:text variant="subtle" class="text-sm">
-                                            @if(auth()->user()->minecraftAccounts()->exists())
-                                                {{ auth()->user()->minecraftAccounts()->countingTowardLimit()->count() }} account(s) linked
-                                            @else
-                                                Link your account to join the server
-                                            @endif
-                                        </flux:text>
+                                @can('link-minecraft-account')
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <flux:text class="font-medium">Minecraft</flux:text>
+                                            <flux:text variant="subtle" class="text-sm">
+                                                @if(auth()->user()->minecraftAccounts()->exists())
+                                                    {{ auth()->user()->minecraftAccounts()->countingTowardLimit()->count() }} account(s) linked
+                                                @else
+                                                    Link your account to join the server
+                                                @endif
+                                            </flux:text>
+                                        </div>
+                                        <flux:button href="{{ route('settings.minecraft-accounts') }}" size="xs" variant="primary">
+                                            Manage
+                                        </flux:button>
                                     </div>
-                                    <flux:button href="{{ route('settings.minecraft-accounts') }}" size="xs" variant="primary">
-                                        Manage
-                                    </flux:button>
-                                </div>
+                                @endcan
 
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <flux:text class="font-medium">Discord</flux:text>
-                                        <flux:text variant="subtle" class="text-sm">
-                                            @if(auth()->user()->discordAccounts()->exists())
-                                                {{ auth()->user()->discordAccounts()->count() }} account(s) linked
-                                            @else
-                                                Link your account for role sync and DM notifications
-                                            @endif
-                                        </flux:text>
+                                @can('link-discord')
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <flux:text class="font-medium">Discord</flux:text>
+                                            <flux:text variant="subtle" class="text-sm">
+                                                @if(auth()->user()->discordAccounts()->exists())
+                                                    {{ auth()->user()->discordAccounts()->count() }} account(s) linked
+                                                @else
+                                                    Link your account for role sync and DM notifications
+                                                @endif
+                                            </flux:text>
+                                        </div>
+                                        <flux:button href="{{ route('settings.discord-account') }}" size="xs" variant="primary">
+                                            Manage
+                                        </flux:button>
                                     </div>
-                                    <flux:button href="{{ route('settings.discord-account') }}" size="xs" variant="primary">
-                                        Manage
-                                    </flux:button>
-                                </div>
+                                @endcan
                             </div>
                         @else
                             <flux:text variant="subtle" class="mt-2">
                                 Account linking will be available once you become a Stowaway.
                             </flux:text>
-                        @endif
+                        @endcanany
                     </flux:card>
 
                     <flux:card>
