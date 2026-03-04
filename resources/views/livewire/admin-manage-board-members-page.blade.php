@@ -62,13 +62,20 @@ new class extends Component {
             $photoPath = $this->newPhoto->store('board-member-photos', 'public');
         }
 
-        CreateBoardMember::run(
-            displayName: $this->newDisplayName,
-            title: $this->newTitle ?: null,
-            bio: $this->newBio ?: null,
-            photoPath: $photoPath,
-            sortOrder: $this->newSortOrder,
-        );
+        try {
+            CreateBoardMember::run(
+                displayName: $this->newDisplayName,
+                title: $this->newTitle ?: null,
+                bio: $this->newBio ?: null,
+                photoPath: $photoPath,
+                sortOrder: $this->newSortOrder,
+            );
+        } catch (\Throwable $e) {
+            if ($photoPath) {
+                Storage::disk('public')->delete($photoPath);
+            }
+            throw $e;
+        }
 
         Flux::modal('create-board-member-modal')->close();
         Flux::toast('Board member created.', 'Created', variant: 'success');
@@ -122,7 +129,7 @@ new class extends Component {
                 sortOrder: $this->editSortOrder,
             );
         } catch (\Throwable $e) {
-            if ($oldPhotoPath && $photoPath !== $boardMember->photo_path) {
+            if ($photoPath !== $boardMember->photo_path) {
                 Storage::disk('public')->delete($photoPath);
             }
             throw $e;
