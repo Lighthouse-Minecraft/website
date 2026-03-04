@@ -243,6 +243,17 @@ new class extends Component {
                                 <flux:text>{{ $bm->effectiveBio() }}</flux:text>
                             </div>
                         @endif
+
+                        @if($bm->isLinked() && $bm->user)
+                            @can('viewStaffPhone', $bm->user)
+                                @if($bm->user->staff_phone)
+                                    <div>
+                                        <flux:heading size="sm" class="mb-1">Contact</flux:heading>
+                                        <flux:text>{{ $bm->user->staff_phone }}</flux:text>
+                                    </div>
+                                @endif
+                            @endcan
+                        @endif
                     </flux:card>
                 @elseif($this->selectedPosition)
                     @php $selected = $this->selectedPosition; @endphp
@@ -284,6 +295,17 @@ new class extends Component {
                                 <flux:heading size="sm" class="mb-1">About</flux:heading>
                                 <flux:text>{{ $selected->user->staff_bio }}</flux:text>
                             </div>
+                        @endif
+
+                        @if($selected->isFilled())
+                            @can('viewStaffPhone', $selected->user)
+                                @if($selected->user->staff_phone)
+                                    <div>
+                                        <flux:heading size="sm" class="mb-1">Contact</flux:heading>
+                                        <flux:text>{{ $selected->user->staff_phone }}</flux:text>
+                                    </div>
+                                @endif
+                            @endcan
                         @endif
 
                         @if($selected->isVacant())

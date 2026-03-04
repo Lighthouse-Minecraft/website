@@ -147,6 +147,40 @@ it('no one can force delete users through policy', function () {
     expect($policy->forceDelete($user, $target))->toBeFalse();
 });
 
+// === viewStaffPhone ===
+
+it('admin can view staff phone', function () {
+    $admin = loginAsAdmin();
+    $target = User::factory()->create();
+    expect($admin->can('viewStaffPhone', $target))->toBeTrue();
+});
+
+it('officer can view staff phone', function () {
+    $officer = officerQuartermaster();
+    $target = User::factory()->create();
+    expect($officer->can('viewStaffPhone', $target))->toBeTrue();
+});
+
+it('board member can view staff phone', function () {
+    $boardMember = User::factory()->create(['is_board_member' => true]);
+    $target = User::factory()->create();
+    expect($boardMember->can('viewStaffPhone', $target))->toBeTrue();
+});
+
+it('regular user cannot view staff phone', function () {
+    $user = membershipTraveler();
+    $target = User::factory()->create();
+    expect($user->can('viewStaffPhone', $target))->toBeFalse();
+});
+
+it('crew member cannot view staff phone', function () {
+    $crew = crewQuartermaster();
+    $target = User::factory()->create();
+    expect($crew->can('viewStaffPhone', $target))->toBeFalse();
+});
+
+// === updateStaffPosition / removeStaffPosition ===
+
 it('no one can update staff positions through policy (requires admin bypass)', function () {
     $policy = new UserPolicy;
     $user = User::factory()->create();

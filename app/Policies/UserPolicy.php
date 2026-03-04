@@ -49,6 +49,11 @@ class UserPolicy
             || $user->isInDepartment(StaffDepartment::Quartermaster);
     }
 
+    public function viewStaffPhone(User $user, User $model): bool
+    {
+        return $user->isAtLeastRank(StaffRank::Officer) || $user->is_board_member;
+    }
+
     /**
      * Determine whether the user can create models.
      */

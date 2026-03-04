@@ -534,8 +534,24 @@ new class extends Component {
             <flux:card class="w-full md:w-1/2 lg:w-1/3 p-6 space-y-2">
                 <flux:heading size="xl" class="mb-4">Contact Information</flux:heading>
                 <flux:text>Email: {{ $user->email }}</flux:text>
+                @can('viewStaffPhone', $user)
+                    @if($user->staff_phone)
+                        <flux:text>Phone: {{ $user->staff_phone }}</flux:text>
+                    @endif
+                @endcan
             </flux:card>
         @endcan
+
+        @cannot('viewPii', $user)
+            @can('viewStaffPhone', $user)
+                @if($user->staff_phone)
+                    <flux:card class="w-full md:w-1/2 lg:w-1/3 p-6 space-y-2">
+                        <flux:heading size="xl" class="mb-4">Contact Information</flux:heading>
+                        <flux:text>Phone: {{ $user->staff_phone }}</flux:text>
+                    </flux:card>
+                @endif
+            @endcan
+        @endcannot
     </div>
 
     <div class="w-full flex flex-col md:flex-row gap-4 mt-6">
