@@ -14,12 +14,13 @@ class Meeting extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['title', 'type', 'day', 'scheduled_time', 'is_public', 'agenda', 'minutes', 'community_minutes'];
+    protected $fillable = ['title', 'type', 'day', 'scheduled_time', 'is_public', 'agenda', 'minutes', 'community_minutes', 'show_community_updates'];
 
     protected $casts = [
         'day' => 'string',
         'scheduled_time' => 'datetime',
         'is_public' => 'boolean',
+        'show_community_updates' => 'boolean',
         'type' => MeetingType::class,
         'status' => MeetingStatus::class,
         'start_time' => 'datetime',

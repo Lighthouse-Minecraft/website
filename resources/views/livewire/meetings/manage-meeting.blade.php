@@ -2,6 +2,7 @@
 
 use App\Actions\CreateDefaultMeetingQuestions;
 use App\Enums\MeetingStatus;
+use App\Enums\MeetingType;
 use App\Enums\StaffDepartment;
 use App\Models\Meeting;
 use App\Models\MeetingNote;
@@ -112,25 +113,15 @@ new class extends Component {
     public function CompleteMeeting() {
         $this->authorize('update', $this->meeting);
 
-        // Add logging for debugging
-        logger()->info('CompleteMeeting called', [
-            'meeting_id' => $this->meeting->id,
-            'status' => $this->meeting->status->value,
-            'user_id' => auth()->id(),
-        ]);
+        $this->modal('complete-meeting-confirmation')->show();
+    }
 
-        try {
-            $this->modal('complete-meeting-confirmation')->show();
-        } catch (\Exception $e) {
-            // Log the error and try to refresh the component
-            logger()->error('Modal failed to open', [
-                'error' => $e->getMessage(),
-                'meeting_id' => $this->meeting->id,
-            ]);
+    public function toggleCommunityUpdates(): void
+    {
+        $this->authorize('update', $this->meeting);
 
-            // Force a component refresh
-            $this->dispatch('$refresh');
-        }
+        $this->meeting->show_community_updates = ! $this->meeting->show_community_updates;
+        $this->meeting->save();
     }
 
     public function EndMeetingConfirmed() {
@@ -200,6 +191,7 @@ new class extends Component {
             'type' => $this->meeting->type,
             'day' => $this->scheduleNextDay,
             'scheduled_time' => $this->parseScheduledTime($this->scheduleNextDay, $this->scheduleNextTime),
+            'show_community_updates' => $this->meeting->type === MeetingType::StaffMeeting,
         ]);
 
         CreateDefaultMeetingQuestions::run($newMeeting);
@@ -304,35 +296,6 @@ new class extends Component {
                 @can('update', $meeting)
                     <flux:button wire:click="StartMeeting" variant="primary">Start Meeting</flux:button>
                 @endcan
-
-                {{-- Start Meeting Confirmation Modal --}}
-                <flux:modal name="start-meeting-confirmation" class="min-w-[28rem] !text-left">
-                    <div class="space-y-6">
-                        <div>
-                            <flux:heading size="lg">Start Meeting?</flux:heading>
-
-                            <flux:text class="mt-2">
-                                You're about to start this meeting.
-                            </flux:text>
-                            <flux:callout color="amber" class="mt-2">
-                                <flux:callout.heading>Note:</flux:callout.heading>
-                                <flux:callout.text>
-                                    Once started, the agenda will be locked and department note sections will become available for editing.
-                                </flux:callout.text>
-                            </flux:callout>
-                        </div>
-
-                        <div class="flex gap-2">
-                            <flux:spacer />
-
-                            <flux:modal.close>
-                                <flux:button variant="ghost">Cancel</flux:button>
-                            </flux:modal.close>
-
-                            <flux:button wire:click="StartMeetingConfirmed" variant="primary">Start Meeting</flux:button>
-                        </div>
-                    </div>
-                </flux:modal>
             @endif
         </div>
     </div>
@@ -357,6 +320,13 @@ new class extends Component {
         </div>
 
         <livewire:meeting.department-section :meeting="$meeting" departmentValue="community" description="Sanitized notes that will be publicly viewable to all members." key="'department-section-community'" />
+
+        @can('update', $meeting)
+            <div class="w-full lg:w-2/3 mx-auto flex items-center gap-3 mt-4">
+                <flux:switch wire:click="toggleCommunityUpdates" :checked="$meeting->show_community_updates" />
+                <flux:text class="text-sm">Show on Community Updates</flux:text>
+            </div>
+        @endcan
     @elseif ($meeting->status == MeetingStatus::Completed)
         <div class="w-3/4 mx-auto space-y-6">
             <flux:card>
@@ -380,76 +350,103 @@ new class extends Component {
             @can('update', $meeting)
                 <flux:button wire:click="EndMeeting" variant="primary">End Meeting</flux:button>
             @endcan
-            {{-- End Meeting Confirmation Modal --}}
-            <flux:modal name="end-meeting-confirmation" class="min-w-[28rem] !text-left">
-                <div class="space-y-6">
-                    <div>
-                        <flux:heading size="lg">End Meeting?</flux:heading>
-
-                        <flux:text class="mt-2">
-                            You're about to end this meeting and move it to the finalizing stage.
-                        </flux:text>
-                        <flux:callout color="rose" class="mt-2">
-                            <flux:callout.heading>Note:</flux:callout.heading>
-                            <flux:callout.text>
-                                Once ended, the note fields will no longer be editable and the meeting will be locked for finalization.
-                            </flux:callout.text>
-                        </flux:callout>
-                    </div>
-
-                    <div class="flex gap-2">
-                        <flux:spacer />
-
-                        <flux:modal.close>
-                            <flux:button variant="ghost">Cancel</flux:button>
-                        </flux:modal.close>
-
-                        <flux:button wire:click="EndMeetingConfirmed" variant="danger">End Meeting</flux:button>
-                    </div>
-                </div>
-            </flux:modal>
         @elseif($meeting->status == MeetingStatus::Finalizing)
             @can('update', $meeting)
-                <flux:button
-                    wire:click="CompleteMeeting"
-                    wire:loading.attr="disabled"
-                    wire:loading.class="opacity-50"
-                    variant="primary"
-                >
-                    <span wire:loading.remove wire:target="CompleteMeeting">Complete Meeting</span>
-                    <span wire:loading wire:target="CompleteMeeting">Loading...</span>
-                </flux:button>
+                <flux:button wire:click="CompleteMeeting" variant="primary">Complete Meeting</flux:button>
             @endcan
-            {{-- Complete Meeting Confirmation Modal --}}
-            <flux:modal name="complete-meeting-confirmation" class="min-w-[28rem] !text-left">
-                <div class="space-y-6">
-                    <div>
-                        <flux:heading size="lg">Complete Meeting?</flux:heading>
-
-                        <flux:text class="mt-2">
-                            You're about to complete this meeting and finalize all the notes.
-                        </flux:text>
-                        <flux:callout color="blue" class="mt-2">
-                            <flux:callout.heading>Note:</flux:callout.heading>
-                            <flux:callout.text>
-                                Once completed, the meeting will be archived and no further changes can be made.
-                            </flux:callout.text>
-                        </flux:callout>
-                    </div>
-
-                    <div class="flex gap-2">
-                        <flux:spacer />
-
-                        <flux:modal.close>
-                            <flux:button variant="ghost">Cancel</flux:button>
-                        </flux:modal.close>
-
-                        <flux:button wire:click="CompleteMeetingConfirmed" variant="primary">Complete Meeting</flux:button>
-                    </div>
-                </div>
-            </flux:modal>
         @endif
     </div>
+
+    {{-- Modals pre-rendered for upcoming transitions so Flux/Alpine initializes them before needed --}}
+    @if($meeting->status == MeetingStatus::Pending)
+        <flux:modal name="start-meeting-confirmation" class="min-w-[28rem] !text-left">
+            <div class="space-y-6">
+                <div>
+                    <flux:heading size="lg">Start Meeting?</flux:heading>
+
+                    <flux:text class="mt-2">
+                        You're about to start this meeting.
+                    </flux:text>
+                    <flux:callout color="amber" class="mt-2">
+                        <flux:callout.heading>Note:</flux:callout.heading>
+                        <flux:callout.text>
+                            Once started, the agenda will be locked and department note sections will become available for editing.
+                        </flux:callout.text>
+                    </flux:callout>
+                </div>
+
+                <div class="flex gap-2">
+                    <flux:spacer />
+
+                    <flux:modal.close>
+                        <flux:button variant="ghost">Cancel</flux:button>
+                    </flux:modal.close>
+
+                    <flux:button wire:click="StartMeetingConfirmed" variant="primary">Start Meeting</flux:button>
+                </div>
+            </div>
+        </flux:modal>
+    @endif
+
+    @if(in_array($meeting->status, [MeetingStatus::Pending, MeetingStatus::InProgress]))
+        <flux:modal name="end-meeting-confirmation" class="min-w-[28rem] !text-left">
+            <div class="space-y-6">
+                <div>
+                    <flux:heading size="lg">End Meeting?</flux:heading>
+
+                    <flux:text class="mt-2">
+                        You're about to end this meeting and move it to the finalizing stage.
+                    </flux:text>
+                    <flux:callout color="rose" class="mt-2">
+                        <flux:callout.heading>Note:</flux:callout.heading>
+                        <flux:callout.text>
+                            Once ended, the note fields will no longer be editable and the meeting will be locked for finalization.
+                        </flux:callout.text>
+                    </flux:callout>
+                </div>
+
+                <div class="flex gap-2">
+                    <flux:spacer />
+
+                    <flux:modal.close>
+                        <flux:button variant="ghost">Cancel</flux:button>
+                    </flux:modal.close>
+
+                    <flux:button wire:click="EndMeetingConfirmed" variant="danger">End Meeting</flux:button>
+                </div>
+            </div>
+        </flux:modal>
+    @endif
+
+    @if(in_array($meeting->status, [MeetingStatus::Pending, MeetingStatus::InProgress, MeetingStatus::Finalizing]))
+        <flux:modal name="complete-meeting-confirmation" class="min-w-[28rem] !text-left">
+            <div class="space-y-6">
+                <div>
+                    <flux:heading size="lg">Complete Meeting?</flux:heading>
+
+                    <flux:text class="mt-2">
+                        You're about to complete this meeting and finalize all the notes.
+                    </flux:text>
+                    <flux:callout color="blue" class="mt-2">
+                        <flux:callout.heading>Note:</flux:callout.heading>
+                        <flux:callout.text>
+                            Once completed, the meeting will be archived and no further changes can be made.
+                        </flux:callout.text>
+                    </flux:callout>
+                </div>
+
+                <div class="flex gap-2">
+                    <flux:spacer />
+
+                    <flux:modal.close>
+                        <flux:button variant="ghost">Cancel</flux:button>
+                    </flux:modal.close>
+
+                    <flux:button wire:click="CompleteMeetingConfirmed" variant="primary">Complete Meeting</flux:button>
+                </div>
+            </div>
+        </flux:modal>
+    @endif
 
     @can('create', \App\Models\Meeting::class)
         <flux:modal name="schedule-next-meeting" class="min-w-[28rem] !text-left">

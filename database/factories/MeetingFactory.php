@@ -31,6 +31,7 @@ class MeetingFactory extends Factory
             'agenda' => $this->faker->paragraph(),
             'minutes' => null,
             'community_minutes' => $this->faker->paragraph(),
+            'show_community_updates' => true,
         ];
     }
 

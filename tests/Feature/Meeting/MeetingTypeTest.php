@@ -64,3 +64,33 @@ it('displays meeting type in meeting details', function () {
 
     $component->assertSee('Staff Meeting');
 });
+
+it('defaults show_community_updates to true for staff meetings', function () {
+    $user = User::factory()->create(['staff_rank' => StaffRank::Officer]);
+
+    Volt::actingAs($user)
+        ->test('meeting.create-modal')
+        ->set('title', 'Staff Test')
+        ->set('day', now()->addDays(7)->format('Y-m-d'))
+        ->set('time', '7:00 PM')
+        ->set('type', 'staff_meeting')
+        ->call('CreateMeeting');
+
+    $meeting = Meeting::latest()->first();
+    expect($meeting->show_community_updates)->toBeTrue();
+});
+
+it('defaults show_community_updates to false for non-staff meetings', function () {
+    $user = User::factory()->create(['staff_rank' => StaffRank::Officer]);
+
+    Volt::actingAs($user)
+        ->test('meeting.create-modal')
+        ->set('title', 'Board Test')
+        ->set('day', now()->addDays(7)->format('Y-m-d'))
+        ->set('time', '7:00 PM')
+        ->set('type', 'board_meeting')
+        ->call('CreateMeeting');
+
+    $meeting = Meeting::latest()->first();
+    expect($meeting->show_community_updates)->toBeFalse();
+});

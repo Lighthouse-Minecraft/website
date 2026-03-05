@@ -13,6 +13,7 @@ new class extends Component {
         return [
             'meetings' => Meeting::query()
                 ->where('status', MeetingStatus::Completed->value)
+                ->where('show_community_updates', true)
                 ->orderBy('day', 'desc')
                 ->paginate(10),
         ];

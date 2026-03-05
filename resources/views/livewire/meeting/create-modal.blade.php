@@ -32,11 +32,14 @@ new class extends Component {
 
         $this->scheduled_time = $this->scheduledAtUtc();
 
+        $meetingType = MeetingType::from($this->type);
+
         $meeting = Meeting::create([
             'title' => $this->title,
             'type' => $this->type,
             'day' => $this->day,
             'scheduled_time' => $this->scheduled_time,
+            'show_community_updates' => $meetingType === MeetingType::StaffMeeting,
         ]);
 
         CreateDefaultMeetingQuestions::run($meeting);
