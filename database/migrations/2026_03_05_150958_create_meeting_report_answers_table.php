@@ -14,6 +14,8 @@ return new class extends Migration
             $table->foreignId('meeting_question_id')->constrained()->cascadeOnDelete();
             $table->text('answer')->nullable();
             $table->timestamps();
+
+            $table->unique(['meeting_report_id', 'meeting_question_id']);
         });
     }
 

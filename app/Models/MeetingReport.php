@@ -15,10 +15,13 @@ class MeetingReport extends Model
         'notified_at',
     ];
 
-    protected $casts = [
-        'submitted_at' => 'datetime',
-        'notified_at' => 'datetime',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'submitted_at' => 'datetime',
+            'notified_at' => 'datetime',
+        ];
+    }
 
     public function meeting(): BelongsTo
     {

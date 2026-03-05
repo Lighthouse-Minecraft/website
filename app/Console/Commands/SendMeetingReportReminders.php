@@ -38,28 +38,21 @@ class SendMeetingReportReminders extends Command
         $notificationService = app(TicketNotificationService::class);
         $totalSent = 0;
 
-        foreach ($meetings as $meeting) {
-            $staffUsers = User::whereNotNull('staff_rank')
-                ->where('staff_rank', '>=', StaffRank::JrCrew->value)
-                ->get();
+        $staffUsers = User::whereNotNull('staff_rank')
+            ->where('staff_rank', '>=', StaffRank::JrCrew->value)
+            ->get();
 
+        $existingReports = MeetingReport::whereIn('meeting_id', $meetings->pluck('id'))
+            ->whereIn('user_id', $staffUsers->pluck('id'))
+            ->get()
+            ->keyBy(fn ($r) => $r->meeting_id.'|'.$r->user_id);
+
+        foreach ($meetings as $meeting) {
             foreach ($staffUsers as $user) {
-                $existingReport = MeetingReport::where('meeting_id', $meeting->id)
-                    ->where('user_id', $user->id)
-                    ->first();
+                $existingReport = $existingReports->get($meeting->id.'|'.$user->id);
 
                 if ($existingReport && ($existingReport->submitted_at || $existingReport->notified_at)) {
                     continue;
-                }
-
-                if (! $existingReport) {
-                    $existingReport = MeetingReport::create([
-                        'meeting_id' => $meeting->id,
-                        'user_id' => $user->id,
-                        'notified_at' => now(),
-                    ]);
-                } else {
-                    $existingReport->update(['notified_at' => now()]);
                 }
 
                 $notificationService->send(
@@ -67,6 +60,16 @@ class SendMeetingReportReminders extends Command
                     new MeetingReportReminderNotification($meeting),
                     'staff_alerts'
                 );
+
+                if (! $existingReport) {
+                    MeetingReport::create([
+                        'meeting_id' => $meeting->id,
+                        'user_id' => $user->id,
+                        'notified_at' => now(),
+                    ]);
+                } else {
+                    $existingReport->update(['notified_at' => now()]);
+                }
 
                 $totalSent++;
                 $this->line("  Notified: {$user->name} for {$meeting->title}");

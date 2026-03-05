@@ -92,7 +92,7 @@ new class extends Component {
             @if($this->questions->isNotEmpty())
                 <div class="space-y-2 mb-4">
                     @foreach($this->questions as $question)
-                        <div class="flex items-center gap-2 p-2 rounded border border-zinc-200 dark:border-zinc-700">
+                        <div wire:key="question-{{ $question->id }}" class="flex items-center gap-2 p-2 rounded border border-zinc-200 dark:border-zinc-700">
                             <div class="flex flex-col gap-0.5">
                                 <flux:button wire:click="moveUp({{ $question->id }})" variant="ghost" size="xs" icon="chevron-up" class="!p-0.5" />
                                 <flux:button wire:click="moveDown({{ $question->id }})" variant="ghost" size="xs" icon="chevron-down" class="!p-0.5" />

@@ -12,6 +12,10 @@ use App\Models\MeetingReport;
 use App\Models\User;
 use Illuminate\Support\Facades\Notification;
 
+beforeEach(function () {
+    config()->set('lighthouse.meeting_report_notify_days', 3);
+});
+
 it('sends reminders to staff who have not submitted reports', function () {
     Notification::fake();
 

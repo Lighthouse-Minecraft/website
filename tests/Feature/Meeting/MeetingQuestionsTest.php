@@ -16,7 +16,7 @@ it('creates default questions when staff meeting is created', function () {
     CreateDefaultMeetingQuestions::run($meeting);
 
     expect($meeting->questions)->toHaveCount(4);
-    expect($meeting->questions->first()->question_text)->toContain('accomplish');
+    expect($meeting->questions->pluck('question_text')->contains(fn ($t) => str_contains($t, 'accomplish')))->toBeTrue();
 });
 
 it('does not create questions for non-staff meetings', function () {

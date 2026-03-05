@@ -87,7 +87,7 @@ new #[Layout('components.layouts.app')] class extends Component {
             <flux:card>
                 <flux:heading size="lg" class="mb-4">Your Submitted Report</flux:heading>
                 @foreach($meeting->questions as $question)
-                    <div class="mb-4">
+                    <div wire:key="submitted-question-{{ $question->id }}" class="mb-4">
                         <flux:text class="font-semibold text-sm">{{ $question->question_text }}</flux:text>
                         <flux:text class="mt-1">
                             {{ $answers[$question->id] ?: 'No response' }}
@@ -110,7 +110,7 @@ new #[Layout('components.layouts.app')] class extends Component {
     @else
         <form wire:submit="submitReport" class="space-y-6">
             @foreach($meeting->questions as $question)
-                <flux:textarea
+                <flux:textarea wire:key="question-{{ $question->id }}"
                     wire:model="answers.{{ $question->id }}"
                     label="{{ $question->question_text }}"
                     rows="4"

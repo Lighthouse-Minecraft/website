@@ -189,7 +189,11 @@ describe('Reformat with AI', function () {
 
         livewire('meetings.manage-meeting', ['meeting' => $meeting])
             ->call('reformatWithAi')
-            ->assertSuccessful();
+            ->assertSuccessful()
+            ->assertNotDispatched('$refresh');
+
+        // No community note should have been created
+        expect(MeetingNote::where('meeting_id', $meeting->id)->where('section_key', 'community')->exists())->toBeFalse();
     });
 
     it('shows error when no meeting minutes are available', function () {
@@ -197,7 +201,7 @@ describe('Reformat with AI', function () {
             'minutes' => '',
         ]);
 
-        MeetingNote::factory()->create([
+        $communityNote = MeetingNote::factory()->create([
             'content' => 'Some community content',
             'section_key' => 'community',
             'meeting_id' => $meeting->id,
@@ -207,7 +211,12 @@ describe('Reformat with AI', function () {
 
         livewire('meetings.manage-meeting', ['meeting' => $meeting])
             ->call('reformatWithAi')
-            ->assertSuccessful();
+            ->assertSuccessful()
+            ->assertNotDispatched('$refresh');
+
+        // Community note content should remain unchanged
+        $communityNote->refresh();
+        expect($communityNote->content)->toBe('Some community content');
     });
 
     it('uses custom prompt from the AI prompt editor', function () {

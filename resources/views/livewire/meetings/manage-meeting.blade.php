@@ -42,7 +42,7 @@ new class extends Component {
     public function StartMeeting() {
         $this->authorize('update', $this->meeting);
 
-        $this->modal('start-meeting-confirmation')->show();
+        Flux::modal('start-meeting-confirmation')->show();
     }
 
     public function StartMeetingConfirmed() {
@@ -60,7 +60,7 @@ new class extends Component {
 
         $this->pollTime = 60;
 
-        $this->modal('start-meeting-confirmation')->close();
+        Flux::modal('start-meeting-confirmation')->close();
     }
 
     public function joinMeeting(): void
@@ -109,13 +109,13 @@ new class extends Component {
     public function EndMeeting() {
         $this->authorize('update', $this->meeting);
 
-        $this->modal('end-meeting-confirmation')->show();
+        Flux::modal('end-meeting-confirmation')->show();
     }
 
     public function CompleteMeeting() {
         $this->authorize('update', $this->meeting);
 
-        $this->modal('complete-meeting-confirmation')->show();
+        Flux::modal('complete-meeting-confirmation')->show();
     }
 
     public function toggleCommunityUpdates(): void
@@ -154,7 +154,7 @@ new class extends Component {
 
         $this->meeting->save();
 
-        $this->modal('end-meeting-confirmation')->close();
+        Flux::modal('end-meeting-confirmation')->close();
 
         // Trigger AI formatting as a separate Livewire request after the modal closes
         $this->js('setTimeout(() => { $wire.processAiFormatting() }, 100)');
@@ -196,7 +196,7 @@ new class extends Component {
             $this->aiPrompt = config('lighthouse.ai.meeting_notes_system_prompt', '');
         }
 
-        $this->modal('ai-prompt-editor')->show();
+        Flux::modal('ai-prompt-editor')->show();
     }
 
     public function reformatWithAi(): void
@@ -234,7 +234,7 @@ new class extends Component {
         ]);
 
         Flux::toast('Community notes reformatted with AI.', variant: 'success');
-        $this->modal('ai-prompt-editor')->close();
+        Flux::modal('ai-prompt-editor')->close();
         $this->dispatch('$refresh');
     }
 
@@ -250,14 +250,14 @@ new class extends Component {
         $this->meeting->completeMeeting();
         $this->meeting->save();
 
-        $this->modal('complete-meeting-confirmation')->close();
+        Flux::modal('complete-meeting-confirmation')->close();
 
         // Pre-fill next meeting scheduler with current meeting details
         $this->scheduleNextTitle = $this->meeting->title;
         $this->scheduleNextTime = $this->meeting->scheduled_time
             ->setTimezone('America/New_York')
             ->format('g:i A');
-        $this->modal('schedule-next-meeting')->show();
+        Flux::modal('schedule-next-meeting')->show();
     }
 
     public function scheduleNextMeeting(): void
@@ -281,7 +281,7 @@ new class extends Component {
         CreateDefaultMeetingQuestions::run($newMeeting);
 
         Flux::toast('Next meeting scheduled!', variant: 'success');
-        $this->modal('schedule-next-meeting')->close();
+        Flux::modal('schedule-next-meeting')->close();
         $this->redirect(route('meeting.edit', $newMeeting), navigate: true);
     }
 }; ?>

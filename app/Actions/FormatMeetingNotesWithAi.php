@@ -86,7 +86,7 @@ class FormatMeetingNotesWithAi
             return [
                 'success' => false,
                 'text' => $notes,
-                'error' => 'AI formatting failed: '.$e->getMessage(),
+                'error' => 'AI formatting failed.',
             ];
         } catch (\Throwable $e) {
             Log::error('Unexpected error during AI meeting notes formatting', [

@@ -4,6 +4,7 @@ use App\Enums\StaffRank;
 use App\Models\Meeting;
 use App\Models\MeetingReport;
 use App\Models\User;
+use Flux\Flux;
 use Livewire\Volt\Component;
 
 new class extends Component {
@@ -39,7 +40,7 @@ new class extends Component {
     public function viewReport(int $userId): void
     {
         $this->viewingUserId = $userId;
-        $this->modal('view-staff-report')->show();
+        Flux::modal('view-staff-report')->show();
     }
 }; ?>
 
@@ -54,6 +55,7 @@ new class extends Component {
                         $hasSubmitted = $report !== null;
                     @endphp
                     <button
+                        wire:key="staff-{{ $member->id }}"
                         wire:click="viewReport({{ $member->id }})"
                         class="flex items-center gap-2 p-2 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-left"
                     >

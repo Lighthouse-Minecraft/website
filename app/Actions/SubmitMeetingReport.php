@@ -22,12 +22,20 @@ class SubmitMeetingReport
             throw new \InvalidArgumentException('Reports cannot be submitted after the meeting has started.');
         }
 
+        $validQuestionIds = $meeting->questions()->pluck('id')->all();
+
         $report = MeetingReport::updateOrCreate(
             ['meeting_id' => $meeting->id, 'user_id' => $user->id],
             ['submitted_at' => now()]
         );
 
+        RecordActivity::run($report, 'submit_meeting_report', 'Submitted or updated meeting report.');
+
         foreach ($answers as $questionId => $answerText) {
+            if (! in_array($questionId, $validQuestionIds)) {
+                continue;
+            }
+
             MeetingReportAnswer::updateOrCreate(
                 ['meeting_report_id' => $report->id, 'meeting_question_id' => $questionId],
                 ['answer' => $answerText]

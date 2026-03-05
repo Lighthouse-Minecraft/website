@@ -10,6 +10,7 @@ new class extends Component {
 
     public function mount() {
         $this->meetings = Meeting::where('status', 'pending')
+            ->withCount('questions')
             ->orderBy('scheduled_time', 'asc')
             ->take(3)
             ->get();
@@ -31,16 +32,16 @@ new class extends Component {
     <flux:heading>Upcoming Meetings</flux:heading>
     <ul>
         @foreach($meetings as $meeting)
-            <li class="my-4">
+            <li wire:key="upcoming-meeting-{{ $meeting->id }}" class="my-4">
                 <div class="flex items-center justify-between gap-2">
                     <div>
                         <flux:link href="{{ route('meeting.edit', $meeting) }}">
                             {{ $meeting->title }}
                         </flux:link>
-                        <flux:text variant="subtle" class="text-xs">{{ $meeting->scheduled_time->format('m/d/Y \@ g:i a') }} ET</flux:text>
+                        <flux:text variant="subtle" class="text-xs">{{ $meeting->scheduled_time->setTimezone('America/New_York')->format('m/d/Y \@ g:i a') }} ET</flux:text>
                     </div>
 
-                    @if($meeting->isStaffMeeting() && $meeting->questions()->exists())
+                    @if($meeting->isStaffMeeting() && $meeting->questions_count > 0)
                         @if($meeting->isReportUnlocked())
                             @if(in_array($meeting->id, $userReports))
                                 <flux:button href="{{ route('meeting.report', $meeting) }}" variant="ghost" size="xs">

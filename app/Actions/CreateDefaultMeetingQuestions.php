@@ -32,5 +32,7 @@ class CreateDefaultMeetingQuestions
                 'sort_order' => $i,
             ]);
         }
+
+        RecordActivity::run($meeting, 'seed_default_questions', 'Seeded default meeting questions.');
     }
 }

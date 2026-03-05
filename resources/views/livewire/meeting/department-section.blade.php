@@ -37,7 +37,7 @@ new class extends Component {
     </flux:text>
 
     @if ($departmentValue !== 'general' && $departmentValue !== 'community' && $meeting->isStaffMeeting())
-        <livewire:meeting.department-report-cards :meeting="$meeting" :department="$departmentValue" :key="'report-cards-' . $departmentValue" />
+        <livewire:meeting.department-report-cards :meeting="$meeting" :department="$departmentValue" :key="'report-cards-' . $meeting->id . '-' . $departmentValue" />
     @endif
 
     @if ($departmentValue === 'community')

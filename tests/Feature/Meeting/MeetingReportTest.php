@@ -12,6 +12,10 @@ use App\Models\Meeting;
 use App\Models\MeetingReport;
 use App\Models\User;
 
+beforeEach(function () {
+    config()->set('lighthouse.meeting_report_unlock_days', 7);
+});
+
 it('allows staff to submit a report when unlocked', function () {
     $user = User::factory()->create([
         'staff_rank' => StaffRank::CrewMember,
