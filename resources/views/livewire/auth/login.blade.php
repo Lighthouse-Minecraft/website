@@ -12,12 +12,12 @@ use Livewire\Volt\Component;
 
 new #[Layout('components.layouts.auth')] class extends Component {
     #[Validate('required|string|email')]
-    public string $email = '';
+    public string|array $email = '';
 
     #[Validate('required|string')]
-    public string $password = '';
+    public string|array $password = '';
 
-    public bool $remember = false;
+    public bool|array $remember = false;
 
     /**
      * Handle an incoming authentication request.
@@ -28,7 +28,7 @@ new #[Layout('components.layouts.auth')] class extends Component {
 
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt(['email' => $this->email, 'password' => $this->password], $this->remember)) {
+        if (! Auth::attempt(['email' => $this->email, 'password' => $this->password], (bool) $this->remember)) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
