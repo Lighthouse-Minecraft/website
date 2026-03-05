@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\MeetingStatus;
+use App\Enums\MeetingType;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -19,6 +20,7 @@ class MeetingFactory extends Factory
     {
         return [
             'title' => $this->faker->sentence(3),
+            'type' => MeetingType::StaffMeeting,
             'scheduled_time' => $this->faker->dateTimeBetween('-1 month', '+1 month'),
             'start_time' => $this->faker->dateTimeBetween('-1 month', '+1 month'),
             'end_time' => $this->faker->dateTimeBetween('-1 month', '+1 month'),

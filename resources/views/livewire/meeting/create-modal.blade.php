@@ -1,6 +1,8 @@
 <?php
 
 use Livewire\Volt\Component;
+use App\Actions\CreateDefaultMeetingQuestions;
+use App\Enums\MeetingType;
 use App\Models\Meeting;
 use Flux\Flux;
 use Carbon\CarbonImmutable;
@@ -11,6 +13,7 @@ new class extends Component {
     public $title;
     public $day;
     public $time;
+    public $type = 'staff_meeting';
     public $scheduled_time;
 
     public function mount() {
@@ -24,19 +27,22 @@ new class extends Component {
             'title' => 'required|string|max:255',
             'day' => 'required|date',
             'time' => ['required', Rule::date()->format('g:i A')],
+            'type' => ['required', Rule::in(array_column(MeetingType::cases(), 'value'))],
         ]);
 
         $this->scheduled_time = $this->scheduledAtUtc();
 
         $meeting = Meeting::create([
             'title' => $this->title,
+            'type' => $this->type,
             'day' => $this->day,
             'scheduled_time' => $this->scheduled_time,
         ]);
 
+        CreateDefaultMeetingQuestions::run($meeting);
+
         Flux::toast('Meeting created successfully!', 'Success', variant: 'success');
-        // Reset form fields after successful creation
-        $this->reset(['title', 'day', 'time']);
+        $this->reset(['title', 'day', 'time', 'type']);
 
         return redirect()->route('meeting.edit', ['meeting' => $meeting]);
     }
@@ -70,6 +76,11 @@ new class extends Component {
             </flux:text>
 
             <flux:input wire:model="title" name="title" label="Meeting Title" required />
+            <flux:select wire:model="type" name="type" label="Meeting Type" required>
+                @foreach(\App\Enums\MeetingType::cases() as $meetingType)
+                    <flux:select.option value="{{ $meetingType->value }}">{{ $meetingType->label() }}</flux:select.option>
+                @endforeach
+            </flux:select>
             <flux:date-picker wire:model="day" name="day" label="Meeting Date" required />
             <flux:input wire:model="time" name="time" label="Meeting Time (Eastern Time - ET)" required />
             <flux:link href="https://time.is/ET" target="_blank" color="secondary">

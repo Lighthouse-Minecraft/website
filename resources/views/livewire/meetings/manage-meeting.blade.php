@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\CreateDefaultMeetingQuestions;
 use App\Enums\MeetingStatus;
 use App\Enums\StaffDepartment;
 use App\Models\Meeting;
@@ -196,9 +197,12 @@ new class extends Component {
 
         $newMeeting = Meeting::create([
             'title' => $this->scheduleNextTitle,
+            'type' => $this->meeting->type,
             'day' => $this->scheduleNextDay,
             'scheduled_time' => $this->parseScheduledTime($this->scheduleNextDay, $this->scheduleNextTime),
         ]);
+
+        CreateDefaultMeetingQuestions::run($newMeeting);
 
         Flux::toast('Next meeting scheduled!', variant: 'success');
         $this->modal('schedule-next-meeting')->close();
@@ -216,6 +220,7 @@ new class extends Component {
                 <flux:heading class="mb-4">Meeting Details</flux:heading>
 
                 <flux:text>
+                    <strong>Type:</strong> {{ $meeting->type->label() }}<br>
                     <strong>Scheduled Time:</strong> {{ $meeting->scheduled_time->setTimezone('America/New_York')->format('F j, Y g:i A') }}<br>
                     <strong>Status:</strong> {{ $meeting->status->label() }}<br>
                     @if($meeting->start_time)
@@ -290,6 +295,10 @@ new class extends Component {
             </div>
         </div>
 
+        @if ($meeting->status == MeetingStatus::Pending && $meeting->isStaffMeeting())
+            <livewire:meeting.manage-questions :meeting="$meeting" :key="'manage-questions-' . $meeting->id" />
+        @endif
+
         <div class="text-right w-full mt-6">
             @if ($this->meeting->status == MeetingStatus::Pending)
                 @can('update', $meeting)
@@ -332,10 +341,12 @@ new class extends Component {
         <livewire:meeting.department-section :meeting="$meeting" departmentValue="general" description="Notes not associated with any particular department." :key="'department-section-general'" />
         <flux:separator />
 
-        @foreach(StaffDepartment::cases() as $department)
-            <livewire:meeting.department-section :meeting="$meeting" :departmentValue="$department->value" description="" :key="'department-section-' . $department->value" />
-            <flux:separator />
-        @endforeach
+        @if($meeting->isStaffMeeting())
+            @foreach(StaffDepartment::cases() as $department)
+                <livewire:meeting.department-section :meeting="$meeting" :departmentValue="$department->value" description="" :key="'department-section-' . $department->value" />
+                <flux:separator />
+            @endforeach
+        @endif
     @elseif ($meeting->status == MeetingStatus::Finalizing)
         <div class="w-3/4 mx-auto">
             <flux:card>
