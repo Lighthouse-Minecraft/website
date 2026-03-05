@@ -33,6 +33,6 @@ describe('Upcoming Meetings Widget', function () {
             ->assertStatus(200)
             ->assertSee($this->meeting->title)
             ->assertSee(route('meeting.edit', $this->meeting))
-            ->assertSee($this->meeting->scheduled_time->format('m/d/Y \@ g:i a').' ET');
+            ->assertSee($this->meeting->scheduled_time->setTimezone('America/New_York')->format('m/d/Y \@ g:i a').' ET');
     });
 })->done(issue: 170, assignee: 'jonzenor');
