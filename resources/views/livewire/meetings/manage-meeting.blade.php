@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\CreateDefaultMeetingQuestions;
+use App\Actions\FormatMeetingNotesWithAi;
 use App\Enums\MeetingStatus;
 use App\Enums\MeetingType;
 use App\Enums\StaffDepartment;
@@ -18,6 +19,7 @@ new class extends Component {
     public string $scheduleNextTitle = '';
     public string $scheduleNextDay = '';
     public string $scheduleNextTime = '7:00 PM';
+    public string $aiPrompt = '';
 
     public function mount(Meeting $meeting) {
         $this->meeting = $meeting->load('attendees');
@@ -140,10 +142,11 @@ new class extends Component {
             }
         }
 
+        // Create community note with raw compiled notes — AI formatting runs as a follow-up request
         $note = MeetingNote::create([
             'meeting_id' => $this->meeting->id,
             'section_key' => 'community',
-            'content' => $this->meeting->minutes,
+            'content' => $this->meeting->minutes ?? '',
             'created_by' => auth()->id(),
         ]);
 
@@ -152,6 +155,87 @@ new class extends Component {
         $this->meeting->save();
 
         $this->modal('end-meeting-confirmation')->close();
+
+        // Trigger AI formatting as a separate Livewire request after the modal closes
+        $this->js('setTimeout(() => { $wire.processAiFormatting() }, 100)');
+    }
+
+    public function processAiFormatting(): void
+    {
+        $this->authorize('update', $this->meeting);
+
+        $communityNote = $this->meeting->notes()->where('section_key', 'community')->first();
+
+        if (! $communityNote || empty(trim($this->meeting->minutes ?? ''))) {
+            return;
+        }
+
+        $result = FormatMeetingNotesWithAi::run($this->meeting->minutes ?? '');
+
+        if ($result['success']) {
+            $communityNote->update([
+                'content' => $result['text'],
+                'locked_by' => null,
+                'locked_at' => null,
+                'lock_updated_at' => null,
+            ]);
+        }
+
+        if (! $result['success'] && $result['error']) {
+            Flux::toast($result['error'], variant: 'warning');
+        }
+
+        $this->dispatch('$refresh');
+    }
+
+    public function showAiPromptEditor(): void
+    {
+        $this->authorize('update', $this->meeting);
+
+        if (empty($this->aiPrompt)) {
+            $this->aiPrompt = config('lighthouse.ai.meeting_notes_system_prompt', '');
+        }
+
+        $this->modal('ai-prompt-editor')->show();
+    }
+
+    public function reformatWithAi(): void
+    {
+        $this->authorize('update', $this->meeting);
+
+        $communityNote = $this->meeting->notes()->where('section_key', 'community')->first();
+
+        if (! $communityNote) {
+            Flux::toast('No community notes found to reformat.', variant: 'danger');
+            return;
+        }
+
+        // Use the compiled minutes as source material (not the already-formatted community note)
+        $sourceNotes = $this->meeting->minutes;
+
+        if (empty(trim($sourceNotes))) {
+            Flux::toast('No meeting minutes available to reformat.', variant: 'danger');
+            return;
+        }
+
+        $result = FormatMeetingNotesWithAi::run($sourceNotes, $this->aiPrompt);
+
+        if (! $result['success']) {
+            Flux::toast($result['error'] ?? 'AI formatting failed.', variant: 'danger');
+            return;
+        }
+
+        // Update the community note with AI-formatted content
+        $communityNote->update([
+            'content' => $result['text'],
+            'locked_by' => null,
+            'locked_at' => null,
+            'lock_updated_at' => null,
+        ]);
+
+        Flux::toast('Community notes reformatted with AI.', variant: 'success');
+        $this->modal('ai-prompt-editor')->close();
+        $this->dispatch('$refresh');
     }
 
     public function CompleteMeetingConfirmed() {
@@ -319,12 +403,27 @@ new class extends Component {
             </flux:card>
         </div>
 
-        <livewire:meeting.department-section :meeting="$meeting" departmentValue="community" description="Sanitized notes that will be publicly viewable to all members." key="'department-section-community'" />
+        <div class="relative">
+            <div wire:loading wire:target="processAiFormatting"
+                 class="absolute inset-0 bg-white/60 dark:bg-zinc-900/60 flex items-center justify-center z-10 rounded-lg">
+                <div class="flex items-center gap-2">
+                    <flux:icon.loading class="size-5" />
+                    <flux:text>Formatting notes with AI...</flux:text>
+                </div>
+            </div>
+
+            <livewire:meeting.department-section :meeting="$meeting" departmentValue="community" description="Sanitized notes that will be publicly viewable to all members." key="'department-section-community'" />
+        </div>
 
         @can('update', $meeting)
-            <div class="w-full lg:w-2/3 mx-auto flex items-center gap-3 mt-4">
-                <flux:switch wire:click="toggleCommunityUpdates" :checked="$meeting->show_community_updates" />
-                <flux:text class="text-sm">Show on Community Updates</flux:text>
+            <div class="w-full lg:w-2/3 mx-auto flex items-center justify-between mt-4">
+                <div class="flex items-center gap-3">
+                    <flux:switch wire:click="toggleCommunityUpdates" :checked="$meeting->show_community_updates" />
+                    <flux:text class="text-sm">Show on Community Updates</flux:text>
+                </div>
+                <flux:button wire:click="showAiPromptEditor" variant="ghost" size="sm" icon="sparkles">
+                    Reformat with AI
+                </flux:button>
             </div>
         @endcan
     @elseif ($meeting->status == MeetingStatus::Completed)
@@ -446,6 +545,41 @@ new class extends Component {
                 </div>
             </div>
         </flux:modal>
+    @endif
+
+    @if(in_array($meeting->status, [MeetingStatus::Pending, MeetingStatus::InProgress, MeetingStatus::Finalizing]))
+        @can('update', $meeting)
+            <flux:modal name="ai-prompt-editor" class="min-w-[36rem] !text-left">
+                <div class="space-y-6">
+                    <div>
+                        <flux:heading size="lg">Reformat with AI</flux:heading>
+                        <flux:text class="mt-2">
+                            Edit the system prompt below, then run AI formatting to regenerate the community notes.
+                        </flux:text>
+                    </div>
+
+                    <flux:textarea wire:model="aiPrompt" label="System Prompt" rows="12" />
+
+                    <flux:callout color="amber">
+                        <flux:callout.heading>Warning</flux:callout.heading>
+                        <flux:callout.text>
+                            Running AI formatting will overwrite the current community notes.
+                        </flux:callout.text>
+                    </flux:callout>
+
+                    <div class="flex gap-2">
+                        <flux:spacer />
+                        <flux:modal.close>
+                            <flux:button variant="ghost">Cancel</flux:button>
+                        </flux:modal.close>
+                        <flux:button wire:click="reformatWithAi" variant="primary" icon="sparkles">
+                            <span wire:loading.remove wire:target="reformatWithAi">Run AI Formatting</span>
+                            <span wire:loading wire:target="reformatWithAi">Formatting...</span>
+                        </flux:button>
+                    </div>
+                </div>
+            </flux:modal>
+        @endcan
     @endif
 
     @can('create', \App\Models\Meeting::class)
