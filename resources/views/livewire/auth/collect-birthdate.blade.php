@@ -103,6 +103,7 @@ new #[Layout('components.layouts.auth')] class extends Component {
         <form wire:submit="submitDateOfBirth" class="flex flex-col gap-6">
             <flux:field>
                 <flux:label>Date of Birth</flux:label>
+                <flux:description>We use your date of birth to ensure age-appropriate safety settings for our community.</flux:description>
                 <flux:input wire:model="date_of_birth" type="date" required />
                 <flux:error name="date_of_birth" />
             </flux:field>

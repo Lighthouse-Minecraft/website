@@ -117,7 +117,7 @@ new class extends Component {
 
         $this->resetForm();
         Flux::modal('create-report-modal')->close();
-        Flux::toast('Discipline report created.', 'Report Created', variant: 'success');
+        Flux::toast('Staff report created.', 'Report Created', variant: 'success');
     }
 
     public function openEditModal(int $reportId): void
@@ -165,7 +165,7 @@ new class extends Component {
         $this->resetForm();
         $this->editingReportId = null;
         Flux::modal('edit-report-modal')->close();
-        Flux::toast('Discipline report updated.', 'Report Updated', variant: 'success');
+        Flux::toast('Staff report updated.', 'Report Updated', variant: 'success');
     }
 
     public function publishReport(int $reportId): void
@@ -175,7 +175,7 @@ new class extends Component {
 
         PublishDisciplineReport::run($report, Auth::user());
 
-        Flux::toast('Discipline report published.', 'Report Published', variant: 'success');
+        Flux::toast('Staff report published.', 'Report Published', variant: 'success');
     }
 
     public function getViewingReportProperty()
@@ -211,7 +211,7 @@ new class extends Component {
 <div>
     <flux:card class="w-full">
         <div class="flex items-center gap-3">
-            <flux:heading size="md">Discipline Reports</flux:heading>
+            <flux:heading size="md">Staff Reports</flux:heading>
             <flux:spacer />
 
             @if($this->riskScore['total'] > 0)
@@ -232,7 +232,7 @@ new class extends Component {
         <flux:separator variant="subtle" class="my-2" />
 
         @if($this->reports->isEmpty())
-            <flux:text variant="subtle" class="py-4 text-center">No discipline reports.</flux:text>
+            <flux:text variant="subtle" class="py-4 text-center">No staff reports.</flux:text>
         @else
             <flux:table>
                 <flux:table.columns>
@@ -298,7 +298,7 @@ new class extends Component {
     {{-- Create Report Modal --}}
     <flux:modal name="create-report-modal" class="w-full md:w-1/2 xl:w-1/3">
         <div class="space-y-6">
-            <flux:heading size="lg">Create Discipline Report</flux:heading>
+            <flux:heading size="lg">Create Staff Report</flux:heading>
             <flux:text variant="subtle">Report about: {{ $this->user->name }}</flux:text>
 
             <flux:field>
@@ -357,7 +357,7 @@ new class extends Component {
     {{-- Edit Report Modal --}}
     <flux:modal name="edit-report-modal" class="w-full md:w-1/2 xl:w-1/3">
         <div class="space-y-6">
-            <flux:heading size="lg">Edit Discipline Report</flux:heading>
+            <flux:heading size="lg">Edit Staff Report</flux:heading>
 
             <flux:field>
                 <flux:label>Category</flux:label>
@@ -417,7 +417,7 @@ new class extends Component {
         @if($this->viewingReport)
             @php $viewReport = $this->viewingReport; @endphp
             <div class="space-y-4">
-                <flux:heading size="lg">Discipline Report</flux:heading>
+                <flux:heading size="lg">Staff Report</flux:heading>
 
                 <div class="flex items-center gap-3">
                     <flux:avatar size="sm" :src="$viewReport->subject->avatarUrl()" :initials="$viewReport->subject->initials()" />

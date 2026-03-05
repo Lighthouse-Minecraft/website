@@ -3,17 +3,15 @@
         <livewire:users.display-basic-details :user="$user" />
     </div>
 
-    <div class="my-6 w-full md:w-1/2">
-        <livewire:users.discipline-reports-card :user="$user" lazy />
-    </div>
+    @can('viewActivityLog', $user)
+        <div class="w-full my-6 flex justify-end">
+            <flux:modal.trigger name="activity-log-modal">
+                <flux:button icon="clock" size="sm" variant="ghost">View Activity Log</flux:button>
+            </flux:modal.trigger>
+        </div>
 
-    <div class="w-full my-6 flex justify-end">
-        <flux:modal.trigger name="activity-log-modal">
-            <flux:button icon="clock" size="sm" variant="ghost">View Activity Log</flux:button>
-        </flux:modal.trigger>
-    </div>
-
-    <flux:modal name="activity-log-modal" class="w-full max-w-7xl">
-        <livewire:users.display-activity-log :user="$user" lazy />
-    </flux:modal>
+        <flux:modal name="activity-log-modal" class="w-full max-w-7xl">
+            <livewire:users.display-activity-log :user="$user" lazy />
+        </flux:modal>
+    @endcan
 </x-layouts.app>

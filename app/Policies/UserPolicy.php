@@ -2,7 +2,6 @@
 
 namespace App\Policies;
 
-use App\Enums\MembershipLevel;
 use App\Enums\StaffDepartment;
 use App\Enums\StaffRank;
 use App\Models\User;
@@ -33,7 +32,7 @@ class UserPolicy
      */
     public function view(User $user, User $model): bool
     {
-        return $user->id == $model->id || $user->isAtLeastLevel(MembershipLevel::Traveler);
+        return true;
     }
 
     public function viewActivityLog(User $user, User $model): bool
@@ -47,6 +46,11 @@ class UserPolicy
         return $user->isAdmin()
             || $user->isInDepartment(StaffDepartment::Command)
             || $user->isInDepartment(StaffDepartment::Quartermaster);
+    }
+
+    public function viewStaffPhone(User $user, User $model): bool
+    {
+        return $user->isAtLeastRank(StaffRank::Officer) || $user->is_board_member;
     }
 
     /**

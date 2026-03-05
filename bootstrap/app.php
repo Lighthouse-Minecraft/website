@@ -11,6 +11,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->appendToGroup('web', [
+            \App\Http\Middleware\EnsureParentAllowsLogin::class,
+        ]);
+
         $middleware->alias([
             'track-notification-read' => \App\Http\Middleware\UpdateLastNotificationRead::class,
             'ensure-dob' => \App\Http\Middleware\EnsureDateOfBirthIsSet::class,

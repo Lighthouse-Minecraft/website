@@ -31,11 +31,11 @@ it('shows link button for eligible users', function () {
 });
 
 it('shows upgrade message for ineligible users', function () {
-    $user = User::factory()->create(['membership_level' => MembershipLevel::Stowaway]);
+    $user = User::factory()->create(['membership_level' => MembershipLevel::Drifter]);
 
     $this->actingAs($user)
         ->get(route('settings.discord-account'))
-        ->assertSee('promoted to Traveler');
+        ->assertSee('promoted to Stowaway');
 });
 
 it('shows linked accounts', function () {

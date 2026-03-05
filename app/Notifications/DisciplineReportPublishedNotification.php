@@ -43,7 +43,7 @@ class DisciplineReportPublishedNotification extends Notification implements Shou
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Discipline Report Filed')
+            ->subject('Staff Report Recorded')
             ->markdown('mail.discipline-report-published', [
                 'report' => $this->report,
                 'profileUrl' => route('profile.show', $this->report->subject),
@@ -53,8 +53,8 @@ class DisciplineReportPublishedNotification extends Notification implements Shou
     public function toPushover(object $notifiable): array
     {
         return [
-            'title' => 'Discipline Report Filed',
-            'message' => "A {$this->report->severity->label()} discipline report has been filed. Location: {$this->report->location->label()}.",
+            'title' => 'Staff Report Recorded',
+            'message' => "A {$this->report->severity->label()} staff report has been recorded. Location: {$this->report->location->label()}.",
             'url' => route('profile.show', $this->report->subject),
         ];
     }

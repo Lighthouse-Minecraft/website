@@ -62,13 +62,18 @@ it('traveler can view other profiles', function () {
     expect($viewer->can('view', $target))->toBeTrue();
 });
 
-it('drifter cannot view other profiles', function () {
+it('drifter can view other profiles', function () {
     $viewer = membershipDrifter();
     $target = User::factory()->create();
 
-    // Admin bypass will not apply here; drifter is not admin
-    // Drifters are below Traveler level so view() returns false for others
-    expect($viewer->can('view', $target))->toBeFalse();
+    expect($viewer->can('view', $target))->toBeTrue();
+});
+
+it('stowaway can view other profiles', function () {
+    $viewer = membershipStowaway();
+    $target = User::factory()->create();
+
+    expect($viewer->can('view', $target))->toBeTrue();
 });
 
 // === viewPii ===
@@ -146,6 +151,40 @@ it('no one can force delete users through policy', function () {
     $target = User::factory()->create();
     expect($policy->forceDelete($user, $target))->toBeFalse();
 });
+
+// === viewStaffPhone ===
+
+it('admin can view staff phone', function () {
+    $admin = loginAsAdmin();
+    $target = User::factory()->create();
+    expect($admin->can('viewStaffPhone', $target))->toBeTrue();
+});
+
+it('officer can view staff phone', function () {
+    $officer = officerQuartermaster();
+    $target = User::factory()->create();
+    expect($officer->can('viewStaffPhone', $target))->toBeTrue();
+});
+
+it('board member can view staff phone', function () {
+    $boardMember = User::factory()->create(['is_board_member' => true]);
+    $target = User::factory()->create();
+    expect($boardMember->can('viewStaffPhone', $target))->toBeTrue();
+});
+
+it('regular user cannot view staff phone', function () {
+    $user = membershipTraveler();
+    $target = User::factory()->create();
+    expect($user->can('viewStaffPhone', $target))->toBeFalse();
+});
+
+it('crew member cannot view staff phone', function () {
+    $crew = crewQuartermaster();
+    $target = User::factory()->create();
+    expect($crew->can('viewStaffPhone', $target))->toBeFalse();
+});
+
+// === updateStaffPosition / removeStaffPosition ===
 
 it('no one can update staff positions through policy (requires admin bypass)', function () {
     $policy = new UserPolicy;

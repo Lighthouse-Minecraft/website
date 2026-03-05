@@ -11,6 +11,7 @@ use App\Enums\StaffRank;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
@@ -47,8 +48,15 @@ class User extends Authenticatable // implements MustVerifyEmail
         'parent_email',
         'brig_type',
         'parent_allows_site',
+        'parent_allows_login',
         'parent_allows_minecraft',
         'parent_allows_discord',
+        'staff_first_name',
+        'staff_last_initial',
+        'staff_bio',
+        'staff_phone',
+        'staff_photo_path',
+        'is_board_member',
     ];
 
     /**
@@ -90,8 +98,10 @@ class User extends Authenticatable // implements MustVerifyEmail
             'date_of_birth' => 'date',
             'brig_type' => BrigType::class,
             'parent_allows_site' => 'boolean',
+            'parent_allows_login' => 'boolean',
             'parent_allows_minecraft' => 'boolean',
             'parent_allows_discord' => 'boolean',
+            'is_board_member' => 'boolean',
         ];
     }
 
@@ -160,6 +170,7 @@ class User extends Authenticatable // implements MustVerifyEmail
         return Str::of($this->name)
             ->explode(' ')
             ->map(fn (string $name) => Str::of($name)->substr(0, 1))
+            ->take(3)
             ->implode('');
     }
 
@@ -322,6 +333,35 @@ class User extends Authenticatable // implements MustVerifyEmail
     public function isInDepartment(StaffDepartment $department): bool
     {
         return $this->staff_department === $department;
+    }
+
+    public function isJrCrew(): bool
+    {
+        return $this->staff_rank === StaffRank::JrCrew;
+    }
+
+    public function staffPosition(): HasOne
+    {
+        return $this->hasOne(StaffPosition::class);
+    }
+
+    public function boardMembership(): HasOne
+    {
+        return $this->hasOne(BoardMember::class);
+    }
+
+    public function isBoardMember(): bool
+    {
+        return (bool) $this->is_board_member;
+    }
+
+    public function staffPhotoUrl(): ?string
+    {
+        if (! $this->staff_photo_path) {
+            return null;
+        }
+
+        return asset('storage/'.$this->staff_photo_path);
     }
 
     public function acknowledgedAnnouncements()

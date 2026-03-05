@@ -4,9 +4,9 @@ namespace App\Actions;
 
 use App\Models\ParentChildLink;
 use App\Models\User;
+use App\Notifications\ChildWelcomeNotification;
+use App\Services\TicketNotificationService;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -38,21 +38,10 @@ class CreateChildAccount
             return $child;
         });
 
-        $resetStatus = Password::sendResetLink(['email' => $email]);
-
-        if ($resetStatus !== Password::RESET_LINK_SENT) {
-            Log::error('Failed to send password reset link for child account', [
-                'child_id' => $child->id,
-                'email_hash' => hash('sha256', $email),
-                'status' => $resetStatus,
-            ]);
-
-            $child->delete();
-
-            throw new \RuntimeException('Failed to send password reset email. Child account was not created.');
-        }
-
         RecordActivity::run($child, 'child_account_created', "Account created by parent {$parent->name}.");
+
+        $notificationService = app(TicketNotificationService::class);
+        $notificationService->send($child, new ChildWelcomeNotification($child, $parent), 'account');
 
         return $child;
     }
