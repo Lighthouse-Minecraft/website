@@ -30,6 +30,10 @@ class PutUserInBrig
      */
     public function handle(User $target, User $admin, string $reason, ?Carbon $expiresAt = null, ?Carbon $appealAvailableAt = null, BrigType $brigType = BrigType::Discipline, bool $notify = true): void
     {
+        if ($appealAvailableAt === null && $brigType === BrigType::Discipline) {
+            $appealAvailableAt = now()->addHours(24);
+        }
+
         $target->in_brig = true;
         $target->brig_reason = $reason;
         $target->brig_expires_at = $expiresAt;

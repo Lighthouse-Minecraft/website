@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Notifications\DisciplineReportPublishedNotification;
 use App\Notifications\DisciplineReportPublishedParentNotification;
 use App\Services\TicketNotificationService;
+use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class PublishDisciplineReport
@@ -27,6 +28,7 @@ class PublishDisciplineReport
         ]);
 
         $report->subject->clearDisciplineRiskScoreCache();
+        Cache::forget('dashboard.top_risk_users');
 
         RecordActivity::run($report->subject, 'discipline_report_published',
             "Discipline report #{$report->id} published by {$publisher->name}. Severity: {$report->severity->label()}.", $publisher);

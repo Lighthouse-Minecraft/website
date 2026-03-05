@@ -26,7 +26,7 @@ class ReleaseUserFromBrig
      * @param  User  $admin  The administrator performing the release.
      * @param  string  $reason  A human-readable reason for the release.
      */
-    public function handle(User $target, User $admin, string $reason): void
+    public function handle(User $target, User $admin, string $reason, bool $notify = true): void
     {
         $target->in_brig = false;
         $target->brig_reason = null;
@@ -142,7 +142,9 @@ class ReleaseUserFromBrig
 
         RecordActivity::handle($target, 'user_released_from_brig', "Released from brig by {$admin->name}. Reason: {$reason}");
 
-        $notificationService = app(TicketNotificationService::class);
-        $notificationService->send($target, new UserReleasedFromBrigNotification($target), 'account');
+        if ($notify) {
+            $notificationService = app(TicketNotificationService::class);
+            $notificationService->send($target, new UserReleasedFromBrigNotification($target), 'account');
+        }
     }
 }

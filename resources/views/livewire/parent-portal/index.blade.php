@@ -179,7 +179,7 @@ new class extends Component {
         $this->authorize('view-parent-portal');
 
         $this->validate([
-            'newChildName' => ['required', 'string', 'max:255'],
+            'newChildName' => ['required', 'string', 'max:32'],
             'newChildEmail' => ['required', 'email', 'max:255', 'unique:users,email'],
             'newChildDob' => ['required', 'date', 'before:today'],
         ]);
@@ -206,7 +206,7 @@ new class extends Component {
 
         $this->reset(['newChildName', 'newChildEmail', 'newChildDob']);
         Flux::modal('create-child-modal')->close();
-        Flux::toast('Child account created! A password reset email has been sent.', 'Account Created', variant: 'success');
+        Flux::toast('Child account created! A welcome email with account setup instructions has been sent.', 'Account Created', variant: 'success');
         unset($this->children);
     }
 
@@ -340,7 +340,7 @@ new class extends Component {
         }
 
         $this->validate([
-            'editChildData.name' => ['required', 'string', 'max:255'],
+            'editChildData.name' => ['required', 'string', 'max:32'],
             'editChildData.email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->editingChildId)],
             'editChildData.date_of_birth' => ['required', 'date', 'before:today'],
         ]);
@@ -710,7 +710,7 @@ new class extends Component {
                 <flux:field>
                     <flux:label>Username</flux:label>
                     <flux:description>This will be their public display name on the site — use an online nickname, not their real name.</flux:description>
-                    <flux:input wire:model="newChildName" required placeholder="Online nickname" />
+                    <flux:input wire:model="newChildName" required placeholder="Online nickname" maxlength="32" />
                     <flux:error name="newChildName" />
                 </flux:field>
 
@@ -743,7 +743,7 @@ new class extends Component {
                 <flux:field>
                     <flux:label>Username</flux:label>
                     <flux:description>Public display name — use an online nickname, not their real name.</flux:description>
-                    <flux:input wire:model="editChildData.name" required />
+                    <flux:input wire:model="editChildData.name" required maxlength="32" />
                     <flux:error name="editChildData.name" />
                 </flux:field>
 
