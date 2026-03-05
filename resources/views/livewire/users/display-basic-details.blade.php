@@ -770,7 +770,7 @@ new class extends Component {
                     @if(! $user->isJrCrew() && $user->staff_bio)
                         <div>
                             <flux:heading size="sm" class="mb-1">About</flux:heading>
-                            <flux:text>{{ $user->staff_bio }}</flux:text>
+                            <flux:text>{!! nl2br(e($user->staff_bio)) !!}</flux:text>
                         </div>
                     @endif
 

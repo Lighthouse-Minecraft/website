@@ -50,7 +50,10 @@ class UserPolicy
 
     public function viewStaffPhone(User $user, User $model): bool
     {
-        return $user->isAtLeastRank(StaffRank::Officer) || $user->is_board_member;
+        $actorAllowed = $user->isAtLeastRank(StaffRank::Officer) || $user->is_board_member;
+        $targetIsStaff = $model->isAtLeastRank(StaffRank::JrCrew) || $model->is_board_member;
+
+        return $actorAllowed && $targetIsStaff;
     }
 
     /**
