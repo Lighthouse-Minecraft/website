@@ -3,6 +3,7 @@
 namespace App\Actions;
 
 use App\Models\BoardMember;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class UnlinkBoardMemberFromUser
@@ -19,13 +20,15 @@ class UnlinkBoardMemberFromUser
 
         $userName = $user->name;
 
-        $boardMember->update(['user_id' => null]);
-        $user->update(['is_board_member' => false]);
+        DB::transaction(function () use ($boardMember, $user, $userName) {
+            $boardMember->update(['user_id' => null]);
+            $user->update(['is_board_member' => false]);
 
-        RecordActivity::run(
-            $boardMember,
-            'board_member_unlinked',
-            "Board member '{$boardMember->display_name}' unlinked from user {$userName}"
-        );
+            RecordActivity::run(
+                $boardMember,
+                'board_member_unlinked',
+                "Board member '{$boardMember->display_name}' unlinked from user {$userName}"
+            );
+        });
     }
 }

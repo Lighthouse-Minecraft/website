@@ -154,33 +154,45 @@ it('no one can force delete users through policy', function () {
 
 // === viewStaffPhone ===
 
-it('admin can view staff phone', function () {
+it('admin can view staff phone of any user', function () {
     $admin = loginAsAdmin();
     $target = User::factory()->create();
     expect($admin->can('viewStaffPhone', $target))->toBeTrue();
 });
 
-it('officer can view staff phone', function () {
+it('officer can view staff phone of staff target', function () {
     $officer = officerQuartermaster();
-    $target = User::factory()->create();
+    $target = crewQuartermaster();
     expect($officer->can('viewStaffPhone', $target))->toBeTrue();
 });
 
-it('board member can view staff phone', function () {
+it('officer cannot view staff phone of non-staff target', function () {
+    $officer = officerQuartermaster();
+    $target = User::factory()->create();
+    expect($officer->can('viewStaffPhone', $target))->toBeFalse();
+});
+
+it('board member can view staff phone of staff target', function () {
+    $boardMember = User::factory()->create(['is_board_member' => true]);
+    $target = User::factory()->create(['is_board_member' => true]);
+    expect($boardMember->can('viewStaffPhone', $target))->toBeTrue();
+});
+
+it('board member cannot view staff phone of non-staff target', function () {
     $boardMember = User::factory()->create(['is_board_member' => true]);
     $target = User::factory()->create();
-    expect($boardMember->can('viewStaffPhone', $target))->toBeTrue();
+    expect($boardMember->can('viewStaffPhone', $target))->toBeFalse();
 });
 
 it('regular user cannot view staff phone', function () {
     $user = membershipTraveler();
-    $target = User::factory()->create();
+    $target = crewQuartermaster();
     expect($user->can('viewStaffPhone', $target))->toBeFalse();
 });
 
 it('crew member cannot view staff phone', function () {
     $crew = crewQuartermaster();
-    $target = User::factory()->create();
+    $target = crewQuartermaster();
     expect($crew->can('viewStaffPhone', $target))->toBeFalse();
 });
 
