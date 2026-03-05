@@ -123,7 +123,9 @@ it('works without expires_at or appeal_available_at', function () {
 
     PutUserInBrig::run($target, $admin, 'Test reason');
 
-    expect($target->fresh()->in_brig)->toBeTrue()
-        ->and($target->fresh()->brig_expires_at)->toBeNull()
-        ->and($target->fresh()->next_appeal_available_at)->toBeNull();
+    $fresh = $target->fresh();
+    expect($fresh->in_brig)->toBeTrue()
+        ->and($fresh->brig_expires_at)->toBeNull()
+        ->and($fresh->next_appeal_available_at)->not->toBeNull()
+        ->and($fresh->next_appeal_available_at->diffInHours(now(), true))->toBeLessThanOrEqual(24);
 });

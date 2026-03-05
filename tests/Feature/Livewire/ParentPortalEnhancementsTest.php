@@ -6,7 +6,7 @@ use App\Actions\CreateChildAccount;
 use App\Models\MinecraftVerification;
 use App\Models\ParentChildLink;
 use App\Models\User;
-use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Notification;
 
 use function Pest\Laravel\actingAs;
 
@@ -16,7 +16,7 @@ it('rejects child creation when age is 17+', function () {
     $parent = User::factory()->adult()->create();
     actingAs($parent);
 
-    Password::shouldReceive('sendResetLink')->never();
+    Notification::fake();
 
     Livewire\Volt\Volt::test('parent-portal.index')
         ->set('newChildName', 'Old Teen')
@@ -32,7 +32,7 @@ it('allows child creation when age is 16', function () {
     $parent = User::factory()->adult()->create();
     actingAs($parent);
 
-    Password::shouldReceive('sendResetLink')->once()->andReturn(Password::RESET_LINK_SENT);
+    Notification::fake();
 
     Livewire\Volt\Volt::test('parent-portal.index')
         ->set('newChildName', 'Young Teen')
@@ -47,7 +47,7 @@ it('allows child creation when age is 16', function () {
 it('sets MC/Discord to false for under-13 child', function () {
     $parent = User::factory()->adult()->create();
 
-    Password::shouldReceive('sendResetLink')->once()->andReturn(Password::RESET_LINK_SENT);
+    Notification::fake();
 
     $child = CreateChildAccount::run(
         $parent,
@@ -64,7 +64,7 @@ it('sets MC/Discord to false for under-13 child', function () {
 it('sets MC/Discord to true for 13+ child', function () {
     $parent = User::factory()->adult()->create();
 
-    Password::shouldReceive('sendResetLink')->once()->andReturn(Password::RESET_LINK_SENT);
+    Notification::fake();
 
     $child = CreateChildAccount::run(
         $parent,

@@ -401,7 +401,7 @@ new class extends Component {
         $this->authorize('update', $this->user);
 
         $this->validate([
-            'editUserData.name' => ['required', 'string', 'max:255'],
+            'editUserData.name' => ['required', 'string', 'max:32'],
             'editUserData.email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->user->id)],
             'editUserData.date_of_birth' => ['nullable', 'date', 'before:today'],
             'editUserData.parent_email' => ['nullable', 'email'],
@@ -834,7 +834,7 @@ new class extends Component {
             <form wire:submit="saveEditUser" class="space-y-6">
                 <flux:field>
                     <flux:label>Username</flux:label>
-                    <flux:input wire:model="editUserData.name" required />
+                    <flux:input wire:model="editUserData.name" required maxlength="32" />
                     <flux:error name="editUserData.name" />
                 </flux:field>
 

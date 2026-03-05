@@ -30,7 +30,7 @@ new #[Layout('components.layouts.auth')] class extends Component {
     public function register(): void
     {
         $validated = $this->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:32'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
             'password' => ['required', 'string', 'confirmed', Rules\Password::defaults()],
             'date_of_birth' => ['required', 'date', 'before:today'],
@@ -53,7 +53,7 @@ new #[Layout('components.layouts.auth')] class extends Component {
     public function submitParentEmail(): void
     {
         $this->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:32'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
             'password' => ['required', 'string', 'confirmed', Rules\Password::defaults()],
             'date_of_birth' => ['required', 'date', 'before:today'],
@@ -132,7 +132,7 @@ new #[Layout('components.layouts.auth')] class extends Component {
                 <flux:field>
                     <flux:label>Username</flux:label>
                     <flux:description>This will be your public display name on the site.</flux:description>
-                    <flux:input wire:model="name" id="name" type="text" name="name" required autofocus autocomplete="name" placeholder="Online Nickname" />
+                    <flux:input wire:model="name" id="name" type="text" name="name" required autofocus autocomplete="name" placeholder="Online Nickname" maxlength="32" />
                     <flux:error name="name" />
                 </flux:field>
             </div>

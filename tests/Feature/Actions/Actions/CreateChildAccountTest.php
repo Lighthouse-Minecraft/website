@@ -5,12 +5,13 @@ declare(strict_types=1);
 use App\Actions\CreateChildAccount;
 use App\Models\ParentChildLink;
 use App\Models\User;
-use Illuminate\Support\Facades\Password;
+use App\Notifications\ChildWelcomeNotification;
+use Illuminate\Support\Facades\Notification;
 
 uses()->group('parent-portal', 'actions');
 
 it('creates a child user account linked to parent', function () {
-    Password::shouldReceive('sendResetLink')->once()->andReturn(Password::RESET_LINK_SENT);
+    Notification::fake();
 
     $parent = User::factory()->adult()->create();
 
@@ -25,7 +26,7 @@ it('creates a child user account linked to parent', function () {
 });
 
 it('sets restrictive defaults for under-13 child', function () {
-    Password::shouldReceive('sendResetLink')->once()->andReturn(Password::RESET_LINK_SENT);
+    Notification::fake();
 
     $parent = User::factory()->adult()->create();
     $dob = now()->subYears(10)->format('Y-m-d');
@@ -38,7 +39,7 @@ it('sets restrictive defaults for under-13 child', function () {
 });
 
 it('sets permissive defaults for 13+ child', function () {
-    Password::shouldReceive('sendResetLink')->once()->andReturn(Password::RESET_LINK_SENT);
+    Notification::fake();
 
     $parent = User::factory()->adult()->create();
     $dob = now()->subYears(15)->format('Y-m-d');
@@ -50,19 +51,18 @@ it('sets permissive defaults for 13+ child', function () {
         ->and($child->parent_allows_discord)->toBeTrue();
 });
 
-it('throws and deletes child when password reset email fails', function () {
-    Password::shouldReceive('sendResetLink')->once()->andReturn(Password::RESET_THROTTLED);
+it('sends a welcome notification to the child', function () {
+    Notification::fake();
 
     $parent = User::factory()->adult()->create();
 
-    expect(fn () => CreateChildAccount::run($parent, 'FailChild', 'fail@example.com', now()->subYears(14)->format('Y-m-d')))
-        ->toThrow(RuntimeException::class, 'Failed to send password reset email');
+    $child = CreateChildAccount::run($parent, 'WelcomeChild', 'welcome@example.com', now()->subYears(14)->format('Y-m-d'));
 
-    expect(User::where('email', 'fail@example.com')->exists())->toBeFalse();
+    Notification::assertSentTo($child, ChildWelcomeNotification::class);
 });
 
 it('records activity for child account creation', function () {
-    Password::shouldReceive('sendResetLink')->once()->andReturn(Password::RESET_LINK_SENT);
+    Notification::fake();
 
     $parent = User::factory()->adult()->create();
     $child = CreateChildAccount::run($parent, 'ActivityChild', 'activity@example.com', now()->subYears(14)->format('Y-m-d'));

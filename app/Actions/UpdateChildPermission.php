@@ -6,6 +6,9 @@ use App\Enums\BrigType;
 use App\Enums\DiscordAccountStatus;
 use App\Enums\MinecraftAccountStatus;
 use App\Models\User;
+use App\Notifications\ParentAccountDisabledNotification;
+use App\Notifications\ParentAccountEnabledNotification;
+use App\Services\TicketNotificationService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -30,6 +33,8 @@ class UpdateChildPermission
         $child->parent_allows_site = $enabled;
         $child->save();
 
+        $notificationService = app(TicketNotificationService::class);
+
         if (! $enabled && ! $child->isInBrig()) {
             PutUserInBrig::run(
                 target: $child,
@@ -38,8 +43,10 @@ class UpdateChildPermission
                 brigType: BrigType::ParentalDisabled,
                 notify: false,
             );
+            $notificationService->send($child, new ParentAccountDisabledNotification($child, $parent), 'account');
         } elseif ($enabled && $child->isInBrig() && $child->brig_type?->isParental()) {
-            ReleaseUserFromBrig::run($child, $parent, 'Site access enabled by parent.');
+            ReleaseUserFromBrig::run($child, $parent, 'Site access enabled by parent.', notify: false);
+            $notificationService->send($child, new ParentAccountEnabledNotification($child, $parent), 'account');
         }
 
         $action = $enabled ? 'enabled' : 'disabled';
