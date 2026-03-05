@@ -123,7 +123,7 @@ new class extends Component {
                                                     <img src="{{ $pos->user->avatarUrl() }}" alt="{{ $pos->user->name }}" class="w-20 h-20 rounded-lg" />
                                                 @endif
                                                 <div class="min-w-0">
-                                                    <flux:link href="{{ route('profile.show', $pos->user) }}" wire:navigate class="block text-sm font-semibold truncate">{{ $pos->user->name }}</flux:link>
+                                                    <div class="text-sm font-semibold truncate">{{ $pos->user->name }}</div>
                                                     <div class="text-xs truncate text-zinc-500 dark:text-zinc-400">{{ $pos->title }}</div>
                                                 </div>
                                             </div>
@@ -161,7 +161,7 @@ new class extends Component {
                                                     <img src="{{ $pos->user->avatarUrl() }}" alt="{{ $pos->user->name }}" class="w-16 h-16 rounded-lg" />
                                                 @endif
                                                 <div class="w-full min-w-0">
-                                                    <flux:link href="{{ route('profile.show', $pos->user) }}" wire:navigate class="block text-sm font-medium truncate">{{ $pos->user->name }}</flux:link>
+                                                    <div class="text-sm font-medium truncate">{{ $pos->user->name }}</div>
                                                     <div class="text-xs truncate text-zinc-500 dark:text-zinc-400">{{ $pos->title }}</div>
                                                 </div>
                                             </div>
@@ -241,7 +241,7 @@ new class extends Component {
                         @if($bm->effectiveBio())
                             <div>
                                 <flux:heading size="sm" class="mb-1">About</flux:heading>
-                                <flux:text>{{ $bm->effectiveBio() }}</flux:text>
+                                <flux:text>{!! nl2br(e($bm->effectiveBio())) !!}</flux:text>
                             </div>
                         @endif
 
@@ -294,7 +294,7 @@ new class extends Component {
                         @if($selected->isFilled() && ! $selected->user->isJrCrew() && $selected->user->staff_bio)
                             <div>
                                 <flux:heading size="sm" class="mb-1">About</flux:heading>
-                                <flux:text>{{ $selected->user->staff_bio }}</flux:text>
+                                <flux:text>{!! nl2br(e($selected->user->staff_bio)) !!}</flux:text>
                             </div>
                         @endif
 
