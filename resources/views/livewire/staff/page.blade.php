@@ -222,8 +222,12 @@ new class extends Component {
                 @if($this->selectedBoardMemberId && $this->selectedBoardMember)
                     @php $bm = $this->selectedBoardMember; @endphp
                     <flux:card class="space-y-4">
-                        @if($bm->effectivePhotoUrl())
-                            <img src="{{ $bm->effectivePhotoUrl() }}" alt="{{ $bm->effectiveName() }}" class="object-cover w-full h-48 rounded-lg" />
+                        @if($bm->isLinked() && $bm->user && $bm->user->staffPhotoUrl())
+                            <img src="{{ $bm->user->staffPhotoUrl() }}" alt="{{ $bm->effectiveName() }}" class="object-cover w-full h-48 rounded-lg" />
+                        @elseif($bm->isLinked() && $bm->user && $bm->user->avatarUrl())
+                            <img src="{{ $bm->user->avatarUrl() }}" alt="{{ $bm->effectiveName() }}" class="w-24 h-24 mx-auto rounded-lg" />
+                        @elseif(! $bm->isLinked() && $bm->photo_path)
+                            <img src="{{ asset('storage/' . $bm->photo_path) }}" alt="{{ $bm->effectiveName() }}" class="object-cover w-full h-48 rounded-lg" />
                         @endif
 
                         <flux:heading size="lg">{{ $bm->effectiveName() }}</flux:heading>
@@ -298,6 +302,13 @@ new class extends Component {
                             </div>
                         @endif
 
+                        @if($selected->responsibilities)
+                            <div>
+                                <flux:heading size="sm" class="mb-1">Responsibilities</flux:heading>
+                                <flux:text>{{ $selected->responsibilities }}</flux:text>
+                            </div>
+                        @endif
+
                         @if($selected->isFilled())
                             @can('viewStaffPhone', $selected->user)
                                 @if($selected->user->staff_phone)
@@ -310,12 +321,6 @@ new class extends Component {
                         @endif
 
                         @if($selected->isVacant())
-                            @if($selected->responsibilities)
-                                <div>
-                                    <flux:heading size="sm" class="mb-1">Responsibilities</flux:heading>
-                                    <flux:text>{{ $selected->responsibilities }}</flux:text>
-                                </div>
-                            @endif
                             @if($selected->requirements)
                                 <div>
                                     <flux:heading size="sm" class="mb-1">Requirements</flux:heading>
