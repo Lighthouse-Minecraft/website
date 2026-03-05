@@ -206,7 +206,7 @@ new class extends Component {
 
         $this->reset(['newChildName', 'newChildEmail', 'newChildDob']);
         Flux::modal('create-child-modal')->close();
-        Flux::toast('Child account created! A password reset email has been sent.', 'Account Created', variant: 'success');
+        Flux::toast('Child account created! A welcome email with account setup instructions has been sent.', 'Account Created', variant: 'success');
         unset($this->children);
     }
 

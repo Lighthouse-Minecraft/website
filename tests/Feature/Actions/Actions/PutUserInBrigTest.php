@@ -127,5 +127,6 @@ it('works without expires_at or appeal_available_at', function () {
     expect($fresh->in_brig)->toBeTrue()
         ->and($fresh->brig_expires_at)->toBeNull()
         ->and($fresh->next_appeal_available_at)->not->toBeNull()
+        ->and($fresh->next_appeal_available_at->isFuture())->toBeTrue()
         ->and($fresh->next_appeal_available_at->diffInHours(now(), true))->toBeLessThanOrEqual(24);
 });
