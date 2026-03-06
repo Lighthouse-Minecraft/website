@@ -95,14 +95,15 @@ class Announcement extends Model
 
     /**
      * Render content as HTML, handling both legacy HTML and markdown.
+     * Legacy HTML is converted to plain text first to prevent XSS from attributes
+     * (e.g. onerror, javascript: URIs) that strip_tags would leave intact.
      */
     public function renderedContent(): string
     {
         if (preg_match('/<[a-z][\s\S]*>/i', $this->content)) {
-            return strip_tags(
-                $this->content,
-                '<p><h1><h2><h3><h4><h5><h6><br><strong><em><ul><ol><li><a><blockquote><hr><img>'
-            );
+            $plainText = strip_tags($this->content);
+
+            return Str::markdown($plainText, ['html_input' => 'strip', 'allow_unsafe_links' => false]);
         }
 
         return Str::markdown($this->content, ['html_input' => 'strip', 'allow_unsafe_links' => false]);

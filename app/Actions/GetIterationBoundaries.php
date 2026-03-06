@@ -75,7 +75,7 @@ class GetIterationBoundaries
             return [
                 'current_start' => $currentStart,
                 'current_end' => $currentEnd,
-                'current_meeting' => null,
+                'current_meeting' => null, // null because the current iteration's closing meeting hasn't happened yet
                 'previous_start' => $previousStart,
                 'previous_end' => $previousEnd,
                 'previous_meeting' => $previousMeeting,

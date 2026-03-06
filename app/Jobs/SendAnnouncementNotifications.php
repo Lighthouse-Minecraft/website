@@ -20,14 +20,21 @@ class SendAnnouncementNotifications implements ShouldQueue
 
     public function handle(): void
     {
+        // Re-verify the announcement is still published at handle time
+        $announcement = Announcement::published()->find($this->announcement->id);
+
+        if (! $announcement) {
+            return;
+        }
+
         $service = app(TicketNotificationService::class);
 
         User::where('membership_level', '>=', MembershipLevel::Traveler->value)
-            ->where('id', '!=', $this->announcement->author_id)
-            ->chunk(100, function ($users) use ($service) {
+            ->where('id', '!=', $announcement->author_id)
+            ->chunk(100, function ($users) use ($service, $announcement) {
                 $service->sendToMany(
                     $users,
-                    new NewAnnouncementNotification($this->announcement),
+                    new NewAnnouncementNotification($announcement),
                     'announcements'
                 );
             });

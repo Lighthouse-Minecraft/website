@@ -143,7 +143,7 @@ class CommandDashboardSeeder extends Seeder
                     'meeting_id' => $meeting->id,
                     'user_id' => $member->id,
                     'submitted_at' => fake()->numberBetween(1, 100) <= $submitChance
-                        ? $meeting->scheduled_time->subDays(fake()->numberBetween(1, 5))
+                        ? $meeting->scheduled_time->copy()->subDays(fake()->numberBetween(1, 5))
                         : null,
                 ]);
             }
@@ -157,16 +157,12 @@ class CommandDashboardSeeder extends Seeder
         $iterationStarts = [84, 70, 56, 42, 28, 14, 0];
 
         for ($i = 0; $i < count($usersPerIteration); $i++) {
-            $rangeStart = $iterationStarts[$i];
-            $rangeEnd = $i > 0 ? $iterationStarts[$i - 1] : 0;
-            // For the current iteration (i=6), rangeEnd = 0 (today)
-            if ($i === count($usersPerIteration) - 1) {
-                $rangeEnd = 0;
-                $rangeStart = 14;
-            }
+            // Non-overlapping ranges: each cohort occupies its own day interval
+            $max = $iterationStarts[$i];
+            $min = ($i === count($usersPerIteration) - 1) ? 0 : $iterationStarts[$i + 1] + 1;
 
             for ($j = 0; $j < $usersPerIteration[$i]; $j++) {
-                $daysAgo = fake()->numberBetween($rangeEnd, $rangeStart);
+                $daysAgo = fake()->numberBetween($min, $max);
                 $user = User::factory()->create([
                     'created_at' => now()->subDays($daysAgo),
                     'membership_level' => fake()->randomElement([

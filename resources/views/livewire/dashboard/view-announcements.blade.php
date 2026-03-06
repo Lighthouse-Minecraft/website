@@ -68,7 +68,7 @@ new class extends Component {
         Flux::modal('view-latest-announcement')->close();
         Flux::toast('Announcement acknowledged.', 'Done', variant: 'success');
 
-        $this->latestAnnouncement = null;
+        $this->loadLatest();
     }
 }; ?>
 

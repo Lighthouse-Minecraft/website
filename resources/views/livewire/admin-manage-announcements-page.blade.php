@@ -89,7 +89,11 @@ new class extends Component {
 
     public function getAnnouncementsProperty()
     {
-        return Announcement::orderBy($this->sortBy, $this->sortDirection)
+        $allowedColumns = ['created_at', 'title', 'author_id', 'is_published'];
+        $sortBy = in_array($this->sortBy, $allowedColumns, true) ? $this->sortBy : 'created_at';
+        $sortDirection = in_array($this->sortDirection, ['asc', 'desc'], true) ? $this->sortDirection : 'desc';
+
+        return Announcement::orderBy($sortBy, $sortDirection)
             ->with(['author.roles', 'author.minecraftAccounts', 'author.discordAccounts'])
             ->paginate(10);
     }
@@ -100,9 +104,21 @@ new class extends Component {
 
         $expiredAtRules = ['nullable', 'date'];
         if (filled($this->newExpiredAt)) {
-            $expiredAtRules[] = filled($this->newPublishedAt)
-                ? 'after:newPublishedAt'
-                : 'after:now';
+            $utcExpired = $this->toUtc($this->newExpiredAt);
+            if (filled($this->newPublishedAt)) {
+                $utcPublished = $this->toUtc($this->newPublishedAt);
+                $expiredAtRules[] = function ($attribute, $value, $fail) use ($utcExpired, $utcPublished) {
+                    if ($utcExpired && $utcPublished && $utcExpired->lte($utcPublished)) {
+                        $fail('The expiration date must be after the publish date.');
+                    }
+                };
+            } else {
+                $expiredAtRules[] = function ($attribute, $value, $fail) use ($utcExpired) {
+                    if ($utcExpired && $utcExpired->lte(now())) {
+                        $fail('The expiration date must be in the future.');
+                    }
+                };
+            }
         }
 
         $this->validate([
@@ -143,6 +159,8 @@ new class extends Component {
         $this->editPublishedAt = $this->toLocal($announcement->published_at);
         $this->editExpiredAt = $this->toLocal($announcement->expired_at);
         $this->showEditPreview = false;
+
+        Flux::modal('edit-announcement-modal')->show();
     }
 
     public function updateAnnouncement(): void
@@ -152,9 +170,21 @@ new class extends Component {
 
         $expiredAtRules = ['nullable', 'date'];
         if (filled($this->editExpiredAt)) {
-            $expiredAtRules[] = filled($this->editPublishedAt)
-                ? 'after:editPublishedAt'
-                : 'after:now';
+            $utcExpired = $this->toUtc($this->editExpiredAt);
+            if (filled($this->editPublishedAt)) {
+                $utcPublished = $this->toUtc($this->editPublishedAt);
+                $expiredAtRules[] = function ($attribute, $value, $fail) use ($utcExpired, $utcPublished) {
+                    if ($utcExpired && $utcPublished && $utcExpired->lte($utcPublished)) {
+                        $fail('The expiration date must be after the publish date.');
+                    }
+                };
+            } else {
+                $expiredAtRules[] = function ($attribute, $value, $fail) use ($utcExpired) {
+                    if ($utcExpired && $utcExpired->lte(now())) {
+                        $fail('The expiration date must be in the future.');
+                    }
+                };
+            }
         }
 
         $this->validate([
@@ -165,13 +195,22 @@ new class extends Component {
             'editExpiredAt' => $expiredAtRules,
         ]);
 
-        $isPublished = $this->editIsPublished || filled($this->editPublishedAt);
+        $scheduledAt = $this->toUtc($this->editPublishedAt);
+        $isScheduled = $scheduledAt && $scheduledAt->greaterThan(now());
+        $isPublished = $this->editIsPublished || $isScheduled;
+
+        $publishedAt = null;
+        if ($isScheduled) {
+            $publishedAt = $scheduledAt;
+        } elseif ($isPublished) {
+            $publishedAt = $this->toUtc($this->editPublishedAt) ?? $announcement->published_at ?? now();
+        }
 
         $announcement->update([
             'title' => $this->editTitle,
             'content' => $this->editContent,
             'is_published' => $isPublished,
-            'published_at' => $isPublished ? ($this->toUtc($this->editPublishedAt) ?? $announcement->published_at ?? now()) : null,
+            'published_at' => $publishedAt,
             'expired_at' => $this->toUtc($this->editExpiredAt),
         ]);
 
@@ -233,9 +272,7 @@ new class extends Component {
                     <flux:table.cell>
                         <div class="flex gap-1">
                             @can('update', $announcement)
-                                <flux:modal.trigger wire:click="openEditModal({{ $announcement->id }})" name="edit-announcement-modal">
-                                    <flux:button size="sm" icon="pencil-square">Edit</flux:button>
-                                </flux:modal.trigger>
+                                <flux:button size="sm" icon="pencil-square" wire:click="openEditModal({{ $announcement->id }})">Edit</flux:button>
                             @endcan
                             @can('delete', $announcement)
                                 <flux:button size="sm" icon="trash" variant="ghost" wire:click="deleteAnnouncement({{ $announcement->id }})" wire:confirm="Delete this announcement? This cannot be undone.">Delete</flux:button>

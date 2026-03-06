@@ -382,17 +382,19 @@ new class extends Component {
                     <div class="space-y-3">
                         @foreach(StaffDepartment::cases() as $department)
                             @if($this->staffByDepartment->has($department->value))
-                                <div>
+                                <div wire:key="department-{{ $department->value }}">
                                     <flux:text class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">{{ $department->label() }}</flux:text>
                                     <div class="space-y-0.5">
                                         @foreach($this->staffByDepartment[$department->value] as $member)
-                                            <div class="flex items-center gap-1.5 text-sm">
+                                            <div wire:key="member-{{ $member->id }}" class="flex items-center gap-1.5 text-sm">
                                                 @if(in_array($member->id, $this->submittedReportUserIds))
-                                                    <flux:icon name="check" variant="solid" class="w-4 h-4 text-green-500 shrink-0" />
+                                                    <flux:icon name="check" variant="solid" class="w-4 h-4 text-green-500 shrink-0" aria-hidden="true" />
+                                                    <span class="sr-only">Report submitted</span>
                                                 @else
-                                                    <flux:icon name="x-mark" variant="solid" class="w-4 h-4 text-red-400 shrink-0" />
+                                                    <flux:icon name="x-mark" variant="solid" class="w-4 h-4 text-red-400 shrink-0" aria-hidden="true" />
+                                                    <span class="sr-only">Report missing</span>
                                                 @endif
-                                                <span><a href="{{ route('profile.show', $member->id) }}" class="text-blue-400 no-underline hover:underline hover:text-blue-200">{{ $member->name }}</a></span>
+                                                <span><flux:link href="{{ route('profile.show', $member->id) }}">{{ $member->name }}</flux:link></span>
                                             </div>
                                         @endforeach
                                     </div>
