@@ -19,7 +19,7 @@ new class extends Component {
     /**
      * Fetches Stowaway users who are not in the Brig, ordered by name.
      *
-     * @return \Illuminate\Database\Eloquent\Collection<int, \App\Models\User> Collection of User models for stowaway users not in Brig, ordered by name.
+     * @return \Illuminate\Pagination\LengthAwarePaginator<int, \App\Models\User> Paginated stowaway users not in Brig, ordered by name.
      */
     public function getStowawayUsersProperty()
     {

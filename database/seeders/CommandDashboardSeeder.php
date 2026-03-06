@@ -111,7 +111,7 @@ class CommandDashboardSeeder extends Seeder
         // ── Meeting Attendance ─────────────────────────────────────────
         $this->command->info('  Seeding meeting attendance...');
 
-        foreach ($meetings as $meetingIndex => $meeting) {
+        foreach ($meetings as $meeting) {
             foreach ($staff as $member) {
                 // Officers and crew attend most meetings, JrCrew less often
                 $attendChance = match (true) {
@@ -178,7 +178,7 @@ class CommandDashboardSeeder extends Seeder
                     MinecraftAccount::factory()->create([
                         'user_id' => $user->id,
                         'status' => MinecraftAccountStatus::Active,
-                        'created_at' => $user->created_at->addHours(fake()->numberBetween(1, 48)),
+                        'created_at' => $user->created_at->copy()->addHours(fake()->numberBetween(1, 48)),
                     ]);
                 }
 
@@ -186,7 +186,7 @@ class CommandDashboardSeeder extends Seeder
                 if (fake()->boolean(30)) {
                     DiscordAccount::factory()->create([
                         'user_id' => $user->id,
-                        'created_at' => $user->created_at->addHours(fake()->numberBetween(1, 72)),
+                        'created_at' => $user->created_at->copy()->addHours(fake()->numberBetween(1, 72)),
                     ]);
                 }
             }
@@ -201,7 +201,7 @@ class CommandDashboardSeeder extends Seeder
             ]);
             MinecraftAccount::factory()->verifying()->create([
                 'user_id' => $user->id,
-                'created_at' => $user->created_at->addMinutes(30),
+                'created_at' => $user->created_at->copy()->addMinutes(30),
             ]);
         }
 
@@ -229,13 +229,15 @@ class CommandDashboardSeeder extends Seeder
                     $createdAt = now()->subDays($daysAgo);
                     $isClosed = fake()->numberBetween(1, 100) <= $closePct;
 
+                    $closeDelay = $daysAgo > 0 ? min(fake()->numberBetween(1, 5), $daysAgo) : 0;
+
                     Thread::factory()->create([
                         'type' => ThreadType::Ticket,
                         'department' => $dept,
                         'status' => $isClosed ? ThreadStatus::Closed : fake()->randomElement([ThreadStatus::Open, ThreadStatus::Pending]),
                         'created_at' => $createdAt,
                         'updated_at' => $isClosed
-                            ? $createdAt->copy()->addDays(fake()->numberBetween(1, 5))
+                            ? $createdAt->copy()->addDays($closeDelay)
                             : $createdAt,
                     ]);
                 }
@@ -261,6 +263,7 @@ class CommandDashboardSeeder extends Seeder
                     $creator = $deptStaff->random();
 
                     $isCompleted = fake()->boolean(65);
+                    $completeDelay = $daysAgo > 0 ? min(fake()->numberBetween(1, 10), $daysAgo) : 0;
 
                     $meeting = $iter < 6 ? $meetings[$iter] : null;
 
@@ -271,7 +274,7 @@ class CommandDashboardSeeder extends Seeder
                         'created_by' => $creator->id,
                         'assigned_meeting_id' => $meeting?->id,
                         'status' => $isCompleted ? TaskStatus::Completed : fake()->randomElement([TaskStatus::Pending, TaskStatus::InProgress]),
-                        'completed_at' => $isCompleted ? $createdAt->copy()->addDays(fake()->numberBetween(1, 10)) : null,
+                        'completed_at' => $isCompleted ? $createdAt->copy()->addDays($completeDelay) : null,
                         'completed_by' => $isCompleted ? $assignee->id : null,
                         'completed_meeting_id' => $isCompleted && $meeting ? $meeting->id : null,
                         'created_at' => $createdAt,

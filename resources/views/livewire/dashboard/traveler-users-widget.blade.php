@@ -16,7 +16,7 @@ new class extends Component {
     /**
      * Retrieve Traveler members who are not in brig, ordered by their promotion time ascending.
      *
-     * @return \Illuminate\Database\Eloquent\Collection<int, \App\Models\User> Collection of Traveler users not in brig ordered by `promoted_at` ascending.
+     * @return \Illuminate\Pagination\LengthAwarePaginator<int, \App\Models\User> Paginated Traveler users not in brig ordered by `promoted_at` ascending.
      */
     public function getTravelerUsersProperty()
     {

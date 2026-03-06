@@ -157,7 +157,8 @@ new class extends Component {
             return null;
         }
 
-        $user = User::findOrFail($this->selectedStaffId);
+        $user = User::where('staff_rank', '!=', StaffRank::None)
+            ->findOrFail($this->selectedStaffId);
         $boundaries = GetIterationBoundaries::run();
         $iterations = $boundaries['iterations_3mo'];
 
@@ -207,6 +208,10 @@ new class extends Component {
     public function viewStaffDetail(int $userId): void
     {
         $this->authorize('view-command-dashboard');
+
+        // Verify the target user is actually staff
+        User::where('staff_rank', '!=', StaffRank::None)->findOrFail($userId);
+
         $this->selectedStaffId = $userId;
         Flux::modal('staff-detail-modal')->show();
     }
@@ -336,7 +341,7 @@ new class extends Component {
                     </flux:table.columns>
                     <flux:table.rows>
                         @foreach($detail['iterations'] as $iter)
-                            <flux:table.row>
+                            <flux:table.row wire:key="iter-{{ $this->selectedStaffId }}-{{ $loop->index }}">
                                 <flux:table.cell>{{ $iter['label'] }}</flux:table.cell>
                                 <flux:table.cell>{{ $iter['completed'] }}</flux:table.cell>
                                 <flux:table.cell>{{ $iter['tickets_worked'] }}</flux:table.cell>

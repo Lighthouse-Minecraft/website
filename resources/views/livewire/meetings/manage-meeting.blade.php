@@ -394,7 +394,7 @@ new class extends Component {
                                                     <flux:icon name="x-mark" variant="solid" class="w-4 h-4 text-red-400 shrink-0" aria-hidden="true" />
                                                     <span class="sr-only">Report missing</span>
                                                 @endif
-                                                <span><flux:link href="{{ route('profile.show', $member->id) }}">{{ $member->name }}</flux:link></span>
+                                                <span><flux:link href="{{ route('profile.show', $member) }}">{{ $member->name }}</flux:link></span>
                                             </div>
                                         @endforeach
                                     </div>
