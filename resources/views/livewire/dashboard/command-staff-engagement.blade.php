@@ -5,9 +5,12 @@ use App\Enums\MeetingStatus;
 use App\Enums\MeetingType;
 use App\Enums\StaffRank;
 use App\Enums\TaskStatus;
+use App\Enums\ThreadStatus;
+use App\Enums\ThreadType;
 use App\Models\Meeting;
 use App\Models\MeetingReport;
 use App\Models\Task;
+use App\Models\Thread;
 use App\Models\User;
 use Flux\Flux;
 use Illuminate\Support\Facades\DB;
@@ -38,13 +41,7 @@ new class extends Component {
 
         $staffIds = $staffUsers->pluck('id');
 
-        // Batch-load current iteration task stats
-        $currentTaskAssigned = Task::whereIn('assigned_to_user_id', $staffIds)
-            ->whereBetween('created_at', [$cs, $ce])
-            ->selectRaw('assigned_to_user_id, COUNT(*) as count')
-            ->groupBy('assigned_to_user_id')
-            ->pluck('count', 'assigned_to_user_id');
-
+        // Batch-load current iteration todos completed
         $currentTaskCompleted = Task::whereIn('assigned_to_user_id', $staffIds)
             ->where('status', TaskStatus::Completed)
             ->whereBetween('completed_at', [$cs, $ce])
@@ -52,19 +49,47 @@ new class extends Component {
             ->groupBy('assigned_to_user_id')
             ->pluck('count', 'assigned_to_user_id');
 
-        // Previous iteration task stats
-        $previousTaskAssigned = collect();
+        // Previous iteration todos completed
         $previousTaskCompleted = collect();
         if ($hasPrevious) {
-            $previousTaskAssigned = Task::whereIn('assigned_to_user_id', $staffIds)
-                ->whereBetween('created_at', [$ps, $pe])
-                ->selectRaw('assigned_to_user_id, COUNT(*) as count')
-                ->groupBy('assigned_to_user_id')
-                ->pluck('count', 'assigned_to_user_id');
-
             $previousTaskCompleted = Task::whereIn('assigned_to_user_id', $staffIds)
                 ->where('status', TaskStatus::Completed)
                 ->whereBetween('completed_at', [$ps, $pe])
+                ->selectRaw('assigned_to_user_id, COUNT(*) as count')
+                ->groupBy('assigned_to_user_id')
+                ->pluck('count', 'assigned_to_user_id');
+        }
+
+        // Batch-load open todos (point-in-time)
+        $currentTodosOpen = Task::whereIn('assigned_to_user_id', $staffIds)
+            ->whereNotIn('status', [TaskStatus::Completed, TaskStatus::Archived])
+            ->selectRaw('assigned_to_user_id, COUNT(*) as count')
+            ->groupBy('assigned_to_user_id')
+            ->pluck('count', 'assigned_to_user_id');
+
+        // Batch-load current iteration ticket stats
+        $currentTicketsWorked = Thread::where('type', ThreadType::Ticket)
+            ->whereIn('assigned_to_user_id', $staffIds)
+            ->where('status', ThreadStatus::Closed)
+            ->whereBetween('updated_at', [$cs, $ce])
+            ->selectRaw('assigned_to_user_id, COUNT(*) as count')
+            ->groupBy('assigned_to_user_id')
+            ->pluck('count', 'assigned_to_user_id');
+
+        $currentTicketsOpen = Thread::where('type', ThreadType::Ticket)
+            ->whereIn('assigned_to_user_id', $staffIds)
+            ->whereNotIn('status', [ThreadStatus::Closed])
+            ->selectRaw('assigned_to_user_id, COUNT(*) as count')
+            ->groupBy('assigned_to_user_id')
+            ->pluck('count', 'assigned_to_user_id');
+
+        // Previous iteration ticket stats
+        $previousTicketsWorked = collect();
+        if ($hasPrevious) {
+            $previousTicketsWorked = Thread::where('type', ThreadType::Ticket)
+                ->whereIn('assigned_to_user_id', $staffIds)
+                ->where('status', ThreadStatus::Closed)
+                ->whereBetween('updated_at', [$ps, $pe])
                 ->selectRaw('assigned_to_user_id, COUNT(*) as count')
                 ->groupBy('assigned_to_user_id')
                 ->pluck('count', 'assigned_to_user_id');
@@ -97,8 +122,8 @@ new class extends Component {
         }
 
         $staffData = $staffUsers->through(function ($user) use (
-            $currentTaskAssigned, $currentTaskCompleted,
-            $previousTaskAssigned, $previousTaskCompleted,
+            $currentTaskCompleted, $previousTaskCompleted, $currentTodosOpen,
+            $currentTicketsWorked, $currentTicketsOpen, $previousTicketsWorked,
             $reportsSubmitted, $totalMeetings3mo,
             $meetingsAttended, $hasPrevious
         ) {
@@ -107,14 +132,18 @@ new class extends Component {
 
             return [
                 'user' => $user,
-                'current_assigned' => $currentTaskAssigned->get($user->id, 0),
-                'current_completed' => $currentTaskCompleted->get($user->id, 0),
-                'previous_assigned' => $hasPrevious ? $previousTaskAssigned->get($user->id, 0) : null,
-                'previous_completed' => $hasPrevious ? $previousTaskCompleted->get($user->id, 0) : null,
+                'todos_worked' => $currentTaskCompleted->get($user->id, 0),
+                'todos_worked_prev' => $hasPrevious ? $previousTaskCompleted->get($user->id, 0) : null,
+                'todos_open' => $currentTodosOpen->get($user->id, 0),
+                'tickets_worked' => $currentTicketsWorked->get($user->id, 0),
+                'tickets_worked_prev' => $hasPrevious ? $previousTicketsWorked->get($user->id, 0) : null,
+                'tickets_open' => $currentTicketsOpen->get($user->id, 0),
                 'reports_submitted' => $reportsSubmitted->get($user->id, 0),
                 'reports_missed' => $reportsMissed,
                 'meetings_attended' => $meetingsAttended->get($user->id, 0),
                 'meetings_missed' => $user->staff_rank->value >= StaffRank::CrewMember->value ? $meetingsMissed : null,
+                'is_jrcrew' => $user->staff_rank === StaffRank::JrCrew,
+                'is_officer' => $user->staff_rank === StaffRank::Officer,
                 'total_meetings_3mo' => $totalMeetings3mo,
             ];
         });
@@ -138,13 +167,15 @@ new class extends Component {
             $end = $iter['end'];
             $meeting = $iter['meeting'];
 
-            $assigned = Task::where('assigned_to_user_id', $user->id)
-                ->whereBetween('created_at', [$start, $end])
-                ->count();
-
             $completed = Task::where('assigned_to_user_id', $user->id)
                 ->where('status', TaskStatus::Completed)
                 ->whereBetween('completed_at', [$start, $end])
+                ->count();
+
+            $ticketsWorked = Thread::where('type', ThreadType::Ticket)
+                ->where('assigned_to_user_id', $user->id)
+                ->where('status', ThreadStatus::Closed)
+                ->whereBetween('updated_at', [$start, $end])
                 ->count();
 
             $reportSubmitted = $meeting
@@ -160,8 +191,8 @@ new class extends Component {
 
             $detail[] = [
                 'label' => $start->format('M j') . ' - ' . $end->format('M j'),
-                'assigned' => $assigned,
                 'completed' => $completed,
+                'tickets_worked' => $ticketsWorked,
                 'report_submitted' => $reportSubmitted,
                 'attended' => $attended,
             ];
@@ -194,8 +225,10 @@ new class extends Component {
                 <flux:table.column>Name</flux:table.column>
                 <flux:table.column>Dept</flux:table.column>
                 <flux:table.column>Rank</flux:table.column>
-                <flux:table.column>Todos (Current)</flux:table.column>
-                <flux:table.column>Todos (Prev)</flux:table.column>
+                <flux:table.column>Todos Worked</flux:table.column>
+                <flux:table.column>Todos Open</flux:table.column>
+                <flux:table.column>Tickets Worked</flux:table.column>
+                <flux:table.column>Tickets Open</flux:table.column>
                 <flux:table.column>Reports (3mo)</flux:table.column>
                 <flux:table.column>Attendance (3mo)</flux:table.column>
                 <flux:table.column></flux:table.column>
@@ -218,25 +251,46 @@ new class extends Component {
                             <flux:badge size="sm" color="{{ $user->staff_rank->color() }}">{{ $user->staff_rank->label() }}</flux:badge>
                         </flux:table.cell>
                         <flux:table.cell>
-                            {{ $entry['current_assigned'] }} / {{ $entry['current_completed'] }}
+                            <span class="whitespace-nowrap">{{ $entry['todos_worked'] }} @if($entry['todos_worked_prev'] !== null)<span class="text-zinc-400 text-xs">({{ $entry['todos_worked_prev'] }})</span>@endif</span>
                         </flux:table.cell>
                         <flux:table.cell>
-                            @if($entry['previous_assigned'] !== null)
-                                {{ $entry['previous_assigned'] }} / {{ $entry['previous_completed'] }}
+                            @if($entry['todos_open'] > 0)
+                                <flux:badge size="sm" color="amber">{{ $entry['todos_open'] }}</flux:badge>
                             @else
-                                <flux:text variant="subtle">--</flux:text>
+                                0
+                            @endif
+                        </flux:table.cell>
+                        <flux:table.cell>
+                            <span class="whitespace-nowrap">{{ $entry['tickets_worked'] }} @if($entry['tickets_worked_prev'] !== null)<span class="text-zinc-400 text-xs">({{ $entry['tickets_worked_prev'] }})</span>@endif</span>
+                        </flux:table.cell>
+                        <flux:table.cell>
+                            @if($entry['tickets_open'] > 0)
+                                <flux:badge size="sm" color="amber">{{ $entry['tickets_open'] }}</flux:badge>
+                            @else
+                                0
                             @endif
                         </flux:table.cell>
                         <flux:table.cell>
                             {{ $entry['reports_submitted'] }} / {{ $entry['total_meetings_3mo'] }}
                             @if($entry['reports_missed'] > 0)
-                                <flux:badge size="sm" color="red">{{ $entry['reports_missed'] }} missed</flux:badge>
+                                @php
+                                    $missedColor = match(true) {
+                                        $entry['reports_missed'] >= 3 => 'red',
+                                        $entry['reports_missed'] === 2 => 'amber',
+                                        default => 'blue',
+                                    };
+                                @endphp
+                                <flux:badge size="sm" color="{{ $missedColor }}">{{ $entry['reports_missed'] }} missed</flux:badge>
                             @endif
                         </flux:table.cell>
                         <flux:table.cell>
-                            {{ $entry['meetings_attended'] }} / {{ $entry['total_meetings_3mo'] }}
-                            @if($entry['meetings_missed'] !== null && $entry['meetings_missed'] > 0)
-                                <flux:badge size="sm" color="red">{{ $entry['meetings_missed'] }} missed</flux:badge>
+                            @if($entry['is_jrcrew'])
+                                <flux:text variant="subtle">---</flux:text>
+                            @else
+                                {{ $entry['meetings_attended'] }} / {{ $entry['total_meetings_3mo'] }}
+                                @if($entry['is_officer'] && $entry['meetings_missed'] !== null && $entry['meetings_missed'] > 0)
+                                    <flux:badge size="sm" color="red">{{ $entry['meetings_missed'] }} missed</flux:badge>
+                                @endif
                             @endif
                         </flux:table.cell>
                         <flux:table.cell>
@@ -255,7 +309,7 @@ new class extends Component {
     </div>
 
     <flux:text variant="subtle" class="text-xs mt-2">
-        Todos shown as assigned / completed. Reports and attendance shown as count / total meetings.
+        Numbers in parentheses are from previous iteration. Worked = completed/closed in iteration. Reports and attendance over last 3 months.
     </flux:text>
 </flux:card>
 
@@ -275,8 +329,8 @@ new class extends Component {
                 <flux:table>
                     <flux:table.columns>
                         <flux:table.column>Iteration</flux:table.column>
-                        <flux:table.column>Assigned</flux:table.column>
-                        <flux:table.column>Completed</flux:table.column>
+                        <flux:table.column>Todos Worked</flux:table.column>
+                        <flux:table.column>Tickets Worked</flux:table.column>
                         <flux:table.column>Report</flux:table.column>
                         <flux:table.column>Attended</flux:table.column>
                     </flux:table.columns>
@@ -284,8 +338,8 @@ new class extends Component {
                         @foreach($detail['iterations'] as $iter)
                             <flux:table.row>
                                 <flux:table.cell>{{ $iter['label'] }}</flux:table.cell>
-                                <flux:table.cell>{{ $iter['assigned'] }}</flux:table.cell>
                                 <flux:table.cell>{{ $iter['completed'] }}</flux:table.cell>
+                                <flux:table.cell>{{ $iter['tickets_worked'] }}</flux:table.cell>
                                 <flux:table.cell>
                                     @if($iter['report_submitted'] === true)
                                         <flux:badge size="sm" color="green">Yes</flux:badge>

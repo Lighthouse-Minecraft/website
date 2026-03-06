@@ -202,20 +202,28 @@ new class extends Component {
         </flux:heading>
 
         @if(count($this->timelineData) > 0)
-            <flux:table>
-                <flux:table.columns>
-                    <flux:table.column>Iteration</flux:table.column>
-                    <flux:table.column>Count</flux:table.column>
-                </flux:table.columns>
-                <flux:table.rows>
-                    @foreach($this->timelineData as $entry)
-                        <flux:table.row>
-                            <flux:table.cell>{{ $entry['label'] }}</flux:table.cell>
-                            <flux:table.cell>{{ $entry['count'] }}</flux:table.cell>
-                        </flux:table.row>
-                    @endforeach
-                </flux:table.rows>
-            </flux:table>
+            <div wire:key="community-chart-{{ $this->activeDetailMetric }}">
+                <flux:chart :value="$this->timelineData" class="aspect-[5/2]">
+                    <flux:chart.svg gutter="8 8 28 8">
+                        <flux:chart.axis axis="y" field="count" tick-start="0">
+                            <flux:chart.axis.grid class="text-zinc-700" />
+                            <flux:chart.axis.tick class="text-zinc-400 text-xs" />
+                        </flux:chart.axis>
+                        <flux:chart.axis axis="x" field="label">
+                            <flux:chart.axis.tick class="text-zinc-400 text-xs" />
+                            <flux:chart.axis.line class="text-zinc-600" />
+                        </flux:chart.axis>
+                        <flux:chart.area field="count" class="text-blue-500/10" />
+                        <flux:chart.line field="count" class="text-blue-500" />
+                        <flux:chart.point field="count" class="text-blue-400" />
+                        <flux:chart.cursor />
+                    </flux:chart.svg>
+                    <flux:chart.tooltip>
+                        <flux:chart.tooltip.heading field="label" />
+                        <flux:chart.tooltip.value field="count" label="Count" />
+                    </flux:chart.tooltip>
+                </flux:chart>
+            </div>
         @else
             <flux:text variant="subtle">No historical iteration data available.</flux:text>
         @endif

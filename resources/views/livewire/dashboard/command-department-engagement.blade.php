@@ -238,16 +238,10 @@ new class extends Component {
                             <flux:badge size="sm">{{ $dept->label() }}</flux:badge>
                         </flux:table.cell>
                         <flux:table.cell>
-                            {{ $cur['tickets_opened'] ?? 0 }}
-                            @if($prev)
-                                <flux:text variant="subtle" class="text-xs">({{ $prev['tickets_opened'] ?? 0 }})</flux:text>
-                            @endif
+                            <span class="whitespace-nowrap">{{ $cur['tickets_opened'] ?? 0 }} @if($prev)<span class="text-zinc-400 text-xs">({{ $prev['tickets_opened'] ?? 0 }})</span>@endif</span>
                         </flux:table.cell>
                         <flux:table.cell>
-                            {{ $cur['tickets_closed'] ?? 0 }}
-                            @if($prev)
-                                <flux:text variant="subtle" class="text-xs">({{ $prev['tickets_closed'] ?? 0 }})</flux:text>
-                            @endif
+                            <span class="whitespace-nowrap">{{ $cur['tickets_closed'] ?? 0 }} @if($prev)<span class="text-zinc-400 text-xs">({{ $prev['tickets_closed'] ?? 0 }})</span>@endif</span>
                         </flux:table.cell>
                         <flux:table.cell>
                             @if(($cur['tickets_remaining'] ?? 0) > 0)
@@ -257,16 +251,10 @@ new class extends Component {
                             @endif
                         </flux:table.cell>
                         <flux:table.cell>
-                            {{ $cur['todos_created'] ?? 0 }}
-                            @if($prev)
-                                <flux:text variant="subtle" class="text-xs">({{ $prev['todos_created'] ?? 0 }})</flux:text>
-                            @endif
+                            <span class="whitespace-nowrap">{{ $cur['todos_created'] ?? 0 }} @if($prev)<span class="text-zinc-400 text-xs">({{ $prev['todos_created'] ?? 0 }})</span>@endif</span>
                         </flux:table.cell>
                         <flux:table.cell>
-                            {{ $cur['todos_completed'] ?? 0 }}
-                            @if($prev)
-                                <flux:text variant="subtle" class="text-xs">({{ $prev['todos_completed'] ?? 0 }})</flux:text>
-                            @endif
+                            <span class="whitespace-nowrap">{{ $cur['todos_completed'] ?? 0 }} @if($prev)<span class="text-zinc-400 text-xs">({{ $prev['todos_completed'] ?? 0 }})</span>@endif</span>
                         </flux:table.cell>
                         <flux:table.cell>
                             @if(($cur['todos_remaining'] ?? 0) > 0)
@@ -360,40 +348,76 @@ new class extends Component {
         </flux:heading>
 
         @if(count($this->timelineData) > 0)
-            <flux:table>
-                <flux:table.columns>
-                    <flux:table.column>Iteration</flux:table.column>
-                    @if($this->activeDetailMetric === 'discipline')
-                        <flux:table.column>Published</flux:table.column>
-                    @elseif($this->activeDetailMetric === 'reports')
-                        <flux:table.column>Submitted</flux:table.column>
-                        <flux:table.column>Total Staff</flux:table.column>
-                        <flux:table.column>%</flux:table.column>
-                    @elseif($this->activeDetailMetric === 'attendance')
-                        <flux:table.column>Attended</flux:table.column>
-                        <flux:table.column>Expected</flux:table.column>
-                        <flux:table.column>%</flux:table.column>
-                    @endif
-                </flux:table.columns>
-                <flux:table.rows>
-                    @foreach($this->timelineData as $entry)
-                        <flux:table.row>
-                            <flux:table.cell>{{ $entry['label'] }}</flux:table.cell>
-                            @if($this->activeDetailMetric === 'discipline')
-                                <flux:table.cell>{{ $entry['published'] }}</flux:table.cell>
-                            @elseif($this->activeDetailMetric === 'reports')
-                                <flux:table.cell>{{ $entry['submitted'] ?? '--' }}</flux:table.cell>
-                                <flux:table.cell>{{ $entry['total'] ?? '--' }}</flux:table.cell>
-                                <flux:table.cell>{{ isset($entry['pct']) ? $entry['pct'] . '%' : '--' }}</flux:table.cell>
-                            @elseif($this->activeDetailMetric === 'attendance')
-                                <flux:table.cell>{{ $entry['attended'] ?? '--' }}</flux:table.cell>
-                                <flux:table.cell>{{ $entry['total'] ?? '--' }}</flux:table.cell>
-                                <flux:table.cell>{{ isset($entry['pct']) ? $entry['pct'] . '%' : '--' }}</flux:table.cell>
-                            @endif
-                        </flux:table.row>
-                    @endforeach
-                </flux:table.rows>
-            </flux:table>
+            <div wire:key="dept-chart-{{ $this->activeDetailMetric }}">
+                @if($this->activeDetailMetric === 'discipline')
+                    <flux:chart :value="$this->timelineData" class="aspect-[5/2]">
+                        <flux:chart.svg gutter="8 8 28 8">
+                            <flux:chart.axis axis="y" field="published" tick-start="0">
+                                <flux:chart.axis.grid class="text-zinc-700" />
+                                <flux:chart.axis.tick class="text-zinc-400 text-xs" />
+                            </flux:chart.axis>
+                            <flux:chart.axis axis="x" field="label">
+                                <flux:chart.axis.tick class="text-zinc-400 text-xs" />
+                                <flux:chart.axis.line class="text-zinc-600" />
+                            </flux:chart.axis>
+                            <flux:chart.area field="published" class="text-amber-500/10" />
+                            <flux:chart.line field="published" class="text-amber-500" />
+                            <flux:chart.point field="published" class="text-amber-400" />
+                            <flux:chart.cursor />
+                        </flux:chart.svg>
+                        <flux:chart.tooltip>
+                            <flux:chart.tooltip.heading field="label" />
+                            <flux:chart.tooltip.value field="published" label="Published" />
+                        </flux:chart.tooltip>
+                    </flux:chart>
+                @elseif($this->activeDetailMetric === 'reports')
+                    <flux:chart :value="$this->timelineData" class="aspect-[5/2]">
+                        <flux:chart.svg gutter="8 8 28 8">
+                            <flux:chart.axis axis="y" field="pct" tick-start="0" tick-end="100" tick-suffix="%">
+                                <flux:chart.axis.grid class="text-zinc-700" />
+                                <flux:chart.axis.tick class="text-zinc-400 text-xs" />
+                            </flux:chart.axis>
+                            <flux:chart.axis axis="x" field="label">
+                                <flux:chart.axis.tick class="text-zinc-400 text-xs" />
+                                <flux:chart.axis.line class="text-zinc-600" />
+                            </flux:chart.axis>
+                            <flux:chart.area field="pct" class="text-blue-500/10" />
+                            <flux:chart.line field="pct" class="text-blue-500" />
+                            <flux:chart.point field="pct" class="text-blue-400" />
+                            <flux:chart.cursor />
+                        </flux:chart.svg>
+                        <flux:chart.tooltip>
+                            <flux:chart.tooltip.heading field="label" />
+                            <flux:chart.tooltip.value field="pct" label="Completion %" />
+                            <flux:chart.tooltip.value field="submitted" label="Submitted" />
+                            <flux:chart.tooltip.value field="total" label="Total Staff" />
+                        </flux:chart.tooltip>
+                    </flux:chart>
+                @elseif($this->activeDetailMetric === 'attendance')
+                    <flux:chart :value="$this->timelineData" class="aspect-[5/2]">
+                        <flux:chart.svg gutter="8 8 28 8">
+                            <flux:chart.axis axis="y" field="pct" tick-start="0" tick-end="100" tick-suffix="%">
+                                <flux:chart.axis.grid class="text-zinc-700" />
+                                <flux:chart.axis.tick class="text-zinc-400 text-xs" />
+                            </flux:chart.axis>
+                            <flux:chart.axis axis="x" field="label">
+                                <flux:chart.axis.tick class="text-zinc-400 text-xs" />
+                                <flux:chart.axis.line class="text-zinc-600" />
+                            </flux:chart.axis>
+                            <flux:chart.area field="pct" class="text-green-500/10" />
+                            <flux:chart.line field="pct" class="text-green-500" />
+                            <flux:chart.point field="pct" class="text-green-400" />
+                            <flux:chart.cursor />
+                        </flux:chart.svg>
+                        <flux:chart.tooltip>
+                            <flux:chart.tooltip.heading field="label" />
+                            <flux:chart.tooltip.value field="pct" label="Attendance %" />
+                            <flux:chart.tooltip.value field="attended" label="Attended" />
+                            <flux:chart.tooltip.value field="total" label="Expected" />
+                        </flux:chart.tooltip>
+                    </flux:chart>
+                @endif
+            </div>
         @else
             <flux:text variant="subtle">No historical iteration data available.</flux:text>
         @endif
