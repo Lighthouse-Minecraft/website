@@ -335,7 +335,7 @@ new class extends Component {
                         <flux:heading size="sm" class="mb-2">Attendees</flux:heading>
                         <div class="space-y-1">
                             @foreach($meeting->attendees as $attendee)
-                                <div class="flex items-center justify-between text-sm">
+                                <div wire:key="attendee-{{ $meeting->id }}-{{ $attendee->id }}" class="flex items-center justify-between text-sm">
                                     <span>
                                         <strong><flux:link href="{{ route('profile.show', $attendee) }}">{{ $attendee->name }}</flux:link></strong>
                                         @if($attendee->staff_rank && $attendee->staff_title)

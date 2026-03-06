@@ -219,16 +219,13 @@ class CommandDashboardSeeder extends Seeder
 
         foreach ($ticketConfigs as [$dept, $countRange, $closePct]) {
             for ($iter = 0; $iter < 7; $iter++) {
-                $rangeStart = $iter < 6 ? $meetingDaysAgo[$iter] : 14;
-                $rangeEnd = $iter > 0 && $iter < 6 ? $meetingDaysAgo[$iter - 1] : ($iter === 0 ? 84 : 0);
-
-                if ($rangeStart < $rangeEnd) {
-                    [$rangeStart, $rangeEnd] = [$rangeEnd, $rangeStart];
-                }
+                // Non-overlapping windows between meetings (values are "days ago")
+                $max = $iter === 0 ? $meetingDaysAgo[0] + 14 : $meetingDaysAgo[$iter - 1] - 1;
+                $min = $iter === 6 ? 0 : $meetingDaysAgo[$iter] + 1;
 
                 $count = fake()->numberBetween($countRange[0], $countRange[1]);
                 for ($j = 0; $j < $count; $j++) {
-                    $daysAgo = fake()->numberBetween($rangeEnd, $rangeStart);
+                    $daysAgo = fake()->numberBetween($min, $max);
                     $createdAt = now()->subDays($daysAgo);
                     $isClosed = fake()->numberBetween(1, 100) <= $closePct;
 
@@ -252,15 +249,13 @@ class CommandDashboardSeeder extends Seeder
             $deptStaff = collect($staff)->filter(fn ($s) => $s->staff_department === $dept);
 
             for ($iter = 0; $iter < 7; $iter++) {
-                $rangeStart = $iter < 6 ? $meetingDaysAgo[$iter] : 14;
-                $rangeEnd = $iter > 0 && $iter < 6 ? $meetingDaysAgo[$iter - 1] : ($iter === 0 ? 84 : 0);
-                if ($rangeStart < $rangeEnd) {
-                    [$rangeStart, $rangeEnd] = [$rangeEnd, $rangeStart];
-                }
+                // Non-overlapping windows between meetings (values are "days ago")
+                $max = $iter === 0 ? $meetingDaysAgo[0] + 14 : $meetingDaysAgo[$iter - 1] - 1;
+                $min = $iter === 6 ? 0 : $meetingDaysAgo[$iter] + 1;
 
                 $taskCount = fake()->numberBetween(2, 6);
                 for ($j = 0; $j < $taskCount; $j++) {
-                    $daysAgo = fake()->numberBetween($rangeEnd, $rangeStart);
+                    $daysAgo = fake()->numberBetween($min, $max);
                     $createdAt = now()->subDays($daysAgo);
                     $assignee = $deptStaff->random();
                     $creator = $deptStaff->random();
