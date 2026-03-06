@@ -481,6 +481,44 @@ describe('Meeting Edit - Meeting Workflow', function () {
 
 })->done(issue: 13, assignee: 'jonzenor');
 
+describe('Meeting Edit - Community Updates Toggle', function () {
+    it('shows the community updates toggle during finalizing', function () {
+        loginAsAdmin();
+        $meeting = Meeting::factory()->withStatus(MeetingStatus::Finalizing)->create();
+
+        get(route('meeting.edit', ['meeting' => $meeting->id]))
+            ->assertSee('Show on Community Updates');
+    });
+
+    it('allows toggling community updates visibility', function () {
+        loginAsAdmin();
+        $meeting = Meeting::factory()->withStatus(MeetingStatus::Finalizing)->create([
+            'show_community_updates' => true,
+        ]);
+
+        livewire('meetings.manage-meeting', ['meeting' => $meeting])
+            ->call('toggleCommunityUpdates')
+            ->assertSuccessful();
+
+        $meeting->refresh();
+        expect($meeting->show_community_updates)->toBeFalse();
+    });
+
+    it('allows toggling community updates back on', function () {
+        loginAsAdmin();
+        $meeting = Meeting::factory()->withStatus(MeetingStatus::Finalizing)->create([
+            'show_community_updates' => false,
+        ]);
+
+        livewire('meetings.manage-meeting', ['meeting' => $meeting])
+            ->call('toggleCommunityUpdates')
+            ->assertSuccessful();
+
+        $meeting->refresh();
+        expect($meeting->show_community_updates)->toBeTrue();
+    });
+});
+
 // Next make a public page for viewing the completed meetings
 
 // In the public page, if the user can view the full meeting minutes, have an option to switch between community and full

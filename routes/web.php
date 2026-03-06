@@ -112,6 +112,10 @@ Route::prefix('meetings')
         Route::get('/{meeting}/manage', 'edit')->name('edit');
     });
 
+Volt::route('/meetings/{meeting}/report', 'meeting.report-form')
+    ->name('meeting.report')
+    ->middleware('auth');
+
 Route::get('/donate', [DonationController::class, 'index'])->name('donate');
 
 // Minecraft verification webhook - throttled to 30 requests per minute

@@ -153,4 +153,26 @@ describe('Community Updates List', function () {
         // First meeting's content should be visible
         $response->assertSee($meetings->sortByDesc('day')->first()->community_minutes);
     });
+
+    it('does not show meetings with show_community_updates disabled', function () {
+        loginAsAdmin();
+        $hiddenMeeting = Meeting::factory()->withStatus(MeetingStatus::Completed)->create([
+            'show_community_updates' => false,
+        ]);
+
+        get(route('community-updates.index'))
+            ->assertOk()
+            ->assertDontSee($hiddenMeeting->title);
+    });
+
+    it('shows meetings with show_community_updates enabled', function () {
+        loginAsAdmin();
+        $visibleMeeting = Meeting::factory()->withStatus(MeetingStatus::Completed)->create([
+            'show_community_updates' => true,
+        ]);
+
+        get(route('community-updates.index'))
+            ->assertOk()
+            ->assertSee($visibleMeeting->title);
+    });
 })->done(issue: 82, assignee: 'jonzenor');

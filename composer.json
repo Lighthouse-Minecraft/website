@@ -18,6 +18,7 @@
         "livewire/flux-pro": "^2.2",
         "livewire/volt": "^1.6.7",
         "lorisleiva/laravel-actions": "^2.9",
+        "prism-php/prism": "^0.99.21",
         "socialiteproviders/discord": "^4.2",
         "thedudeguy/rcon": "^1.0"
     },

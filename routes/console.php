@@ -33,6 +33,11 @@ Schedule::command('brig:check-timers')
     ->dailyAt('09:00')
     ->runInBackground();
 
+// Send pre-meeting report reminders daily at 8am
+Schedule::command('meetings:send-report-reminders')
+    ->dailyAt('08:00')
+    ->runInBackground();
+
 // Process age-based transitions (13, 19) daily at 2am
 Schedule::command('parent-portal:process-age-transitions')
     ->dailyAt('02:00')
