@@ -159,7 +159,7 @@ new class extends Component {
         </div>
     @endif
 
-    @if($this->stowawayUsers->count() > 0)
+    @if($this->stowawayUsers->total() > 0)
         <flux:table :paginate="$this->stowawayUsers">
             <flux:table.columns>
                 <flux:table.column>Name</flux:table.column>
