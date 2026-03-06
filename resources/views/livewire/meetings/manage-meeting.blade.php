@@ -2,6 +2,7 @@
 
 use App\Actions\CreateDefaultMeetingQuestions;
 use App\Actions\FormatMeetingNotesWithAi;
+use App\Actions\RecordActivity;
 use App\Enums\MeetingStatus;
 use App\Enums\MeetingType;
 use App\Enums\StaffDepartment;
@@ -124,6 +125,8 @@ new class extends Component {
 
         $this->meeting->show_community_updates = ! $this->meeting->show_community_updates;
         $this->meeting->save();
+
+        RecordActivity::run($this->meeting, 'toggle_community_updates', 'Toggled community updates visibility.');
     }
 
     public function EndMeetingConfirmed() {
@@ -142,13 +145,11 @@ new class extends Component {
             }
         }
 
-        // Create community note with raw compiled notes — AI formatting runs as a follow-up request
-        $note = MeetingNote::create([
-            'meeting_id' => $this->meeting->id,
-            'section_key' => 'community',
-            'content' => $this->meeting->minutes ?? '',
-            'created_by' => auth()->id(),
-        ]);
+        // Create or update community note with raw compiled notes — AI formatting runs as a follow-up request
+        $note = MeetingNote::updateOrCreate(
+            ['meeting_id' => $this->meeting->id, 'section_key' => 'community'],
+            ['content' => $this->meeting->minutes ?? '', 'created_by' => auth()->id()]
+        );
 
         $this->meeting->endMeeting();
 

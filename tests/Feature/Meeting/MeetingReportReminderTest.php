@@ -10,6 +10,7 @@ use App\Enums\StaffRank;
 use App\Models\Meeting;
 use App\Models\MeetingReport;
 use App\Models\User;
+use App\Notifications\MeetingReportReminderNotification;
 use Illuminate\Support\Facades\Notification;
 
 beforeEach(function () {
@@ -42,6 +43,8 @@ it('sends reminders to staff who have not submitted reports', function () {
     expect($report)->not->toBeNull();
     expect($report->notified_at)->not->toBeNull();
     expect($report->submitted_at)->toBeNull();
+
+    Notification::assertSentTo($staffUser, MeetingReportReminderNotification::class);
 });
 
 it('does not send reminders to staff who already submitted', function () {

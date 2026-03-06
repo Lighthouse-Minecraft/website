@@ -119,6 +119,7 @@ class Meeting extends Model
             MeetingStatus::Finalizing,
             MeetingStatus::Completed,
             MeetingStatus::Archived,
+            MeetingStatus::Cancelled,
         ]);
     }
 }

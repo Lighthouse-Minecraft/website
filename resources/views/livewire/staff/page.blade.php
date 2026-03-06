@@ -226,7 +226,7 @@ new class extends Component {
                             <img src="{{ $bm->user->staffPhotoUrl() }}" alt="{{ $bm->effectiveName() }}" class="object-cover w-full h-48 rounded-lg" />
                         @elseif($bm->isLinked() && $bm->user && $bm->user->avatarUrl())
                             <img src="{{ $bm->user->avatarUrl() }}" alt="{{ $bm->effectiveName() }}" class="w-24 h-24 mx-auto rounded-lg" />
-                        @elseif(! $bm->isLinked() && $bm->photo_path)
+                        @elseif($bm->photo_path)
                             <img src="{{ asset('storage/' . $bm->photo_path) }}" alt="{{ $bm->effectiveName() }}" class="object-cover w-full h-48 rounded-lg" />
                         @endif
 
