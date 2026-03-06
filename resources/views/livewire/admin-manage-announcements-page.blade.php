@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\RecordActivity;
 use App\Models\Announcement;
 use Carbon\Carbon;
 use Carbon\CarbonTimeZone;
@@ -36,6 +37,20 @@ new class extends Component {
     protected function userTimezone(): string
     {
         return auth()->user()->timezone ?? 'America/New_York';
+    }
+
+    public function getUserTimezoneDisplayProperty(): string
+    {
+        $tz = $this->userTimezone();
+
+        $labels = [
+            'America/New_York' => 'Eastern Time',
+            'America/Chicago' => 'Central Time',
+            'America/Denver' => 'Mountain Time',
+            'America/Los_Angeles' => 'Pacific Time',
+        ];
+
+        return $labels[$tz] ?? $tz;
     }
 
     /**
@@ -83,17 +98,24 @@ new class extends Component {
     {
         $this->authorize('create', Announcement::class);
 
+        $expiredAtRules = ['nullable', 'date'];
+        if (filled($this->newExpiredAt)) {
+            $expiredAtRules[] = filled($this->newPublishedAt)
+                ? 'after:newPublishedAt'
+                : 'after:now';
+        }
+
         $this->validate([
             'newTitle' => 'required|string|max:255',
             'newContent' => 'required|string|max:10000',
             'newIsPublished' => 'boolean',
             'newPublishedAt' => 'nullable|date',
-            'newExpiredAt' => 'nullable|date|after:newPublishedAt',
+            'newExpiredAt' => $expiredAtRules,
         ]);
 
         $isPublished = $this->newIsPublished || filled($this->newPublishedAt);
 
-        Announcement::create([
+        $announcement = Announcement::create([
             'title' => $this->newTitle,
             'content' => $this->newContent,
             'author_id' => auth()->id(),
@@ -101,6 +123,8 @@ new class extends Component {
             'published_at' => $isPublished ? ($this->toUtc($this->newPublishedAt) ?? now()) : null,
             'expired_at' => $this->toUtc($this->newExpiredAt),
         ]);
+
+        RecordActivity::run($announcement, 'announcement_created', 'Announcement created.');
 
         Flux::modal('create-announcement-modal')->close();
         Flux::toast('Announcement created.', 'Created', variant: 'success');
@@ -126,12 +150,19 @@ new class extends Component {
         $announcement = Announcement::findOrFail($this->editId);
         $this->authorize('update', $announcement);
 
+        $expiredAtRules = ['nullable', 'date'];
+        if (filled($this->editExpiredAt)) {
+            $expiredAtRules[] = filled($this->editPublishedAt)
+                ? 'after:editPublishedAt'
+                : 'after:now';
+        }
+
         $this->validate([
             'editTitle' => 'required|string|max:255',
             'editContent' => 'required|string|max:10000',
             'editIsPublished' => 'boolean',
             'editPublishedAt' => 'nullable|date',
-            'editExpiredAt' => 'nullable|date|after:editPublishedAt',
+            'editExpiredAt' => $expiredAtRules,
         ]);
 
         $isPublished = $this->editIsPublished || filled($this->editPublishedAt);
@@ -144,6 +175,8 @@ new class extends Component {
             'expired_at' => $this->toUtc($this->editExpiredAt),
         ]);
 
+        RecordActivity::run($announcement, 'announcement_updated', 'Announcement updated.');
+
         Flux::modal('edit-announcement-modal')->close();
         Flux::toast('Announcement updated.', 'Updated', variant: 'success');
         $this->reset(['editId', 'editTitle', 'editContent', 'editIsPublished', 'editPublishedAt', 'editExpiredAt', 'showEditPreview']);
@@ -154,6 +187,7 @@ new class extends Component {
         $announcement = Announcement::findOrFail($id);
         $this->authorize('delete', $announcement);
 
+        RecordActivity::run($announcement, 'announcement_deleted', 'Announcement deleted.');
         $announcement->delete();
         Flux::toast('Announcement deleted.', 'Deleted', variant: 'success');
     }
@@ -252,13 +286,13 @@ new class extends Component {
                 <flux:switch wire:model="newIsPublished" label="Publish now" />
 
                 <flux:field>
-                    <flux:label>Schedule for later (optional, Eastern Time)</flux:label>
+                    <flux:label>Schedule for later (optional, {{ $this->userTimezoneDisplay }})</flux:label>
                     <flux:input wire:model="newPublishedAt" type="datetime-local" />
                     <flux:description>Set a date to schedule publishing. This will publish automatically at the specified time.</flux:description>
                 </flux:field>
 
                 <flux:field>
-                    <flux:label>Expires At (optional, Eastern Time)</flux:label>
+                    <flux:label>Expires At (optional, {{ $this->userTimezoneDisplay }})</flux:label>
                     <flux:input wire:model="newExpiredAt" type="datetime-local" />
                     <flux:description>Auto-unpublish after this date. Leave blank for no expiration.</flux:description>
                 </flux:field>
@@ -295,12 +329,12 @@ new class extends Component {
                 <flux:switch wire:model="editIsPublished" label="Published" />
 
                 <flux:field>
-                    <flux:label>Publish At (Eastern Time)</flux:label>
+                    <flux:label>Publish At ({{ $this->userTimezoneDisplay }})</flux:label>
                     <flux:input wire:model="editPublishedAt" type="datetime-local" />
                 </flux:field>
 
                 <flux:field>
-                    <flux:label>Expires At (optional, Eastern Time)</flux:label>
+                    <flux:label>Expires At (optional, {{ $this->userTimezoneDisplay }})</flux:label>
                     <flux:input wire:model="editExpiredAt" type="datetime-local" />
                 </flux:field>
 

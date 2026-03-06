@@ -4,7 +4,6 @@ use App\Actions\AcknowledgeAnnouncement;
 use App\Jobs\SendAnnouncementNotifications;
 use App\Models\Announcement;
 use Flux\Flux;
-use Illuminate\Support\Str;
 use Livewire\Volt\Component;
 
 new class extends Component {
@@ -22,14 +21,27 @@ new class extends Component {
      */
     protected function dispatchPendingNotifications(): void
     {
-        $pending = Announcement::published()
+        $pendingIds = Announcement::published()
             ->whereNull('notifications_sent_at')
-            ->get();
+            ->pluck('id');
 
-        foreach ($pending as $announcement) {
-            // Mark first to prevent duplicate dispatches from concurrent loads
-            $announcement->update(['notifications_sent_at' => now()]);
-            SendAnnouncementNotifications::dispatch($announcement);
+        foreach ($pendingIds as $id) {
+            // Atomic claim: only proceed if we're the one who set notifications_sent_at
+            $claimed = Announcement::where('id', $id)
+                ->whereNull('notifications_sent_at')
+                ->update(['notifications_sent_at' => now()]);
+
+            if ($claimed === 0) {
+                continue;
+            }
+
+            try {
+                SendAnnouncementNotifications::dispatch(Announcement::find($id));
+            } catch (\Throwable $e) {
+                // Revert claim so another request can retry
+                Announcement::where('id', $id)->update(['notifications_sent_at' => null]);
+                report($e);
+            }
         }
     }
 
@@ -91,7 +103,7 @@ new class extends Component {
                 </div>
 
                 <div class="prose prose-sm dark:prose-invert max-w-none">
-                    {!! Str::markdown($latestAnnouncement->content, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
+                    {!! $latestAnnouncement->renderedContent() !!}
                 </div>
 
                 <div class="flex justify-end pt-4 border-t border-zinc-200 dark:border-zinc-700">

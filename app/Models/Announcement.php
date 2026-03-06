@@ -4,6 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Str;
 
 class Announcement extends Model
 {
@@ -23,21 +26,24 @@ class Announcement extends Model
 
     protected $with = ['author'];
 
-    protected $casts = [
-        'is_published' => 'boolean',
-        'published_at' => 'datetime',
-        'expired_at' => 'datetime',
-        'notifications_sent_at' => 'datetime',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'is_published' => 'boolean',
+            'published_at' => 'datetime',
+            'expired_at' => 'datetime',
+            'notifications_sent_at' => 'datetime',
+        ];
+    }
 
     // -------------------- Relationships --------------------
 
-    public function author()
+    public function author(): BelongsTo
     {
         return $this->belongsTo(User::class, 'author_id');
     }
 
-    public function acknowledgers()
+    public function acknowledgers(): BelongsToMany
     {
         return $this->belongsToMany(User::class)->withTimestamps();
     }
@@ -85,5 +91,20 @@ class Announcement extends Model
     public function authorName(): string
     {
         return $this->author ? $this->author->name : 'Unknown Author';
+    }
+
+    /**
+     * Render content as HTML, handling both legacy HTML and markdown.
+     */
+    public function renderedContent(): string
+    {
+        if (preg_match('/<[a-z][\s\S]*>/i', $this->content)) {
+            return strip_tags(
+                $this->content,
+                '<p><h1><h2><h3><h4><h5><h6><br><strong><em><ul><ol><li><a><blockquote><hr><img>'
+            );
+        }
+
+        return Str::markdown($this->content, ['html_input' => 'strip', 'allow_unsafe_links' => false]);
     }
 }

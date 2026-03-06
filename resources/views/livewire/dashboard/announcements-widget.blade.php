@@ -2,7 +2,6 @@
 
 use App\Models\Announcement;
 use Flux\Flux;
-use Illuminate\Support\Str;
 use Livewire\WithPagination;
 use Livewire\Volt\Component;
 
@@ -20,7 +19,7 @@ new class extends Component {
 
     public function viewAnnouncement(int $id): void
     {
-        $this->selectedAnnouncement = Announcement::with('author')->findOrFail($id);
+        $this->selectedAnnouncement = Announcement::published()->with('author')->findOrFail($id);
         Flux::modal('view-announcement-detail')->show();
     }
 }; ?>
@@ -71,7 +70,7 @@ new class extends Component {
                 </div>
 
                 <div class="prose prose-sm dark:prose-invert max-w-none">
-                    {!! Str::markdown($selectedAnnouncement->content, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
+                    {!! $selectedAnnouncement->renderedContent() !!}
                 </div>
             </div>
         </flux:modal>

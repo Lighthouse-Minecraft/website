@@ -22,14 +22,14 @@ class SendAnnouncementNotifications implements ShouldQueue
     {
         $service = app(TicketNotificationService::class);
 
-        $users = User::where('membership_level', '>=', MembershipLevel::Traveler->value)
+        User::where('membership_level', '>=', MembershipLevel::Traveler->value)
             ->where('id', '!=', $this->announcement->author_id)
-            ->get();
-
-        $service->sendToMany(
-            $users,
-            new NewAnnouncementNotification($this->announcement),
-            'announcements'
-        );
+            ->chunk(100, function ($users) use ($service) {
+                $service->sendToMany(
+                    $users,
+                    new NewAnnouncementNotification($this->announcement),
+                    'announcements'
+                );
+            });
     }
 }

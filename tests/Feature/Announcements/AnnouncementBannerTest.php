@@ -7,8 +7,6 @@ use App\Models\Announcement;
 use App\Models\User;
 use Livewire\Livewire;
 
-use function Pest\Laravel\get;
-
 uses()->group('announcements', 'dashboard');
 
 it('shows only the newest unacknowledged announcement on dashboard', function () {
@@ -24,7 +22,7 @@ it('shows only the newest unacknowledged announcement on dashboard', function ()
         'notifications_sent_at' => now(),
     ]);
 
-    get(route('dashboard'))
+    Livewire::test('dashboard.view-announcements')
         ->assertSee($newer->title)
         ->assertDontSee($older->title);
 });

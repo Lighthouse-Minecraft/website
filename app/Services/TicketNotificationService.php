@@ -60,7 +60,7 @@ class TicketNotificationService
     /**
      * Determine which channels should be used for this user
      *
-     * @param  string  $category  The preference category: 'tickets', 'account', or 'staff_alerts'
+     * @param  string  $category  The preference category: 'tickets', 'account', 'staff_alerts', or 'announcements'
      */
     public function determineChannels(User $user, string $category = 'tickets'): array
     {
