@@ -4,8 +4,10 @@ use App\Enums\MembershipLevel;
 use App\Models\User;
 use Flux\Flux;
 use Livewire\Volt\Component;
+use Livewire\WithPagination;
 
 new class extends Component {
+    use WithPagination;
     public $selectedUser = null;
     public $showUserModal = false;
     public $promotedUserName = null;
@@ -21,7 +23,7 @@ new class extends Component {
         return User::where('membership_level', MembershipLevel::Traveler->value)
             ->where('in_brig', false)
             ->orderBy('promoted_at', 'asc')
-            ->get();
+            ->paginate(10, pageName: 'traveler-page');
     }
 
     public function viewUser($userId)
@@ -75,7 +77,7 @@ new class extends Component {
     @endif
 
     @if($this->travelerUsers->count() > 0)
-        <flux:table>
+        <flux:table :paginate="$this->travelerUsers">
             <flux:table.columns>
                 <flux:table.column>Name</flux:table.column>
                 <flux:table.column>Time as Traveler</flux:table.column>
@@ -83,7 +85,7 @@ new class extends Component {
             </flux:table.columns>
             <flux:table.rows>
                 @foreach ($this->travelerUsers as $user)
-                    <flux:table.row>
+                    <flux:table.row wire:key="traveler-user-{{ $user->id }}">
                         <flux:table.cell>
                             <flux:link href="{{ route('profile.show', $user) }}">{{ $user->name }}</flux:link>
                         </flux:table.cell>

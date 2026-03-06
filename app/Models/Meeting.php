@@ -82,7 +82,7 @@ class Meeting extends Model
         return $this->belongsToMany(User::class)
             ->withPivot('added_at')
             ->withTimestamps()
-            ->orderBy('pivot_added_at');
+            ->orderBy('meeting_user.added_at');
     }
 
     public function questions(): HasMany

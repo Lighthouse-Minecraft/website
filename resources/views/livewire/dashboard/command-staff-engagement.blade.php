@@ -35,7 +35,7 @@ new class extends Component {
         $threeMonthsAgo = now()->subMonths(3);
 
         $staffUsers = User::where('staff_rank', '!=', StaffRank::None)
-            ->orderByRaw('CAST(staff_rank AS UNSIGNED) DESC')
+            ->orderByRaw('CAST(staff_rank AS INTEGER) DESC')
             ->orderBy('name')
             ->paginate(15, pageName: 'staff-page');
 
