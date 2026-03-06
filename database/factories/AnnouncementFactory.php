@@ -24,6 +24,8 @@ class AnnouncementFactory extends Factory
             'author_id' => User::factory(),
             'is_published' => true,
             'published_at' => $this->faker->dateTimeBetween('-6 months', 'now'),
+            'expired_at' => null,
+            'notifications_sent_at' => null,
         ];
     }
 
@@ -71,22 +73,36 @@ class AnnouncementFactory extends Factory
     }
 
     /**
-     * Create an announcement with rich HTML content.
+     * Create an announcement with rich markdown content.
      */
     public function withRichContent(): static
     {
-        $content = '<h2>'.$this->faker->sentence().'</h2>';
-        $content .= '<p>'.$this->faker->paragraph().'</p>';
-        $content .= '<ul>';
-        for ($i = 0; $i < 3; $i++) {
-            $content .= '<li>'.$this->faker->sentence().'</li>';
-        }
-        $content .= '</ul>';
-        $content .= '<p>'.$this->faker->paragraph().'</p>';
-        $content .= '<blockquote>'.$this->faker->sentence().'</blockquote>';
+        $content = "## {$this->faker->sentence()}\n\n";
+        $content .= "{$this->faker->paragraph()}\n\n";
+        $content .= "- {$this->faker->sentence()}\n";
+        $content .= "- {$this->faker->sentence()}\n";
+        $content .= "- {$this->faker->sentence()}\n\n";
+        $content .= "{$this->faker->paragraph()}\n\n";
+        $content .= "> {$this->faker->sentence()}";
 
         return $this->state(fn (array $attributes) => [
             'content' => $content,
+        ]);
+    }
+
+    public function expired(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_published' => true,
+            'published_at' => now()->subDays(7),
+            'expired_at' => now()->subDay(),
+        ]);
+    }
+
+    public function expiredAt(\DateTimeInterface $date): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'expired_at' => $date,
         ]);
     }
 
