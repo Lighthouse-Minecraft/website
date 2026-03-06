@@ -28,6 +28,13 @@ new class extends Component
 
     public bool $notify_account_discord = false;
 
+    // Notification preferences — Announcements
+    public bool $notify_announcements_email = true;
+
+    public bool $notify_announcements_pushover = false;
+
+    public bool $notify_announcements_discord = false;
+
     // Notification preferences — Staff Alerts
     public bool $notify_staff_alerts_email = true;
 
@@ -53,6 +60,10 @@ new class extends Component
         $this->notify_account_pushover = $preferences['account']['pushover'] ?? false;
         $this->notify_account_discord = $preferences['account']['discord'] ?? false;
 
+        $this->notify_announcements_email = $preferences['announcements']['email'] ?? true;
+        $this->notify_announcements_pushover = $preferences['announcements']['pushover'] ?? false;
+        $this->notify_announcements_discord = $preferences['announcements']['discord'] ?? false;
+
         $this->notify_staff_alerts_email = $preferences['staff_alerts']['email'] ?? true;
         $this->notify_staff_alerts_pushover = $preferences['staff_alerts']['pushover'] ?? false;
         $this->notify_staff_alerts_discord = $preferences['staff_alerts']['discord'] ?? false;
@@ -71,6 +82,9 @@ new class extends Component
             'notify_account_email' => ['boolean'],
             'notify_account_pushover' => ['boolean'],
             'notify_account_discord' => ['boolean'],
+            'notify_announcements_email' => ['boolean'],
+            'notify_announcements_pushover' => ['boolean'],
+            'notify_announcements_discord' => ['boolean'],
             'notify_staff_alerts_email' => ['boolean'],
             'notify_staff_alerts_pushover' => ['boolean'],
             'notify_staff_alerts_discord' => ['boolean'],
@@ -90,6 +104,11 @@ new class extends Component
             'email' => $validated['notify_account_email'],
             'pushover' => $validated['notify_account_pushover'],
             'discord' => $validated['notify_account_discord'],
+        ];
+        $preferences['announcements'] = [
+            'email' => $validated['notify_announcements_email'],
+            'pushover' => $validated['notify_announcements_pushover'],
+            'discord' => $validated['notify_announcements_discord'],
         ];
         $preferences['staff_alerts'] = [
             'email' => $validated['notify_staff_alerts_email'],
@@ -191,6 +210,32 @@ new class extends Component
                         @else
                             <flux:tooltip content="Link a Discord account in Settings to enable">
                                 <flux:switch wire:model="notify_account_discord" label="Discord DM" disabled />
+                            </flux:tooltip>
+                        @endif
+                    </div>
+                </div>
+
+                <div class="border border-zinc-200 dark:border-zinc-700 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <div>
+                            <div class="font-medium text-sm text-zinc-900 dark:text-white">Announcements</div>
+                            <div class="text-xs text-zinc-600 dark:text-zinc-400">New community announcements</div>
+                        </div>
+                    </div>
+                    <div class="flex gap-6">
+                        <flux:switch wire:model="notify_announcements_email" label="Email" />
+                        @if($pushover_key)
+                            <flux:switch wire:model="notify_announcements_pushover" label="Pushover" />
+                        @else
+                            <flux:tooltip content="Add your Pushover key above to enable">
+                                <flux:switch wire:model="notify_announcements_pushover" label="Pushover" disabled />
+                            </flux:tooltip>
+                        @endif
+                        @if(auth()->user()->hasDiscordLinked())
+                            <flux:switch wire:model="notify_announcements_discord" label="Discord DM" />
+                        @else
+                            <flux:tooltip content="Link a Discord account in Settings to enable">
+                                <flux:switch wire:model="notify_announcements_discord" label="Discord DM" disabled />
                             </flux:tooltip>
                         @endif
                     </div>

@@ -7,7 +7,7 @@ use function Pest\Laravel\get;
 describe('Announcements do not break the dashboard', function () {
     it('loads the page without errors when there is a published announcement', function ($user) {
         loginAs($user);
-        $announcement = Announcement::factory()->published()->create();
+        Announcement::factory()->published()->create(['notifications_sent_at' => now()]);
 
         get(route('dashboard'))
             ->assertOk();
