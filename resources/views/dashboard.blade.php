@@ -128,4 +128,22 @@
             </div>
         </div>
     @endif
+
+    @can('view-command-dashboard')
+        <div class="w-full bg-zinc-900 p-4 rounded-lg mb-6">
+            <div class="flex mb-4">
+                <flux:heading>Command Staff</flux:heading>
+                <flux:spacer />
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <livewire:dashboard.command-community-engagement />
+                <livewire:dashboard.command-department-engagement />
+            </div>
+
+            <div class="mt-4">
+                <livewire:dashboard.command-staff-engagement />
+            </div>
+        </div>
+    @endcan
 </x-layouts.app>

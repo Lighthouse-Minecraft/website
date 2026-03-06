@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 class Meeting extends Model
 {
@@ -67,6 +68,8 @@ class Meeting extends Model
 
         $this->status = MeetingStatus::Completed;
         $this->save();
+
+        Cache::forget('command_dashboard.iteration_boundaries');
     }
 
     public function notes(): HasMany

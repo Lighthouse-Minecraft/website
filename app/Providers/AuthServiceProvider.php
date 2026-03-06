@@ -128,5 +128,9 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('publish-discipline-reports', function ($user) {
             return $user->hasRole('Admin') || $user->isAtLeastRank(StaffRank::Officer);
         });
+
+        Gate::define('view-command-dashboard', function ($user) {
+            return $user->isAdmin() || $user->isInDepartment(StaffDepartment::Command);
+        });
     }
 }
