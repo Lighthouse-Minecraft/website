@@ -6,8 +6,11 @@ use App\Actions\RecordActivity;
 use App\Enums\MeetingStatus;
 use App\Enums\MeetingType;
 use App\Enums\StaffDepartment;
+use App\Enums\StaffRank;
 use App\Models\Meeting;
 use App\Models\MeetingNote;
+use App\Models\MeetingReport;
+use App\Models\User;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonTimeZone;
 use Flux\Flux;
@@ -21,6 +24,23 @@ new class extends Component {
     public string $scheduleNextDay = '';
     public string $scheduleNextTime = '7:00 PM';
     public string $aiPrompt = '';
+
+    #[\Livewire\Attributes\Computed]
+    public function allStaffMembers()
+    {
+        return User::where('staff_rank', '>=', StaffRank::JrCrew->value)
+            ->orderBy('name')
+            ->get();
+    }
+
+    #[\Livewire\Attributes\Computed]
+    public function submittedReportUserIds()
+    {
+        return MeetingReport::where('meeting_id', $this->meeting->id)
+            ->whereNotNull('submitted_at')
+            ->pluck('user_id')
+            ->toArray();
+    }
 
     public function mount(Meeting $meeting) {
         $this->meeting = $meeting->load('attendees');
@@ -292,8 +312,8 @@ new class extends Component {
         <!-- Polling only affects this section -->
         <flux:heading size="xl" class="mb-6">{{  $meeting->title }} - {{  $meeting->day }}</flux:heading>
 
-        <div class="block lg:flex gap-4">
-            <flux:card class="w-full lg:w-1/2 mb-4 lg:mb-0">
+        <div class="block gap-4 lg:flex">
+            <flux:card class="w-full mb-4 lg:w-1/2 lg:mb-0">
                 <flux:heading class="mb-4">Meeting Details</flux:heading>
 
                 <flux:text>
@@ -313,17 +333,17 @@ new class extends Component {
                         <flux:heading size="sm" class="mb-2">Attendees</flux:heading>
                         <div class="space-y-1">
                             @foreach($meeting->attendees as $attendee)
-                                <div class="flex justify-between items-center text-sm">
+                                <div class="flex items-center justify-between text-sm">
                                     <span>
                                         <strong><flux:link href="{{ route('profile.show', $attendee) }}">{{ $attendee->name }}</flux:link></strong>
                                         @if($attendee->staff_rank && $attendee->staff_title)
                                             <br>
-                                            <span class="text-gray-600 dark:text-gray-400 text-xs">
+                                            <span class="text-xs text-gray-600 dark:text-gray-400">
                                                 {{ $attendee->staff_rank->label() }} - {{ $attendee->staff_title }}
                                             </span>
                                         @endif
                                     </span>
-                                    <span class="text-gray-500 dark:text-gray-400 text-xs">
+                                    <span class="text-xs text-gray-500 dark:text-gray-400">
                                         @if(is_object($attendee->pivot->added_at))
                                             {{ $attendee->pivot->added_at->setTimezone('America/New_York')->format('g:i A') }}
                                         @else
@@ -354,6 +374,23 @@ new class extends Component {
                     @endcan
                 @endif
 
+                @if($meeting->status == MeetingStatus::Pending && $meeting->isStaffMeeting() && $this->allStaffMembers->isNotEmpty())
+                    <flux:separator class="my-4" />
+                    <flux:heading size="sm" class="mb-2">Staff Report Status</flux:heading>
+                    <div class="space-y-1">
+                        @foreach($this->allStaffMembers as $member)
+                            <div class="flex items-center gap-1.5 text-sm">
+                                @if(in_array($member->id, $this->submittedReportUserIds))
+                                    <flux:icon name="check" variant="solid" class="w-4 h-4 text-green-500 shrink-0" />
+                                @else
+                                    <flux:icon name="x-mark" variant="solid" class="w-4 h-4 text-red-400 shrink-0" />
+                                @endif
+                                <span><a href="{{ route('profile.show', $member->id) }}" class="text-blue-400 no-underline hover:underline hover:text-blue-200">{{ $member->name }}</a></span>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+
             </flux:card>
 
             <div class="w-full lg:w-1/2">
@@ -376,7 +413,7 @@ new class extends Component {
             <livewire:meeting.manage-questions :meeting="$meeting" :key="'manage-questions-' . $meeting->id" />
         @endif
 
-        <div class="text-right w-full mt-6">
+        <div class="w-full mt-6 text-right">
             @if ($this->meeting->status == MeetingStatus::Pending)
                 @can('update', $meeting)
                     <flux:button wire:click="StartMeeting" variant="primary">Start Meeting</flux:button>
@@ -406,7 +443,7 @@ new class extends Component {
 
         <div class="relative">
             <div wire:loading wire:target="processAiFormatting"
-                 class="absolute inset-0 bg-white/60 dark:bg-zinc-900/60 flex items-center justify-center z-10 rounded-lg">
+                 class="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-white/60 dark:bg-zinc-900/60">
                 <div class="flex items-center gap-2">
                     <flux:icon.loading class="size-5" />
                     <flux:text>Formatting notes with AI...</flux:text>
@@ -417,7 +454,7 @@ new class extends Component {
         </div>
 
         @can('update', $meeting)
-            <div class="w-full lg:w-2/3 mx-auto flex items-center justify-between mt-4">
+            <div class="flex items-center justify-between w-full mx-auto mt-4 lg:w-2/3">
                 <div class="flex items-center gap-3">
                     <flux:switch wire:click="toggleCommunityUpdates" :checked="$meeting->show_community_updates" />
                     <flux:text class="text-sm">Show on Community Updates</flux:text>
