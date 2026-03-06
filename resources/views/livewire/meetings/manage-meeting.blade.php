@@ -26,11 +26,13 @@ new class extends Component {
     public string $aiPrompt = '';
 
     #[\Livewire\Attributes\Computed]
-    public function allStaffMembers()
+    public function staffByDepartment()
     {
         return User::where('staff_rank', '>=', StaffRank::JrCrew->value)
+            ->whereNotNull('staff_department')
             ->orderBy('name')
-            ->get();
+            ->get()
+            ->groupBy('staff_department');
     }
 
     #[\Livewire\Attributes\Computed]
@@ -374,19 +376,28 @@ new class extends Component {
                     @endcan
                 @endif
 
-                @if($meeting->status == MeetingStatus::Pending && $meeting->isStaffMeeting() && $this->allStaffMembers->isNotEmpty())
+                @if($meeting->status == MeetingStatus::Pending && $meeting->isStaffMeeting() && $this->staffByDepartment->isNotEmpty())
                     <flux:separator class="my-4" />
-                    <flux:heading size="sm" class="mb-2">Staff Report Status</flux:heading>
-                    <div class="space-y-1">
-                        @foreach($this->allStaffMembers as $member)
-                            <div class="flex items-center gap-1.5 text-sm">
-                                @if(in_array($member->id, $this->submittedReportUserIds))
-                                    <flux:icon name="check" variant="solid" class="w-4 h-4 text-green-500 shrink-0" />
-                                @else
-                                    <flux:icon name="x-mark" variant="solid" class="w-4 h-4 text-red-400 shrink-0" />
-                                @endif
-                                <span><a href="{{ route('profile.show', $member->id) }}" class="text-blue-400 no-underline hover:underline hover:text-blue-200">{{ $member->name }}</a></span>
-                            </div>
+                    <flux:heading size="sm" class="mb-3">Staff Report Status</flux:heading>
+                    <div class="space-y-3">
+                        @foreach(StaffDepartment::cases() as $department)
+                            @if($this->staffByDepartment->has($department->value))
+                                <div>
+                                    <flux:text class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">{{ $department->label() }}</flux:text>
+                                    <div class="space-y-0.5">
+                                        @foreach($this->staffByDepartment[$department->value] as $member)
+                                            <div class="flex items-center gap-1.5 text-sm">
+                                                @if(in_array($member->id, $this->submittedReportUserIds))
+                                                    <flux:icon name="check" variant="solid" class="w-4 h-4 text-green-500 shrink-0" />
+                                                @else
+                                                    <flux:icon name="x-mark" variant="solid" class="w-4 h-4 text-red-400 shrink-0" />
+                                                @endif
+                                                <span><a href="{{ route('profile.show', $member->id) }}" class="text-blue-400 no-underline hover:underline hover:text-blue-200">{{ $member->name }}</a></span>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
                         @endforeach
                     </div>
                 @endif
