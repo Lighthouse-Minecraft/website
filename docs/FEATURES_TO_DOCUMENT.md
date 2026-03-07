@@ -1,7 +1,6 @@
 Core Features
 Dashboard -- main dashboard with widgets (announcements, stowaway users, traveler users, brig card, rules, ready room summary)
 Support Tickets -- create, view, list tickets; admin tickets; message flagging; ticket assignment
-Community Updates -- public-facing community update pages
 
 Account & Membership
 Minecraft Account Linking -- verification, account management, whitelist sync, rank sync, settings page
