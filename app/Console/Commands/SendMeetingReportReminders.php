@@ -30,7 +30,7 @@ class SendMeetingReportReminders extends Command
             ->get();
 
         if ($meetings->isEmpty()) {
-            $this->info('No meetings requiring report reminders.');
+            $this->info('No meetings requiring check-in reminders.');
 
             return Command::SUCCESS;
         }

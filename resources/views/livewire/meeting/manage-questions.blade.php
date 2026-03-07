@@ -93,10 +93,12 @@ new class extends Component {
                 <div class="space-y-2 mb-4">
                     @foreach($this->questions as $question)
                         <div wire:key="question-{{ $question->id }}" class="flex items-center gap-2 p-2 rounded border border-zinc-200 dark:border-zinc-700">
-                            <div class="flex flex-col gap-0.5">
-                                <flux:button wire:click="moveUp({{ $question->id }})" variant="ghost" size="xs" icon="chevron-up" class="!p-0.5" />
-                                <flux:button wire:click="moveDown({{ $question->id }})" variant="ghost" size="xs" icon="chevron-down" class="!p-0.5" />
-                            </div>
+                            @can('update', $meeting)
+                                <div class="flex flex-col gap-0.5">
+                                    <flux:button wire:click="moveUp({{ $question->id }})" variant="ghost" size="xs" icon="chevron-up" class="!p-0.5" />
+                                    <flux:button wire:click="moveDown({{ $question->id }})" variant="ghost" size="xs" icon="chevron-down" class="!p-0.5" />
+                                </div>
+                            @endcan
                             <flux:text class="flex-1 text-sm">{{ $question->question_text }}</flux:text>
                             @can('update', $meeting)
                                 <flux:button wire:click="removeQuestion({{ $question->id }})" variant="ghost" size="xs" icon="trash" class="text-red-500 hover:text-red-700" />
