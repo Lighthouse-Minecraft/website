@@ -91,7 +91,7 @@ class AuthServiceProvider extends ServiceProvider
 
         Gate::define('view-acp', function ($user) {
             return $user->isAdmin()
-                || $user->isAtLeastRank(StaffRank::Officer)
+                || $user->isAtLeastRank(StaffRank::CrewMember)
                 || $user->hasRole('Page Editor')
                 || $user->isInDepartment(StaffDepartment::Engineer);
         });

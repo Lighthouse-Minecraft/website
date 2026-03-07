@@ -73,7 +73,7 @@
                     @endcan
 
                     @can('view-acp')
-                        <flux:navlist.item icon="cog" :href="route('acp.index')" :current="request()->routeIs('acp.index')" wire:navigate>Admin Control Panel</flux:navlist.item>
+                        <flux:navlist.item icon="cog-6-tooth" :href="route('acp.index')" :current="request()->routeIs('acp.index')" wire:navigate>Admin Control Panel</flux:navlist.item>
                     @endcan
                 </flux:navlist.group>
                 @endcanany

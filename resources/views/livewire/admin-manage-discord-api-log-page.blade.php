@@ -11,6 +11,11 @@ new class extends Component {
     public string $statusFilter = '';
     public string $typeFilter = '';
 
+    public function mount(): void
+    {
+        $this->authorize('view-discord-api-log');
+    }
+
     public function updatedSearch(): void { $this->resetPage(); }
     public function updatedStatusFilter(): void { $this->resetPage(); }
     public function updatedTypeFilter(): void { $this->resetPage(); }
