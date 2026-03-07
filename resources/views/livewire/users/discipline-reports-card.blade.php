@@ -284,6 +284,8 @@ new class extends Component {
                                                 wire:confirm="Are you sure you want to publish this report? This will notify the user and cannot be undone.">
                                                 Publish
                                             </flux:button>
+                                        @elsecan('update', $report)
+                                            <flux:text variant="subtle" class="text-xs italic self-center">Another officer must publish</flux:text>
                                         @endcan
                                     @endif
                                 </div>

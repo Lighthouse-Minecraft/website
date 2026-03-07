@@ -258,7 +258,7 @@ new class extends Component {
                 <flux:separator variant="subtle" />
                 <div class="flex gap-2 justify-end">
                     <flux:link href="{{ route('profile.show', $viewReport->subject) }}" variant="ghost">
-                        <flux:button variant="ghost" icon="pencil-square">Edit</flux:button>
+                        <flux:button variant="ghost" icon="pencil-square">Go to Profile to Edit</flux:button>
                     </flux:link>
                     @if($viewReport->isDraft())
                         @can('publish', $viewReport)
@@ -267,6 +267,8 @@ new class extends Component {
                                 wire:confirm="Are you sure you want to publish this report? This will notify the user and cannot be undone.">
                                 Publish
                             </flux:button>
+                        @elsecan('update', $viewReport)
+                            <flux:text variant="subtle" class="text-xs italic">Another officer must publish this report.</flux:text>
                         @endcan
                     @endif
                 </div>
