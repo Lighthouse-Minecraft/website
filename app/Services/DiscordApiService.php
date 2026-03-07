@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\DiscordApiLog;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -24,7 +25,7 @@ class DiscordApiService
 
     public function getGuildMember(string $discordUserId): ?array
     {
-        $response = $this->requestWithRetry('GET', "/guilds/{$this->guildId}/members/{$discordUserId}");
+        $response = $this->requestWithRetry('GET', "/guilds/{$this->guildId}/members/{$discordUserId}", actionType: 'get_member', target: $discordUserId);
 
         if ($response->successful()) {
             return $response->json();
@@ -39,7 +40,7 @@ class DiscordApiService
             return false;
         }
 
-        $response = $this->requestWithRetry('PUT', "/guilds/{$this->guildId}/members/{$discordUserId}/roles/{$roleId}");
+        $response = $this->requestWithRetry('PUT', "/guilds/{$this->guildId}/members/{$discordUserId}/roles/{$roleId}", actionType: 'add_role', target: $discordUserId, meta: ['role_id' => $roleId]);
 
         if (! $response->successful()) {
             Log::warning('Discord addRole failed', [
@@ -59,7 +60,7 @@ class DiscordApiService
             return false;
         }
 
-        $response = $this->requestWithRetry('DELETE', "/guilds/{$this->guildId}/members/{$discordUserId}/roles/{$roleId}");
+        $response = $this->requestWithRetry('DELETE', "/guilds/{$this->guildId}/members/{$discordUserId}/roles/{$roleId}", actionType: 'remove_role', target: $discordUserId, meta: ['role_id' => $roleId]);
 
         if (! $response->successful()) {
             Log::warning('Discord removeRole failed', [
@@ -77,7 +78,7 @@ class DiscordApiService
     {
         $channelResponse = $this->requestWithRetry('POST', '/users/@me/channels', [
             'recipient_id' => $discordUserId,
-        ]);
+        ], actionType: 'create_dm', target: $discordUserId);
 
         if (! $channelResponse->successful()) {
             Log::warning('Discord createDM failed', [
@@ -92,7 +93,7 @@ class DiscordApiService
 
         $messageResponse = $this->requestWithRetry('POST', "/channels/{$channelId}/messages", [
             'content' => $content,
-        ]);
+        ], actionType: 'send_dm', target: $discordUserId);
 
         if (! $messageResponse->successful()) {
             Log::warning('Discord sendDM failed', [
@@ -151,7 +152,7 @@ class DiscordApiService
     {
         $response = $this->requestWithRetry('POST', "/channels/{$channelId}/messages", [
             'content' => $content,
-        ]);
+        ], actionType: 'send_channel_message', target: $channelId);
 
         if (! $response->successful()) {
             Log::warning('Discord sendChannelMessage failed', [
@@ -178,14 +179,15 @@ class DiscordApiService
     }
 
     /**
-     * Make a Discord API request with automatic rate limit retry.
+     * Make a Discord API request with automatic rate limit retry and logging.
      *
      * If Discord returns a 429, sleeps for the retry_after duration
      * and retries up to $maxRetries times.
      */
-    protected function requestWithRetry(string $method, string $path, array $data = []): Response
+    protected function requestWithRetry(string $method, string $path, array $data = [], string $actionType = 'unknown', ?string $target = null, ?array $meta = null): Response
     {
         $url = "{$this->baseUrl}{$path}";
+        $startTime = microtime(true);
 
         for ($attempt = 0; $attempt <= $this->maxRetries; $attempt++) {
             $pending = Http::withHeaders($this->botHeaders())->timeout(5);
@@ -198,6 +200,8 @@ class DiscordApiService
             };
 
             if ($response->status() !== 429) {
+                $this->logApiCall($method, $path, $actionType, $target, $response, $startTime, $meta);
+
                 return $response;
             }
 
@@ -212,7 +216,33 @@ class DiscordApiService
             usleep((int) ($retryAfter * 1_000_000));
         }
 
+        $this->logApiCall($method, $path, $actionType, $target, $response, $startTime, $meta);
+
         return $response;
+    }
+
+    protected function logApiCall(string $method, string $path, string $actionType, ?string $target, Response $response, float $startTime, ?array $meta): void
+    {
+        $executionTime = round((microtime(true) - $startTime) * 1000);
+
+        try {
+            DiscordApiLog::create([
+                'user_id' => auth()->id(),
+                'method' => strtoupper($method),
+                'endpoint' => $path,
+                'action_type' => $actionType,
+                'target' => $target,
+                'status' => $response->successful() ? 'success' : 'failed',
+                'http_status' => $response->status(),
+                'response' => $response->successful() ? null : $response->body(),
+                'error_message' => $response->successful() ? null : $response->body(),
+                'meta' => $meta,
+                'executed_at' => now(),
+                'execution_time_ms' => (int) $executionTime,
+            ]);
+        } catch (\Exception $e) {
+            Log::warning('Failed to log Discord API call', ['error' => $e->getMessage()]);
+        }
     }
 
     protected function botHeaders(): array

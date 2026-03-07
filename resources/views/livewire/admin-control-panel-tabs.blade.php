@@ -67,6 +67,7 @@ new class extends Component {
 
         return $user && (
             $user->can('view-mc-command-log')
+            || $user->can('view-discord-api-log')
             || $user->can('view-activity-log')
             || $user->can('view-discipline-report-log')
         );
@@ -104,6 +105,7 @@ new class extends Component {
             },
             'logs' => match (true) {
                 $user?->can('view-mc-command-log') => 'mc-command-log',
+                $user?->can('view-discord-api-log') => 'discord-api-log',
                 $user?->can('view-activity-log') => 'activity-log',
                 $user?->can('view-discipline-report-log') => 'discipline-report-log',
                 default => 'mc-command-log',
@@ -225,6 +227,9 @@ new class extends Component {
                 @can('view-mc-command-log')
                     <flux:tab name="mc-command-log">MC Command Log</flux:tab>
                 @endcan
+                @can('view-discord-api-log')
+                    <flux:tab name="discord-api-log">Discord API Log</flux:tab>
+                @endcan
                 @can('view-activity-log')
                     <flux:tab name="activity-log">Activity Log</flux:tab>
                 @endcan
@@ -236,6 +241,11 @@ new class extends Component {
             <flux:tab.panel name="mc-command-log">
                 @can('view-mc-command-log')
                     <livewire:admin-manage-mc-command-log-page />
+                @endcan
+            </flux:tab.panel>
+            <flux:tab.panel name="discord-api-log">
+                @can('view-discord-api-log')
+                    <livewire:admin-manage-discord-api-log-page />
                 @endcan
             </flux:tab.panel>
             <flux:tab.panel name="activity-log">

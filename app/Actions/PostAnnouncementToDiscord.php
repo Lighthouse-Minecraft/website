@@ -25,7 +25,8 @@ class PostAnnouncementToDiscord
         // Discord message limit is 2000 characters
         if (mb_strlen($content) > 2000) {
             $suffix = "...\n\n{$url}";
-            $content = mb_substr($content, 0, 2000 - mb_strlen($suffix)).$suffix;
+            $available = max(0, 2000 - mb_strlen($suffix));
+            $content = mb_substr($content, 0, $available).$suffix;
         }
 
         try {
