@@ -41,7 +41,7 @@ class AuthServiceProvider extends ServiceProvider
             return ! $user->in_brig;
         });
 
-        Gate::define('view-community-updates', function ($user) {
+        Gate::define('view-all-community-updates', function ($user) {
             return $user->isAtLeastLevel(MembershipLevel::Traveler) || $user->hasRole('Admin');
         });
 
