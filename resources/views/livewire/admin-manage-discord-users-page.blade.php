@@ -7,12 +7,18 @@ use Livewire\WithPagination;
 new class extends Component {
     use WithPagination;
 
+    public string $search = '';
     public string $sortBy = 'username';
     public string $sortDirection = 'asc';
 
     public function mount(): void
     {
         $this->authorize('viewAny', DiscordAccount::class);
+    }
+
+    public function updatedSearch(): void
+    {
+        $this->resetPage();
     }
 
     public function sort(string $column): void
@@ -41,6 +47,11 @@ new class extends Component {
         return DiscordAccount::query()
             ->join('users', 'discord_accounts.user_id', '=', 'users.id')
             ->select('discord_accounts.*', 'users.name as user_name')
+            ->when($this->search, fn ($q) => $q->where(function ($q) {
+                $q->where('discord_accounts.username', 'like', "%{$this->search}%")
+                    ->orWhere('discord_accounts.global_name', 'like', "%{$this->search}%")
+                    ->orWhere('users.name', 'like', "%{$this->search}%");
+            }))
             ->orderBy($sortColumn, $this->sortDirection)
             ->paginate(15);
     }
@@ -48,6 +59,8 @@ new class extends Component {
 
 <div class="space-y-6">
     <flux:heading size="xl">Discord Users</flux:heading>
+
+    <flux:input wire:model.live.debounce.400ms="search" placeholder="Search username, display name, or user..." icon="magnifying-glass" class="max-w-sm" />
 
     <flux:table :paginate="$this->accounts">
         <flux:table.columns>

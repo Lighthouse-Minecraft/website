@@ -147,6 +147,23 @@ class DiscordApiService
         return true;
     }
 
+    public function sendChannelMessage(string $channelId, string $content): bool
+    {
+        $response = $this->requestWithRetry('POST', "/channels/{$channelId}/messages", [
+            'content' => $content,
+        ]);
+
+        if (! $response->successful()) {
+            Log::warning('Discord sendChannelMessage failed', [
+                'channel_id' => $channelId,
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+        }
+
+        return $response->successful();
+    }
+
     public function removeAllManagedRoles(string $discordUserId): void
     {
         $allRoleIds = array_filter(array_values(config('lighthouse.discord.roles', [])));

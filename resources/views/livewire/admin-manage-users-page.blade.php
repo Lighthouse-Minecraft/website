@@ -13,7 +13,7 @@ use Flux\Flux;
 new class extends Component {
     use WithPagination;
 
-    protected const ALLOWED_SORTS = ['name', 'email', 'membership_level', 'staff_department', 'staff_rank', 'in_brig', 'created_at', 'last_login_at'];
+    protected const ALLOWED_SORTS = ['name', 'email', 'membership_level', 'staff_department', 'staff_rank', 'in_brig', 'created_at', 'last_login_at', 'risk_score'];
 
     public $sortBy = 'name';
     public $sortDirection = 'asc';
@@ -95,7 +95,26 @@ new class extends Component {
         $sortColumn = in_array($this->sortBy, self::ALLOWED_SORTS) ? $this->sortBy : 'name';
         $sortDir = $this->sortDirection === 'desc' ? 'desc' : 'asc';
 
+        $cutoff = now()->subDays(90);
+
         return \App\Models\User::query()
+            ->select('users.*')
+            ->addSelect([
+                'risk_score' => \App\Models\DisciplineReport::selectRaw("COALESCE(SUM(
+                    CASE severity
+                        WHEN 'commendation' THEN 0
+                        WHEN 'trivial' THEN 1
+                        WHEN 'minor' THEN 2
+                        WHEN 'moderate' THEN 4
+                        WHEN 'major' THEN 7
+                        WHEN 'severe' THEN 10
+                        ELSE 0
+                    END
+                ), 0)")
+                    ->whereColumn('discipline_reports.subject_user_id', 'users.id')
+                    ->where('discipline_reports.status', 'published')
+                    ->where('discipline_reports.published_at', '>=', $cutoff),
+            ])
             ->with('roles')
             ->when(trim($this->search) !== '', function ($q) {
                 $term = trim($this->search);
@@ -191,7 +210,7 @@ new class extends Component {
 <div class="space-y-6">
     <flux:heading size="xl">Manage Users</flux:heading>
     <div class="flex items-center gap-4">
-        <flux:input wire:model.live.debounce.300ms="search" placeholder="Search users..." size="sm" icon="magnifying-glass" class="w-64" />
+        <flux:input wire:model.live.debounce.300ms="search" placeholder="Search users..." icon="magnifying-glass" class="max-w-sm" />
         <flux:select wire:model.live="filterBrig" size="sm" class="w-48">
             <flux:select.option value="">All Users</flux:select.option>
             <flux:select.option value="in_brig">In the Brig</flux:select.option>
@@ -207,6 +226,7 @@ new class extends Component {
             <flux:table.column sortable :sorted="$sortBy === 'staff_department'" :direction="$sortDirection" wire:click="sort('staff_department')">Department</flux:table.column>
             <flux:table.column sortable :sorted="$sortBy === 'staff_rank'" :direction="$sortDirection" wire:click="sort('staff_rank')">Rank</flux:table.column>
             <flux:table.column sortable :sorted="$sortBy === 'in_brig'" :direction="$sortDirection" wire:click="sort('in_brig')">Brig</flux:table.column>
+            <flux:table.column sortable :sorted="$sortBy === 'risk_score'" :direction="$sortDirection" wire:click="sort('risk_score')">Risk Score</flux:table.column>
             <flux:table.column>Staff Title</flux:table.column>
             <flux:table.column>Roles</flux:table.column>
             <flux:table.column>Actions</flux:table.column>
@@ -226,6 +246,11 @@ new class extends Component {
                     <flux:table.cell class="whitespace-nowrap">
                         @if($user->in_brig)
                             <flux:badge color="red" size="sm">In Brig</flux:badge>
+                        @endif
+                    </flux:table.cell>
+                    <flux:table.cell class="whitespace-nowrap">
+                        @if($user->risk_score > 0)
+                            <flux:badge color="{{ \App\Models\User::riskScoreColor((int) $user->risk_score) }}" size="sm">{{ (int) $user->risk_score }}</flux:badge>
                         @endif
                     </flux:table.cell>
                     <flux:table.cell class="whitespace-nowrap">{{ $user->staff_title }}</flux:table.cell>

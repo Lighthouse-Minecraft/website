@@ -1,9 +1,11 @@
 <?php
 
+use App\Actions\PublishDisciplineReport;
 use App\Enums\ReportStatus;
 use App\Models\DisciplineReport;
 use App\Models\User;
 use Flux\Flux;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Locked;
 use Livewire\Volt\Component;
@@ -15,8 +17,8 @@ new class extends Component {
     public function getRecentReportsProperty()
     {
         return DisciplineReport::with(['subject', 'reporter', 'category'])
+            ->where('created_at', '>=', now()->subDays(7))
             ->latest()
-            ->limit(5)
             ->get();
     }
 
@@ -92,12 +94,24 @@ new class extends Component {
         $this->viewingReportId = $reportId;
         Flux::modal('widget-view-report-modal')->show();
     }
+
+    public function publishReport(int $reportId): void
+    {
+        $report = DisciplineReport::findOrFail($reportId);
+        $this->authorize('publish', $report);
+
+        PublishDisciplineReport::run($report, Auth::user());
+
+        $this->viewingReportId = null;
+        Flux::modal('widget-view-report-modal')->close();
+        Flux::toast('Staff report published.', 'Report Published', variant: 'success');
+    }
 }; ?>
 
 <div>
 <flux:card>
     <div class="flex items-center gap-3">
-        <flux:heading size="md">Discipline Reports</flux:heading>
+        <flux:heading size="md">Staff User Reports</flux:heading>
         <flux:spacer />
         @if($this->pendingCount > 0)
             <flux:badge color="amber" size="sm">{{ $this->pendingCount }} pending</flux:badge>
@@ -168,7 +182,7 @@ new class extends Component {
     @if($this->viewingReport)
         @php $viewReport = $this->viewingReport; @endphp
         <div class="space-y-4">
-                <flux:heading size="lg">Discipline Report</flux:heading>
+                <flux:heading size="lg">Staff User Report</flux:heading>
 
                 <div class="flex items-center gap-3">
                     <flux:avatar size="sm" :src="$viewReport->subject->avatarUrl()" :initials="$viewReport->subject->initials()" />
@@ -178,26 +192,20 @@ new class extends Component {
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
+                <div class="flex flex-wrap items-center gap-2">
                     @if($viewReport->category)
-                        <div>
-                            <flux:text class="font-bold text-sm">Category</flux:text>
-                            <flux:badge color="{{ $viewReport->category->color }}">{{ $viewReport->category->name }}</flux:badge>
-                        </div>
+                        <flux:badge color="{{ $viewReport->category->color }}">{{ $viewReport->category->name }}</flux:badge>
                     @endif
-                    <div>
-                        <flux:text class="font-bold text-sm">Location</flux:text>
-                        <flux:badge color="{{ $viewReport->location->color() }}">{{ $viewReport->location->label() }}</flux:badge>
-                    </div>
-                    <div>
-                        <flux:text class="font-bold text-sm">Severity</flux:text>
-                        <flux:badge color="{{ $viewReport->severity->color() }}">{{ $viewReport->severity->label() }}</flux:badge>
-                    </div>
+                    <flux:badge color="{{ $viewReport->location->color() }}">{{ $viewReport->location->label() }}</flux:badge>
+                    <flux:badge color="{{ $viewReport->severity->color() }}">{{ $viewReport->severity->label() }}</flux:badge>
+                    <flux:badge color="{{ $viewReport->status->color() }}">{{ $viewReport->status->label() }}</flux:badge>
                 </div>
 
                 <div>
                     <flux:text class="font-bold text-sm">What Happened</flux:text>
-                    <flux:text>{{ $viewReport->description }}</flux:text>
+                    <div class="prose prose-sm dark:prose-invert max-w-none">
+                        {!! Str::markdown($viewReport->description, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
+                    </div>
                 </div>
 
                 @if($viewReport->witnesses)
@@ -209,15 +217,13 @@ new class extends Component {
 
                 <div>
                     <flux:text class="font-bold text-sm">Actions Taken</flux:text>
-                    <flux:text>{{ $viewReport->actions_taken }}</flux:text>
+                    <div class="prose prose-sm dark:prose-invert max-w-none">
+                        {!! Str::markdown($viewReport->actions_taken, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
+                    </div>
                 </div>
 
                 <flux:separator variant="subtle" />
                 <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <flux:text class="font-bold text-sm">Status</flux:text>
-                        <flux:badge color="{{ $viewReport->status->color() }}">{{ $viewReport->status->label() }}</flux:badge>
-                    </div>
                     <div>
                         <flux:text class="font-bold text-sm">Reporter</flux:text>
                         <div class="flex items-center gap-2 mt-1">
@@ -225,21 +231,43 @@ new class extends Component {
                             <flux:link href="{{ route('profile.show', $viewReport->reporter) }}">{{ $viewReport->reporter->name }}</flux:link>
                         </div>
                     </div>
-                </div>
-                @if($viewReport->publisher)
-                    <div>
-                        <flux:text class="font-bold text-sm">Published By</flux:text>
-                        <div class="flex items-center gap-2 mt-1">
-                            <flux:avatar size="xs" :src="$viewReport->publisher->avatarUrl()" :initials="$viewReport->publisher->initials()" />
-                            <flux:link href="{{ route('profile.show', $viewReport->publisher) }}">{{ $viewReport->publisher->name }}</flux:link>
-                            <flux:text variant="subtle" class="text-xs">{{ $viewReport->published_at->format('M j, Y g:i A') }}</flux:text>
+                    @if($viewReport->publisher)
+                        <div>
+                            <flux:text class="font-bold text-sm">Published By</flux:text>
+                            <div class="flex items-center gap-2 mt-1">
+                                <flux:avatar size="xs" :src="$viewReport->publisher->avatarUrl()" :initials="$viewReport->publisher->initials()" />
+                                <flux:link href="{{ route('profile.show', $viewReport->publisher) }}">{{ $viewReport->publisher->name }}</flux:link>
+                            </div>
                         </div>
+                    @endif
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <flux:text class="font-bold text-sm">Created</flux:text>
+                        <flux:text>{{ $viewReport->created_at->format('M j, Y g:i A') }}</flux:text>
                     </div>
-                @endif
+                    @if($viewReport->published_at)
+                        <div>
+                            <flux:text class="font-bold text-sm">Published</flux:text>
+                            <flux:text>{{ $viewReport->published_at->format('M j, Y g:i A') }}</flux:text>
+                        </div>
+                    @endif
+                </div>
 
-                <div>
-                    <flux:text class="font-bold text-sm">Created</flux:text>
-                    <flux:text>{{ $viewReport->created_at->format('M j, Y g:i A') }}</flux:text>
+                <flux:separator variant="subtle" />
+                <div class="flex gap-2 justify-end">
+                    <flux:link href="{{ route('profile.show', $viewReport->subject) }}" variant="ghost">
+                        <flux:button variant="ghost" icon="pencil-square">Edit</flux:button>
+                    </flux:link>
+                    @if($viewReport->isDraft())
+                        @can('publish', $viewReport)
+                            <flux:button variant="primary" icon="check-circle"
+                                wire:click="publishReport({{ $viewReport->id }})"
+                                wire:confirm="Are you sure you want to publish this report? This will notify the user and cannot be undone.">
+                                Publish
+                            </flux:button>
+                        @endcan
+                    @endif
                 </div>
         </div>
     @endif
