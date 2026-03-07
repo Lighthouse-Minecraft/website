@@ -74,7 +74,7 @@ class DisciplineReportPolicy
         }
 
         // When the subject is a staff member, the reporter cannot publish their own report
-        if ($report->subject->staff_rank && $report->subject->staff_rank !== StaffRank::None
+        if ($report->subject?->staff_rank && $report->subject->staff_rank !== StaffRank::None
             && $user->id === $report->reporter_user_id) {
             return false;
         }

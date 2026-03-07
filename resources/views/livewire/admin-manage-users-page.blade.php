@@ -99,6 +99,7 @@ new class extends Component {
 
         return \App\Models\User::query()
             ->select('users.*')
+            // Point values must match ReportSeverity::points()
             ->addSelect([
                 'risk_score' => \App\Models\DisciplineReport::selectRaw("COALESCE(SUM(
                     CASE severity

@@ -238,6 +238,11 @@ new class extends Component {
             return;
         }
 
+        if ($this->user->membership_level->value < MembershipLevel::Stowaway->value) {
+            Flux::toast(text: 'This user cannot be promoted from this page.', heading: 'Error', variant: 'danger');
+            return;
+        }
+
         \App\Actions\PromoteUser::run($this->user);
         $this->user->refresh();
 

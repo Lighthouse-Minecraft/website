@@ -56,8 +56,9 @@ class SendAnnouncementNotifications implements ShouldQueue
         $content = "## {$announcement->title}\n\n{$announcement->content}\n\n{$url}";
 
         // Discord message limit is 2000 characters
-        if (strlen($content) > 2000) {
-            $content = mb_substr($content, 0, 1990)."...\n\n{$url}";
+        if (mb_strlen($content) > 2000) {
+            $suffix = "...\n\n{$url}";
+            $content = mb_substr($content, 0, 2000 - mb_strlen($suffix)).$suffix;
         }
 
         try {

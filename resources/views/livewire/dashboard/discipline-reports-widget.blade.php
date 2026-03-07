@@ -19,6 +19,7 @@ new class extends Component {
         return DisciplineReport::with(['subject', 'reporter', 'category'])
             ->where('created_at', '>=', now()->subDays(7))
             ->latest()
+            ->limit(50)
             ->get();
     }
 

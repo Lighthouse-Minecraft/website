@@ -491,8 +491,8 @@ new class extends Component {
                     </div>
                 @else
                     <div>
-                        <flux:text class="font-bold text-sm">Created</flux:text>
-                        <flux:text>{{ $viewReport->created_at->format('M j, Y g:i A') }}</flux:text>
+                        <flux:text class="font-bold text-sm">Date</flux:text>
+                        <flux:text>{{ ($viewReport->published_at ?? $viewReport->created_at)->format('M j, Y g:i A') }}</flux:text>
                     </div>
                 @endif
             </div>
