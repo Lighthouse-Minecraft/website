@@ -62,7 +62,7 @@ Route::get('/acp/pages/{page}/edit', [PageController::class, 'edit'])
     ->name('admin.pages.edit')
     ->middleware(['auth', 'can:update,page']);
 
-Route::get('community-updates', [CommunityUpdatesController::class, 'index'])->name('community-updates.index')->middleware('auth');
+Route::get('community-updates', [CommunityUpdatesController::class, 'index'])->name('community-updates.index');
 Route::get('ready-room', [DashboardController::class, 'readyRoom'])->name('ready-room.index')->middleware('auth');
 
 // Ticket System Routes

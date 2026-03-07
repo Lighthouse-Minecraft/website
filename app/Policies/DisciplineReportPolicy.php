@@ -11,7 +11,7 @@ class DisciplineReportPolicy
 {
     public function before(User $user, string $ability): ?bool
     {
-        if ($ability === 'delete') {
+        if (in_array($ability, ['delete', 'publish'])) {
             return null;
         }
 
@@ -65,7 +65,21 @@ class DisciplineReportPolicy
 
     public function publish(User $user, DisciplineReport $report): bool
     {
-        return $report->isDraft() && $user->isAtLeastRank(StaffRank::Officer);
+        if (! $report->isDraft()) {
+            return false;
+        }
+
+        if (! $user->hasRole('Admin') && ! $user->isAtLeastRank(StaffRank::Officer)) {
+            return false;
+        }
+
+        // When the subject is a staff member, the reporter cannot publish their own report
+        if ($report->subject?->staff_rank && $report->subject->staff_rank !== StaffRank::None
+            && $user->id === $report->reporter_user_id) {
+            return false;
+        }
+
+        return true;
     }
 
     public function delete(User $user, DisciplineReport $report): bool

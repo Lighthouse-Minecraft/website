@@ -6,7 +6,8 @@ class AdminControlPanelController extends Controller
 {
     public function index()
     {
-        // Logic for displaying the admin control panel
+        \Illuminate\Support\Facades\Gate::authorize('view-acp');
+
         return view('admin.control-panel.index');
     }
 }

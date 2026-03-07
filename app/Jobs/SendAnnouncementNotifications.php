@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Actions\PostAnnouncementToDiscord;
 use App\Enums\MembershipLevel;
 use App\Models\Announcement;
 use App\Models\User;
@@ -38,5 +39,7 @@ class SendAnnouncementNotifications implements ShouldQueue
                     'announcements'
                 );
             });
+
+        PostAnnouncementToDiscord::run($announcement);
     }
 }

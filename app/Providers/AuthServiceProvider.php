@@ -41,7 +41,7 @@ class AuthServiceProvider extends ServiceProvider
             return ! $user->in_brig;
         });
 
-        Gate::define('view-community-updates', function ($user) {
+        Gate::define('view-all-community-updates', function ($user) {
             return $user->isAtLeastLevel(MembershipLevel::Traveler) || $user->hasRole('Admin');
         });
 
@@ -91,7 +91,7 @@ class AuthServiceProvider extends ServiceProvider
 
         Gate::define('view-acp', function ($user) {
             return $user->isAdmin()
-                || $user->isAtLeastRank(StaffRank::Officer)
+                || $user->isAtLeastRank(StaffRank::CrewMember)
                 || $user->hasRole('Page Editor')
                 || $user->isInDepartment(StaffDepartment::Engineer);
         });
@@ -103,6 +103,7 @@ class AuthServiceProvider extends ServiceProvider
         };
 
         Gate::define('view-mc-command-log', $canViewLogs);
+        Gate::define('view-discord-api-log', $canViewLogs);
         Gate::define('view-activity-log', $canViewLogs);
         Gate::define('view-discipline-report-log', $canViewLogs);
 

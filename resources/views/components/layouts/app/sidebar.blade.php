@@ -26,13 +26,8 @@
                     @endforeach
                 </flux:navlist.group>
 
-                <flux:navlist.group heading="Platform" class="grid">
-                    <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate class="mb-2">Dashboard</flux:navlist.item>
-                    <flux:navlist.item icon="user-group" :href="route('staff.index')" :current="request()->routeIs('staff.index')" wire:navigate>Our Team</flux:navlist.item>
-
-                    @can('view-community-updates')
-                        <flux:navlist.item icon="user-group" :href="route('community-updates.index')" :current="request()->routeIs('community-updates.index')" wire:navigate>Community Updates</flux:navlist.item>
-                    @endcan
+                <flux:navlist.group heading="My Hub" class="grid">
+                    <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>Dashboard</flux:navlist.item>
 
                     @auth
                         <flux:navlist.item
@@ -57,7 +52,15 @@
                             Parent Portal
                         </flux:navlist.item>
                     @endcan
+                </flux:navlist.group>
 
+                <flux:navlist.group heading="Community" class="grid">
+                    <flux:navlist.item icon="user-group" :href="route('staff.index')" :current="request()->routeIs('staff.index')" wire:navigate>Our Team</flux:navlist.item>
+                    <flux:navlist.item icon="newspaper" :href="route('community-updates.index')" :current="request()->routeIs('community-updates.index')" wire:navigate>Community Updates</flux:navlist.item>
+                </flux:navlist.group>
+
+                @canany(['view-ready-room', 'view-acp'])
+                <flux:navlist.group heading="Management" class="grid">
                     @can('view-ready-room')
                         <flux:navlist.item
                             icon="building-storefront"
@@ -70,9 +73,10 @@
                     @endcan
 
                     @can('view-acp')
-                        <flux:navlist.item icon="home" :href="route('acp.index')" :current="request()->routeIs('acp.index')" wire:navigate>Admin Control Panel</flux:navlist.item>
+                        <flux:navlist.item icon="cog-6-tooth" :href="route('acp.index')" :current="request()->routeIs('acp.index')" wire:navigate>Admin Control Panel</flux:navlist.item>
                     @endcan
                 </flux:navlist.group>
+                @endcanany
 
                 <flux:navlist.group heading="Get Involved" class="grid">
                     <flux:navlist.item icon="gift" :href="route('donate')" :current="request()->routeIs('donate')" wire:navigate badge="Donate" badge:color="amber">Support Lighthouse</flux:navlist.item>

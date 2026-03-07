@@ -46,25 +46,25 @@ new #[Layout('components.layouts.app')] class extends Component {
         $this->authorize('view-ready-room');
 
         if ($this->meeting->isReportLocked()) {
-            Flux::toast('Reports are locked — the meeting has already started.', variant: 'danger');
+            Flux::toast('Check-ins are locked — the meeting has already started.', variant: 'danger');
             return;
         }
 
         if (! $this->meeting->isReportUnlocked()) {
-            Flux::toast('The report window is not open yet.', variant: 'danger');
+            Flux::toast('The check-in window is not open yet.', variant: 'danger');
             return;
         }
 
         SubmitMeetingReport::run($this->meeting, auth()->user(), $this->answers);
 
         $this->hasSubmitted = true;
-        Flux::toast('Report submitted successfully!', variant: 'success');
+        Flux::toast('Check-in submitted successfully!', variant: 'success');
     }
 }; ?>
 
 <div class="max-w-3xl mx-auto space-y-6">
     <div class="flex items-center justify-between">
-        <flux:heading size="xl">Pre-Meeting Report</flux:heading>
+        <flux:heading size="xl">Staff Check-In</flux:heading>
         <flux:button href="{{ route('ready-room.index') }}" variant="ghost" icon="arrow-left">
             Back to Ready Room
         </flux:button>
@@ -79,13 +79,13 @@ new #[Layout('components.layouts.app')] class extends Component {
 
     @if($meeting->isReportLocked())
         <flux:callout color="amber">
-            <flux:callout.heading>Reports Locked</flux:callout.heading>
-            <flux:callout.text>The meeting has started. Reports can no longer be submitted or updated.</flux:callout.text>
+            <flux:callout.heading>Check-In Locked</flux:callout.heading>
+            <flux:callout.text>The meeting has started. Check-ins can no longer be submitted or updated.</flux:callout.text>
         </flux:callout>
 
         @if($hasSubmitted)
             <flux:card>
-                <flux:heading size="lg" class="mb-4">Your Submitted Report</flux:heading>
+                <flux:heading size="lg" class="mb-4">Your Submitted Check-In</flux:heading>
                 @foreach($meeting->questions as $question)
                     <div wire:key="submitted-question-{{ $question->id }}" class="mb-4">
                         <flux:text class="font-semibold text-sm">{{ $question->question_text }}</flux:text>
@@ -97,14 +97,14 @@ new #[Layout('components.layouts.app')] class extends Component {
             </flux:card>
         @else
             <flux:callout color="zinc">
-                <flux:callout.text>You did not submit a report for this meeting.</flux:callout.text>
+                <flux:callout.text>You did not submit a check-in for this meeting.</flux:callout.text>
             </flux:callout>
         @endif
     @elseif(! $meeting->isReportUnlocked())
         <flux:callout color="zinc">
-            <flux:callout.heading>Report Window Not Open</flux:callout.heading>
+            <flux:callout.heading>Check-In Not Open Yet</flux:callout.heading>
             <flux:callout.text>
-                The report form opens {{ config('lighthouse.meeting_report_unlock_days', 7) }} days before the meeting.
+                The check-in form opens {{ config('lighthouse.meeting_report_unlock_days', 7) }} days before the meeting.
             </flux:callout.text>
         </flux:callout>
     @else
@@ -119,7 +119,7 @@ new #[Layout('components.layouts.app')] class extends Component {
 
             <div class="text-right">
                 <flux:button type="submit" variant="primary">
-                    {{ $hasSubmitted ? 'Update Report' : 'Submit Report' }}
+                    {{ $hasSubmitted ? 'Update Check-In' : 'Submit Check-In' }}
                 </flux:button>
             </div>
         </form>

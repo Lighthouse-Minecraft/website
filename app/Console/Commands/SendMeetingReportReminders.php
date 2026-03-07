@@ -16,7 +16,7 @@ class SendMeetingReportReminders extends Command
 {
     protected $signature = 'meetings:send-report-reminders';
 
-    protected $description = 'Send reminders to staff who have not submitted their pre-meeting reports';
+    protected $description = 'Send reminders to staff who have not submitted their staff check-ins';
 
     public function handle(): int
     {
@@ -30,7 +30,7 @@ class SendMeetingReportReminders extends Command
             ->get();
 
         if ($meetings->isEmpty()) {
-            $this->info('No meetings requiring report reminders.');
+            $this->info('No meetings requiring check-in reminders.');
 
             return Command::SUCCESS;
         }
