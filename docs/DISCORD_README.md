@@ -35,7 +35,7 @@ This guide walks you through obtaining the Discord credentials needed to run the
 
 1. Go to **OAuth2 → URL Generator**
 2. Select scopes: `bot`
-3. Select bot permissions: `Manage Roles`, `Send Messages`, `Create Instant Invite`
+3. Select bot permissions: `Manage Roles`, `Send Messages`, `Read Message History`, `Create Instant Invite`
 4. Copy the generated URL, open it in your browser, and select your Discord server
 
 ## 6. Get Your Guild ID
@@ -84,7 +84,21 @@ DISCORD_ROLE_RANK_OFFICER=
 
 # Special Role IDs
 DISCORD_ROLE_VERIFIED=
+
+# Announcement Channel (optional — posts new announcements to this channel)
+DISCORD_ANNOUNCEMENTS_CHANNEL_ID=
 ```
+
+## 9. Announcement Channel (Optional)
+
+When a new announcement is published on the site, it can automatically be posted to a Discord channel.
+
+1. In your Discord server, choose (or create) a text channel for announcements
+2. With Developer Mode on, right-click the channel → **Copy Channel ID**
+3. Set `DISCORD_ANNOUNCEMENTS_CHANNEL_ID` in your `.env` to this ID
+4. Ensure the bot has **Send Messages** permission in that channel
+
+If left empty, announcements will not be posted to Discord (user DM notifications still work independently via notification preferences).
 
 ## Local Development Notes
 
