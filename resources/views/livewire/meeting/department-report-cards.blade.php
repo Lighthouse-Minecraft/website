@@ -102,7 +102,7 @@ new class extends Component {
                         @endforeach
                     @else
                         <flux:callout color="zinc">
-                            <flux:callout.text>This staff member has not submitted a report for this meeting.</flux:callout.text>
+                            <flux:callout.text>This staff member has not submitted a check-in for this meeting.</flux:callout.text>
                         </flux:callout>
                     @endif
 

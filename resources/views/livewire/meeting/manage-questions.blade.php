@@ -84,7 +84,7 @@ new class extends Component {
 
 <div class="mt-6">
     <flux:accordion>
-        <flux:accordion.item heading="Pre-Meeting Report Questions" transition>
+        <flux:accordion.item heading="Staff Check-In Questions" transition>
             <flux:text variant="subtle" class="mb-4">
                 Staff will answer these questions before the meeting. You can add, remove, or reorder questions.
             </flux:text>

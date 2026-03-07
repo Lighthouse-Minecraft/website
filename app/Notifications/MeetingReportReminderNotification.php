@@ -52,25 +52,25 @@ class MeetingReportReminderNotification extends Notification implements ShouldQu
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Reminder: Submit your report for '.$this->meeting->title)
-            ->line('A staff meeting is coming up and you haven\'t submitted your pre-meeting report yet.')
+            ->subject('Reminder: Submit your check-in for '.$this->meeting->title)
+            ->line('A staff meeting is coming up and you haven\'t submitted your staff check-in yet.')
             ->line('**Meeting:** '.$this->meeting->title)
             ->line('**Scheduled:** '.$this->meeting->scheduled_time->setTimezone('America/New_York')->format('F j, Y g:i A').' ET')
-            ->action('Submit Report', route('meeting.report', $this->meeting))
-            ->line('Please submit your report before the meeting starts.');
+            ->action('Submit Check-In', route('meeting.report', $this->meeting))
+            ->line('Please submit your check-in before the meeting starts.');
     }
 
     public function toPushover(object $notifiable): array
     {
         return [
-            'title' => 'Meeting Report Reminder',
-            'message' => 'Please submit your pre-meeting report for '.$this->meeting->title.' before the meeting starts.',
+            'title' => 'Staff Check-In Reminder',
+            'message' => 'Please submit your staff check-in for '.$this->meeting->title.' before the meeting starts.',
             'url' => route('meeting.report', $this->meeting),
         ];
     }
 
     public function toDiscord(object $notifiable): string
     {
-        return "**Meeting Report Reminder**\nPlease submit your pre-meeting report for **{$this->meeting->title}** scheduled on {$this->meeting->scheduled_time->setTimezone('America/New_York')->format('M j, Y g:i A')} ET.\n".route('meeting.report', $this->meeting);
+        return "**Staff Check-In Reminder**\nPlease submit your staff check-in for **{$this->meeting->title}** scheduled on {$this->meeting->scheduled_time->setTimezone('America/New_York')->format('M j, Y g:i A')} ET.\n".route('meeting.report', $this->meeting);
     }
 }

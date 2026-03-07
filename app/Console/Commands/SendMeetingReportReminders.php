@@ -16,7 +16,7 @@ class SendMeetingReportReminders extends Command
 {
     protected $signature = 'meetings:send-report-reminders';
 
-    protected $description = 'Send reminders to staff who have not submitted their pre-meeting reports';
+    protected $description = 'Send reminders to staff who have not submitted their staff check-ins';
 
     public function handle(): int
     {

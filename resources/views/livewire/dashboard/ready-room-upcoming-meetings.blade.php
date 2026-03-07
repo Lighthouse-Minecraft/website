@@ -45,16 +45,16 @@ new class extends Component {
                         @if($meeting->isReportUnlocked())
                             @if(in_array($meeting->id, $userReports))
                                 <flux:button href="{{ route('meeting.report', $meeting) }}" variant="ghost" size="xs">
-                                    Update Report
+                                    Update Check-In
                                 </flux:button>
                             @else
                                 <flux:button href="{{ route('meeting.report', $meeting) }}" variant="primary" size="xs">
-                                    Submit Report
+                                    Submit Check-In
                                 </flux:button>
                             @endif
                         @else
                             <flux:button variant="ghost" size="xs" disabled class="opacity-50">
-                                Report
+                                Check-In
                             </flux:button>
                         @endif
                     @endif
