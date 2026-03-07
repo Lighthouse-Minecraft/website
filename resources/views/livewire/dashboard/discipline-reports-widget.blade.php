@@ -19,7 +19,7 @@ new class extends Component {
         return DisciplineReport::with(['subject', 'reporter', 'category'])
             ->where('created_at', '>=', now()->subDays(7))
             ->latest()
-            ->limit(50)
+            ->limit(15)
             ->get();
     }
 
@@ -257,9 +257,7 @@ new class extends Component {
 
                 <flux:separator variant="subtle" />
                 <div class="flex gap-2 justify-end">
-                    <flux:link href="{{ route('profile.show', $viewReport->subject) }}" variant="ghost">
-                        <flux:button variant="ghost" icon="pencil-square">Go to Profile to Edit</flux:button>
-                    </flux:link>
+                    <flux:button href="{{ route('profile.show', $viewReport->subject) }}" variant="ghost" icon="pencil-square">Go to Profile to Edit</flux:button>
                     @if($viewReport->isDraft())
                         @can('publish', $viewReport)
                             <flux:button variant="primary" icon="check-circle"
