@@ -1,8 +1,6 @@
 Core Features
 Dashboard -- main dashboard with widgets (announcements, stowaway users, traveler users, brig card, rules, ready room summary)
 Support Tickets -- create, view, list tickets; admin tickets; message flagging; ticket assignment
-Meetings System -- meeting management, attendees, department sections, check-in reports, questions, notes
-Announcements -- announcement creation/management, acknowledgment, Discord posting, dashboard widget
 Community Updates -- public-facing community update pages
 
 Account & Membership
