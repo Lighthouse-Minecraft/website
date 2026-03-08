@@ -980,6 +980,7 @@ VoltComponent::checkGuildMembership()
 
 **Migrations:**
 - `database/migrations/2026_02_24_220445_create_discord_accounts_table.php`
+- `database/migrations/2026_02_28_100000_add_parental_fields_to_users_table.php` (adds `parent_allows_discord` to users)
 - `database/migrations/2026_03_06_200000_create_discord_api_logs_table.php`
 
 **Console Commands:** None
