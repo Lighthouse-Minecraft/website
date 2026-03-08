@@ -20,7 +20,7 @@ document for the feature named: **$ARGUMENTS**
 
 Every feature touches a subset of these locations:
 
-```
+```text
 app/
   Actions/           # Business logic (AsAction trait, ::run() invocation)
   Console/Commands/  # Artisan commands, some scheduled
@@ -165,7 +165,7 @@ After completing all searches above, do a final sweep:
 
 For each major user interaction in the feature, trace the complete flow:
 
-```
+```text
 User Action (click/submit)
   -> Route (URL + middleware)
     -> Volt Component method (authorize, validate)

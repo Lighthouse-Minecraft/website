@@ -211,7 +211,7 @@ Not applicable for this feature directly. The `toggle_community_updates` activit
 
 ### Viewing Community Updates (Guest)
 
-```
+```text
 Guest navigates to /community-updates
   -> GET /community-updates (no middleware)
     -> CommunityUpdatesController@index
@@ -227,7 +227,7 @@ Guest navigates to /community-updates
 
 ### Viewing Community Updates (Traveler+ Member)
 
-```
+```text
 Authenticated Traveler navigates to /community-updates
   -> GET /community-updates (no middleware)
     -> CommunityUpdatesController@index
@@ -243,7 +243,7 @@ Authenticated Traveler navigates to /community-updates
 
 ### How Content Gets Published (Cross-Feature Reference)
 
-```
+```text
 Officer completes a meeting (Meetings System)
   -> CompleteMeetingConfirmed() in manage-meeting.blade.php
     -> Copies community note content to $meeting->community_minutes

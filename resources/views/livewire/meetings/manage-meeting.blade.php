@@ -71,6 +71,7 @@ new class extends Component {
     public function editMeeting(): void
     {
         $this->authorize('update', $this->meeting);
+        abort_unless($this->meeting->status === MeetingStatus::Pending, 403, 'Only pending meetings can be edited.');
 
         $this->editTitle = $this->meeting->title;
         $this->editDay = $this->meeting->day;
@@ -85,6 +86,7 @@ new class extends Component {
     public function updateMeeting(): void
     {
         $this->authorize('update', $this->meeting);
+        abort_unless($this->meeting->status === MeetingStatus::Pending, 403, 'Only pending meetings can be edited.');
 
         $this->validate([
             'editTitle' => 'required|string|max:255',
@@ -93,7 +95,14 @@ new class extends Component {
             'editType' => ['required', Rule::in(array_column(MeetingType::cases(), 'value'))],
         ]);
 
-        $scheduledTime = $this->parseScheduledTime($this->editDay, $this->editTime);
+        try {
+            $scheduledTime = $this->parseScheduledTime($this->editDay, $this->editTime);
+        } catch (ValidationException $e) {
+            $this->addError('editTime', 'Please enter a valid time in the format H:MM AM/PM.');
+
+            return;
+        }
+
         $meetingType = MeetingType::from($this->editType);
 
         $this->meeting->update([
@@ -105,6 +114,8 @@ new class extends Component {
         ]);
 
         $this->meeting->refresh();
+
+        RecordActivity::run($this->meeting, 'update_meeting', 'Updated meeting metadata.');
 
         Flux::modal('edit-meeting-modal')->close();
         Flux::toast('Meeting updated successfully!', variant: 'success');

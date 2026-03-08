@@ -328,10 +328,11 @@ These preferences are stored in the `notification_preferences` JSON column on th
 
 **Step-by-step logic:**
 1. Reads `config('services.discord.announcements_channel_id')`. Returns false if not configured.
-2. Builds message: `## {title}\n\n{content}\n\n{dashboard_url}`
-3. Truncates to 2000 characters (Discord limit) if needed, preserving the URL suffix.
-4. Calls `DiscordApiService::sendChannelMessage($channelId, $content)`.
-5. Logs warning on failure. Returns boolean success.
+2. Calls `formatForDiscord($announcement->content)` to convert HTML to Discord-compatible markdown (headings, bold, italic, underline, strikethrough, links) and strip remaining tags.
+3. Builds message: `## {title}\n\n{formattedBody}\n\n{dashboard_url}`
+4. Truncates to 2000 characters (Discord limit) if needed, preserving the URL suffix.
+5. Calls `DiscordApiService::sendChannelMessage($channelId, $content)`.
+6. Logs warning on failure. Returns boolean success.
 
 **Called by:** `SendAnnouncementNotifications` job (after sending user notifications)
 

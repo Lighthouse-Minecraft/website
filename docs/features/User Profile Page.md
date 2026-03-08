@@ -126,6 +126,7 @@ Key concepts: **Membership Levels** (Drifter -> Stowaway -> Traveler -> Resident
 ### User (`app/Models/User.php`)
 
 **Relationships:**
+
 | Method | Type | Related Model | Notes |
 |--------|------|---------------|-------|
 | `minecraftAccounts()` | hasMany | MinecraftAccount | All MC accounts |
@@ -185,6 +186,7 @@ Key concepts: **Membership Levels** (Drifter -> Stowaway -> Traveler -> Resident
 ### ActivityLog (`app/Models/ActivityLog.php`)
 
 **Relationships:**
+
 | Method | Type | Related Model | Notes |
 |--------|------|---------------|-------|
 | `causer()` | belongsTo | User | Via `causer_id` |
@@ -780,7 +782,7 @@ Not directly applicable to the profile page itself. Brig timer expiration is han
 
 ### Viewing a User Profile
 
-```
+```text
 User navigates to /profile/{user}
   -> GET /profile/{user} (middleware: auth, can:view,user)
     -> UserController::show($user)
@@ -795,7 +797,7 @@ User navigates to /profile/{user}
 
 ### Promoting a User
 
-```
+```text
 Staff clicks "Promote to X" in Actions dropdown
   -> profile-promote-confirm-modal shown
   -> Staff clicks "Confirm Promotion"
@@ -815,7 +817,7 @@ Staff clicks "Promote to X" in Actions dropdown
 
 ### Placing a User in the Brig
 
-```
+```text
 Staff clicks "Put in Brig" in Actions dropdown
   -> profile-put-in-brig-modal shown
   -> Staff enters reason and optional days, clicks "Confirm -- Put in Brig"
@@ -833,7 +835,7 @@ Staff clicks "Put in Brig" in Actions dropdown
 
 ### Editing User Details (Admin)
 
-```
+```text
 Staff clicks "Edit User" in Actions dropdown
   -> display-basic-details::openEditUserModal()
     -> $this->authorize('update', $this->user)
@@ -849,7 +851,7 @@ Staff clicks "Edit User" in Actions dropdown
 
 ### Revoking a Minecraft Account
 
-```
+```text
 Staff clicks "Revoke" on a MC account
   -> display-basic-details::confirmRevoke($accountId)
     -> Policy check: can('revoke', $account)
@@ -868,7 +870,7 @@ Staff clicks "Revoke" on a MC account
 
 ### Self-Service Profile Update
 
-```
+```text
 User navigates to /settings/profile
   -> Volt: settings.profile
     -> mount() populates from Auth::user()

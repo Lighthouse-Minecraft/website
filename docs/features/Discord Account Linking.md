@@ -1030,6 +1030,6 @@ VoltComponent::checkGuildMembership()
 
 9. **removeAllManagedRoles iterates config values directly.** The `removeAllManagedRoles()` method uses `config('lighthouse.discord.roles')` which returns a flat array including nested values. If the config structure changes (e.g., grouping), this could break silently. Additionally, it removes ALL configured roles rather than just the ones managed by the specific sync type.
 
-10. **No notification preference for Discord DMs.** Users cannot opt out of Discord DM notifications independently -- the `allowedChannels` array on notifications controls this but there's no user-facing toggle to disable Discord DMs while keeping mail/Pushover.
+10. **Discord DM notification preferences are per-category only.** Users can toggle Discord DMs per notification category (Tickets, Account Updates, Announcements, Staff Alerts) via the settings page (`resources/views/livewire/settings/notifications.blade.php`). The `allowedChannels` array on each notification controls delivery. However, there is no global "disable all Discord DMs" toggle -- users must disable each category individually.
 
 11. **SQL injection risk in admin search.** The `admin-manage-discord-users-page.blade.php` uses `$this->search` directly in a LIKE query. While Livewire properties provide some protection, the pattern `"%{$this->search}%"` should use parameter binding for defense in depth. Same applies to the API log page.

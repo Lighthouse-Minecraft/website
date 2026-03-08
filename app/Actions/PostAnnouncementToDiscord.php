@@ -72,6 +72,11 @@ class PostAnnouncementToDiscord
         $text = preg_replace_callback('/<a\s[^>]*href=["\']([^"\']+)["\'][^>]*>(.*?)<\/a>/is', function ($matches) {
             $url = $matches[1];
             $linkText = trim(strip_tags($matches[2]));
+            $scheme = strtolower(parse_url($url, PHP_URL_SCHEME) ?? '');
+
+            if (! in_array($scheme, ['http', 'https', 'mailto'])) {
+                return $linkText;
+            }
 
             return "[{$linkText}]({$url})";
         }, $text);
