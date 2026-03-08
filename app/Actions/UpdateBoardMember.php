@@ -15,15 +15,20 @@ class UpdateBoardMember
         ?string $title = null,
         ?string $bio = null,
         ?string $photoPath = null,
-        int $sortOrder = 0
+        ?int $sortOrder = null
     ): void {
-        $boardMember->update([
+        $data = [
             'display_name' => $displayName,
             'title' => $title,
             'bio' => $bio,
             'photo_path' => $photoPath,
-            'sort_order' => $sortOrder,
-        ]);
+        ];
+
+        if ($sortOrder !== null) {
+            $data['sort_order'] = $sortOrder;
+        }
+
+        $boardMember->update($data);
 
         RecordActivity::run($boardMember, 'board_member_updated', "Board member updated: {$displayName}");
     }

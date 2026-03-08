@@ -5,8 +5,10 @@ use App\Models\User;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Volt\Component;
+use Livewire\WithPagination;
 
 new class extends Component {
+    use WithPagination;
     public $selectedUser = null;
     public $showUserModal = false;
     public $brigReason = '';
@@ -17,14 +19,14 @@ new class extends Component {
     /**
      * Fetches Stowaway users who are not in the Brig, ordered by name.
      *
-     * @return \Illuminate\Database\Eloquent\Collection<int, \App\Models\User> Collection of User models for stowaway users not in Brig, ordered by name.
+     * @return \Illuminate\Pagination\LengthAwarePaginator<int, \App\Models\User> Paginated stowaway users not in Brig, ordered by name.
      */
     public function getStowawayUsersProperty()
     {
         return User::where('membership_level', MembershipLevel::Stowaway->value)
             ->where('in_brig', false)
             ->orderBy('name')
-            ->get();
+            ->paginate(10, pageName: 'stowaway-page');
     }
 
     public function viewUser($userId)
@@ -157,8 +159,8 @@ new class extends Component {
         </div>
     @endif
 
-    @if($this->stowawayUsers->count() > 0)
-        <flux:table>
+    @if($this->stowawayUsers->total() > 0)
+        <flux:table :paginate="$this->stowawayUsers">
             <flux:table.columns>
                 <flux:table.column>Name</flux:table.column>
                 <flux:table.column>Joined</flux:table.column>

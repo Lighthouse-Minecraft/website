@@ -238,6 +238,11 @@ new class extends Component {
             return;
         }
 
+        if ($this->user->membership_level->value < MembershipLevel::Stowaway->value) {
+            Flux::toast(text: 'This user cannot be promoted from this page.', heading: 'Error', variant: 'danger');
+            return;
+        }
+
         \App\Actions\PromoteUser::run($this->user);
         $this->user->refresh();
 
@@ -343,6 +348,10 @@ new class extends Component {
      */
     public function getNextMembershipLevelProperty(): ?MembershipLevel
     {
+        if ($this->user->membership_level->value < MembershipLevel::Stowaway->value) {
+            return null;
+        }
+
         $levels = MembershipLevel::cases();
         $currentIndex = array_search($this->user->membership_level, $levels, strict: true);
         return $levels[$currentIndex + 1] ?? null;
@@ -770,7 +779,7 @@ new class extends Component {
                     @if(! $user->isJrCrew() && $user->staff_bio)
                         <div>
                             <flux:heading size="sm" class="mb-1">About</flux:heading>
-                            <flux:text>{{ $user->staff_bio }}</flux:text>
+                            <flux:text>{!! nl2br(e($user->staff_bio)) !!}</flux:text>
                         </div>
                     @endif
 

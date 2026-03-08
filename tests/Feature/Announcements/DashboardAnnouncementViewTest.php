@@ -2,68 +2,63 @@
 
 use App\Actions\AcknowledgeAnnouncement;
 use App\Models\Announcement;
+use Livewire\Livewire;
 
 use function Pest\Laravel\get;
 
-describe('Dashboard display', function () {
-    it('displays existing announcements', function () {
-        $announcement = Announcement::factory()->create([
+describe('Dashboard Display', function () {
+    it('displays the newest unacknowledged announcement', function () {
+        $announcement = Announcement::factory()->published()->create([
             'title' => 'Test Announcement',
-            'content' => 'This is a test announcement.',
+            'notifications_sent_at' => now(),
         ]);
         loginAsAdmin();
 
         get(route('dashboard'))
             ->assertSeeLivewire('dashboard.view-announcements')
-            ->assertSee($announcement->title)
-            ->assertSee($announcement->content);
+            ->assertSee($announcement->title);
     })->done();
-
 })->done();
 
 describe('Dashboard Display - Acknowledge Announcements', function () {
     it('does not display acknowledged announcements', function () {
-        $announcement = Announcement::factory()->create([
+        $announcement = Announcement::factory()->published()->create([
             'title' => 'Acknowledged Announcement',
-            'content' => 'This announcement has been acknowledged.',
+            'notifications_sent_at' => now(),
         ]);
         $user = loginAsAdmin();
-        app(AcknowledgeAnnouncement::class)->run($announcement, $user);
+        AcknowledgeAnnouncement::run($announcement, $user);
 
-        get(route('dashboard'))
-            ->assertSeeLivewire('dashboard.view-announcements')
-            // We can't check for announcement title because it will still show up in the widget
-            ->assertDontSee($announcement->content);
+        Livewire::test('dashboard.view-announcements')
+            ->assertDontSee($announcement->title);
     })->done();
-})->wip(issue: 61, assignee: 'jonzenor');
+})->done(issue: 61, assignee: 'jonzenor');
 
-describe('Dashboard Display - Announcements List', function () {
-
-    it('loads the announcements list component', function () {
+describe('Dashboard Display - Announcements Widget', function () {
+    it('loads the announcements widget component', function () {
         $user = loginAsAdmin();
         $user->update(['rules_accepted_at' => now()]);
 
         get(route('dashboard'))
             ->assertSeeLivewire('dashboard.announcements-widget')
-            ->assertSee('START OF ANNOUNCEMENTS WIDGET')
-            ->assertSee('END OF ANNOUNCEMENTS WIDGET');
+            ->assertSee('Community Announcements');
     })->done();
 
-    it('displays a list of announcements in a widget', function () {
-        $announcement1 = Announcement::factory()->create([
+    it('displays announcement titles in the widget', function () {
+        $announcement1 = Announcement::factory()->published()->create([
             'title' => 'First Announcement',
-            'content' => 'Content of the first announcement.',
+            'notifications_sent_at' => now(),
         ]);
-        $announcement2 = Announcement::factory()->create([
+        $announcement2 = Announcement::factory()->published()->create([
             'title' => 'Second Announcement',
-            'content' => 'Content of the second announcement.',
+            'notifications_sent_at' => now(),
         ]);
         $user = loginAsAdmin();
         $user->update(['rules_accepted_at' => now()]);
 
         get(route('dashboard'))
-            ->assertSeeLivewire('dashboard.view-announcements')
-            ->assertSeeInOrder(['START OF ANNOUNCEMENTS WIDGET', $announcement1->title, 'END OF ANNOUNCEMENTS WIDGET'])
-            ->assertSeeInOrder(['START OF ANNOUNCEMENTS WIDGET', $announcement2->title, 'END OF ANNOUNCEMENTS WIDGET']);
-    })->wip();
-})->wip(issue: 62, assignee: 'jonzenor');
+            ->assertSeeLivewire('dashboard.announcements-widget')
+            ->assertSee($announcement1->title)
+            ->assertSee($announcement2->title);
+    })->done();
+})->done(issue: 62, assignee: 'jonzenor');

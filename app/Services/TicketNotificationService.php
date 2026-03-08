@@ -35,7 +35,7 @@ class TicketNotificationService
     /**
      * Send notification via appropriate channels
      *
-     * @param  string  $category  The preference category: 'tickets', 'account', or 'staff_alerts'
+     * @param  string  $category  The preference category: 'tickets', 'account', 'staff_alerts', or 'announcements'
      */
     public function send(User $user, Notification $notification, string $category = 'tickets'): void
     {
@@ -60,7 +60,7 @@ class TicketNotificationService
     /**
      * Determine which channels should be used for this user
      *
-     * @param  string  $category  The preference category: 'tickets', 'account', or 'staff_alerts'
+     * @param  string  $category  The preference category: 'tickets', 'account', 'staff_alerts', or 'announcements'
      */
     public function determineChannels(User $user, string $category = 'tickets'): array
     {
@@ -100,6 +100,7 @@ class TicketNotificationService
         return match ($category) {
             'account' => ['email' => true, 'pushover' => false, 'discord' => false],
             'staff_alerts' => ['email' => true, 'pushover' => false, 'discord' => false],
+            'announcements' => ['email' => true, 'pushover' => false, 'discord' => false],
             default => ['email' => true, 'pushover' => false, 'discord' => false],
         };
     }

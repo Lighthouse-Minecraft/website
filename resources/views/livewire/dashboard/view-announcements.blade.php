@@ -1,77 +1,119 @@
 <?php
 
-use App\Enums\{MembershipLevel};
-use App\Models\{Announcement, Category, Comment, Role, Tag, User};
-use Flux\{Flux};
-use Livewire\{WithPagination};
-use Livewire\Volt\{Component};
+use App\Actions\AcknowledgeAnnouncement;
+use App\Jobs\SendAnnouncementNotifications;
+use App\Models\Announcement;
+use Flux\Flux;
+use Livewire\Volt\Component;
 
 new class extends Component {
-    public $announcements;
+    public ?Announcement $latestAnnouncement = null;
 
-    public function mount()
+    public function mount(): void
     {
-        $this->announcements = Announcement::where('is_published', true)
-            ->whereDoesntHave('acknowledgers', function ($query) {
-                $query->where('users.id', auth()->id());
-            })
-            ->with(['author', 'categories', 'tags'])
-            ->get();
+        $this->dispatchPendingNotifications();
+        $this->loadLatest();
     }
 
-    public function acknowledgeAnnouncement($announcementId)
+    /**
+     * Lazy notification dispatch: find published announcements that haven't
+     * had notifications sent yet, mark them, and queue the job.
+     */
+    protected function dispatchPendingNotifications(): void
     {
-        $announcement = Announcement::findOrFail($announcementId);
+        $pendingIds = Announcement::published()
+            ->whereNull('notifications_sent_at')
+            ->pluck('id');
 
-        if (auth()->user()->can('acknowledge', $announcement)) {
-            \App\Actions\AcknowledgeAnnouncement::run($announcement, auth()->user());
-            Flux::toast('Announcement acknowledged successfully.', 'success');
-        } else {
-            Flux::toast('You do not have permission to acknowledge this announcement.', 'error');
+        foreach ($pendingIds as $id) {
+            // Atomic claim: only proceed if we're the one who set notifications_sent_at
+            $claimed = Announcement::where('id', $id)
+                ->whereNull('notifications_sent_at')
+                ->update(['notifications_sent_at' => now()]);
+
+            if ($claimed === 0) {
+                continue;
+            }
+
+            try {
+                SendAnnouncementNotifications::dispatch(Announcement::find($id));
+            } catch (\Throwable $e) {
+                // Revert claim so another request can retry
+                Announcement::where('id', $id)->update(['notifications_sent_at' => null]);
+                report($e);
+            }
+        }
+    }
+
+    public function loadLatest(): void
+    {
+        $userId = auth()->id();
+
+        $this->latestAnnouncement = Announcement::published()
+            ->whereDoesntHave('acknowledgers', fn ($q) => $q->where('user_id', $userId))
+            ->orderBy('published_at', 'desc')
+            ->first();
+    }
+
+    public function acknowledgeAnnouncement(): void
+    {
+        if (! $this->latestAnnouncement) {
+            return;
         }
 
-        Flux::modal('view-announcement-' . $announcementId)->close();
-        return redirect()->route('dashboard');
+        $this->authorize('acknowledge', $this->latestAnnouncement);
+
+        AcknowledgeAnnouncement::run($this->latestAnnouncement, auth()->user());
+
+        Flux::modal('view-latest-announcement')->close();
+        Flux::toast('Announcement acknowledged.', 'Done', variant: 'success');
+
+        $this->loadLatest();
     }
-};
+}; ?>
 
-?>
-
-<div class="w-full space-y-6">
-    @foreach($announcements as $announcement)
-        <flux:callout color="fuchsia" inline class="mb-6">
-            <flux:callout.heading>{{  $announcement->title }}</flux:callout.heading>
-
+<div>
+    @if($latestAnnouncement)
+        <flux:callout icon="megaphone" color="fuchsia" class="mb-6">
+            <flux:callout.heading>{{ $latestAnnouncement->title }}</flux:callout.heading>
             <flux:callout.text>
-                {!! nl2br(e($announcement->excerpt())) !!}
+                New announcement from {{ $latestAnnouncement->authorName() }}
             </flux:callout.text>
-
-            <x-slot name="actions">
-                <flux:modal.trigger name="view-announcement-{{ $announcement->id }}">
-                    <flux:button>Read Full Announcement</flux:button>
+            <x-slot:actions>
+                <flux:modal.trigger name="view-latest-announcement">
+                    <flux:button variant="primary" size="sm">Read Announcement</flux:button>
                 </flux:modal.trigger>
-            </x-slot>
+            </x-slot:actions>
+        </flux:callout>
 
-            <flux:modal name="view-announcement-{{ $announcement->id }}" class="w-full md:w-3/4 xl:w-1/2">
-                <flux:heading size="xl" class="mb-4">{{ $announcement->title }}</flux:heading>
-                <div id="editor_content" class="prose max-w-none">
-                    {!!  $announcement->content !!}
+        <flux:modal name="view-latest-announcement" class="w-full lg:w-2/3 xl:w-1/2">
+            <div class="space-y-4">
+                <flux:heading size="xl">{{ $latestAnnouncement->title }}</flux:heading>
+
+                <div class="flex items-center gap-2 text-sm text-zinc-500">
+                    @if($latestAnnouncement->author)
+                        @if($latestAnnouncement->author->avatarUrl())
+                            <flux:avatar size="xs" src="{{ $latestAnnouncement->author->avatarUrl() }}" />
+                        @endif
+                        <span>Published by {{ $latestAnnouncement->author->name }}</span>
+                    @endif
+                    @if($latestAnnouncement->published_at)
+                        <span>&middot; {{ $latestAnnouncement->published_at->format('M j, Y g:i A') }}</span>
+                    @endif
                 </div>
 
-                @can('acknowledge', $announcement)
-                    <div class="w-full text-right mb-4">
-                        <flux:button wire:click="acknowledgeAnnouncement({{ $announcement->id }})" size="sm" variant="primary">
-                            Acknowledge Announcement
-                        </flux:button>
-                    </div>
-                @endcan
+                <div class="prose prose-sm dark:prose-invert max-w-none">
+                    {!! $latestAnnouncement->renderedContent() !!}
+                </div>
 
-                <flux:separator />
-                <livewire:announcements.author-info :announcement="$announcement" />
-                <livewire:announcements.categories :announcement="$announcement" />
-                <livewire:announcements.tags :announcement="$announcement" />
-                <livewire:announcements.comments :announcement="$announcement" />
-            </flux:modal>
-        </flux:callout>
-    @endforeach
+                <div class="flex justify-end pt-4 border-t border-zinc-200 dark:border-zinc-700">
+                    @can('acknowledge', $latestAnnouncement)
+                        <flux:button wire:click="acknowledgeAnnouncement" variant="primary">
+                            Acknowledge
+                        </flux:button>
+                    @endcan
+                </div>
+            </div>
+        </flux:modal>
+    @endif
 </div>

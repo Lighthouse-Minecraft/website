@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\AdminControlPanelController;
-use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\CommunityUpdatesController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DiscordAuthController;
@@ -63,21 +62,7 @@ Route::get('/acp/pages/{page}/edit', [PageController::class, 'edit'])
     ->name('admin.pages.edit')
     ->middleware(['auth', 'can:update,page']);
 
-// This is for admin announcement links
-Route::prefix('acp/announcements')
-    ->name('acp.announcements.')
-    ->controller(AnnouncementController::class)
-    ->middleware('auth')
-    ->group(function () {
-
-        Route::get('create', 'create')->name('create');
-        Route::post('store', 'store')->name('store');
-        Route::get('{id}/edit', 'edit')->name('edit');
-        Route::put('{/id}/update', 'update')->name('update');
-        Route::delete('{announcement}', 'destroy')->name('delete');
-    });
-
-Route::get('community-updates', [CommunityUpdatesController::class, 'index'])->name('community-updates.index')->middleware('auth');
+Route::get('community-updates', [CommunityUpdatesController::class, 'index'])->name('community-updates.index');
 Route::get('ready-room', [DashboardController::class, 'readyRoom'])->name('ready-room.index')->middleware('auth');
 
 // Ticket System Routes
@@ -93,16 +78,6 @@ Route::prefix('tickets')
         Volt::route('/{thread}', 'ready-room.tickets.view-ticket')->name('show');
     });
 
-// This is for non admin announcement links
-Route::prefix('announcements')
-    ->name('announcements.')
-    ->controller(AnnouncementController::class)
-    ->middleware('auth')
-    ->group(function () {
-
-        Route::get(uri: '{id}', action: 'show')->name('show');
-    });
-
 Route::prefix('meetings')
     ->name('meeting.')
     ->controller(App\Http\Controllers\MeetingController::class)
@@ -111,6 +86,10 @@ Route::prefix('meetings')
         Route::get('/', 'index')->name('index');
         Route::get('/{meeting}/manage', 'edit')->name('edit');
     });
+
+Volt::route('/meetings/{meeting}/report', 'meeting.report-form')
+    ->name('meeting.report')
+    ->middleware('auth');
 
 Route::get('/donate', [DonationController::class, 'index'])->name('donate');
 

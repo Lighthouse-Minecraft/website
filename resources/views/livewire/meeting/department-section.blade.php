@@ -36,6 +36,10 @@ new class extends Component {
         {{ $description }}
     </flux:text>
 
+    @if ($departmentValue !== 'general' && $departmentValue !== 'community' && $meeting->isStaffMeeting())
+        <livewire:meeting.department-report-cards :meeting="$meeting" :department="$departmentValue" :key="'report-cards-' . $meeting->id . '-' . $departmentValue" />
+    @endif
+
     @if ($departmentValue === 'community')
         <div class="w-full lg:w-2/3 mx-auto">
             <livewire:note.editor :meeting="$meeting" :section_key="$departmentValue"/>

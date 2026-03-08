@@ -26,6 +26,10 @@ class NotesDisplay extends Component
             'notes' => fn ($query) => $query
                 ->where('section_key', $this->sectionKey)
                 ->with('createdBy'),
+            'reports' => fn ($query) => $query
+                ->whereNotNull('submitted_at')
+                ->with(['user', 'answers.question'])
+                ->whereHas('user', fn ($uq) => $uq->where('staff_department', $this->sectionKey)),
         ])
             ->where('status', MeetingStatus::Completed)
             ->orderBy('scheduled_time', 'desc')

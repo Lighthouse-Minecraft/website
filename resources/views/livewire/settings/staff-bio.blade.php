@@ -36,7 +36,7 @@ new class extends Component {
             'firstName' => 'nullable|string|max:50',
             'lastInitial' => 'nullable|string|max:1|alpha',
             'bio' => 'nullable|string|max:2000',
-            'phone' => 'nullable|string|max:30',
+            'phone' => ['nullable', 'string', 'min:10', 'max:30', 'regex:/^[\d\s\-\(\)\+\.]+$/'],
             'photo' => 'nullable|image|max:2048',
         ]);
 

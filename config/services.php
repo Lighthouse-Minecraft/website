@@ -53,6 +53,7 @@ return [
         'bot_token' => env('DISCORD_BOT_TOKEN'),
         'guild_id' => env('DISCORD_GUILD_ID'),
         'invite_url' => env('DISCORD_INVITE_URL'),
+        'announcements_channel_id' => env('DISCORD_ANNOUNCEMENTS_CHANNEL_ID'),
     ],
 
 ];

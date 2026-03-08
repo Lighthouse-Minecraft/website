@@ -1,9 +1,16 @@
 <?php
 
+use App\Actions\CreateDefaultMeetingQuestions;
+use App\Actions\FormatMeetingNotesWithAi;
+use App\Actions\RecordActivity;
 use App\Enums\MeetingStatus;
+use App\Enums\MeetingType;
 use App\Enums\StaffDepartment;
+use App\Enums\StaffRank;
 use App\Models\Meeting;
 use App\Models\MeetingNote;
+use App\Models\MeetingReport;
+use App\Models\User;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonTimeZone;
 use Flux\Flux;
@@ -16,6 +23,26 @@ new class extends Component {
     public string $scheduleNextTitle = '';
     public string $scheduleNextDay = '';
     public string $scheduleNextTime = '7:00 PM';
+    public string $aiPrompt = '';
+
+    #[\Livewire\Attributes\Computed]
+    public function staffByDepartment()
+    {
+        return User::where('staff_rank', '>=', StaffRank::JrCrew->value)
+            ->whereNotNull('staff_department')
+            ->orderBy('name')
+            ->get()
+            ->groupBy('staff_department');
+    }
+
+    #[\Livewire\Attributes\Computed]
+    public function submittedReportUserIds()
+    {
+        return MeetingReport::where('meeting_id', $this->meeting->id)
+            ->whereNotNull('submitted_at')
+            ->pluck('user_id')
+            ->toArray();
+    }
 
     public function mount(Meeting $meeting) {
         $this->meeting = $meeting->load('attendees');
@@ -38,7 +65,7 @@ new class extends Component {
     public function StartMeeting() {
         $this->authorize('update', $this->meeting);
 
-        $this->modal('start-meeting-confirmation')->show();
+        Flux::modal('start-meeting-confirmation')->show();
     }
 
     public function StartMeetingConfirmed() {
@@ -56,7 +83,7 @@ new class extends Component {
 
         $this->pollTime = 60;
 
-        $this->modal('start-meeting-confirmation')->close();
+        Flux::modal('start-meeting-confirmation')->close();
     }
 
     public function joinMeeting(): void
@@ -105,31 +132,23 @@ new class extends Component {
     public function EndMeeting() {
         $this->authorize('update', $this->meeting);
 
-        $this->modal('end-meeting-confirmation')->show();
+        Flux::modal('end-meeting-confirmation')->show();
     }
 
     public function CompleteMeeting() {
         $this->authorize('update', $this->meeting);
 
-        // Add logging for debugging
-        logger()->info('CompleteMeeting called', [
-            'meeting_id' => $this->meeting->id,
-            'status' => $this->meeting->status->value,
-            'user_id' => auth()->id(),
-        ]);
+        Flux::modal('complete-meeting-confirmation')->show();
+    }
 
-        try {
-            $this->modal('complete-meeting-confirmation')->show();
-        } catch (\Exception $e) {
-            // Log the error and try to refresh the component
-            logger()->error('Modal failed to open', [
-                'error' => $e->getMessage(),
-                'meeting_id' => $this->meeting->id,
-            ]);
+    public function toggleCommunityUpdates(): void
+    {
+        $this->authorize('update', $this->meeting);
 
-            // Force a component refresh
-            $this->dispatch('$refresh');
-        }
+        $this->meeting->show_community_updates = ! $this->meeting->show_community_updates;
+        $this->meeting->save();
+
+        RecordActivity::run($this->meeting, 'toggle_community_updates', 'Toggled community updates visibility.');
     }
 
     public function EndMeetingConfirmed() {
@@ -148,18 +167,98 @@ new class extends Component {
             }
         }
 
-        $note = MeetingNote::create([
-            'meeting_id' => $this->meeting->id,
-            'section_key' => 'community',
-            'content' => $this->meeting->minutes,
-            'created_by' => auth()->id(),
-        ]);
+        // Create or update community note with raw compiled notes — AI formatting runs as a follow-up request
+        $note = MeetingNote::updateOrCreate(
+            ['meeting_id' => $this->meeting->id, 'section_key' => 'community'],
+            ['content' => $this->meeting->minutes ?? '', 'created_by' => auth()->id()]
+        );
 
         $this->meeting->endMeeting();
 
         $this->meeting->save();
 
-        $this->modal('end-meeting-confirmation')->close();
+        Flux::modal('end-meeting-confirmation')->close();
+
+        // Trigger AI formatting as a separate Livewire request after the modal closes
+        $this->js('setTimeout(() => { $wire.processAiFormatting() }, 100)');
+    }
+
+    public function processAiFormatting(): void
+    {
+        $this->authorize('update', $this->meeting);
+
+        $communityNote = $this->meeting->notes()->where('section_key', 'community')->first();
+
+        if (! $communityNote || empty(trim($this->meeting->minutes ?? ''))) {
+            return;
+        }
+
+        $result = FormatMeetingNotesWithAi::run($this->meeting->minutes ?? '');
+
+        if ($result['success']) {
+            $communityNote->update([
+                'content' => $result['text'],
+                'locked_by' => null,
+                'locked_at' => null,
+                'lock_updated_at' => null,
+            ]);
+        }
+
+        if (! $result['success'] && $result['error']) {
+            Flux::toast($result['error'], variant: 'warning');
+        }
+
+        $this->dispatch('$refresh');
+    }
+
+    public function showAiPromptEditor(): void
+    {
+        $this->authorize('update', $this->meeting);
+
+        if (empty($this->aiPrompt)) {
+            $this->aiPrompt = config('lighthouse.ai.meeting_notes_system_prompt', '');
+        }
+
+        Flux::modal('ai-prompt-editor')->show();
+    }
+
+    public function reformatWithAi(): void
+    {
+        $this->authorize('update', $this->meeting);
+
+        $communityNote = $this->meeting->notes()->where('section_key', 'community')->first();
+
+        if (! $communityNote) {
+            Flux::toast('No community notes found to reformat.', variant: 'danger');
+            return;
+        }
+
+        // Use the compiled minutes as source material (not the already-formatted community note)
+        $sourceNotes = $this->meeting->minutes;
+
+        if (empty(trim($sourceNotes))) {
+            Flux::toast('No meeting minutes available to reformat.', variant: 'danger');
+            return;
+        }
+
+        $result = FormatMeetingNotesWithAi::run($sourceNotes, $this->aiPrompt);
+
+        if (! $result['success']) {
+            Flux::toast($result['error'] ?? 'AI formatting failed.', variant: 'danger');
+            return;
+        }
+
+        // Update the community note with AI-formatted content
+        $communityNote->update([
+            'content' => $result['text'],
+            'locked_by' => null,
+            'locked_at' => null,
+            'lock_updated_at' => null,
+        ]);
+
+        Flux::toast('Community notes reformatted with AI.', variant: 'success');
+        Flux::modal('ai-prompt-editor')->close();
+        $this->dispatch('$refresh');
     }
 
     public function CompleteMeetingConfirmed() {
@@ -174,14 +273,14 @@ new class extends Component {
         $this->meeting->completeMeeting();
         $this->meeting->save();
 
-        $this->modal('complete-meeting-confirmation')->close();
+        Flux::modal('complete-meeting-confirmation')->close();
 
         // Pre-fill next meeting scheduler with current meeting details
         $this->scheduleNextTitle = $this->meeting->title;
         $this->scheduleNextTime = $this->meeting->scheduled_time
             ->setTimezone('America/New_York')
             ->format('g:i A');
-        $this->modal('schedule-next-meeting')->show();
+        Flux::modal('schedule-next-meeting')->show();
     }
 
     public function scheduleNextMeeting(): void
@@ -196,12 +295,16 @@ new class extends Component {
 
         $newMeeting = Meeting::create([
             'title' => $this->scheduleNextTitle,
+            'type' => $this->meeting->type,
             'day' => $this->scheduleNextDay,
             'scheduled_time' => $this->parseScheduledTime($this->scheduleNextDay, $this->scheduleNextTime),
+            'show_community_updates' => $this->meeting->type === MeetingType::StaffMeeting,
         ]);
 
+        CreateDefaultMeetingQuestions::run($newMeeting);
+
         Flux::toast('Next meeting scheduled!', variant: 'success');
-        $this->modal('schedule-next-meeting')->close();
+        Flux::modal('schedule-next-meeting')->close();
         $this->redirect(route('meeting.edit', $newMeeting), navigate: true);
     }
 }; ?>
@@ -211,11 +314,12 @@ new class extends Component {
         <!-- Polling only affects this section -->
         <flux:heading size="xl" class="mb-6">{{  $meeting->title }} - {{  $meeting->day }}</flux:heading>
 
-        <div class="block lg:flex gap-4">
-            <flux:card class="w-full lg:w-1/2 mb-4 lg:mb-0">
+        <div class="block gap-4 lg:flex">
+            <flux:card class="w-full mb-4 lg:w-1/2 lg:mb-0">
                 <flux:heading class="mb-4">Meeting Details</flux:heading>
 
                 <flux:text>
+                    <strong>Type:</strong> {{ $meeting->type->label() }}<br>
                     <strong>Scheduled Time:</strong> {{ $meeting->scheduled_time->setTimezone('America/New_York')->format('F j, Y g:i A') }}<br>
                     <strong>Status:</strong> {{ $meeting->status->label() }}<br>
                     @if($meeting->start_time)
@@ -231,17 +335,17 @@ new class extends Component {
                         <flux:heading size="sm" class="mb-2">Attendees</flux:heading>
                         <div class="space-y-1">
                             @foreach($meeting->attendees as $attendee)
-                                <div class="flex justify-between items-center text-sm">
+                                <div wire:key="attendee-{{ $meeting->id }}-{{ $attendee->id }}" class="flex items-center justify-between text-sm">
                                     <span>
                                         <strong><flux:link href="{{ route('profile.show', $attendee) }}">{{ $attendee->name }}</flux:link></strong>
                                         @if($attendee->staff_rank && $attendee->staff_title)
                                             <br>
-                                            <span class="text-gray-600 dark:text-gray-400 text-xs">
+                                            <span class="text-xs text-gray-600 dark:text-gray-400">
                                                 {{ $attendee->staff_rank->label() }} - {{ $attendee->staff_title }}
                                             </span>
                                         @endif
                                     </span>
-                                    <span class="text-gray-500 dark:text-gray-400 text-xs">
+                                    <span class="text-xs text-gray-500 dark:text-gray-400">
                                         @if(is_object($attendee->pivot->added_at))
                                             {{ $attendee->pivot->added_at->setTimezone('America/New_York')->format('g:i A') }}
                                         @else
@@ -272,6 +376,34 @@ new class extends Component {
                     @endcan
                 @endif
 
+                @if($meeting->status == MeetingStatus::Pending && $meeting->isStaffMeeting() && $this->staffByDepartment->isNotEmpty())
+                    <flux:separator class="my-4" />
+                    <flux:heading size="sm" class="mb-3">Staff Report Status</flux:heading>
+                    <div class="space-y-3">
+                        @foreach(StaffDepartment::cases() as $department)
+                            @if($this->staffByDepartment->has($department->value))
+                                <div wire:key="department-{{ $department->value }}">
+                                    <flux:text class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">{{ $department->label() }}</flux:text>
+                                    <div class="space-y-0.5">
+                                        @foreach($this->staffByDepartment[$department->value] as $member)
+                                            <div wire:key="member-{{ $member->id }}" class="flex items-center gap-1.5 text-sm">
+                                                @if(in_array($member->id, $this->submittedReportUserIds))
+                                                    <flux:icon name="check" variant="solid" class="w-4 h-4 text-green-500 shrink-0" aria-hidden="true" />
+                                                    <span class="sr-only">Report submitted</span>
+                                                @else
+                                                    <flux:icon name="x-mark" variant="solid" class="w-4 h-4 text-red-400 shrink-0" aria-hidden="true" />
+                                                    <span class="sr-only">Report missing</span>
+                                                @endif
+                                                <span><flux:link href="{{ route('profile.show', $member) }}">{{ $member->name }}</flux:link></span>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
+                        @endforeach
+                    </div>
+                @endif
+
             </flux:card>
 
             <div class="w-full lg:w-1/2">
@@ -290,40 +422,15 @@ new class extends Component {
             </div>
         </div>
 
-        <div class="text-right w-full mt-6">
+        @if ($meeting->status == MeetingStatus::Pending && $meeting->isStaffMeeting())
+            <livewire:meeting.manage-questions :meeting="$meeting" :key="'manage-questions-' . $meeting->id" />
+        @endif
+
+        <div class="w-full mt-6 text-right">
             @if ($this->meeting->status == MeetingStatus::Pending)
                 @can('update', $meeting)
                     <flux:button wire:click="StartMeeting" variant="primary">Start Meeting</flux:button>
                 @endcan
-
-                {{-- Start Meeting Confirmation Modal --}}
-                <flux:modal name="start-meeting-confirmation" class="min-w-[28rem] !text-left">
-                    <div class="space-y-6">
-                        <div>
-                            <flux:heading size="lg">Start Meeting?</flux:heading>
-
-                            <flux:text class="mt-2">
-                                You're about to start this meeting.
-                            </flux:text>
-                            <flux:callout color="amber" class="mt-2">
-                                <flux:callout.heading>Note:</flux:callout.heading>
-                                <flux:callout.text>
-                                    Once started, the agenda will be locked and department note sections will become available for editing.
-                                </flux:callout.text>
-                            </flux:callout>
-                        </div>
-
-                        <div class="flex gap-2">
-                            <flux:spacer />
-
-                            <flux:modal.close>
-                                <flux:button variant="ghost">Cancel</flux:button>
-                            </flux:modal.close>
-
-                            <flux:button wire:click="StartMeetingConfirmed" variant="primary">Start Meeting</flux:button>
-                        </div>
-                    </div>
-                </flux:modal>
             @endif
         </div>
     </div>
@@ -332,10 +439,12 @@ new class extends Component {
         <livewire:meeting.department-section :meeting="$meeting" departmentValue="general" description="Notes not associated with any particular department." :key="'department-section-general'" />
         <flux:separator />
 
-        @foreach(StaffDepartment::cases() as $department)
-            <livewire:meeting.department-section :meeting="$meeting" :departmentValue="$department->value" description="" :key="'department-section-' . $department->value" />
-            <flux:separator />
-        @endforeach
+        @if($meeting->isStaffMeeting())
+            @foreach(StaffDepartment::cases() as $department)
+                <livewire:meeting.department-section :meeting="$meeting" :departmentValue="$department->value" description="" :key="'department-section-' . $department->value" />
+                <flux:separator />
+            @endforeach
+        @endif
     @elseif ($meeting->status == MeetingStatus::Finalizing)
         <div class="w-3/4 mx-auto">
             <flux:card>
@@ -345,7 +454,29 @@ new class extends Component {
             </flux:card>
         </div>
 
-        <livewire:meeting.department-section :meeting="$meeting" departmentValue="community" description="Sanitized notes that will be publicly viewable to all members." key="'department-section-community'" />
+        <div class="relative">
+            <div wire:loading wire:target="processAiFormatting"
+                 class="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-white/60 dark:bg-zinc-900/60">
+                <div class="flex items-center gap-2">
+                    <flux:icon.loading class="size-5" />
+                    <flux:text>Formatting notes with AI...</flux:text>
+                </div>
+            </div>
+
+            <livewire:meeting.department-section :meeting="$meeting" departmentValue="community" description="Sanitized notes that will be publicly viewable to all members." key="'department-section-community'" />
+        </div>
+
+        @can('update', $meeting)
+            <div class="flex items-center justify-between w-full mx-auto mt-4 lg:w-2/3">
+                <div class="flex items-center gap-3">
+                    <flux:switch wire:click="toggleCommunityUpdates" :checked="$meeting->show_community_updates" />
+                    <flux:text class="text-sm">Show on Community Updates</flux:text>
+                </div>
+                <flux:button wire:click="showAiPromptEditor" variant="ghost" size="sm" icon="sparkles">
+                    Reformat with AI
+                </flux:button>
+            </div>
+        @endcan
     @elseif ($meeting->status == MeetingStatus::Completed)
         <div class="w-3/4 mx-auto space-y-6">
             <flux:card>
@@ -369,76 +500,138 @@ new class extends Component {
             @can('update', $meeting)
                 <flux:button wire:click="EndMeeting" variant="primary">End Meeting</flux:button>
             @endcan
-            {{-- End Meeting Confirmation Modal --}}
-            <flux:modal name="end-meeting-confirmation" class="min-w-[28rem] !text-left">
-                <div class="space-y-6">
-                    <div>
-                        <flux:heading size="lg">End Meeting?</flux:heading>
-
-                        <flux:text class="mt-2">
-                            You're about to end this meeting and move it to the finalizing stage.
-                        </flux:text>
-                        <flux:callout color="rose" class="mt-2">
-                            <flux:callout.heading>Note:</flux:callout.heading>
-                            <flux:callout.text>
-                                Once ended, the note fields will no longer be editable and the meeting will be locked for finalization.
-                            </flux:callout.text>
-                        </flux:callout>
-                    </div>
-
-                    <div class="flex gap-2">
-                        <flux:spacer />
-
-                        <flux:modal.close>
-                            <flux:button variant="ghost">Cancel</flux:button>
-                        </flux:modal.close>
-
-                        <flux:button wire:click="EndMeetingConfirmed" variant="danger">End Meeting</flux:button>
-                    </div>
-                </div>
-            </flux:modal>
         @elseif($meeting->status == MeetingStatus::Finalizing)
             @can('update', $meeting)
-                <flux:button
-                    wire:click="CompleteMeeting"
-                    wire:loading.attr="disabled"
-                    wire:loading.class="opacity-50"
-                    variant="primary"
-                >
-                    <span wire:loading.remove wire:target="CompleteMeeting">Complete Meeting</span>
-                    <span wire:loading wire:target="CompleteMeeting">Loading...</span>
-                </flux:button>
+                <flux:button wire:click="CompleteMeeting" variant="primary">Complete Meeting</flux:button>
             @endcan
-            {{-- Complete Meeting Confirmation Modal --}}
-            <flux:modal name="complete-meeting-confirmation" class="min-w-[28rem] !text-left">
+        @endif
+    </div>
+
+    {{-- Modals pre-rendered for upcoming transitions so Flux/Alpine initializes them before needed --}}
+    @if($meeting->status == MeetingStatus::Pending)
+        <flux:modal name="start-meeting-confirmation" class="min-w-[28rem] !text-left">
+            <div class="space-y-6">
+                <div>
+                    <flux:heading size="lg">Start Meeting?</flux:heading>
+
+                    <flux:text class="mt-2">
+                        You're about to start this meeting.
+                    </flux:text>
+                    <flux:callout color="amber" class="mt-2">
+                        <flux:callout.heading>Note:</flux:callout.heading>
+                        <flux:callout.text>
+                            Once started, the agenda will be locked and department note sections will become available for editing.
+                        </flux:callout.text>
+                    </flux:callout>
+                </div>
+
+                <div class="flex gap-2">
+                    <flux:spacer />
+
+                    <flux:modal.close>
+                        <flux:button variant="ghost">Cancel</flux:button>
+                    </flux:modal.close>
+
+                    <flux:button wire:click="StartMeetingConfirmed" variant="primary">Start Meeting</flux:button>
+                </div>
+            </div>
+        </flux:modal>
+    @endif
+
+    @if(in_array($meeting->status, [MeetingStatus::Pending, MeetingStatus::InProgress]))
+        <flux:modal name="end-meeting-confirmation" class="min-w-[28rem] !text-left">
+            <div class="space-y-6">
+                <div>
+                    <flux:heading size="lg">End Meeting?</flux:heading>
+
+                    <flux:text class="mt-2">
+                        You're about to end this meeting and move it to the finalizing stage.
+                    </flux:text>
+                    <flux:callout color="rose" class="mt-2">
+                        <flux:callout.heading>Note:</flux:callout.heading>
+                        <flux:callout.text>
+                            Once ended, the note fields will no longer be editable and the meeting will be locked for finalization.
+                        </flux:callout.text>
+                    </flux:callout>
+                </div>
+
+                <div class="flex gap-2">
+                    <flux:spacer />
+
+                    <flux:modal.close>
+                        <flux:button variant="ghost">Cancel</flux:button>
+                    </flux:modal.close>
+
+                    <flux:button wire:click="EndMeetingConfirmed" variant="danger">End Meeting</flux:button>
+                </div>
+            </div>
+        </flux:modal>
+    @endif
+
+    @if(in_array($meeting->status, [MeetingStatus::Pending, MeetingStatus::InProgress, MeetingStatus::Finalizing]))
+        <flux:modal name="complete-meeting-confirmation" class="min-w-[28rem] !text-left">
+            <div class="space-y-6">
+                <div>
+                    <flux:heading size="lg">Complete Meeting?</flux:heading>
+
+                    <flux:text class="mt-2">
+                        You're about to complete this meeting and finalize all the notes.
+                    </flux:text>
+                    <flux:callout color="blue" class="mt-2">
+                        <flux:callout.heading>Note:</flux:callout.heading>
+                        <flux:callout.text>
+                            Once completed, the meeting will be archived and no further changes can be made.
+                        </flux:callout.text>
+                    </flux:callout>
+                </div>
+
+                <div class="flex gap-2">
+                    <flux:spacer />
+
+                    <flux:modal.close>
+                        <flux:button variant="ghost">Cancel</flux:button>
+                    </flux:modal.close>
+
+                    <flux:button wire:click="CompleteMeetingConfirmed" variant="primary">Complete Meeting</flux:button>
+                </div>
+            </div>
+        </flux:modal>
+    @endif
+
+    @if(in_array($meeting->status, [MeetingStatus::Pending, MeetingStatus::InProgress, MeetingStatus::Finalizing]))
+        @can('update', $meeting)
+            <flux:modal name="ai-prompt-editor" class="min-w-[36rem] !text-left">
                 <div class="space-y-6">
                     <div>
-                        <flux:heading size="lg">Complete Meeting?</flux:heading>
-
+                        <flux:heading size="lg">Reformat with AI</flux:heading>
                         <flux:text class="mt-2">
-                            You're about to complete this meeting and finalize all the notes.
+                            Edit the system prompt below, then run AI formatting to regenerate the community notes.
                         </flux:text>
-                        <flux:callout color="blue" class="mt-2">
-                            <flux:callout.heading>Note:</flux:callout.heading>
-                            <flux:callout.text>
-                                Once completed, the meeting will be archived and no further changes can be made.
-                            </flux:callout.text>
-                        </flux:callout>
                     </div>
+
+                    <flux:textarea wire:model="aiPrompt" label="System Prompt" rows="12" />
+
+                    <flux:callout color="amber">
+                        <flux:callout.heading>Warning</flux:callout.heading>
+                        <flux:callout.text>
+                            Running AI formatting will overwrite the current community notes.
+                        </flux:callout.text>
+                    </flux:callout>
 
                     <div class="flex gap-2">
                         <flux:spacer />
-
                         <flux:modal.close>
                             <flux:button variant="ghost">Cancel</flux:button>
                         </flux:modal.close>
-
-                        <flux:button wire:click="CompleteMeetingConfirmed" variant="primary">Complete Meeting</flux:button>
+                        <flux:button wire:click="reformatWithAi" variant="primary" icon="sparkles">
+                            <span wire:loading.remove wire:target="reformatWithAi">Run AI Formatting</span>
+                            <span wire:loading wire:target="reformatWithAi">Formatting...</span>
+                        </flux:button>
                     </div>
                 </div>
             </flux:modal>
-        @endif
-    </div>
+        @endcan
+    @endif
 
     @can('create', \App\Models\Meeting::class)
         <flux:modal name="schedule-next-meeting" class="min-w-[28rem] !text-left">
