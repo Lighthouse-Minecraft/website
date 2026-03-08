@@ -44,7 +44,7 @@ new class extends Component {
             >
                 <flux:card class="text-left">
                     <div class="prose dark:prose-invert max-w-none">
-                        {!! nl2br(e($meeting->community_minutes)) !!}
+                        {!! Str::markdown($meeting->community_minutes ?? '') !!}
                     </div>
                 </flux:card>
             </flux:accordion.item>
