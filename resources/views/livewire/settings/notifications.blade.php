@@ -193,7 +193,7 @@ new class extends Component
                     <div class="flex items-center justify-between mb-3">
                         <div>
                             <div class="font-medium text-sm text-zinc-900 dark:text-white">Account Updates</div>
-                            <div class="text-xs text-zinc-600 dark:text-zinc-400">Promotions, demotions, and brig notifications</div>
+                            <div class="text-xs text-zinc-600 dark:text-zinc-400">Promotions, demotions, and Brig notifications</div>
                         </div>
                     </div>
                     <div class="flex gap-6">
