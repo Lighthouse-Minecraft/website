@@ -133,5 +133,30 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('view-command-dashboard', function ($user) {
             return $user->isAdmin() || $user->isInDepartment(StaffDepartment::Command);
         });
+
+        // Documentation visibility gates
+        Gate::define('view-docs-users', function ($user) {
+            return ! $user->in_brig;
+        });
+
+        Gate::define('view-docs-resident', function ($user) {
+            return ! $user->in_brig && $user->isAtLeastLevel(MembershipLevel::Resident);
+        });
+
+        Gate::define('view-docs-citizen', function ($user) {
+            return ! $user->in_brig && $user->isAtLeastLevel(MembershipLevel::Citizen);
+        });
+
+        Gate::define('view-docs-staff', function ($user) {
+            return $user->isAtLeastRank(StaffRank::JrCrew) || $user->hasRole('Admin');
+        });
+
+        Gate::define('view-docs-officer', function ($user) {
+            return $user->isAtLeastRank(StaffRank::Officer) || $user->hasRole('Admin');
+        });
+
+        Gate::define('edit-docs', function ($user) {
+            return $user->hasRole('Admin') || $user->isAtLeastRank(StaffRank::Officer);
+        });
     }
 }

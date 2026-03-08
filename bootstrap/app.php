@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'track-notification-read' => \App\Http\Middleware\UpdateLastNotificationRead::class,
             'ensure-dob' => \App\Http\Middleware\EnsureDateOfBirthIsSet::class,
+            'ensure-local' => \App\Http\Middleware\EnsureLocalEnvironment::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [
