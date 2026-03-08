@@ -317,6 +317,36 @@ The feature includes an admin panel for viewing all linked Discord accounts and 
 - Displays count of linked accounts or prompt to link
 - "Manage" button links to settings page
 
+### Notification Settings Page
+**File:** `resources/views/livewire/settings/notifications.blade.php`
+
+**Discord Integration:**
+- Each notification category (Tickets, Account Updates, Announcements, Staff Alerts) has a "Discord DM" toggle
+- Discord DM toggle is enabled only when `auth()->user()->hasDiscordLinked()` returns true; otherwise disabled with tooltip "Link a Discord account in Settings to enable"
+- Preferences saved to `notification_preferences` JSON column with `discord` key per category
+
+### Profile Settings Page
+**File:** `resources/views/livewire/settings/profile.blade.php`
+
+**Discord Integration:**
+- Avatar preference select includes "Discord Account" option
+- Validates `avatar_preference` with `in:auto,minecraft,discord,gravatar`
+- "Auto" mode falls back: Minecraft -> Discord -> Initials
+
+### Settings Layout
+**File:** `resources/views/components/settings/layout.blade.php`
+
+**Discord Integration:**
+- Settings sidebar includes "Discord" nav link to `settings.discord-account` route
+
+### Command Community Engagement Widget
+**File:** `resources/views/livewire/dashboard/command-community-engagement.blade.php`
+
+**Discord Integration:**
+- Tracks "New Discord Accounts" metric (counts `DiscordAccount` records created in current/previous iteration period)
+- Displays in dashboard 2x2 grid with delta comparison badge
+- Clickable to show 3-month timeline chart in modal
+
 ### Discord Banner Modal
 **File:** `resources/views/components/discord-banner-modal.blade.php`
 
@@ -326,6 +356,17 @@ The feature includes an admin panel for viewing all linked Discord accounts and 
 **File:** `resources/views/components/join-discord-image.blade.php`
 
 **Purpose:** Clickable Discord banner image that copies MC server IP to clipboard then redirects to Discord invite URL.
+
+### Additional Discord-Aware Views (Avatar Resolution Only)
+The following views eager-load `discordAccounts` solely for avatar URL resolution and have no other Discord functionality:
+- `resources/views/livewire/staff/page.blade.php` -- Staff directory
+- `resources/views/livewire/ready-room/tickets/tickets-list.blade.php` -- Ticket list
+- `resources/views/livewire/ready-room/tickets/view-ticket.blade.php` -- Ticket detail
+- `resources/views/livewire/admin-manage-announcements-page.blade.php` -- Announcements admin
+
+### Registration & Birthdate Collection
+- `resources/views/livewire/auth/register.blade.php` -- Under-13 registrations set `parent_allows_discord = false`
+- `resources/views/livewire/auth/collect-birthdate.blade.php` -- Post-login birthdate collection for under-13 users sets `parent_allows_discord = false`
 
 ---
 
@@ -732,6 +773,12 @@ VoltComponent::checkGuildMembership()
 | `tests/Feature/Discord/DiscordBrigIntegrationTest.php` | 4 | Brig sets status, role removal on brig, restoration on release, permission sync on release |
 | `tests/Feature/Blade/DiscordBannerModalTest.php` | 2 | Banner modal rendering, Discord invite button |
 | `tests/Feature/Blade/JoinDiscordImageTest.php` | 2 | Component rendering, toast message |
+| `tests/Feature/Auth/AcpTabPermissionsTest.php` | 4 (discord) | Discord API log gate (engineer, officer, denied), Discord account viewAny |
+| `tests/Feature/Livewire/Dashboard/CommandCommunityEngagementTest.php` | 1 (discord) | New Discord Accounts metric counting |
+| `tests/Feature/Actions/Actions/UpdateChildPermissionTest.php` | 2 (discord) | Parent disable sets ParentDisabled, enable restores Active |
+| `tests/Feature/AvatarTest.php` | 3 (discord) | Discord fallback in auto mode, MC priority over Discord, explicit Discord preference |
+| `tests/Feature/Services/TicketNotificationServiceCategoryTest.php` | 2 (discord) | Discord channel inclusion/exclusion based on linked account + preferences |
+| `tests/Feature/Actions/Actions/ReleaseUserFromBrigTest.php` | 5 (discord) | Brig release restores Discord, syncs roles, syncs staff, skips non-staff, handles missing accounts |
 
 ### Test Case Inventory
 
@@ -810,6 +857,35 @@ VoltComponent::checkGuildMembership()
 - `it('renders the join discord image component')`
 - `it('shows the toast message for copying')`
 
+**AcpTabPermissionsTest.php (Discord-relevant):**
+- `test('engineering jr crew can pass view-discord-api-log gate')`
+- `test('any officer can pass view-discord-api-log gate')`
+- `test('non-engineering non-officer is denied discord api log gate')`
+- `test('any officer can viewAny discord accounts')`
+
+**CommandCommunityEngagementTest.php (Discord-relevant):**
+- `it('counts new discord accounts in the current iteration')`
+
+**UpdateChildPermissionTest.php (Discord-relevant):**
+- `it('disables discord and sets active accounts to ParentDisabled')`
+- `it('enables discord and restores ParentDisabled accounts to Active')`
+
+**AvatarTest.php (Discord-relevant):**
+- `it('falls back to discord in auto mode when no MC avatar')`
+- `it('prefers minecraft over discord in auto mode')`
+- `it('returns discord avatar when preference is discord')`
+
+**TicketNotificationServiceCategoryTest.php (Discord-relevant):**
+- `it('includes discord channel when user has linked account and enabled preference')`
+- `it('excludes discord channel when user has no linked account')`
+
+**ReleaseUserFromBrigTest.php (Discord-relevant):**
+- `it('restores brigged discord accounts to active')`
+- `it('syncs discord roles on release')`
+- `it('syncs discord staff roles for staff users on release')`
+- `it('skips discord staff sync for non-staff users')`
+- `it('still records activity and sends notification even when no minecraft or discord accounts exist')`
+
 ### Coverage Gaps
 
 - **SyncDiscordPermissions action** has no dedicated test file
@@ -884,6 +960,18 @@ VoltComponent::checkGuildMembership()
 **Blade Components:**
 - `resources/views/components/discord-banner-modal.blade.php`
 - `resources/views/components/join-discord-image.blade.php`
+- `resources/views/components/settings/layout.blade.php` (Discord nav item)
+
+**Additional Discord-Aware Views (avatar/eager-loading only):**
+- `resources/views/livewire/settings/notifications.blade.php` (Discord DM toggles)
+- `resources/views/livewire/settings/profile.blade.php` (Discord avatar preference)
+- `resources/views/livewire/dashboard/command-community-engagement.blade.php` (New Discord Accounts metric)
+- `resources/views/livewire/staff/page.blade.php` (avatar resolution)
+- `resources/views/livewire/ready-room/tickets/tickets-list.blade.php` (avatar resolution)
+- `resources/views/livewire/ready-room/tickets/view-ticket.blade.php` (avatar resolution)
+- `resources/views/livewire/admin-manage-announcements-page.blade.php` (avatar resolution)
+- `resources/views/livewire/auth/register.blade.php` (under-13 parent_allows_discord)
+- `resources/views/livewire/auth/collect-birthdate.blade.php` (under-13 parent_allows_discord)
 
 **Routes:**
 - `settings.discord-account` -- `GET /settings/discord-account`
@@ -908,6 +996,12 @@ VoltComponent::checkGuildMembership()
 - `tests/Feature/Discord/DiscordBrigIntegrationTest.php`
 - `tests/Feature/Blade/DiscordBannerModalTest.php`
 - `tests/Feature/Blade/JoinDiscordImageTest.php`
+- `tests/Feature/Auth/AcpTabPermissionsTest.php` (Discord-relevant tests)
+- `tests/Feature/Livewire/Dashboard/CommandCommunityEngagementTest.php` (Discord metric test)
+- `tests/Feature/Actions/Actions/UpdateChildPermissionTest.php` (Discord toggle tests)
+- `tests/Feature/AvatarTest.php` (Discord avatar tests)
+- `tests/Feature/Services/TicketNotificationServiceCategoryTest.php` (Discord channel tests)
+- `tests/Feature/Actions/Actions/ReleaseUserFromBrigTest.php` (Discord brig release tests)
 
 **Config:**
 - `config/services.php` (discord section)
