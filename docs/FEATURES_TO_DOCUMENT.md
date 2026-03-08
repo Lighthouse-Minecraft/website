@@ -3,8 +3,6 @@ Dashboard -- main dashboard with widgets (announcements, stowaway users, travele
 Support Tickets -- create, view, list tickets; admin tickets; message flagging; ticket assignment
 
 Account & Membership
-Minecraft Account Linking -- verification, account management, whitelist sync, rank sync, settings page
-Discord Account Linking -- OAuth flow, role sync, account management, settings page
 Brig (Discipline) System -- put in brig, release, appeals, auto-expiry, parental holds
 Membership Levels & Promotion -- Drifter->Citizen progression, promote/demote actions, notifications
 Parent Portal -- parent-child linking, parental permissions, child account management
