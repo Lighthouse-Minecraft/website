@@ -14,6 +14,7 @@ use App\Models\User;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonTimeZone;
 use Flux\Flux;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Livewire\Volt\Component;
 
@@ -24,6 +25,11 @@ new class extends Component {
     public string $scheduleNextDay = '';
     public string $scheduleNextTime = '7:00 PM';
     public string $aiPrompt = '';
+
+    public string $editTitle = '';
+    public string $editDay = '';
+    public string $editTime = '';
+    public string $editType = '';
 
     #[\Livewire\Attributes\Computed]
     public function staffByDepartment()
@@ -60,6 +66,48 @@ new class extends Component {
         } elseif ($meeting->status == MeetingStatus::Completed) {
             $this->pollTime = 0;
         }
+    }
+
+    public function editMeeting(): void
+    {
+        $this->authorize('update', $this->meeting);
+
+        $this->editTitle = $this->meeting->title;
+        $this->editDay = $this->meeting->day;
+        $this->editTime = $this->meeting->scheduled_time
+            ->setTimezone('America/New_York')
+            ->format('g:i A');
+        $this->editType = $this->meeting->type->value;
+
+        Flux::modal('edit-meeting-modal')->show();
+    }
+
+    public function updateMeeting(): void
+    {
+        $this->authorize('update', $this->meeting);
+
+        $this->validate([
+            'editTitle' => 'required|string|max:255',
+            'editDay' => 'required|date_format:Y-m-d',
+            'editTime' => 'required|date_format:g:i A',
+            'editType' => ['required', Rule::in(array_column(MeetingType::cases(), 'value'))],
+        ]);
+
+        $scheduledTime = $this->parseScheduledTime($this->editDay, $this->editTime);
+        $meetingType = MeetingType::from($this->editType);
+
+        $this->meeting->update([
+            'title' => $this->editTitle,
+            'day' => $this->editDay,
+            'scheduled_time' => $scheduledTime,
+            'type' => $meetingType,
+            'show_community_updates' => $meetingType === MeetingType::StaffMeeting,
+        ]);
+
+        $this->meeting->refresh();
+
+        Flux::modal('edit-meeting-modal')->close();
+        Flux::toast('Meeting updated successfully!', variant: 'success');
     }
 
     public function StartMeeting() {
@@ -316,7 +364,16 @@ new class extends Component {
 
         <div class="block gap-4 lg:flex">
             <flux:card class="w-full mb-4 lg:w-1/2 lg:mb-0">
-                <flux:heading class="mb-4">Meeting Details</flux:heading>
+                <div class="flex items-center justify-between mb-4">
+                    <flux:heading>Meeting Details</flux:heading>
+                    @if($meeting->status == MeetingStatus::Pending)
+                        @can('update', $meeting)
+                            <flux:button wire:click="editMeeting" variant="ghost" size="sm" icon="pencil-square">
+                                Edit
+                            </flux:button>
+                        @endcan
+                    @endif
+                </div>
 
                 <flux:text>
                     <strong>Type:</strong> {{ $meeting->type->label() }}<br>
@@ -508,6 +565,31 @@ new class extends Component {
     </div>
 
     {{-- Modals pre-rendered for upcoming transitions so Flux/Alpine initializes them before needed --}}
+    @if($meeting->status == MeetingStatus::Pending)
+        <flux:modal name="edit-meeting-modal" class="min-w-[28rem] !text-left">
+            <div class="space-y-6">
+                <flux:heading size="lg">Edit Meeting</flux:heading>
+
+                <flux:input wire:model="editTitle" label="Meeting Title" required />
+                <flux:select wire:model="editType" label="Meeting Type" required>
+                    @foreach(\App\Enums\MeetingType::cases() as $meetingType)
+                        <flux:select.option value="{{ $meetingType->value }}">{{ $meetingType->label() }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+                <flux:date-picker wire:model="editDay" label="Meeting Date" required />
+                <flux:input wire:model="editTime" label="Meeting Time (Eastern Time - ET)" required />
+
+                <div class="flex gap-2">
+                    <flux:spacer />
+                    <flux:modal.close>
+                        <flux:button variant="ghost">Cancel</flux:button>
+                    </flux:modal.close>
+                    <flux:button wire:click="updateMeeting" variant="primary">Save Changes</flux:button>
+                </div>
+            </div>
+        </flux:modal>
+    @endif
+
     @if($meeting->status == MeetingStatus::Pending)
         <flux:modal name="start-meeting-confirmation" class="min-w-[28rem] !text-left">
             <div class="space-y-6">

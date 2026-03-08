@@ -42,7 +42,7 @@ new class extends Component {
                 transition
             >
                 <flux:card class="text-left">
-                    <div class="prose max-w-none">
+                    <div class="prose dark:prose-invert max-w-none">
                         {!! nl2br($meeting->community_minutes) !!}
                     </div>
                 </flux:card>
