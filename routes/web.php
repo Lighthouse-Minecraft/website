@@ -127,4 +127,23 @@ require __DIR__.'/auth.php';
 
 Volt::route('/staff', 'staff.page')->name('staff.index');
 
+// Documentation / Library routes
+Route::prefix('library')->name('library.')->group(function () {
+    Volt::route('/books', 'library.books-index')->name('books.index');
+    Volt::route('/books/{book}', 'library.book-show')->name('books.show');
+    Volt::route('/books/{book}/{part}', 'library.part-show')->name('books.part');
+    Volt::route('/books/{book}/{part}/{chapter}', 'library.chapter-show')->name('books.chapter');
+    Volt::route('/books/{book}/{part}/{chapter}/{page}', 'library.page-show')->name('books.page');
+
+    Volt::route('/guides', 'library.guides-index')->name('guides.index');
+    Volt::route('/guides/{guide}', 'library.guide-show')->name('guides.show');
+    Volt::route('/guides/{guide}/{page}', 'library.guide-page')->name('guides.page');
+
+    Route::prefix('editor')->name('editor.')->middleware(['auth', 'ensure-local'])->group(function () {
+        Volt::route('/', 'library.editor-index')->name('index');
+        Volt::route('/edit', 'library.editor-edit')->name('edit');
+        Volt::route('/create', 'library.editor-create')->name('create');
+    });
+});
+
 Route::get('/{slug}', [PageController::class, 'show'])->name('pages.show');
