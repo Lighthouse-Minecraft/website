@@ -37,13 +37,14 @@ new class extends Component {
     <flux:accordion exclusive>
         @forelse($meetings as $meeting)
             <flux:accordion.item
+                wire:key="meeting-{{ $meeting->id }}"
                 :heading="$meeting->title . ' - ' . $meeting->day"
                 :expanded="$loop->first"
                 transition
             >
                 <flux:card class="text-left">
-                    <div class="prose max-w-none">
-                        {!! nl2br($meeting->community_minutes) !!}
+                    <div class="prose dark:prose-invert max-w-none">
+                        {!! nl2br(e($meeting->community_minutes)) !!}
                     </div>
                 </flux:card>
             </flux:accordion.item>
