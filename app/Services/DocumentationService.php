@@ -214,9 +214,17 @@ class DocumentationService
     public function getAdjacentPages(string $type, string ...$slugs): array
     {
         $allPages = $this->getFlattenedPages($type, $slugs[0] ?? '');
-        $currentSlug = end($slugs);
 
-        $index = $allPages->search(fn (PageDTO $p) => $p->slug === $currentSlug);
+        // Build the current page URL to match against, since slugs alone
+        // are not unique across parts/chapters (e.g. "linking-your-account"
+        // exists in both Minecraft and Discord).
+        $currentUrl = match ($type) {
+            'book' => count($slugs) >= 4 ? route('library.books.page', [$slugs[0], $slugs[1], $slugs[2], $slugs[3]]) : '',
+            'guide' => count($slugs) >= 2 ? route('library.guides.page', [$slugs[0], $slugs[1]]) : '',
+            default => '',
+        };
+
+        $index = $allPages->search(fn (PageDTO $p) => $p->url === $currentUrl);
 
         if ($index === false) {
             return ['prev' => null, 'next' => null];
