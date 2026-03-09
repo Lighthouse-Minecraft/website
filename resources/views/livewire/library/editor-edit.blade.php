@@ -17,6 +17,8 @@ new class extends Component {
     public string $body = '';
     public bool $showPreview = false;
 
+    public string $newSlug = '';
+
     public function mount()
     {
         $this->authorize('edit-docs');
@@ -54,6 +56,60 @@ new class extends Component {
         ], $this->body ?? '');
 
         Flux::toast('Document saved.', 'Saved', variant: 'success');
+    }
+
+    public function rename(): void
+    {
+        $this->authorize('edit-docs');
+
+        $this->validate([
+            'newSlug' => 'required|string|max:255|regex:/^[a-z0-9-]+$/',
+        ], [
+            'newSlug.regex' => 'The slug must contain only lowercase letters, numbers, and hyphens.',
+        ]);
+
+        $filename = basename($this->path);
+        $isIndex = $filename === '_index.md';
+
+        if ($isIndex) {
+            Flux::toast('Cannot rename index files. Rename the directory instead.', 'Error', variant: 'danger');
+            return;
+        }
+
+        // Preserve the numeric order prefix from the current filename
+        $currentFilename = basename($this->path);
+        if (preg_match('/^(\d+-)/', $currentFilename, $matches)) {
+            $newFilename = $matches[1] . $this->newSlug . '.md';
+        } else {
+            $newFilename = $this->newSlug . '.md';
+        }
+
+        $service = app(DocumentationService::class);
+
+        try {
+            $newPath = $service->renamePage($this->path, $newFilename);
+        } catch (\InvalidArgumentException $e) {
+            Flux::toast($e->getMessage(), 'Error', variant: 'danger');
+            return;
+        }
+
+        Flux::modal('rename-file-modal')->close();
+        Flux::toast('File renamed successfully.', 'Renamed', variant: 'success');
+
+        $this->redirect(route('library.editor.edit', ['path' => $newPath]), navigate: true);
+    }
+
+    public function getCurrentSlugProperty(): string
+    {
+        $filename = basename($this->path);
+        $slug = preg_replace('/^\d+-/', '', $filename);
+
+        return str_replace('.md', '', $slug);
+    }
+
+    public function getIsIndexFileProperty(): bool
+    {
+        return basename($this->path) === '_index.md';
     }
 
     public function getViewUrlProperty(): ?string
@@ -94,7 +150,14 @@ new class extends Component {
                     </flux:button>
                 </div>
             </div>
-            <flux:text variant="subtle">{{ $path }}</flux:text>
+            <div class="flex items-center gap-2">
+                <flux:text variant="subtle">{{ $path }}</flux:text>
+                @unless($this->isIndexFile)
+                    <flux:button size="xs" variant="ghost" icon="pencil-square" x-on:click="$wire.set('newSlug', '{{ $this->currentSlug }}'); $flux.modal('rename-file-modal').show()">
+                        Rename
+                    </flux:button>
+                @endunless
+            </div>
             <flux:separator class="my-4" />
 
             <div class="grid gap-4 md:grid-cols-2">
@@ -151,5 +214,34 @@ new class extends Component {
                 </div>
             @endif
         </flux:card>
+
+        {{-- Rename modal --}}
+        <flux:modal name="rename-file-modal" class="md:w-96">
+            <div class="space-y-4">
+                <flux:heading size="lg">Rename File</flux:heading>
+                <flux:text variant="subtle">
+                    Change the filename slug. The order prefix and <code>.md</code> extension are preserved automatically.
+                </flux:text>
+
+                <flux:field>
+                    <flux:label>Current Slug</flux:label>
+                    <flux:input :value="$this->currentSlug" disabled />
+                </flux:field>
+
+                <flux:field>
+                    <flux:label>New Slug</flux:label>
+                    <flux:input wire:model="newSlug" placeholder="my-new-slug" />
+                    <flux:description>Lowercase letters, numbers, and hyphens only.</flux:description>
+                    <flux:error name="newSlug" />
+                </flux:field>
+
+                <div class="flex gap-2 justify-end">
+                    <flux:modal.close>
+                        <flux:button variant="ghost">Cancel</flux:button>
+                    </flux:modal.close>
+                    <flux:button variant="primary" wire:click="rename">Rename</flux:button>
+                </div>
+            </div>
+        </flux:modal>
     </div>
 </section>
