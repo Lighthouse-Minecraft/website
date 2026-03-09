@@ -1,4 +1,4 @@
-@props(['title', 'html', 'breadcrumbs' => [], 'navigation' => [], 'prev' => null, 'next' => null, 'currentUrl' => ''])
+@props(['title', 'html', 'breadcrumbs' => [], 'navigation' => [], 'prev' => null, 'next' => null, 'currentUrl' => '', 'editPath' => null])
 
 <div class="flex gap-6">
     {{-- Sidebar navigation (hidden on mobile, shown on lg+) --}}
@@ -27,7 +27,16 @@
             </nav>
             @endif
 
-            <flux:heading size="xl">{{ $title }}</flux:heading>
+            <div class="flex items-center justify-between">
+                <flux:heading size="xl">{{ $title }}</flux:heading>
+                @if($editPath && app()->isLocal())
+                    @can('edit-docs')
+                        <flux:button size="sm" variant="ghost" icon="pencil-square" href="{{ route('library.editor.edit', ['path' => $editPath]) }}" wire:navigate>
+                            Edit Page
+                        </flux:button>
+                    @endcan
+                @endif
+            </div>
             <flux:separator class="my-4" />
 
             {{-- Rendered markdown --}}

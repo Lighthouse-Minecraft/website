@@ -56,9 +56,22 @@ new class extends Component {
         Flux::toast('Document saved.', 'Saved', variant: 'success');
     }
 
+    public function getViewUrlProperty(): ?string
+    {
+        if (! $this->path) {
+            return null;
+        }
+
+        return app(DocumentationService::class)->resolveViewUrl($this->path);
+    }
+
     public function getPreviewHtmlProperty(): string
     {
-        return \Illuminate\Support\Str::markdown($this->body ?: '', [
+        $body = \App\Services\Docs\PageDTO::processConfigVariables(
+            \App\Services\Docs\PageDTO::processWikiLinks($this->body ?: '')
+        );
+
+        return \Illuminate\Support\Str::markdown($body, [
             'html_input' => 'strip',
             'allow_unsafe_links' => false,
         ]);
@@ -70,9 +83,16 @@ new class extends Component {
         <flux:card>
             <div class="flex items-center justify-between mb-2">
                 <flux:heading size="xl">Edit Document</flux:heading>
-                <flux:button href="{{ route('library.editor.index') }}" variant="ghost" icon="arrow-left" wire:navigate>
-                    Back
-                </flux:button>
+                <div class="flex items-center gap-2">
+                    @if($this->viewUrl)
+                        <flux:button href="{{ $this->viewUrl }}" variant="ghost" icon="eye" wire:navigate>
+                            View Page
+                        </flux:button>
+                    @endif
+                    <flux:button href="{{ route('library.editor.index') }}" variant="ghost" icon="arrow-left" wire:navigate>
+                        Back
+                    </flux:button>
+                </div>
             </div>
             <flux:text variant="subtle">{{ $path }}</flux:text>
             <flux:separator class="my-4" />

@@ -44,6 +44,16 @@ new class extends Component {
         ])->toArray();
     }
 
+    public function getNavigationProperty()
+    {
+        return app(DocumentationService::class)->getGuideNavigation($this->guide);
+    }
+
+    public function getEditPathProperty(): ?string
+    {
+        return app(DocumentationService::class)->getRelativePath($this->guideData->filePath);
+    }
+
     public function getBreadcrumbsProperty(): array
     {
         return [
@@ -54,7 +64,7 @@ new class extends Component {
 }; ?>
 
 <section>
-    <div class="mx-auto max-w-4xl p-6">
+    <div class="mx-auto max-w-6xl p-6">
         @if($accessDenied === 'login_required')
             <flux:card>
                 <flux:heading size="lg">Login Required</flux:heading>
@@ -73,6 +83,9 @@ new class extends Component {
                 :body="$this->guideData->body"
                 :children="$this->children"
                 :breadcrumbs="$this->breadcrumbs"
+                :navigation="$this->navigation"
+                :currentUrl="url()->current()"
+                :editPath="$this->editPath"
                 childLabel="Pages"
             />
         @endif

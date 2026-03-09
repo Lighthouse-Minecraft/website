@@ -15,5 +15,6 @@ class PartDTO
         public string $url,
         public string $visibility,
         public Collection $chapters,
+        public string $filePath = '',
     ) {}
 }
