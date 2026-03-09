@@ -49,7 +49,10 @@ test('cleanup command sends whitelist remove command via rcon', function () {
 
     Artisan::call('minecraft:cleanup-expired');
 
-    $this->assertDatabaseMissing('minecraft_accounts', ['username' => 'ExpiredPlayer']);
+    $this->assertDatabaseHas('minecraft_accounts', [
+        'username' => 'ExpiredPlayer',
+        'status' => \App\Enums\MinecraftAccountStatus::Cancelled->value,
+    ]);
 });
 
 test('cleanup command runs successfully', function () {

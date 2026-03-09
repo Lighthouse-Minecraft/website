@@ -18,7 +18,7 @@ beforeEach(function () {
     });
 });
 
-test('removes a verifying account when user has no active verification code state', function () {
+test('cancels a verifying account when user has no active verification code state', function () {
     $account = MinecraftAccount::factory()->for($this->user)->verifying()->create();
 
     $this->actingAs($this->user);
@@ -28,7 +28,7 @@ test('removes a verifying account when user has no active verification code stat
         ->call('removeVerifyingAccount')
         ->assertHasNoErrors();
 
-    $this->assertDatabaseMissing('minecraft_accounts', ['id' => $account->id]);
+    expect($account->fresh()->status)->toBe(MinecraftAccountStatus::Cancelled);
 });
 
 test('expires the associated verification record when removing a verifying account', function () {
