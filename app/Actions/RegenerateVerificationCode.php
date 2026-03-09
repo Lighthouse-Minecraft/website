@@ -116,7 +116,7 @@ class RegenerateVerificationCode
             return ['success' => false, 'code' => null, 'expires_at' => null, 'error' => 'An error occurred. Please try again later.'];
         }
 
-        RecordActivity::handle(
+        RecordActivity::run(
             $user,
             'minecraft_verification_regenerated',
             "Regenerated verification code for {$account->account_type->label()} account: {$account->username}"

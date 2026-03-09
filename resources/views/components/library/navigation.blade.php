@@ -11,6 +11,14 @@
                             $chapterIsActive = $currentUrl === $child['url'] || str_starts_with($currentUrl, $child['url'] . '/');
                         @endphp
                         <flux:navlist.group :heading="$child['label']" expandable :expanded="$chapterIsActive" class="grid ml-2">
+                            <flux:navlist.item
+                                :href="$child['url']"
+                                :current="$currentUrl === $child['url']"
+                                wire:navigate
+                                class="italic"
+                            >
+                                Overview
+                            </flux:navlist.item>
                             @foreach($child['children'] as $page)
                                 <flux:navlist.item
                                     :href="$page['url']"

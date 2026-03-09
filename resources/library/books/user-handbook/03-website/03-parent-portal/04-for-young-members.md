@@ -14,7 +14,7 @@ If you're a younger member of Lighthouse, your parent or guardian has access to 
 Your parent can view:
 
 - Your **profile details** like your username and membership level
-- Your **support tickets** so they know if you've reached out for help
+- Your **support tickets** so they know if you've reached out for help or have been contacted by staff
 - Any **discipline reports** related to your account
 - Whether your **Minecraft** and **Discord** accounts are linked
 

@@ -60,7 +60,7 @@ new class extends Component {
 
     public function getAdjacentProperty()
     {
-        return app(DocumentationService::class)->getAdjacentPages('guide', $this->guide);
+        return app(DocumentationService::class)->getAdjacentPages('guide', $this->guide, $this->page);
     }
 }; ?>
 
