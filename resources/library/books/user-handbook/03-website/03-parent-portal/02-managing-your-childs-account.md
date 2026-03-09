@@ -1,5 +1,5 @@
 ---
-title: 'Managing Your Child''s Account'
+title: "Managing Your Child's Account"
 visibility: users
 order: 2
 summary: 'How to create child accounts, edit their details, and control their permissions.'
@@ -25,10 +25,10 @@ Each child's card in the Parent Portal has four permission toggles that give you
 
 | Toggle | What It Controls |
 |---|---|
-| **Enable Account** | Whether your child can use the website at all. Turning this off immediately restricts their account. |
-| **Login to Website** | Whether your child can log in. Turning this off signs them out of any active sessions right away. |
+| **Enable Account** | Whether your child can use the website at all. Turning this off immediately and completely restricts their account. Discord access and Minecraft accesses are all removed, as well as preventing usage of the website. |
+| **Login to Website** | Whether your child can log in. Turning this off signs them out of any active sessions right away. They can still access the community through the other methods, but will not have access to the website. |
 | **Join Minecraft Server** | Whether your child can play on the Minecraft server. Turning this off removes them from the server whitelist. |
-| **Join Discord Server** | Whether your child can participate in the Discord server. Turning this off removes their Discord roles. |
+| **Join Discord Server** | Whether your child can participate in the Discord server. Turning this off removes their Discord roles, meaning they will only have access to the **#foyer** channel. |
 
 All toggles take effect immediately -- there's no delay. If you turn something off and later turn it back on, your child's access is restored and everything syncs back up automatically.
 
@@ -45,6 +45,6 @@ Each child's card also shows:
 
 ## Releasing to an Independent Account
 
-When your child is old enough, a **Release to Adult** button will appear on their card. This permanently dissolves the parent-child link and gives your child full control of their own account. All permission toggles are reset to enabled.
+When your child has reached the age of 17, a **Release to Adult** button will appear on their card. This permanently dissolves the parent-child link and gives your child full control of their own account. All permission toggles are reset to enabled.
 
 This action cannot be undone, so make sure you're ready before confirming.

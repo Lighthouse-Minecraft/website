@@ -1,4 +1,10 @@
-@props(['title', 'summary' => '', 'body' => '', 'children' => [], 'breadcrumbs' => [], 'childLabel' => 'Contents', 'navigation' => [], 'currentUrl' => '', 'editPath' => null])
+@props(['title', 'summary' => '', 'body' => '', 'children' => [], 'breadcrumbs' => [], 'childLabel' => 'Contents', 'navigation' => [], 'currentUrl' => '', 'editPath' => null, 'bookTitle' => ''])
+
+@if($bookTitle)
+<div class="mb-6 flex items-center justify-between">
+    <flux:heading size="xl">{{ $bookTitle }}</flux:heading>
+</div>
+@endif
 
 <div class="flex gap-6">
     {{-- Sidebar navigation (hidden on mobile, shown on lg+) --}}
