@@ -60,8 +60,8 @@ class ExpireVerification
                 ['action' => 'kick_expired_verification', 'verification_id' => $verification->id]
             );
 
-            $account->delete();
-
+            // Account stays as Cancelled so the user can retry verification
+            // without re-entering their username.
             return true;
         }
 

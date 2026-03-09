@@ -58,7 +58,7 @@ class CleanupExpiredVerifications extends Command
             $removed = ExpireVerification::run($verification);
 
             if ($removed) {
-                $this->info("Removed whitelist and deleted account for {$verification->minecraft_username}.");
+                $this->info("Removed whitelist for {$verification->minecraft_username} (account marked cancelled).");
             } else {
                 $this->warn("Could not remove {$verification->minecraft_username} — account not found or server offline.");
             }
@@ -72,10 +72,15 @@ class CleanupExpiredVerifications extends Command
     /**
      * Pass 2: Retry whitelist removal for accounts stuck in 'cancelled' state
      * (i.e., server was offline during Pass 1 on a previous run).
+     *
+     * Only targets accounts cancelled more than 5 minutes ago to avoid
+     * re-processing accounts that were just cancelled in Pass 1.
+     * Accounts are kept as Cancelled so users can retry verification.
      */
     private function retryCancelledAccounts(): void
     {
         $cancelledAccounts = MinecraftAccount::cancelled()
+            ->where('updated_at', '<', now()->subMinutes(5))
             ->with('user')
             ->get();
 
@@ -84,7 +89,7 @@ class CleanupExpiredVerifications extends Command
         }
 
         $rconService = app(MinecraftRconService::class);
-        $removed = 0;
+        $cleaned = 0;
 
         foreach ($cancelledAccounts as $account) {
             $result = $rconService->executeCommand(
@@ -96,16 +101,15 @@ class CleanupExpiredVerifications extends Command
             );
 
             if ($result['success']) {
-                $account->delete();
-                $removed++;
-                $this->info("Retry succeeded — removed whitelist and deleted {$account->username}.");
+                $cleaned++;
+                $this->info("Retry succeeded — removed whitelist for {$account->username}.");
             } else {
                 $this->warn("Retry failed for {$account->username} — will try again next cycle.");
             }
         }
 
-        if ($removed > 0) {
-            $this->info("Retry pass removed {$removed} cancelled account(s).");
+        if ($cleaned > 0) {
+            $this->info("Retry pass cleaned {$cleaned} cancelled account(s).");
         }
     }
 }

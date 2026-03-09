@@ -64,6 +64,16 @@ select:focus[data-flux-control] {
     @apply outline-hidden ring-2 ring-accent ring-offset-2 ring-offset-accent-foreground;
 }
 
+/* Inline code styling for prose (documentation pages) */
+.prose :where(code):not(:where(pre code)) {
+    @apply bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 rounded px-1.5 py-0.5 text-sm font-mono border border-zinc-200 dark:border-zinc-700;
+}
+
+.prose :where(code):not(:where(pre code))::before,
+.prose :where(code):not(:where(pre code))::after {
+    content: none;
+}
+
 /* Add styling to the page content from the FluxUI editor */
 
 #editor_content {

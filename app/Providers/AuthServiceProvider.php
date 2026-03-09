@@ -86,7 +86,7 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('link-minecraft-account', function ($user) {
-            return $user->isAtLeastLevel(MembershipLevel::Stowaway) && ! $user->in_brig && $user->parent_allows_minecraft;
+            return $user->isAtLeastLevel(MembershipLevel::Traveler) && ! $user->in_brig && $user->parent_allows_minecraft;
         });
 
         Gate::define('view-acp', function ($user) {
@@ -132,6 +132,31 @@ class AuthServiceProvider extends ServiceProvider
 
         Gate::define('view-command-dashboard', function ($user) {
             return $user->isAdmin() || $user->isInDepartment(StaffDepartment::Command);
+        });
+
+        // Documentation visibility gates
+        Gate::define('view-docs-users', function ($user) {
+            return ! $user->in_brig;
+        });
+
+        Gate::define('view-docs-resident', function ($user) {
+            return ! $user->in_brig && $user->isAtLeastLevel(MembershipLevel::Resident);
+        });
+
+        Gate::define('view-docs-citizen', function ($user) {
+            return ! $user->in_brig && $user->isAtLeastLevel(MembershipLevel::Citizen);
+        });
+
+        Gate::define('view-docs-staff', function ($user) {
+            return ! $user->in_brig && ($user->isAtLeastRank(StaffRank::JrCrew) || $user->hasRole('Admin'));
+        });
+
+        Gate::define('view-docs-officer', function ($user) {
+            return ! $user->in_brig && ($user->isAtLeastRank(StaffRank::Officer) || $user->hasRole('Admin'));
+        });
+
+        Gate::define('edit-docs', function ($user) {
+            return $user->hasRole('Admin') || $user->isAtLeastRank(StaffRank::Officer);
         });
     }
 }

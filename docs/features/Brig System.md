@@ -138,7 +138,7 @@ The User model contains all brig-related fields and methods. There is no separat
 | `view-community-content` | Non-brigged users | `! $user->in_brig` |
 | `manage-stowaway-users` | Admin, Officers, Quartermaster CrewMember+ | Controls who can put users in / release from brig |
 | `link-discord` | Stowaway+ AND not in brig AND parent allows | `$user->isAtLeastLevel(Stowaway) && !$user->in_brig && $user->parent_allows_discord` |
-| `link-minecraft-account` | Stowaway+ AND not in brig AND parent allows | `$user->isAtLeastLevel(Stowaway) && !$user->in_brig && $user->parent_allows_minecraft` |
+| `link-minecraft-account` | Traveler+ AND not in brig AND parent allows | `$user->isAtLeastLevel(Traveler) && !$user->in_brig && $user->parent_allows_minecraft` |
 
 ### Policies
 

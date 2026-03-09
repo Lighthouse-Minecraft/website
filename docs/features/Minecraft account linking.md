@@ -250,7 +250,7 @@ Helper methods: `label()`, `color()`
 
 | Gate Name | Who Can Pass | Logic Summary |
 |-----------|-------------|---------------|
-| `link-minecraft-account` | Stowaway+ membership, not in brig, parent allows MC | `$user->isAtLeastLevel(MembershipLevel::Stowaway) && !$user->in_brig && $user->parent_allows_minecraft` |
+| `link-minecraft-account` | Traveler+ membership, not in brig, parent allows MC | `$user->isAtLeastLevel(MembershipLevel::Traveler) && !$user->in_brig && $user->parent_allows_minecraft` |
 | `view-mc-command-log` | Admin, Officer, or Engineer department | Shared `$canViewLogs` closure |
 
 ### Policies
@@ -1004,7 +1004,8 @@ Parent visits Parent Portal
 - requires authentication
 - displays linked accounts
 - shows verification form when no active verification
-- stowaway can see link form for minecraft accounts
+- stowaway cannot see link form for minecraft accounts
+- traveler can see link form for minecraft accounts
 - generates verification code
 - displays active verification code
 - validates username required
