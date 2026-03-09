@@ -23,7 +23,7 @@ That's it! The system automatically connects your accounts and assigns you the a
 
 ## Joining the Server
 
-After linking, you'll see a **Join Server** button on the Discord Account settings page. Click it to open the Lighthouse Discord server invite. Once you accept the invite in Discord, the website detects that you've joined and syncs your roles automatically.
+You'll see a **Join Server** button on the Discord Account settings page. You can do this before or after you link your Discord account to the website. Click it to open the Lighthouse Discord server invite. Once you accept the invite in Discord, the website detects that you've joined and syncs your roles automatically.
 
 If your roles don't appear right away, give it a moment -- the page checks for your server membership after a few seconds and syncs everything up.
 
