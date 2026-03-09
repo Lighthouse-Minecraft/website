@@ -1,8 +1,8 @@
 ---
-title: "Minecraft"
+title: Minecraft
 visibility: public
-order: 2
-summary: "Everything you need to know about playing on the Lighthouse Minecraft server."
+order: 3
+summary: 'Everything you need to know about playing on the Lighthouse Minecraft server.'
 ---
 
 This section covers how to connect your Minecraft account, join the server, and understand how your in-game experience ties into the Lighthouse community.
