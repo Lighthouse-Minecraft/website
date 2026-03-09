@@ -68,7 +68,7 @@
                 </div>
             @endforeach
         </div>
-    @else
+    @elseif(empty(trim(strip_tags($body ?? ''))))
         <flux:separator class="my-4" />
         <flux:text variant="subtle">Content coming soon.</flux:text>
     @endif
