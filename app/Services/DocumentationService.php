@@ -324,6 +324,35 @@ class DocumentationService
         $this->clearCache();
     }
 
+    public function renamePage(string $oldRelativePath, string $newFilename): string
+    {
+        if (! $this->isValidDocsPath($oldRelativePath)) {
+            throw new \InvalidArgumentException('Invalid source path.');
+        }
+
+        $oldFullPath = $this->basePath.'/'.$oldRelativePath;
+        if (! file_exists($oldFullPath)) {
+            throw new \InvalidArgumentException('Source file does not exist.');
+        }
+
+        $dir = dirname($oldRelativePath);
+        $newRelativePath = $dir.'/'.$newFilename;
+
+        if (! $this->isValidDocsPath($dir)) {
+            throw new \InvalidArgumentException('Invalid directory path.');
+        }
+
+        $newFullPath = $this->basePath.'/'.$newRelativePath;
+        if (file_exists($newFullPath)) {
+            throw new \InvalidArgumentException('A file with that name already exists.');
+        }
+
+        rename($oldFullPath, $newFullPath);
+        $this->clearCache();
+
+        return $newRelativePath;
+    }
+
     public function getRelativePath(string $absolutePath): string
     {
         return str_replace($this->basePath.'/', '', $absolutePath);
