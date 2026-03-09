@@ -37,7 +37,7 @@ New users register as **Drifters** (level 0) with no access to community feature
 
 Promotions and demotions are performed by staff with the `manage-stowaway-users` or `manage-traveler-users` gates (Admins, Officers, and Quartermaster CrewMembers+). Each promotion triggers Minecraft rank synchronization, Discord role synchronization, activity logging, and level-specific notifications. There is also a separate `PromoteUserToAdmin` action and Artisan command for granting the Admin role.
 
-The membership level gates many features: `view-community-content` requires not being in brig, `view-all-community-updates` requires at least Traveler, and `link-discord`/`link-minecraft-account` require at least Stowaway (plus not being in brig and parental permission).
+The membership level gates many features: `view-community-content` requires not being in brig, `view-all-community-updates` requires at least Traveler, and `link-discord` requires at least Stowaway and `link-minecraft-account` requires at least Traveler (both plus not being in brig and parental permission).
 
 ---
 
@@ -113,7 +113,7 @@ The membership level gates many features: `view-community-content` requires not 
 | `manage-stowaway-users` | Admin, Officers, Quartermaster CrewMember+ | Controls Stowaway->Traveler promotion and brig actions |
 | `manage-traveler-users` | Admin, Officers, Quartermaster CrewMember+ | Controls Traveler->Resident promotion (same logic as manage-stowaway-users) |
 | `link-discord` | Stowaway+ AND not in brig AND parent allows | `$user->isAtLeastLevel(Stowaway) && !$user->in_brig && $user->parent_allows_discord` |
-| `link-minecraft-account` | Stowaway+ AND not in brig AND parent allows | `$user->isAtLeastLevel(Stowaway) && !$user->in_brig && $user->parent_allows_minecraft` |
+| `link-minecraft-account` | Traveler+ AND not in brig AND parent allows | `$user->isAtLeastLevel(Traveler) && !$user->in_brig && $user->parent_allows_minecraft` |
 
 ### Policies
 

@@ -44,9 +44,18 @@ test('shows verification form when no active verification', function () {
         ->assertSee('Link New Account');
 });
 
-test('stowaway can see link form for minecraft accounts', function () {
+test('stowaway cannot see link form for minecraft accounts', function () {
     $stowaway = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create();
     $this->actingAs($stowaway);
+
+    $this->get('/settings/minecraft-accounts')
+        ->assertSuccessful()
+        ->assertDontSee('Link New Account');
+});
+
+test('traveler can see link form for minecraft accounts', function () {
+    $traveler = User::factory()->withMembershipLevel(MembershipLevel::Traveler)->create();
+    $this->actingAs($traveler);
 
     $this->get('/settings/minecraft-accounts')
         ->assertSuccessful()

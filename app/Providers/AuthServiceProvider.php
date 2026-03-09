@@ -86,7 +86,7 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('link-minecraft-account', function ($user) {
-            return $user->isAtLeastLevel(MembershipLevel::Stowaway) && ! $user->in_brig && $user->parent_allows_minecraft;
+            return $user->isAtLeastLevel(MembershipLevel::Traveler) && ! $user->in_brig && $user->parent_allows_minecraft;
         });
 
         Gate::define('view-acp', function ($user) {
