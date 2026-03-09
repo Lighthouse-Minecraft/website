@@ -166,7 +166,7 @@ The following gates are relevant to authentication and the auth-gated experience
 |-----------|-------------|---------------|
 | `view-community-content` | Non-brigged users | `!$user->in_brig` — Brig blocks content access |
 | `link-discord` | Stowaway+, not in brig, parent allows | `isAtLeastLevel(Stowaway) && !in_brig && parent_allows_discord` |
-| `link-minecraft-account` | Stowaway+, not in brig, parent allows | `isAtLeastLevel(Stowaway) && !in_brig && parent_allows_minecraft` |
+| `link-minecraft-account` | Traveler+, not in brig, parent allows | `isAtLeastLevel(Traveler) && !in_brig && parent_allows_minecraft` |
 | `view-parent-portal` | Adults or users with children | `isAdult() OR children()->exists()` |
 
 ### Middleware

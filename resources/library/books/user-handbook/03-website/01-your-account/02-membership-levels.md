@@ -14,8 +14,8 @@ Every Lighthouse account has a **membership level** that determines what you can
 | Level | How You Get It | What It Unlocks |
 |---|---|---|
 | **Drifter** | Create an account | Access to the Dashboard and community rules |
-| **Stowaway** | Accept the community rules | Link Minecraft and Discord accounts, view announcements |
-| **Traveler** | Staff promotes you | Join the Minecraft server, full community access |
+| **Stowaway** | Accept the community rules | Link your Discord account, view announcements |
+| **Traveler** | Staff promotes you | Link your Minecraft account, join the Minecraft server, full community access |
 | **Resident** | Staff promotes you | Additional in-game perks and community recognition |
 | **Citizen** | Staff promotes you | Highest level, reserved for exceptional community members |
 
@@ -25,11 +25,11 @@ This is where everyone starts. As a **Drifter**, your only task is to read and a
 
 ## Stowaway
 
-As a **Stowaway**, you can start setting up your account. You'll be able to link your Minecraft and Discord accounts, and you can see community announcements. Staff will review your account and promote you to Traveler when they're ready.
+As a **Stowaway**, you can start setting up your account. You'll be able to link your Discord account and see community announcements. Staff will review your account and promote you to Traveler when they're ready.
 
 ## Traveler
 
-**Traveler** is your first full membership level. This is where things really open up -- you can join the Minecraft server and participate fully in the community. Your [[books/user-handbook/minecraft/accounts/ranks-and-permissions|in-game rank]] syncs automatically with your membership level.
+**Traveler** is your first full membership level. This is where things really open up -- you can link your Minecraft account, join the Minecraft server, and participate fully in the community. Your [[books/user-handbook/minecraft/accounts/ranks-and-permissions|in-game rank]] syncs automatically with your membership level.
 
 ## Resident
 

@@ -259,7 +259,7 @@ Helper methods: `label()`, `isDisciplinary()`, `isParental()`
 | `view-user-discipline-reports` | Admin, JrCrew+, self, parents | Staff or subject or parent of subject |
 | `edit-staff-bio` | CrewMember+ or Board Members | For settings/staff-bio page |
 | `link-discord` | Stowaway+ not in brig, parent allows | |
-| `link-minecraft-account` | Stowaway+ not in brig, parent allows | |
+| `link-minecraft-account` | Traveler+ not in brig, parent allows | |
 | `view-acp` | Admin, CrewMember+, Page Editor, Engineer dept | |
 | `view-activity-log` | Admin, Officers, Engineer dept | |
 | `manage-discipline-reports` | Admin, JrCrew+ | |
