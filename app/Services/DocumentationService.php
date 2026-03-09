@@ -316,6 +316,49 @@ class DocumentationService
         $this->clearCache();
     }
 
+    public function getRelativePath(string $absolutePath): string
+    {
+        return str_replace($this->basePath.'/', '', $absolutePath);
+    }
+
+    public function resolveViewUrl(string $relativePath): ?string
+    {
+        $parts = explode('/', $relativePath);
+        $type = $parts[0] ?? '';
+
+        if ($type === 'books' && count($parts) >= 2) {
+            $bookSlug = $this->toSlug($parts[1]);
+            $fileName = end($parts);
+
+            if (count($parts) === 3 && $fileName === '_index.md') {
+                return route('library.books.show', $bookSlug);
+            }
+            if (count($parts) === 4 && $fileName === '_index.md') {
+                return route('library.books.part', [$bookSlug, $this->toSlug($parts[2])]);
+            }
+            if (count($parts) === 5 && $fileName === '_index.md') {
+                return route('library.books.chapter', [$bookSlug, $this->toSlug($parts[2]), $this->toSlug($parts[3])]);
+            }
+            if (count($parts) === 5 && $fileName !== '_index.md') {
+                return route('library.books.page', [$bookSlug, $this->toSlug($parts[2]), $this->toSlug($parts[3]), $this->toSlug($fileName)]);
+            }
+        }
+
+        if ($type === 'guides' && count($parts) >= 2) {
+            $guideSlug = $this->toSlug($parts[1]);
+            $fileName = end($parts);
+
+            if (count($parts) === 3 && $fileName === '_index.md') {
+                return route('library.guides.show', $guideSlug);
+            }
+            if (count($parts) === 3 && $fileName !== '_index.md') {
+                return route('library.guides.page', [$guideSlug, $this->toSlug($fileName)]);
+            }
+        }
+
+        return null;
+    }
+
     public function isValidDocsPath(string $path): bool
     {
         // Prevent path traversal
@@ -360,6 +403,7 @@ class DocumentationService
             body: $indexData['body'],
             url: route('library.books.show', $slug),
             parts: $parts->sortBy('order')->values(),
+            filePath: $dirPath.'/_index.md',
         );
     }
 
@@ -388,6 +432,7 @@ class DocumentationService
             url: route('library.books.part', [$bookSlug, $slug]),
             visibility: $visibility,
             chapters: $chapters->sortBy('order')->values(),
+            filePath: $dirPath.'/_index.md',
         );
     }
 
@@ -416,6 +461,7 @@ class DocumentationService
             url: route('library.books.chapter', [$bookSlug, $partSlug, $slug]),
             visibility: $visibility,
             pages: $pages->sortBy('order')->values(),
+            filePath: $dirPath.'/_index.md',
         );
     }
 
@@ -464,6 +510,7 @@ class DocumentationService
             body: $indexData['body'],
             url: route('library.guides.show', $slug),
             pages: $pages->sortBy('order')->values(),
+            filePath: $dirPath.'/_index.md',
         );
     }
 

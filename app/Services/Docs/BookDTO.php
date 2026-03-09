@@ -15,5 +15,6 @@ class BookDTO
         public string $body,
         public string $url,
         public Collection $parts,
+        public string $filePath = '',
     ) {}
 }

@@ -53,6 +53,11 @@ new class extends Component {
         ]);
     }
 
+    public function getEditPathProperty(): ?string
+    {
+        return app(DocumentationService::class)->getRelativePath($this->pageData->filePath);
+    }
+
     public function getAdjacentProperty()
     {
         return app(DocumentationService::class)->getAdjacentPages('guide', $this->guide);
@@ -81,6 +86,7 @@ new class extends Component {
                 :prev="$this->adjacent['prev'] ?? null"
                 :next="$this->adjacent['next'] ?? null"
                 :currentUrl="url()->current()"
+                :editPath="$this->editPath"
             />
         @endif
     </div>

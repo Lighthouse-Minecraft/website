@@ -1,5 +1,16 @@
-@props(['title', 'summary' => '', 'body' => '', 'children' => [], 'breadcrumbs' => [], 'childLabel' => 'Contents'])
+@props(['title', 'summary' => '', 'body' => '', 'children' => [], 'breadcrumbs' => [], 'childLabel' => 'Contents', 'navigation' => [], 'currentUrl' => '', 'editPath' => null])
 
+<div class="flex gap-6">
+    {{-- Sidebar navigation (hidden on mobile, shown on lg+) --}}
+    @if(count($navigation) > 0)
+    <aside class="hidden lg:block w-64 shrink-0">
+        <flux:card class="sticky top-4">
+            <x-library.navigation :items="$navigation" :currentUrl="$currentUrl" />
+        </flux:card>
+    </aside>
+    @endif
+
+    <div class="flex-1 min-w-0">
 <flux:card>
     {{-- Breadcrumbs --}}
     @if(count($breadcrumbs) > 0)
@@ -15,7 +26,16 @@
     </nav>
     @endif
 
-    <flux:heading size="xl">{{ $title }}</flux:heading>
+    <div class="flex items-center justify-between">
+        <flux:heading size="xl">{{ $title }}</flux:heading>
+        @if($editPath && app()->isLocal())
+            @can('edit-docs')
+                <flux:button size="sm" variant="ghost" icon="pencil-square" href="{{ route('library.editor.edit', ['path' => $editPath]) }}" wire:navigate>
+                    Edit Page
+                </flux:button>
+            @endcan
+        @endif
+    </div>
     @if($summary)
         <flux:text variant="subtle" class="mt-1">{{ $summary }}</flux:text>
     @endif
@@ -23,7 +43,7 @@
     @if($body)
         <flux:separator class="my-4" />
         <div class="prose dark:prose-invert max-w-none">
-            {!! \Illuminate\Support\Str::markdown($body, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
+            {!! \Illuminate\Support\Str::markdown(\App\Services\Docs\PageDTO::processConfigVariables(\App\Services\Docs\PageDTO::processWikiLinks($body)), ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
         </div>
     @endif
 
@@ -47,3 +67,5 @@
         <flux:text variant="subtle">Content coming soon.</flux:text>
     @endif
 </flux:card>
+    </div>
+</div>

@@ -15,5 +15,6 @@ class GuideDTO
         public string $body,
         public string $url,
         public Collection $pages,
+        public string $filePath = '',
     ) {}
 }

@@ -15,5 +15,6 @@ class ChapterDTO
         public string $url,
         public string $visibility,
         public Collection $pages,
+        public string $filePath = '',
     ) {}
 }
