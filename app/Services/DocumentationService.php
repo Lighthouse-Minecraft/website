@@ -335,11 +335,15 @@ class DocumentationService
             throw new \InvalidArgumentException('Source file does not exist.');
         }
 
+        if ($newFilename !== basename($newFilename) || str_contains($newFilename, '..')) {
+            throw new \InvalidArgumentException('Invalid filename.');
+        }
+
         $dir = dirname($oldRelativePath);
         $newRelativePath = $dir.'/'.$newFilename;
 
-        if (! $this->isValidDocsPath($dir)) {
-            throw new \InvalidArgumentException('Invalid directory path.');
+        if (! $this->isValidDocsPath($newRelativePath)) {
+            throw new \InvalidArgumentException('Invalid destination path.');
         }
 
         $newFullPath = $this->basePath.'/'.$newRelativePath;

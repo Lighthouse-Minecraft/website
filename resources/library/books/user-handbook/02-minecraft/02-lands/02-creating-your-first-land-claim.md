@@ -1,7 +1,7 @@
 ---
 title: 'Creating Your First Land Claim'
 visibility: public
-order: 1
+order: 2
 summary: ''
 ---
 
