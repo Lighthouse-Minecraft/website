@@ -20,6 +20,7 @@
         "lorisleiva/laravel-actions": "^2.9",
         "prism-php/prism": "^0.99.21",
         "socialiteproviders/discord": "^4.2",
+        "symfony/yaml": "^7.4",
         "thedudeguy/rcon": "^1.0"
     },
     "require-dev": {
