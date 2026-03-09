@@ -26,7 +26,7 @@ Other notification types (like promotions or announcements) are always sent imme
 You can receive notifications through up to three channels:
 
 - **Email** -- Sent to your account email address
-- **Pushover** -- Mobile push notifications through the Pushover app (requires a Pushover user key)
+- **Pushover** -- Mobile push notifications through the [Pushover app](https://pushover.net/) (requires a Pushover user key)
 - **Discord DM** -- Direct messages on Discord (requires a linked Discord account)
 
 Each notification type can be independently toggled for each channel, so you can pick exactly how you want to be reached.
@@ -45,4 +45,4 @@ If you'd like mobile push notifications, you'll need a **Pushover** account. Onc
 
 ## Setting Up Discord Notifications
 
-To receive notifications as Discord direct messages, you'll need to link your Discord account first. Once linked, the Discord DM option becomes available for each notification type.
+To receive notifications as Discord direct messages, you'll need to link your Discord account first. Once linked, the Discord DM option becomes available for each notification type. The Lighthouse MC bot will send you a DM with your notification.

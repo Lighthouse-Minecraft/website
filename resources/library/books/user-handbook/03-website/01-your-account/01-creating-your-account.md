@@ -26,7 +26,9 @@ We ask for your date of birth so we can apply the right safety settings for your
 
 If you're under 17, you'll see an extra step asking for a **parent or guardian email address**. We'll send your parent information about your account and how to manage it.
 
-Your parent doesn't need to do anything for you to get started -- you can begin exploring right away. However, your parent will have the ability to manage certain permissions on your account, like whether you can link Minecraft or Discord accounts.
+If you're ages 13 to 17, your parent doesn't need to do anything for you to get started -- you can begin exploring right away. However, your parent will have the ability to manage certain permissions on your account, like whether you can link Minecraft or Discord accounts.
+
+For those who are 12 and under, your parent will have to create your account in the Parent Portal before you can join the website and community. Once you enter your parents email address they will be sent information about Lighthouse and given directions on how you can join the community.
 
 ## What Happens Next
 

@@ -7,7 +7,9 @@ summary: 'Customize your profile, avatar, timezone, and other account settings.'
 
 ## Your Profile Page
 
-Every member has a public **profile page** that shows your display name, avatar, membership level, and any linked Minecraft or Discord accounts. Other members can visit your profile to see this information.
+Every member has a public **profile page** that shows your display name, avatar, membership level, and any linked Minecraft or Discord accounts. Other members can visit your profile to see this information as well.
+
+To access your profile page, click on your avatar icon in the corner of the website and select **Profile**.
 
 ## Settings
 
@@ -24,7 +26,7 @@ This is where you manage your basic account information:
   - **Auto** -- Uses your Minecraft skin first, then Discord avatar, then your initials
   - **Minecraft Account** -- Always uses your primary Minecraft account's skin
   - **Discord Account** -- Always uses your linked Discord avatar
-  - **Gravatar** -- Uses the Gravatar service based on your email
+  - **Gravatar** -- Uses the [Gravatar](https://gravatar.com/) service tied to your email address
 
 ### Password
 

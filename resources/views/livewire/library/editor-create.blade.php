@@ -8,7 +8,7 @@ use Livewire\Volt\Component;
 
 new class extends Component {
     #[Url]
-    public string $type = 'book-page';
+    public string $type = 'page';
 
     #[Url]
     public string $parent = '';
@@ -49,6 +49,11 @@ new class extends Component {
         }
     }
 
+    public function getIsSectionProperty(): bool
+    {
+        return $this->type === 'section';
+    }
+
     public function create(): void
     {
         $this->authorize('edit-docs');
@@ -63,16 +68,32 @@ new class extends Component {
             'body' => 'nullable|string',
         ]);
 
-        $fullFilename = sprintf('%02d-%s.md', $this->order, $this->filename);
+        if ($this->isSection) {
+            $dirName = sprintf('%02d-%s', $this->order, $this->filename);
+            $dirPath = $this->parent . '/' . $dirName;
 
-        $path = CreateDocumentPage::run($this->parent, $fullFilename, [
-            'title' => $this->title,
-            'visibility' => $this->visibility,
-            'order' => (int) $this->order,
-            'summary' => $this->summary,
-        ], $this->body ?? '');
+            CreateDocumentPage::run($dirPath, '_index.md', [
+                'title' => $this->title,
+                'visibility' => $this->visibility,
+                'order' => (int) $this->order,
+                'summary' => $this->summary,
+            ], $this->body ?? '');
 
-        Flux::toast('Document created.', 'Created', variant: 'success');
+            $path = $dirPath . '/_index.md';
+
+            Flux::toast('Section created.', 'Created', variant: 'success');
+        } else {
+            $fullFilename = sprintf('%02d-%s.md', $this->order, $this->filename);
+
+            $path = CreateDocumentPage::run($this->parent, $fullFilename, [
+                'title' => $this->title,
+                'visibility' => $this->visibility,
+                'order' => (int) $this->order,
+                'summary' => $this->summary,
+            ], $this->body ?? '');
+
+            Flux::toast('Document created.', 'Created', variant: 'success');
+        }
 
         $this->redirect(route('library.editor.edit', ['path' => $path]), navigate: true);
     }
@@ -82,7 +103,7 @@ new class extends Component {
     <div class="mx-auto max-w-5xl p-6">
         <flux:card>
             <div class="flex items-center justify-between mb-2">
-                <flux:heading size="xl">Create New Document</flux:heading>
+                <flux:heading size="xl">{{ $this->isSection ? 'Create New Section' : 'Create New Page' }}</flux:heading>
                 <flux:button href="{{ route('library.editor.index') }}" variant="ghost" icon="arrow-left" wire:navigate>
                     Back
                 </flux:button>
@@ -90,6 +111,21 @@ new class extends Component {
             <flux:separator class="my-4" />
 
             <div class="grid gap-4 md:grid-cols-2">
+                <flux:field>
+                    <flux:label>Type</flux:label>
+                    <flux:select wire:model.live="type">
+                        <flux:select.option value="page">Page</flux:select.option>
+                        <flux:select.option value="section">Section (Part / Chapter)</flux:select.option>
+                    </flux:select>
+                    <flux:description>
+                        @if($this->isSection)
+                            Creates a new folder with an index page. Use this for parts and chapters.
+                        @else
+                            Creates a new page inside an existing section.
+                        @endif
+                    </flux:description>
+                </flux:field>
+
                 <flux:field>
                     <flux:label>Parent Directory</flux:label>
                     <flux:select wire:model="parent">
@@ -102,8 +138,8 @@ new class extends Component {
                 </flux:field>
 
                 <flux:field>
-                    <flux:label>Filename (slug)</flux:label>
-                    <flux:input wire:model="filename" placeholder="my-page-name" />
+                    <flux:label>{{ $this->isSection ? 'Folder Name (slug)' : 'Filename (slug)' }}</flux:label>
+                    <flux:input wire:model="filename" placeholder="{{ $this->isSection ? 'my-section-name' : 'my-page-name' }}" />
                     <flux:description>Lowercase, hyphens only. Will be prefixed with order number.</flux:description>
                     <flux:error name="filename" />
                 </flux:field>
@@ -133,7 +169,7 @@ new class extends Component {
                     <flux:error name="order" />
                 </flux:field>
 
-                <flux:field>
+                <flux:field class="md:col-span-2">
                     <flux:label>Summary</flux:label>
                     <flux:input wire:model="summary" />
                     <flux:error name="summary" />
@@ -142,12 +178,14 @@ new class extends Component {
 
             <flux:field class="mt-4">
                 <flux:label>Content (Markdown)</flux:label>
-                <flux:textarea wire:model="body" rows="15" />
+                <flux:textarea wire:model="body" rows="10" />
                 <flux:error name="body" />
             </flux:field>
 
             <div class="mt-4">
-                <flux:button variant="primary" wire:click="create">Create Document</flux:button>
+                <flux:button variant="primary" wire:click="create">
+                    {{ $this->isSection ? 'Create Section' : 'Create Page' }}
+                </flux:button>
             </div>
         </flux:card>
     </div>
