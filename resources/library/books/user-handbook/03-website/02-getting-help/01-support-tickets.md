@@ -25,9 +25,9 @@ When you create a ticket, you'll choose which department should handle it. Pick 
 
 | Department | What They Handle |
 |---|---|
-| **Command** | General questions, community policies, account issues |
+| **Command** | General questions, community policies, website bugs |
 | **Chaplain** | Prayer requests, Bible studies, spiritual support |
-| **Engineer** | Technical issues, server problems, website bugs |
+| **Engineer** | Technical issues, server problems, account issues |
 | **Quartermaster** | Player disputes, rule violations, moderation concerns |
 | **Steward** | Events, builds, community activities |
 

@@ -20,9 +20,14 @@ new class extends Component {
         <flux:card>
             <div class="flex items-center justify-between mb-4">
                 <flux:heading size="xl">Documentation Editor</flux:heading>
-                <flux:button href="{{ route('library.editor.create') }}" icon="plus" wire:navigate>
-                    New Page
-                </flux:button>
+                <div class="flex gap-2">
+                    <flux:button href="{{ route('library.editor.create', ['type' => 'section']) }}" icon="folder-plus" variant="ghost" wire:navigate>
+                        New Section
+                    </flux:button>
+                    <flux:button href="{{ route('library.editor.create') }}" icon="plus" wire:navigate>
+                        New Page
+                    </flux:button>
+                </div>
             </div>
             <flux:separator class="my-4" />
 

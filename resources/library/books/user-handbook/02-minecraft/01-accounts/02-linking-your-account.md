@@ -13,9 +13,11 @@ To link your Minecraft account, head to **Settings** under your profile picture 
 
 ### 1. Enter Your Minecraft Username
 
-Type in your Minecraft username exactly as it appears in-game. Then select whether you play on **Java Edition** or **Bedrock Edition**.
+First select whether you play on **Java Edition** or **Bedrock Edition**. If you're unsure, bedrock edition is mobile, console, or windows computers, or if you are still unsure, just guess for now. 
 
-The system will look up your account to make sure it exists, and your character's skin will be shown so you know you looked up the correct account.
+Type in your Minecraft username exactly as it appears in-game.
+
+The system will look up your account to make sure it exists, and your character's skin will be shown so you know you looked up the correct account. If this picture does not look like your Minecraft character then you may have selected the wrong game version. Try the other one and try again.
 
 If everything checks out, click **Generate Verification Code** and you'll move on to the next step.
 
@@ -53,12 +55,13 @@ Double-check that you typed your username exactly right, including capitalizatio
 
 ### "My verification code expired"
 
-Verification codes do expire after a period of time. If yours expired before you could enter it in-game, just go back to the settings page and start the process again. A new code will be generated for you.
+Verification codes do expire after {{config:lighthouse.minecraft_verification_grace_period_minutes}} minutes. If yours expired before you could enter it in-game, just go back to the settings page and start the process again. A new code will be generated for you.
 
 ### "I can't link my account"
 
 There are a few reasons this might happen:
 
 - **Your membership level is too low.** You need to be at least a Traveler (accept the community rules on your Dashboard and be approved by a staff member).
+- **Your parent has restricted your access.** If you have a parent linked to your account, they have the control and authority to disable your account. Staff members cannot override this setting, so you will have to have your parent grant access to add your Minecraft account.
 - **Your account is in the Brig.** If your account has been restricted by staff, you won't be able to link accounts until the restriction is lifted.
 - **The Minecraft account is already linked.** Each Minecraft account can only be linked to one Lighthouse profile. If someone else has already claimed it, you'll need to contact staff for help.

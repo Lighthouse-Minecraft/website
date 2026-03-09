@@ -3,7 +3,7 @@
 <div class="flex gap-6">
     {{-- Sidebar navigation (hidden on mobile, shown on lg+) --}}
     @if(count($navigation) > 0)
-    <aside class="hidden lg:block w-64 shrink-0">
+    <aside class="hidden lg:block w-80 shrink-0">
         <flux:card class="sticky top-4">
             <x-library.navigation :items="$navigation" :currentUrl="$currentUrl" />
         </flux:card>
@@ -62,6 +62,21 @@
                 @endif
             </div>
             @endif
+
+            {{-- Report issue --}}
+            @auth
+                <flux:separator class="my-6" />
+                <div class="flex justify-end">
+                    <flux:button size="sm" variant="subtle" icon="flag" x-on:click="$flux.modal('report-doc-issue').show()">
+                        Report Documentation Issue
+                    </flux:button>
+                </div>
+            @endauth
         </flux:card>
+
+        {{-- Report issue modal --}}
+        @auth
+            <livewire:library.report-doc-issue :pageTitle="$title" :pageUrl="$currentUrl" />
+        @endauth
     </div>
 </div>
