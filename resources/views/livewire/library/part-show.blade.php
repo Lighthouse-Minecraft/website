@@ -56,16 +56,16 @@ new class extends Component {
         return app(DocumentationService::class)->getRelativePath($this->partData->filePath);
     }
 
+    public function getBookTitleProperty(): string
+    {
+        return app(DocumentationService::class)->getBook($this->book)?->title ?? '';
+    }
+
     public function getBreadcrumbsProperty(): array
     {
-        $service = app(DocumentationService::class);
-        $book = $service->getBook($this->book);
-
-        return array_filter([
-            ['label' => 'Handbooks', 'url' => route('library.books.index')],
-            $book ? ['label' => $book->title, 'url' => $book->url] : null,
+        return [
             ['label' => $this->partData->title, 'url' => null],
-        ]);
+        ];
     }
 }; ?>
 
@@ -92,6 +92,7 @@ new class extends Component {
                 :navigation="$this->navigation"
                 :currentUrl="url()->current()"
                 :editPath="$this->editPath"
+                :bookTitle="$this->bookTitle"
                 childLabel="Chapters"
             />
         @endif

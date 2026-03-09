@@ -58,10 +58,7 @@ new class extends Component {
 
     public function getBreadcrumbsProperty(): array
     {
-        return [
-            ['label' => 'Handbooks', 'url' => route('library.books.index')],
-            ['label' => $this->bookData->title, 'url' => null],
-        ];
+        return [];
     }
 }; ?>
 
@@ -88,6 +85,7 @@ new class extends Component {
                 :navigation="$this->navigation"
                 :currentUrl="url()->current()"
                 :editPath="$this->editPath"
+                :bookTitle="$this->bookData->title"
                 childLabel="Parts"
             />
         @endif

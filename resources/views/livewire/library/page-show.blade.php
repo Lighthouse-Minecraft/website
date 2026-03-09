@@ -49,16 +49,18 @@ new class extends Component {
         return app(DocumentationService::class)->getBookNavigation($this->book);
     }
 
+    public function getBookTitleProperty(): string
+    {
+        return app(DocumentationService::class)->getBook($this->book)?->title ?? '';
+    }
+
     public function getBreadcrumbsProperty()
     {
         $service = app(DocumentationService::class);
-        $book = $service->getBook($this->book);
         $part = $service->findPartIndex($this->book, $this->part);
         $chapter = $service->findChapterIndex($this->book, $this->part, $this->chapter);
 
         return array_filter([
-            ['label' => 'Handbooks', 'url' => route('library.books.index')],
-            $book ? ['label' => $book->title, 'url' => $book->url] : null,
             $part ? ['label' => $part->title, 'url' => $part->url] : null,
             $chapter ? ['label' => $chapter->title, 'url' => $chapter->url] : null,
             ['label' => $this->resolvedTitle, 'url' => null],
@@ -101,6 +103,7 @@ new class extends Component {
                 :next="$this->adjacent['next'] ?? null"
                 :currentUrl="url()->current()"
                 :editPath="$this->editPath"
+                :bookTitle="$this->bookTitle"
             />
         @endif
     </div>
