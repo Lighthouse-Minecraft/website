@@ -4,6 +4,7 @@ use App\Actions\CompleteVerification;
 use App\Actions\ExpireVerification;
 use App\Actions\GenerateVerificationCode;
 use App\Actions\ReactivateMinecraftAccount;
+use App\Actions\RegenerateVerificationCode;
 use App\Actions\UnlinkMinecraftAccount;
 use App\Enums\MinecraftAccountStatus;
 use App\Enums\MinecraftAccountType;
@@ -365,12 +366,58 @@ new class extends Component {
         Flux::toast('Verification cancelled and account removed.', variant: 'warning');
     }
 
+    public function retryVerification(int $accountId): void
+    {
+        $this->authorize('link-minecraft-account');
+        $this->errorMessage = null;
+
+        $account = auth()->user()->minecraftAccounts()
+            ->where('id', $accountId)
+            ->where('status', MinecraftAccountStatus::Cancelled)
+            ->first();
+
+        if (! $account) {
+            Flux::toast('Account not found or not eligible for retry.', variant: 'danger');
+            return;
+        }
+
+        $result = RegenerateVerificationCode::run($account, auth()->user());
+
+        if ($result['success']) {
+            $this->verificationCode = $result['code'];
+            $this->expiresAt = $result['expires_at'];
+            $this->accountType = $account->account_type->value;
+            Flux::toast('New verification code generated! Join the server and run /verify ' . $result['code'], variant: 'success');
+        } else {
+            $this->errorMessage = $result['error'];
+            Flux::toast($result['error'], variant: 'danger');
+        }
+    }
+
+    public function removeCancelledAccount(int $accountId): void
+    {
+        $account = auth()->user()->minecraftAccounts()
+            ->where('id', $accountId)
+            ->where('status', MinecraftAccountStatus::Cancelled)
+            ->first();
+
+        if (! $account) {
+            Flux::toast('Account not found.', variant: 'danger');
+            return;
+        }
+
+        $this->authorize('delete', $account);
+
+        $account->delete();
+        Flux::toast('Account removed.', variant: 'success');
+    }
+
     private function cancelAndRemoveFromWhitelist(MinecraftAccount $account, array $context): void
     {
         $account->update(['status' => MinecraftAccountStatus::Cancelled]);
 
         $rconService = app(MinecraftRconService::class);
-        $result = $rconService->executeCommand(
+        $rconService->executeCommand(
             $account->whitelistRemoveCommand(),
             'whitelist',
             $account->username,
@@ -378,9 +425,7 @@ new class extends Component {
             $context
         );
 
-        if ($result['success']) {
-            $account->delete();
-        }
+        // Account stays as Cancelled so the user can retry verification.
     }
 
     public function with(): array
@@ -464,6 +509,24 @@ new class extends Component {
                                 size="sm">
                                 Remove
                             </flux:button>
+                        @elseif($account->status === \App\Enums\MinecraftAccountStatus::Cancelled)
+                            <div class="flex gap-2">
+                                @if(!$verificationCode && Gate::allows('link-minecraft-account'))
+                                    <flux:button
+                                        wire:click="retryVerification({{ $account->id }})"
+                                        variant="primary"
+                                        size="sm">
+                                        Retry Verification
+                                    </flux:button>
+                                @endif
+                                <flux:button
+                                    wire:click="removeCancelledAccount({{ $account->id }})"
+                                    variant="danger"
+                                    size="sm"
+                                    wire:confirm="Remove this account? You will need to start over to link it again.">
+                                    Remove
+                                </flux:button>
+                            </div>
                         @endif
                     </div>
                 </flux:card>

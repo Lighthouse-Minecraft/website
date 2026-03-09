@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Enums\MembershipLevel;
+use App\Enums\MinecraftAccountStatus;
 use App\Models\MinecraftAccount;
 use App\Models\MinecraftVerification;
 use App\Models\User;
@@ -180,5 +181,8 @@ test('checkVerification cleans up when timer expires while user is on the page',
         ->assertSet('verificationCode', null);
 
     expect($verification->fresh()->status)->toBe('expired');
-    $this->assertDatabaseMissing('minecraft_accounts', ['username' => 'ExpiredPlayer']);
+    $this->assertDatabaseHas('minecraft_accounts', [
+        'username' => 'ExpiredPlayer',
+        'status' => MinecraftAccountStatus::Cancelled->value,
+    ]);
 });
