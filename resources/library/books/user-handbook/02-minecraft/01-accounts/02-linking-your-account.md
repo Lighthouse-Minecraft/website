@@ -1,13 +1,13 @@
 ---
-title: "Linking Your Account"
+title: 'Linking Your Account'
 visibility: users
 order: 2
-summary: "Step-by-step guide to connecting your Minecraft account to your Lighthouse profile."
+summary: 'Step-by-step guide to connecting your Minecraft account to your Lighthouse profile.'
 ---
 
 ## Getting Started
 
-To link your Minecraft account, head to **Settings** and then click **Minecraft Accounts** in the left sidebar. You can also get there directly by clicking your avatar in the top corner and choosing Settings.
+To link your Minecraft account, head to **Settings** under your profile picture in the corner of the website, and then click **Minecraft Accounts**.
 
 ## Step-by-Step
 
@@ -15,17 +15,19 @@ To link your Minecraft account, head to **Settings** and then click **Minecraft 
 
 Type in your Minecraft username exactly as it appears in-game. Then select whether you play on **Java Edition** or **Bedrock Edition**.
 
-The system will look up your account to make sure it exists. If everything checks out, you'll move on to the next step.
+The system will look up your account to make sure it exists, and your character's skin will be shown so you know you looked up the correct account.
+
+If everything checks out, click **Generate Verification Code** and you'll move on to the next step.
 
 ### 2. Get Your Verification Code
 
-Once your account is found, the system generates a **6-character verification code** and displays it on the screen. This code is unique to you and is used to prove that you own the Minecraft account.
+The system will generate a **6-character verification code** and displays it on the screen. This code is unique to you and is used to prove that you own the Minecraft account.
 
 At this point, you're also temporarily added to the server whitelist so you can join and enter the code.
 
 ### 3. Join the Server and Verify
 
-Open Minecraft and connect to the Lighthouse server. Once you're in, use the in-game command to enter your verification code. The website will confirm the match and your account will be verified.
+Open Minecraft and connect to the Lighthouse server. Once you're in the game, open up chat and type `/verify ` followed by the 6-character code. The website will confirm the match and your account will be verified.
 
 That's it -- you're permanently whitelisted and can come and go as you please.
 
@@ -35,7 +37,9 @@ You can link up to **{{config:lighthouse.max_minecraft_accounts}} Minecraft acco
 
 ### Primary Account
 
-One of your linked accounts is marked as your **primary account**. This is the one used for your avatar on the website. You can change which account is primary at any time from the Minecraft Accounts settings page.
+One of your linked accounts is marked as your **primary account**. This is the one used for your avatar on the website, and when the website gives you certain in-game rewards they will be sent to this account.
+
+You can change which account is primary at any time from the Minecraft Accounts settings page.
 
 ### Unlinking an Account
 
@@ -55,6 +59,6 @@ Verification codes do expire after a period of time. If yours expired before you
 
 There are a few reasons this might happen:
 
-- **Your membership level is too low.** You need to be at least a Stowaway (accept the community rules on your Dashboard first).
+- **Your membership level is too low.** You need to be at least a Traveler (accept the community rules on your Dashboard and be approved by a staff member).
 - **Your account is in the Brig.** If your account has been restricted by staff, you won't be able to link accounts until the restriction is lifted.
 - **The Minecraft account is already linked.** Each Minecraft account can only be linked to one Lighthouse profile. If someone else has already claimed it, you'll need to contact staff for help.
