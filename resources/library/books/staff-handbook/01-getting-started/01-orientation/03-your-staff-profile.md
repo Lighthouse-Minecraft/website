@@ -32,7 +32,7 @@ You can update these fields anytime. To remove your photo, click the **Remove Ph
 Your staff bio information shows up in two places:
 
 - **The [Staff Page]({{url:/staff}})** -- your photo, name, title, rank, and bio are displayed when someone clicks your card in your department's section
-- **Your [User Profile]({{url:/profile}})** -- visitors to your profile page will see your staff photo, name, and bio alongside your regular profile information
+- **Your user profile** -- visitors to your profile page will see your staff photo, name, and bio alongside your regular profile information
 
 ## Phone Number Privacy
 

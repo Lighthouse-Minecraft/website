@@ -18,10 +18,10 @@ There are five departments. Each one covers a different area of community operat
 | **Command** | Overall leadership and strategic decisions. Manages staff positions and community direction. Also manages the website. |
 | **Chaplain** | Spiritual leadership of the community. Runs Bible studies and prayer meetings, and encourages Biblical discussions. |
 | **Engineer** | Technical operations of the Minecraft server. The Engineer team looks after our server infrastructure and the Minecraft server and plugins. |
-| **Quartermaster** | Member management through reviewing new users, processing promotions, and maintaining moderating the community spaces. |
+| **Quartermaster** | Member management through reviewing new users, processing promotions, and maintaining and moderating the community spaces. |
 | **Steward** | In-game community engagement through events, community builds, and keeping things active and welcoming on the server. |
 
-Each department has its own tab in the Ready Room where you can see department-specific tasks and information, including department specific meeting notes from the recent Staff Meetings.
+Each department has its own tab in the Ready Room where you can see department-specific tasks and information, including department-specific meeting notes from the recent Staff Meetings.
 
 ## Ranks
 
@@ -45,7 +45,7 @@ Your Staff Page listing will show your position title, but your real name, bio, 
 
 ### Promotions
 
-Promotions are handled by Command department Officers and Admins through the users [Profile]({{url:/profile}}). When you're promoted, your Minecraft and Discord roles are automatically synced to match your new rank and department.
+Promotions are handled by authorized staff through the user's profile page. When you're promoted, your Minecraft and Discord roles are automatically synced to match your new rank and department.
 
 ## Your Position
 

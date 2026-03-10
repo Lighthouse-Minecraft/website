@@ -53,7 +53,7 @@ Archiving records which meeting the task was archived in, which helps the Comman
 
 ## Task Lifecycle
 
-```
+```text
 Pending → Completed → Archived
 ```
 

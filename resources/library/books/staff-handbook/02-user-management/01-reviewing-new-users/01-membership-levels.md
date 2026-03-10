@@ -34,7 +34,7 @@ When you promote a user, the system automatically:
 
 - Updates their **Minecraft rank** to match their new level (Traveler, Resident, or Citizen)
 - Updates their **Discord roles** to match
-- Sends the user a **notification** letting them know they've been promoted (for Traveler and Resident promotions)
+- Sends the user a **notification** letting them know they've been promoted (for Traveler, Resident, and Citizen promotions)
 - Logs the action in the **activity log**
 
 For Stowaway promotions specifically, the notification goes to Quartermaster and Command staff instead of the user, since it's an internal alert that a new user has accepted the rules.

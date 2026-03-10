@@ -1,6 +1,8 @@
 <?php
 
 use App\Enums\MembershipLevel;
+use App\Enums\StaffDepartment;
+use App\Enums\StaffRank;
 use App\Models\User;
 use Livewire\Volt\Volt;
 
@@ -162,7 +164,7 @@ describe('Traveler Users Widget', function () {
     });
 
     it('is visible to quartermaster staff', function () {
-        $user = User::factory()->withStaffPosition(App\Enums\StaffDepartment::Quartermaster, App\Enums\StaffRank::JrCrew, 'Jr Quartermaster')->create();
+        $user = User::factory()->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::JrCrew, 'Jr Quartermaster')->create();
         $this->actingAs($user);
 
         $response = get(route('dashboard'));
@@ -171,7 +173,7 @@ describe('Traveler Users Widget', function () {
     });
 
     it('is visible to command staff', function () {
-        $user = User::factory()->withStaffPosition(App\Enums\StaffDepartment::Command, App\Enums\StaffRank::JrCrew, 'Jr Command')->create();
+        $user = User::factory()->withStaffPosition(StaffDepartment::Command, StaffRank::JrCrew, 'Jr Command')->create();
         $this->actingAs($user);
 
         $response = get(route('dashboard'));
@@ -189,7 +191,7 @@ describe('Traveler Users Widget', function () {
     });
 
     it('is not visible to other department staff', function () {
-        $user = User::factory()->withStaffPosition(App\Enums\StaffDepartment::Engineer, App\Enums\StaffRank::Officer, 'Engineer Officer')->create();
+        $user = User::factory()->withStaffPosition(StaffDepartment::Engineer, StaffRank::Officer, 'Engineer Officer')->create();
         $this->actingAs($user);
 
         $response = get(route('dashboard'));

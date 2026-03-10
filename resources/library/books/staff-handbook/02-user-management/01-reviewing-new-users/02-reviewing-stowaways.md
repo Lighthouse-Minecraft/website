@@ -7,13 +7,13 @@ summary: 'How to review new users and promote them to Traveler.'
 
 ## Overview
 
-When a new user registers and accepts the community rules, they become a **Stowaway**. They're waiting for a Quartermaster to review their account and promote them to **Traveler**, which grants Minecraft server access and full community features.
+When a new user registers and accepts the community rules, they become a **Stowaway**. They're waiting for authorized staff to review their account and promote them to **Traveler**, which grants Minecraft server access and full community features.
 
 ## Who Can Do This
 
 - Admins
-- Crew Members and Officers in the **Quartermaster** department
-- Officers in the **Command** department
+- Junior Crew and above in the **Quartermaster** department
+- Junior Crew and above in the **Command** department
 
 ## How to Review Stowaways
 

@@ -1,6 +1,6 @@
 ---
 title: 'Putting Users in the Brig'
-visibility: public
+visibility: staff
 order: 1
 summary: ''
 ---
@@ -12,8 +12,8 @@ The **Brig** is the Lighthouse discipline system. Putting a user in the Brig res
 ## Who Can Do This
 
 - Admins
-- Officers (any department)
-- Crew Members in the **Quartermaster** department
+- Junior Crew and above in the **Quartermaster** department
+- Junior Crew and above in the **Command** department
 
 You cannot put another staff member in the Brig, and you cannot brig yourself.
 
