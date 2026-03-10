@@ -49,7 +49,7 @@
     @if($body)
         <flux:separator class="my-4" />
         <div class="prose dark:prose-invert max-w-none">
-            {!! \Illuminate\Support\Str::markdown(\App\Services\Docs\PageDTO::processConfigVariables(\App\Services\Docs\PageDTO::processWikiLinks($body)), ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
+            {!! \Illuminate\Support\Str::markdown(\App\Services\Docs\PageDTO::processSiteUrls(\App\Services\Docs\PageDTO::processConfigVariables(\App\Services\Docs\PageDTO::processWikiLinks($body))), ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
         </div>
     @endif
 

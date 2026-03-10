@@ -38,7 +38,7 @@ it('shows parent email step for under 17', function () {
 
     $component->assertHasNoErrors()
         ->assertSet('step', 2)
-        ->assertSee('Parent or Guardian Email');
+        ->assertSee('Parent/Guardian Email');
 });
 
 it('puts under 13 in brig with parental_pending type', function () {
@@ -52,7 +52,7 @@ it('puts under 13 in brig with parental_pending type', function () {
         ->set('password_confirmation', 'password')
         ->call('register')
         ->set('parent_email', 'parent@example.com')
-        ->call('submitParentEmail');
+        ->call('submitStep2');
 
     $user = User::where('email', 'young@example.com')->first();
     expect($user)->not->toBeNull()
@@ -73,7 +73,7 @@ it('logs in under 13 user but puts them in brig', function () {
         ->set('password_confirmation', 'password')
         ->call('register')
         ->set('parent_email', 'parent@example.com')
-        ->call('submitParentEmail')
+        ->call('submitStep2')
         ->assertRedirect(route('dashboard', absolute: false));
 
     $this->assertAuthenticated();
@@ -91,7 +91,7 @@ it('logs in 13-16 user after registration', function () {
         ->set('password_confirmation', 'password')
         ->call('register')
         ->set('parent_email', 'parent@example.com')
-        ->call('submitParentEmail')
+        ->call('submitStep2')
         ->assertRedirect(route('dashboard', absolute: false));
 
     $this->assertAuthenticated();

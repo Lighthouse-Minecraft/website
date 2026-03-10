@@ -138,6 +138,22 @@ This renders as the actual config value (e.g., "2") at display time.
 Edit `app/Services/Docs/PageDTO.php` → `safeConfigKeys()` method. Only add keys that are
 safe for any user to see. Never add API keys, tokens, secrets, or internal system settings.
 
+#### Site URLs — Linking to Pages on the Site
+
+Use `{{url:/path}}` to generate a full URL to a page on the current site. The path must
+start with `/` and can only contain letters, numbers, slashes, hyphens, underscores, and dots.
+
+```markdown
+Visit the [Staff Page]({{url:/staff}}) to see the team.
+
+Go to [Settings]({{url:/settings/staff-bio}}) to update your bio.
+```
+
+This renders the full URL using the current environment's domain (e.g.,
+`https://lighthousemc.net/staff` in production, `http://localhost/staff` in development).
+
+Use this instead of hardcoding URLs — it keeps documentation portable across environments.
+
 ---
 
 ## File Locations Quick Reference

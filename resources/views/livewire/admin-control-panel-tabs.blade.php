@@ -78,7 +78,8 @@ new class extends Component {
         $user = auth()->user();
 
         return $user && (
-            $user->can('viewAny', \App\Models\Role::class)
+            $user->can('manage-site-config')
+            || $user->can('viewAny', \App\Models\Role::class)
             || $user->can('viewAny', \App\Models\ReportCategory::class)
             || $user->can('viewAny', \App\Models\PrayerCountry::class)
         );
@@ -111,6 +112,7 @@ new class extends Component {
                 default => 'mc-command-log',
             },
             'config' => match (true) {
+                $user?->can('manage-site-config') => 'site-settings',
                 $user?->can('viewAny', \App\Models\Role::class) => 'role-manager',
                 $user?->can('viewAny', \App\Models\ReportCategory::class) => 'report-category-manager',
                 $user?->can('viewAny', \App\Models\PrayerCountry::class) => 'prayer-manager',
@@ -265,6 +267,9 @@ new class extends Component {
     @if($category === 'config')
         <flux:tab.group>
             <flux:tabs wire:model.live="tab" variant="segmented" size="sm">
+                @can('manage-site-config')
+                    <flux:tab name="site-settings">Site Settings</flux:tab>
+                @endcan
                 @can('viewAny', \App\Models\Role::class)
                     <flux:tab name="role-manager">Roles</flux:tab>
                 @endcan
@@ -276,6 +281,11 @@ new class extends Component {
                 @endcan
             </flux:tabs>
 
+            <flux:tab.panel name="site-settings">
+                @can('manage-site-config')
+                    <livewire:admin-manage-site-configs-page />
+                @endcan
+            </flux:tab.panel>
             <flux:tab.panel name="role-manager">
                 @can('viewAny', \App\Models\Role::class)
                     <livewire:admin-manage-roles-page />

@@ -46,7 +46,7 @@ describe('Admin Control Panel Tabs Component', function () {
             ->set('category', 'content')
             ->assertSet('tab', 'page-manager')
             ->set('category', 'config')
-            ->assertSet('tab', 'role-manager')
+            ->assertSet('tab', 'site-settings')
             ->set('category', 'users')
             ->assertSet('tab', 'user-manager');
     });

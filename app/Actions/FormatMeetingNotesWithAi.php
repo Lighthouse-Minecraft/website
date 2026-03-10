@@ -22,7 +22,7 @@ class FormatMeetingNotesWithAi
     {
         $provider = config('lighthouse.ai.meeting_notes_provider', 'openai');
         $model = config('lighthouse.ai.meeting_notes_model', 'gpt-4o');
-        $defaultPrompt = config('lighthouse.ai.meeting_notes_system_prompt', '');
+        $defaultPrompt = \App\Models\SiteConfig::getValue('ai_meeting_notes_prompt', config('lighthouse.ai.meeting_notes_system_prompt', ''));
 
         $apiKey = config("prism.providers.{$provider}.api_key", '');
 

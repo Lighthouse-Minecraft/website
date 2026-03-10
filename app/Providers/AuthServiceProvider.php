@@ -45,12 +45,15 @@ class AuthServiceProvider extends ServiceProvider
             return $user->isAtLeastLevel(MembershipLevel::Traveler) || $user->hasRole('Admin');
         });
 
-        Gate::define('manage-stowaway-users', function ($user) {
-            return $user->hasRole('Admin') || $user->isAtLeastRank(StaffRank::Officer) || ($user->isAtLeastRank(StaffRank::CrewMember) && $user->isInDepartment(StaffDepartment::Quartermaster));
-        });
+        $canManageUsers = function ($user) {
+            return $user->hasRole('Admin') || ($user->isAtLeastRank(StaffRank::JrCrew) && ($user->isInDepartment(StaffDepartment::Quartermaster) || $user->isInDepartment(StaffDepartment::Command)));
+        };
 
-        Gate::define('manage-traveler-users', function ($user) {
-            return $user->hasRole('Admin') || $user->isAtLeastRank(StaffRank::Officer) || ($user->isAtLeastRank(StaffRank::CrewMember) && $user->isInDepartment(StaffDepartment::Quartermaster));
+        Gate::define('manage-stowaway-users', $canManageUsers);
+        Gate::define('manage-traveler-users', $canManageUsers);
+
+        Gate::define('release-from-brig', function ($user) {
+            return $user->hasRole('Admin') || ($user->isAtLeastRank(StaffRank::Officer) && ($user->isInDepartment(StaffDepartment::Quartermaster) || $user->isInDepartment(StaffDepartment::Command)));
         });
 
         Gate::define('view-ready-room', function ($user) {
@@ -127,6 +130,10 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('publish-discipline-reports', function ($user) {
+            return $user->hasRole('Admin') || $user->isAtLeastRank(StaffRank::Officer);
+        });
+
+        Gate::define('manage-site-config', function ($user) {
             return $user->hasRole('Admin') || $user->isAtLeastRank(StaffRank::Officer);
         });
 

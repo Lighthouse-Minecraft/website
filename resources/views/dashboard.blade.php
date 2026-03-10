@@ -106,10 +106,10 @@
         </div>
     </div>
 
-    @if (auth()->user()->isAtLeastRank(App\Enums\StaffRank::Officer) || auth()->user()->isInDepartment(App\Enums\StaffDepartment::Quartermaster) || auth()->user()->isAdmin())
+    @canany(['manage-stowaway-users', 'manage-traveler-users'])
         <div class="w-full bg-zinc-900 p-4 rounded-lg mb-6">
             <div class="flex mb-4">
-                <flux:heading>Quartermaster</flux:heading>
+                <flux:heading>User Management</flux:heading>
                 <flux:spacer />
             </div>
 
@@ -127,7 +127,7 @@
                 @endcan
             </div>
         </div>
-    @endif
+    @endcanany
 
     @can('view-command-dashboard')
         <div class="w-full bg-zinc-900 p-4 rounded-lg mb-6">
