@@ -49,7 +49,7 @@ new class extends Component {
 <section>
     <div class="mx-auto max-w-4xl p-6">
         <flux:card>
-            <flux:heading size="xl">Handbooks</flux:heading>
+            <flux:heading size="xl">Help</flux:heading>
             <flux:text variant="subtle">Browse our documentation</flux:text>
 
             @if($this->visibleGuides->isNotEmpty())
@@ -65,7 +65,7 @@ new class extends Component {
             @endif
 
             <flux:separator class="my-4" />
-            <flux:heading size="sm" class="mb-2">Handbooks</flux:heading>
+            <flux:heading size="sm" class="mb-2">Help</flux:heading>
 
             @if($this->visibleBooks->isEmpty())
                 <flux:text variant="subtle">No handbooks available.</flux:text>

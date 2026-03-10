@@ -26,13 +26,13 @@ Appeals are a way for users to explain their side and request another chance. Tr
 ### Who Can Do This
 
 - Admins
-- Officers (any department)
-- Crew Members in the **Quartermaster** department
+- Quartermaster Officers
+- Command Officers
 
 ### How to Release
 
 1. Navigate to the user's **profile page**
-2. Click the **three-dot menu** on their profile card
+2. Click the **Actions** menu on their profile card
 3. Select **Release from Brig**
 4. Enter a **reason** for releasing them (minimum 5 characters)
 5. Click **Confirm**
@@ -42,7 +42,7 @@ Appeals are a way for users to explain their side and request another chance. Tr
 When you release a user, the system automatically:
 
 - Clears their brig status and reason
-- **Restores their Minecraft accounts** -- previously active accounts are re-whitelisted on the server
+- **Restores their Minecraft accounts** -- previously active accounts are re-whitelisted on the server and permissions re-synced
 - **Restores their Discord roles** -- membership level and department roles are re-synced
 - Records the release in the **activity log**
 - Sends the user a **notification** that they've been released

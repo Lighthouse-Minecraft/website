@@ -15,13 +15,13 @@ There are five departments. Each one covers a different area of community operat
 
 | Department | What They Do |
 |---|---|
-| **Command** | Overall leadership and strategic decisions. Manages staff positions and community direction. |
-| **Chaplain** | Community care, spiritual resources, and prayer tracking. |
-| **Engineer** | Technical operations -- the website, Minecraft server, Discord bots, and infrastructure. |
-| **Quartermaster** | Member management -- reviewing new users, processing promotions, and maintaining the roster. |
-| **Steward** | Community engagement -- events, content, and keeping things active and welcoming. |
+| **Command** | Overall leadership and strategic decisions. Manages staff positions and community direction. Also manages the website. |
+| **Chaplain** | Spiritual leadership of the community. Runs Bible studies and prayer meetings, and encourages Biblical discussions. |
+| **Engineer** | Technical operations of the Minecraft server. The Engineer team looks after our server infrastructure and the Minecraft server and plugins. |
+| **Quartermaster** | Member management through reviewing new users, processing promotions, and maintaining moderating the community spaces. |
+| **Steward** | In-game community engagement through events, community builds, and keeping things active and welcoming on the server. |
 
-You'll be assigned to the department that best fits your skills and interests. Each department has its own tab in the Ready Room where you can see department-specific tasks and information.
+Each department has its own tab in the Ready Room where you can see department-specific tasks and information, including department specific meeting notes from the recent Staff Meetings.
 
 ## Ranks
 
@@ -30,20 +30,22 @@ There are three staff ranks, each with increasing levels of access and responsib
 | Rank | Who | What They Can Do |
 |---|---|---|
 | **Junior Crew Member** | New staff members | Access the Ready Room, handle tickets, manage discipline reports. Limited profile visibility on the Staff Page. |
-| **Crew Member** | Established staff | Everything Jr. Crew can do, plus edit your staff bio, access the Admin Control Panel, and review new users (Quartermaster dept). |
+| **Crew Member** | Established staff | Everything Jr. Crew can do, plus edit your staff bio, access the Admin Control Panel, and the access required to fulfill primary department duties. |
 | **Officer** | Department leaders | Everything Crew Members can do, plus view all department tabs, access system logs, publish discipline reports, and view staff phone numbers. |
 
 ### Junior Crew Members
 
-When you first join staff, you'll start as a **Junior Crew Member**. This rank gives you access to the Ready Room and lets you start contributing right away -- handling support tickets, participating in meetings, and working on tasks.
+If you are being assigned a position that is designated as a **Crew Member** position, and you are under the age of 17, then your rank will be set to **Jr Crew Member** instead of the normal **Crew Member**.
+
+This distinction is because staff often times deal with sensitive topics and we do not believe that the younger volunteers need to be faced with many of those conversations.
+
+The purpose of our **Jr Crew Member** positions is as a way to help develop and train leadership skills and responsibilities in younger members of the community.
 
 Your Staff Page listing will show your position title, but your real name, bio, and staff photo won't be displayed publicly until you're promoted to Crew Member.
 
-Note: If you're under 17, you'll be assigned the Junior Crew Member rank regardless of the position's default rank. This is automatic and adjusts when you meet the age threshold.
-
 ### Promotions
 
-Promotions are handled by Command department Officers and Admins through the Admin Control Panel. When you're promoted, your Minecraft and Discord roles are automatically synced to match your new rank and department.
+Promotions are handled by Command department Officers and Admins through the users [Profile]({{url:/profile}}). When you're promoted, your Minecraft and Discord roles are automatically synced to match your new rank and department.
 
 ## Your Position
 

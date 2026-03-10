@@ -17,7 +17,7 @@ Members progress through five levels in order. They cannot skip levels.
 |---|---|---|
 | **Drifter** | Brand new accounts | Almost nothing -- they need to accept the community rules first |
 | **Stowaway** | Accepted the rules | Basic site access, can link a Discord account. This is the "waiting room" where staff reviews them |
-| **Traveler** | Approved by staff | Minecraft server access, can link Minecraft accounts, full community updates |
+| **Traveler** | Approved by staff | Minecraft server access, can link Minecraft accounts, full community updates. Has some limitations to in-game features. |
 | **Resident** | Established member | All Traveler access plus resident-level perks |
 | **Citizen** | Long-standing member | Highest membership level with full access |
 

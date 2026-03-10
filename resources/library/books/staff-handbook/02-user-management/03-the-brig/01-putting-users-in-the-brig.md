@@ -1,8 +1,8 @@
 ---
 title: 'Putting Users in the Brig'
-visibility: staff
+visibility: public
 order: 1
-summary: 'How to restrict a user'"'"'s access by placing them in the Brig.'
+summary: ''
 ---
 
 ## Overview
@@ -30,7 +30,7 @@ You cannot put another staff member in the Brig, and you cannot brig yourself.
 ### From a User's Profile
 
 1. Navigate to the user's **profile page**
-2. Click the **three-dot menu** on their profile card
+2. Click the **Actions** menu on their profile card
 3. Select **Put in Brig**
 4. Enter a **reason** and optional **timer** in the modal
 5. Click **Confirm**
@@ -40,11 +40,11 @@ You cannot put another staff member in the Brig, and you cannot brig yourself.
 When you put a user in the Brig, the system automatically:
 
 - Sets their account as brigged with the reason you entered
-- **Bans all their Minecraft accounts** -- removes them from the server whitelist
+- **Bans all their Minecraft accounts** -- removes them from the server whitelist and removes all luckperms permissions
 - **Strips all their Discord roles** -- removes managed roles from their Discord accounts
 - Records the action in the **activity log**
 - Sends the user a **notification** about their brig placement
-- Sets their first appeal availability to **24 hours** from now
+- Sets their first appeal availability to **24 hours** from now unless you entered a longer timer
 
 ## The Brig Timer
 

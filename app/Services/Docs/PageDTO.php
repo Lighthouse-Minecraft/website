@@ -72,7 +72,7 @@ class PageDTO
      */
     public static function processSiteUrls(string $body): string
     {
-        return preg_replace_callback('/\{\{url:(\/[a-zA-Z0-9\/_\-\.]*)\}\}/', function ($matches) {
+        return preg_replace_callback('/\{\{url:(\/[a-zA-Z0-9\/_\-\.?=&]*)\}\}/', function ($matches) {
             $path = $matches[1];
 
             return url($path);

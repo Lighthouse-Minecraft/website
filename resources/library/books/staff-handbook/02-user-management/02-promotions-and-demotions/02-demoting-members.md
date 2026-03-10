@@ -12,8 +12,8 @@ Demotions move a user down one membership level. They're less common than promot
 ## Who Can Do This
 
 - Admins
-- Officers (any department)
-- Crew Members in the **Quartermaster** department
+- Crew Members and Officers in the **Quartermaster** department
+- Officers in the **Command** department
 
 ## How to Demote a Member
 

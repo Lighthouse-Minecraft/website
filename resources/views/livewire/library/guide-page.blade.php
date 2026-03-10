@@ -41,16 +41,16 @@ new class extends Component {
         return app(DocumentationService::class)->getGuideNavigation($this->guide);
     }
 
+    public function getGuideTitleProperty(): string
+    {
+        return app(DocumentationService::class)->getGuide($this->guide)?->title ?? '';
+    }
+
     public function getBreadcrumbsProperty()
     {
-        $service = app(DocumentationService::class);
-        $guide = $service->getGuide($this->guide);
-
-        return array_filter([
-            ['label' => 'Guides', 'url' => route('library.guides.index')],
-            $guide ? ['label' => $guide->title, 'url' => $guide->url] : null,
+        return [
             ['label' => $this->resolvedTitle, 'url' => null],
-        ]);
+        ];
     }
 
     public function getEditPathProperty(): ?string
@@ -87,6 +87,7 @@ new class extends Component {
                 :next="$this->adjacent['next'] ?? null"
                 :currentUrl="url()->current()"
                 :editPath="$this->editPath"
+                :bookTitle="$this->guideTitle"
             />
         @endif
     </div>
