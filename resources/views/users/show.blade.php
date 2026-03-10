@@ -3,6 +3,10 @@
         <livewire:users.display-basic-details :user="$user" />
     </div>
 
+    <div class="my-6">
+        <livewire:users.registration-answer-card :user="$user" />
+    </div>
+
     @can('viewActivityLog', $user)
         <div class="w-full my-6 flex justify-end">
             <flux:modal.trigger name="activity-log-modal">

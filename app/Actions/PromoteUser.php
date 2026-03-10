@@ -5,6 +5,7 @@ namespace App\Actions;
 use App\Enums\MembershipLevel;
 use App\Enums\StaffDepartment;
 use App\Models\User;
+use App\Notifications\UserPromotedToCitizenNotification;
 use App\Notifications\UserPromotedToResidentNotification;
 use App\Notifications\UserPromotedToStowawayNotification;
 use App\Notifications\UserPromotedToTravelerNotification;
@@ -77,6 +78,8 @@ class PromoteUser
             $notificationService->send($user, new UserPromotedToTravelerNotification($user), 'account');
         } elseif ($nextLevel === MembershipLevel::Resident) {
             $notificationService->send($user, new UserPromotedToResidentNotification($user), 'account');
+        } elseif ($nextLevel === MembershipLevel::Citizen) {
+            $notificationService->send($user, new UserPromotedToCitizenNotification($user), 'account');
         }
     }
 }

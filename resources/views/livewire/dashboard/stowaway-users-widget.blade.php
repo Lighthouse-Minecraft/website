@@ -249,6 +249,17 @@ new class extends Component {
                     @endif
                 </dl>
 
+                @if($selectedUser->registration_answer)
+                    <flux:separator />
+
+                    <div class="space-y-2">
+                        <flux:text variant="subtle" size="sm" class="font-medium">Registration Question</flux:text>
+                        <flux:text size="sm" class="italic">{{ $selectedUser->registration_question_text ?? 'N/A' }}</flux:text>
+                        <flux:text variant="subtle" size="sm" class="font-medium mt-2">Answer</flux:text>
+                        <flux:text size="sm">{{ $selectedUser->registration_answer }}</flux:text>
+                    </div>
+                @endif
+
                 <flux:separator />
 
                 <div class="flex items-center gap-2 justify-between">

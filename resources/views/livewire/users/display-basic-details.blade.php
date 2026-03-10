@@ -305,11 +305,11 @@ new class extends Component {
      *
      * Resets the brig action reason to an empty string and shows the
      * profile-release-from-brig-modal. If the current user does not have
-     * the `manage-stowaway-users` permission, no action is taken.
+     * the `release-from-brig` permission, no action is taken.
      */
     public function openReleaseFromBrigModal(): void
     {
-        if (! Auth::user()->can('manage-stowaway-users')) {
+        if (! Auth::user()->can('release-from-brig')) {
             return;
         }
         $this->brigActionReason = '';
@@ -319,14 +319,14 @@ new class extends Component {
     /**
      * Release the component's user from the Brig after validating a release reason.
      *
-     * Requires the current user to have the `manage-stowaway-users` permission. Validates
+     * Requires the current user to have the `release-from-brig` permission. Validates
      * that `brigActionReason` is provided and at least 5 characters long, executes the
      * release action, refreshes the user model, closes the release modal, and shows a
      * success toast announcing the release.
      */
     public function confirmReleaseFromBrig(): void
     {
-        if (! Auth::user()->can('manage-stowaway-users')) {
+        if (! Auth::user()->can('release-from-brig')) {
             return;
         }
 
@@ -472,12 +472,16 @@ new class extends Component {
                                 </flux:menu.item>
                             @endcan
 
-                            @can('manage-stowaway-users')
+                            @can('release-from-brig')
                                 @if($user->isInBrig())
                                     <flux:menu.item icon="lock-open" wire:click="openReleaseFromBrigModal">
                                         Release from Brig
                                     </flux:menu.item>
-                                @elseif(! $user->staffPosition && $user->id !== Auth::id())
+                                @endif
+                            @endcan
+
+                            @can('manage-stowaway-users')
+                                @if(! $user->isInBrig() && ! $user->staffPosition && $user->id !== Auth::id())
                                     <flux:menu.item icon="lock-closed" wire:click="openPutInBrigModal">
                                         Put in Brig
                                     </flux:menu.item>

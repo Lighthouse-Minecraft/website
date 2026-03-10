@@ -57,6 +57,7 @@
                 <flux:navlist.group heading="Community" class="grid">
                     <flux:navlist.item icon="user-group" :href="route('staff.index')" :current="request()->routeIs('staff.index')" wire:navigate>Our Team</flux:navlist.item>
                     <flux:navlist.item icon="newspaper" :href="route('community-updates.index')" :current="request()->routeIs('community-updates.index')" wire:navigate>Community Updates</flux:navlist.item>
+                    <flux:navlist.item icon="book-open" :href="route('library.books.index')" :current="request()->routeIs('library.books.*') || request()->routeIs('library.guides.*')" wire:navigate>Help</flux:navlist.item>
                 </flux:navlist.group>
 
                 @canany(['view-ready-room', 'view-acp'])

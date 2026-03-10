@@ -33,7 +33,7 @@
 
 The Settings Pages feature provides authenticated users with a centralized area to manage their personal profile, security, appearance preferences, notification delivery, linked Minecraft accounts, linked Discord accounts, and (for staff) their public bio. The settings area is accessed via `/settings` (which redirects to `/settings/profile`) and uses a shared layout with a left-side navigation list linking to all sub-pages.
 
-All settings pages require authentication. Some sub-pages have additional authorization: the **Staff Bio** page requires the `edit-staff-bio` gate (CrewMember+ or board member), the **Minecraft Accounts** page gates the link form behind `link-minecraft-account` (Stowaway+, not brigged, parent allows Minecraft), and the **Discord Account** page gates the link button behind `link-discord` (Stowaway+, not brigged, parent allows Discord).
+All settings pages require authentication. Some sub-pages have additional authorization: the **Staff Bio** page requires the `edit-staff-bio` gate (CrewMember+ or board member), the **Minecraft Accounts** page gates the link form behind `link-minecraft-account` (Traveler+, not brigged, parent allows Minecraft), and the **Discord Account** page gates the link button behind `link-discord` (Stowaway+, not brigged, parent allows Discord).
 
 The settings area comprises 7 routable Volt components plus 1 embedded sub-component (delete-user-form). The pages cover profile information (name, email, timezone, avatar source), password changes, appearance (light/dark/system theme), notification preferences (documented separately in the Notification System feature doc), Minecraft account verification and management, Discord account linking via OAuth, and staff bio editing (documented separately in the Staff Page feature doc).
 
@@ -123,7 +123,7 @@ See Notification System documentation.
 |-----------|-------------|---------------|
 | `edit-staff-bio` | CrewMember+ OR board member | `$user->isAtLeastRank(StaffRank::CrewMember) \|\| $user->is_board_member` |
 | `link-discord` | Stowaway+ AND not brigged AND parent allows Discord | `$user->isAtLeastLevel(MembershipLevel::Stowaway) && !$user->in_brig && $user->parent_allows_discord` |
-| `link-minecraft-account` | Stowaway+ AND not brigged AND parent allows Minecraft | `$user->isAtLeastLevel(MembershipLevel::Stowaway) && !$user->in_brig && $user->parent_allows_minecraft` |
+| `link-minecraft-account` | Traveler+ AND not brigged AND parent allows Minecraft | `$user->isAtLeastLevel(MembershipLevel::Traveler) && !$user->in_brig && $user->parent_allows_minecraft` |
 
 ### Policies
 
@@ -547,7 +547,8 @@ User clicks "Join Server" (invite link)
 2. requires authentication
 3. displays linked accounts
 4. shows verification form when no active verification
-5. stowaway can see link form for minecraft accounts
+5. stowaway cannot see link form for minecraft accounts
+6. traveler can see link form for minecraft accounts
 6. generates verification code
 7. displays active verification code
 8. validates username required

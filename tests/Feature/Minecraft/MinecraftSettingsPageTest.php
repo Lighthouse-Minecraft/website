@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Enums\MembershipLevel;
+use App\Enums\MinecraftAccountStatus;
 use App\Models\MinecraftAccount;
 use App\Models\MinecraftVerification;
 use App\Models\User;
@@ -43,9 +44,18 @@ test('shows verification form when no active verification', function () {
         ->assertSee('Link New Account');
 });
 
-test('stowaway can see link form for minecraft accounts', function () {
+test('stowaway cannot see link form for minecraft accounts', function () {
     $stowaway = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create();
     $this->actingAs($stowaway);
+
+    $this->get('/settings/minecraft-accounts')
+        ->assertSuccessful()
+        ->assertDontSee('Link New Account');
+});
+
+test('traveler can see link form for minecraft accounts', function () {
+    $traveler = User::factory()->withMembershipLevel(MembershipLevel::Traveler)->create();
+    $this->actingAs($traveler);
 
     $this->get('/settings/minecraft-accounts')
         ->assertSuccessful()
@@ -180,5 +190,8 @@ test('checkVerification cleans up when timer expires while user is on the page',
         ->assertSet('verificationCode', null);
 
     expect($verification->fresh()->status)->toBe('expired');
-    $this->assertDatabaseMissing('minecraft_accounts', ['username' => 'ExpiredPlayer']);
+    $this->assertDatabaseHas('minecraft_accounts', [
+        'username' => 'ExpiredPlayer',
+        'status' => MinecraftAccountStatus::Cancelled->value,
+    ]);
 });

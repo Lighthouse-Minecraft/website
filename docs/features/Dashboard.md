@@ -198,7 +198,7 @@ Used by department-based gating.
 | `view-ready-room-steward` | Admin, Officer+, or Steward JrCrew+ | Same pattern for Steward dept |
 | `view-command-dashboard` | Admin or Command dept | `$user->isAdmin() \|\| $user->isInDepartment(StaffDepartment::Command)` |
 | `manage-discipline-reports` | Admin or JrCrew+ | `$user->hasRole('Admin') \|\| $user->isAtLeastRank(StaffRank::JrCrew)` |
-| `link-minecraft-account` | Stowaway+ not in brig, parent allows | `isAtLeastLevel(Stowaway) && !in_brig && parent_allows_minecraft` |
+| `link-minecraft-account` | Traveler+ not in brig, parent allows | `isAtLeastLevel(Traveler) && !in_brig && parent_allows_minecraft` |
 | `link-discord` | Stowaway+ not in brig, parent allows | `isAtLeastLevel(Stowaway) && !in_brig && parent_allows_discord` |
 
 ### Policies

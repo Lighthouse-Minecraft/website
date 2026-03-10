@@ -151,7 +151,7 @@ Key terminology: **Parent** = an adult user who has created or been linked to ch
 | Gate Name | Who Can Pass | Logic Summary |
 |-----------|-------------|---------------|
 | `view-parent-portal` | Adults (18+) or users with children | `$user->isAdult() \|\| $user->children()->exists()` |
-| `link-minecraft-account` | Stowaway+, not in brig, parent allows MC | `isAtLeastLevel(Stowaway) && !in_brig && parent_allows_minecraft` |
+| `link-minecraft-account` | Traveler+, not in brig, parent allows MC | `isAtLeastLevel(Traveler) && !in_brig && parent_allows_minecraft` |
 | `link-discord` | Stowaway+, not in brig, parent allows Discord | `isAtLeastLevel(Stowaway) && !in_brig && parent_allows_discord` |
 
 ### Policies

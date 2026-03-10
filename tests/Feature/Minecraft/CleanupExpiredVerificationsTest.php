@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Enums\MinecraftAccountStatus;
 use App\Enums\MinecraftAccountType;
 use App\Models\MinecraftAccount;
 use App\Models\MinecraftVerification;
@@ -39,11 +40,14 @@ it('removes whitelist and kicks player when verification expires', function () {
 
     $this->artisan('minecraft:cleanup-expired')->assertSuccessful();
 
-    $this->assertDatabaseMissing('minecraft_accounts', ['username' => 'TestPlayer']);
+    $this->assertDatabaseHas('minecraft_accounts', [
+        'username' => 'TestPlayer',
+        'status' => MinecraftAccountStatus::Cancelled->value,
+    ]);
     $this->assertDatabaseHas('minecraft_verifications', ['status' => 'expired']);
 });
 
-it('does not crash if kick fails and still deletes account', function () {
+it('does not crash if kick fails and still marks account cancelled', function () {
     MinecraftVerification::factory()->for($this->user)->create([
         'status' => 'pending',
         'expires_at' => now()->subMinutes(35),
@@ -69,6 +73,9 @@ it('does not crash if kick fails and still deletes account', function () {
 
     $this->artisan('minecraft:cleanup-expired')->assertSuccessful();
 
-    $this->assertDatabaseMissing('minecraft_accounts', ['username' => 'OfflinePlayer']);
+    $this->assertDatabaseHas('minecraft_accounts', [
+        'username' => 'OfflinePlayer',
+        'status' => MinecraftAccountStatus::Cancelled->value,
+    ]);
     $this->assertDatabaseHas('minecraft_verifications', ['status' => 'expired']);
 });
