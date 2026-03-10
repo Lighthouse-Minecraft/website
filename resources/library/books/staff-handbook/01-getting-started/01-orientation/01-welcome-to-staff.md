@@ -39,7 +39,7 @@ You'll learn the details of handling tickets in the [[books/staff-handbook/suppo
 
 ## The Staff Page
 
-There's a public **Staff Page** at [Staff Page]({{url:/staff}}) that shows all staff members organized by department. Members and visitors can see who's on the team, your title, and your bio (if you've set one up).
+There's a public **[Staff Page]({{url:/staff}})** that shows all staff members organized by department. Members and visitors can see who's on the team, your title, and your bio (if you've set one up).
 
 You'll want to [[books/staff-handbook/getting-started/orientation/your-staff-profile|set up your staff profile]] once you've been promoted to Crew Member rank.
 
