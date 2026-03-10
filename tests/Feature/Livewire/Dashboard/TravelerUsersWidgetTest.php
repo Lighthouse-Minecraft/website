@@ -161,11 +161,18 @@ describe('Traveler Users Widget', function () {
         $response->assertSeeLivewire('dashboard.traveler-users-widget');
     });
 
-    it('is visible to officers', function () {
-        $officer = User::factory()->create([
-            'staff_rank' => App\Enums\StaffRank::Officer,
-        ]);
-        $this->actingAs($officer);
+    it('is visible to quartermaster staff', function () {
+        $user = User::factory()->withStaffPosition(App\Enums\StaffDepartment::Quartermaster, App\Enums\StaffRank::JrCrew, 'Jr Quartermaster')->create();
+        $this->actingAs($user);
+
+        $response = get(route('dashboard'));
+
+        $response->assertSeeLivewire('dashboard.traveler-users-widget');
+    });
+
+    it('is visible to command staff', function () {
+        $user = User::factory()->withStaffPosition(App\Enums\StaffDepartment::Command, App\Enums\StaffRank::JrCrew, 'Jr Command')->create();
+        $this->actingAs($user);
 
         $response = get(route('dashboard'));
 
@@ -174,6 +181,15 @@ describe('Traveler Users Widget', function () {
 
     it('is not visible to regular users', function () {
         $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $response = get(route('dashboard'));
+
+        $response->assertDontSeeLivewire('dashboard.traveler-users-widget');
+    });
+
+    it('is not visible to other department staff', function () {
+        $user = User::factory()->withStaffPosition(App\Enums\StaffDepartment::Engineer, App\Enums\StaffRank::Officer, 'Engineer Officer')->create();
         $this->actingAs($user);
 
         $response = get(route('dashboard'));
