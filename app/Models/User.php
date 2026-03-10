@@ -604,7 +604,8 @@ class User extends Authenticatable // implements MustVerifyEmail
             function () {
                 // Fetch minimal ticket data in ONE query
                 $query = Thread::query()
-                    ->select('id', 'status', 'department', 'assigned_to_user_id', 'has_open_flags', 'is_flagged', 'last_message_at')
+                    ->where('type', \App\Enums\ThreadType::Ticket)
+                    ->select('id', 'type', 'status', 'department', 'assigned_to_user_id', 'has_open_flags', 'is_flagged', 'last_message_at')
                     ->with(['participants' => function ($q) {
                         $q->where('user_id', $this->id)
                             ->select('thread_id', 'user_id', 'is_viewer', 'last_read_at');

@@ -165,5 +165,9 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('edit-docs', function ($user) {
             return $user->hasRole('Admin') || $user->isAtLeastRank(StaffRank::Officer);
         });
+
+        Gate::define('lock-topic', function ($user) {
+            return $user->isAtLeastRank(StaffRank::Officer);
+        });
     }
 }

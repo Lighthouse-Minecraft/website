@@ -78,6 +78,20 @@ Route::prefix('tickets')
         Volt::route('/{thread}', 'ready-room.tickets.view-ticket')->name('show');
     });
 
+// Discipline Report Routes
+Volt::route('/reports/{report}', 'reports.view-report')
+    ->name('reports.show')
+    ->middleware(['auth']);
+
+// Topic System Routes
+Route::prefix('topics')
+    ->name('topics.')
+    ->middleware(['auth'])
+    ->group(function () {
+        Volt::route('/', 'topics.topics-list')->name('index');
+        Volt::route('/{thread}', 'topics.view-topic')->name('show');
+    });
+
 Route::prefix('meetings')
     ->name('meeting.')
     ->controller(App\Http\Controllers\MeetingController::class)

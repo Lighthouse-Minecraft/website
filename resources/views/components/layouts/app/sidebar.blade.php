@@ -40,6 +40,18 @@
                         >
                             Tickets
                         </flux:navlist.item>
+
+                        @php $topicUnread = \App\Models\Thread::unreadCountFor(auth()->user(), \App\Enums\ThreadType::Topic); @endphp
+                        <flux:navlist.item
+                            icon="chat-bubble-left-right"
+                            :href="route('topics.index')"
+                            :current="request()->routeIs('topics.*')"
+                            wire:navigate
+                            :badge="$topicUnread ?: null"
+                            badge:color="red"
+                        >
+                            Discussions
+                        </flux:navlist.item>
                     @endauth
 
                     @can('view-parent-portal')
