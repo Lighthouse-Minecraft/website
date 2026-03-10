@@ -123,8 +123,10 @@ new class extends Component {
 
     public function getPreviewHtmlProperty(): string
     {
-        $body = \App\Services\Docs\PageDTO::processConfigVariables(
-            \App\Services\Docs\PageDTO::processWikiLinks($this->body ?: '')
+        $body = \App\Services\Docs\PageDTO::processSiteUrls(
+            \App\Services\Docs\PageDTO::processConfigVariables(
+                \App\Services\Docs\PageDTO::processWikiLinks($this->body ?: '')
+            )
         );
 
         return \Illuminate\Support\Str::markdown($body, [

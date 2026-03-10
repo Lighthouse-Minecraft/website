@@ -16,6 +16,16 @@ new class extends Component {
         });
     }
 
+    public function getVisibleGuidesProperty()
+    {
+        $service = app(DocumentationService::class);
+        $user = auth()->user();
+
+        return $service->getAllGuides()->filter(function ($guide) use ($user) {
+            return $this->canSee($guide->visibility, $user);
+        });
+    }
+
     private function canSee(string $visibility, $user): bool
     {
         if ($visibility === 'public') {
@@ -41,7 +51,21 @@ new class extends Component {
         <flux:card>
             <flux:heading size="xl">Handbooks</flux:heading>
             <flux:text variant="subtle">Browse our documentation</flux:text>
+
+            @if($this->visibleGuides->isNotEmpty())
+                <flux:separator class="my-4" />
+                <flux:heading size="sm" class="mb-2">Guides</flux:heading>
+                <div class="flex flex-wrap gap-3">
+                    @foreach($this->visibleGuides as $guide)
+                        <flux:button variant="subtle" size="sm" href="{{ $guide->url }}" wire:navigate icon="book-open" wire:key="guide-{{ $guide->slug }}">
+                            {{ $guide->title }}
+                        </flux:button>
+                    @endforeach
+                </div>
+            @endif
+
             <flux:separator class="my-4" />
+            <flux:heading size="sm" class="mb-2">Handbooks</flux:heading>
 
             @if($this->visibleBooks->isEmpty())
                 <flux:text variant="subtle">No handbooks available.</flux:text>

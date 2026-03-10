@@ -42,3 +42,24 @@ it('leaves malformed config variables untouched', function () {
 
     expect($result)->toBe('This is {{not a config}} and neither is {{config:}}');
 });
+
+it('replaces url tags with full site URLs', function () {
+    $body = 'Visit the [Staff Page]({{url:/staff}}) to see the team.';
+    $result = PageDTO::processSiteUrls($body);
+
+    expect($result)->toBe('Visit the [Staff Page]('.url('/staff').') to see the team.');
+});
+
+it('handles url tags with nested paths', function () {
+    $body = 'Go to [Settings]({{url:/settings/staff-bio}}) to update your bio.';
+    $result = PageDTO::processSiteUrls($body);
+
+    expect($result)->toBe('Go to [Settings]('.url('/settings/staff-bio').') to update your bio.');
+});
+
+it('leaves malformed url tags untouched', function () {
+    $body = 'This {{url:no-slash}} should not match.';
+    $result = PageDTO::processSiteUrls($body);
+
+    expect($result)->toBe('This {{url:no-slash}} should not match.');
+});

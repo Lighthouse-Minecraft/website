@@ -33,13 +33,13 @@ The Ready Room is only visible to staff members (Junior Crew and above).
 
 ## Support Tickets
 
-One of your main responsibilities is helping members through **support tickets**. You can access the ticket queue from the Ready Room or the navigation bar. Tickets are how members ask for help, report issues, or request actions like promotions.
+One of your main ways of interacting with community members who need help is through **support tickets**. You can access the ticket queue from the Ready Room or the navigation bar. Tickets are how members ask for help, report issues, or request actions like promotions.
 
 You'll learn the details of handling tickets in the [[books/staff-handbook/support-and-moderation|Support & Moderation]] section of this handbook.
 
 ## The Staff Page
 
-There's a public **Staff Page** at `/staff` that shows all staff members organized by department. Members and visitors can see who's on the team, your title, and your bio (if you've set one up).
+There's a public **Staff Page** at [Staff Page]({{url:/staff}}) that shows all staff members organized by department. Members and visitors can see who's on the team, your title, and your bio (if you've set one up).
 
 You'll want to [[books/staff-handbook/getting-started/orientation/your-staff-profile|set up your staff profile]] once you've been promoted to Crew Member rank.
 

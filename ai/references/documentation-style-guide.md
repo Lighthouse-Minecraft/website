@@ -251,6 +251,27 @@ whitelisted, note it in your output so the developer can add it.
 
 ---
 
+## Site URLs in Practice
+
+When linking to pages on the Lighthouse website (not other documentation pages), use the
+`{{url:/path}}` syntax instead of hardcoding URLs:
+
+**Wrong:**
+```markdown
+Visit the [Staff Page](https://lighthousemc.net/staff) to see the team.
+```
+
+**Right:**
+```markdown
+Visit the [Staff Page]({{url:/staff}}) to see the team.
+```
+
+This generates the correct full URL for whatever environment the site is running on.
+
+Use `{{url:/path}}` for site pages. Use `[[wiki links]]` for other documentation pages.
+
+---
+
 ## Wiki Links in Practice
 
 Link to related pages when it genuinely helps the reader. Don't over-link.
@@ -287,6 +308,7 @@ Before considering a page done, verify:
 - [ ] All facts have been verified against the actual code
 - [ ] Config variables use `{{config:key}}` syntax (not hardcoded values)
 - [ ] All config keys used are on the safe whitelist
+- [ ] Site page links use `{{url:/path}}` syntax (not hardcoded domains)
 - [ ] Wiki links point to real, existing pages
 - [ ] Terminology matches the glossary
 - [ ] Paragraphs are 2-3 sentences max

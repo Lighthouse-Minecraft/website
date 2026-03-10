@@ -17,7 +17,7 @@ class PageDTO
 
     public function renderedHtml(): string
     {
-        $body = self::processConfigVariables(self::processWikiLinks($this->body));
+        $body = self::processSiteUrls(self::processConfigVariables(self::processWikiLinks($this->body)));
 
         return \Illuminate\Support\Str::markdown($body, [
             'html_input' => 'strip',
@@ -64,6 +64,18 @@ class PageDTO
             $value = config($key);
 
             return $value !== null ? (string) $value : $matches[0];
+        }, $body);
+    }
+
+    /**
+     * Replace {{url:/path}} placeholders with full site URLs.
+     */
+    public static function processSiteUrls(string $body): string
+    {
+        return preg_replace_callback('/\{\{url:(\/[a-zA-Z0-9\/_\-\.]*)\}\}/', function ($matches) {
+            $path = $matches[1];
+
+            return url($path);
         }, $body);
     }
 
