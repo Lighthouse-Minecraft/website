@@ -40,7 +40,7 @@ You cannot put another staff member in the Brig, and you cannot brig yourself.
 When you put a user in the Brig, the system automatically:
 
 - Sets their account as brigged with the reason you entered
-- **Bans all their Minecraft accounts** -- removes them from the server whitelist and removes all luckperms permissions
+- **Bans all their Minecraft accounts** -- removes them from the server whitelist and sets their account status to Banned
 - **Strips all their Discord roles** -- removes managed roles from their Discord accounts
 - Records the action in the **activity log**
 - Sends the user a **notification** about their brig placement

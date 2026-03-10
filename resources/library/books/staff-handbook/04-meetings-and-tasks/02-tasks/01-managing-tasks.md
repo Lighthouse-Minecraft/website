@@ -47,9 +47,9 @@ To undo a completion, click the checkbox again -- it toggles back to pending.
 
 ## Archiving Tasks
 
-Archiving clears completed tasks from the active list while keeping a record. Archiving is only available **during meetings** -- when you're viewing tasks in a meeting context, completed tasks show an **Archive** button.
+Archiving clears completed tasks from the active list while keeping a record. This option is only available **during meetings** -- when you're viewing tasks in a meeting context, completed tasks show an **Archive** button.
 
-Archiving records which meeting the task was archived in, which helps the Command department track productivity between meetings.
+The archive keeps a record of which meeting a task was archived in, helping the Command department track productivity between meetings.
 
 ## Task Lifecycle
 
