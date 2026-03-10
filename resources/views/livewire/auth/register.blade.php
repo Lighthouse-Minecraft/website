@@ -4,6 +4,7 @@ use App\Actions\AutoLinkParentOnRegistration;
 use App\Actions\PutUserInBrig;
 use App\Actions\RecordActivity;
 use App\Enums\BrigType;
+use App\Models\SiteConfig;
 use App\Models\User;
 use App\Notifications\ParentAccountNotification;
 use Illuminate\Auth\Events\Registered;
@@ -23,6 +24,7 @@ new #[Layout('components.layouts.auth')] class extends Component {
     public string $password_confirmation = '';
     public string $date_of_birth = '';
     public string $parent_email = '';
+    public string $registration_answer = '';
 
     /**
      * Handle step 1: validate account details + DOB, then proceed.
@@ -37,28 +39,42 @@ new #[Layout('components.layouts.auth')] class extends Component {
         ]);
 
         $age = \Carbon\Carbon::parse($this->date_of_birth)->age;
+        $hasQuestion = ! empty(SiteConfig::getValue('registration_question'));
 
-        if ($age >= 17) {
+        if ($age >= 17 && ! $hasQuestion) {
+            // Adult with no registration question — create immediately
             $this->createAccount();
             return;
         }
 
-        // Under 17 — need parent email
+        // Under 17 (needs parent email) or has registration question — go to step 2
         $this->step = 2;
     }
 
     /**
-     * Handle step 2: collect parent email and create account.
+     * Handle step 2: collect parent email and/or registration answer, then create account.
      */
-    public function submitParentEmail(): void
+    public function submitStep2(): void
     {
-        $this->validate([
+        $age = \Carbon\Carbon::parse($this->date_of_birth)->age;
+        $hasQuestion = ! empty(SiteConfig::getValue('registration_question'));
+
+        $rules = [
             'name' => ['required', 'string', 'max:32'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
             'password' => ['required', 'string', 'confirmed', Rules\Password::defaults()],
             'date_of_birth' => ['required', 'date', 'before:today'],
-            'parent_email' => ['required', 'email', Rule::notIn([$this->email])],
-        ]);
+        ];
+
+        if ($age < 17) {
+            $rules['parent_email'] = ['required', 'email', Rule::notIn([$this->email])];
+        }
+
+        if ($hasQuestion) {
+            $rules['registration_answer'] = ['required', 'string', 'min:3'];
+        }
+
+        $this->validate($rules);
 
         $this->createAccount();
     }
@@ -69,6 +85,7 @@ new #[Layout('components.layouts.auth')] class extends Component {
     private function createAccount(): void
     {
         $age = \Carbon\Carbon::parse($this->date_of_birth)->age;
+        $questionText = SiteConfig::getValue('registration_question');
 
         $userData = [
             'name' => $this->name,
@@ -79,6 +96,11 @@ new #[Layout('components.layouts.auth')] class extends Component {
 
         if ($age < 17) {
             $userData['parent_email'] = $this->parent_email;
+        }
+
+        if (! empty($questionText) && ! empty($this->registration_answer)) {
+            $userData['registration_question_text'] = $questionText;
+            $userData['registration_answer'] = $this->registration_answer;
         }
 
         if ($age < 13) {
@@ -192,15 +214,30 @@ new #[Layout('components.layouts.auth')] class extends Component {
             <x-text-link href="{{ route('login') }}">Log in</x-text-link>
         </div>
     @else
-        <x-auth-header title="Parent or Guardian Email" description="A parent or guardian email is required for users under 17." />
+        <x-auth-header title="Almost Done!" description="Just a couple more things before we create your account." />
 
-        <form wire:submit="submitParentEmail" class="flex flex-col gap-6">
-            <flux:field>
-                <flux:label>Parent/Guardian Email</flux:label>
-                <flux:input wire:model="parent_email" type="email" required placeholder="parent@example.com" />
-                <flux:error name="parent_email" />
-                <flux:description>We'll send your parent information about your account and how to manage it.</flux:description>
-            </flux:field>
+        <form wire:submit="submitStep2" class="flex flex-col gap-6">
+            @php
+                $age = \Carbon\Carbon::parse($date_of_birth)->age;
+                $questionText = \App\Models\SiteConfig::getValue('registration_question');
+            @endphp
+
+            @if($age < 17)
+                <flux:field>
+                    <flux:label>Parent/Guardian Email</flux:label>
+                    <flux:input wire:model="parent_email" type="email" required placeholder="parent@example.com" />
+                    <flux:error name="parent_email" />
+                    <flux:description>We'll send your parent information about your account and how to manage it.</flux:description>
+                </flux:field>
+            @endif
+
+            @if(! empty($questionText))
+                <flux:field>
+                    <flux:label>{{ $questionText }}</flux:label>
+                    <flux:textarea wire:model="registration_answer" rows="3" required />
+                    <flux:error name="registration_answer" />
+                </flux:field>
+            @endif
 
             <flux:button type="submit" variant="primary" class="w-full">
                 Create account
