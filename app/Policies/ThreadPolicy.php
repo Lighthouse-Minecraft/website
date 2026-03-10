@@ -12,7 +12,13 @@ class ThreadPolicy
 {
     public function before(User $user, string $ability): ?bool
     {
-        // Admin and Command Officers can do everything
+        // For reply and createTopic, always defer to the specific policy method
+        // so lock/draft checks are respected even for admins
+        if (in_array($ability, ['reply', 'createTopic'])) {
+            return null;
+        }
+
+        // Admin and Command Officers can do everything else
         if ($user->isAdmin() || ($user->isInDepartment(StaffDepartment::Command) && $user->isAtLeastRank(StaffRank::Officer))) {
             return true;
         }
@@ -86,6 +92,11 @@ class ThreadPolicy
             return false;
         }
 
+        // Admin and Command Officers can create topics on any published report
+        if ($user->isAdmin() || ($user->isInDepartment(StaffDepartment::Command) && $user->isAtLeastRank(StaffRank::Officer))) {
+            return true;
+        }
+
         // Report subject can create topic
         if ($user->id === $report->subject_user_id) {
             return true;
@@ -119,6 +130,11 @@ class ThreadPolicy
     {
         if ($thread->is_locked) {
             return false;
+        }
+
+        // Admin and Command Officers can reply to any unlocked thread
+        if ($user->isAdmin() || ($user->isInDepartment(StaffDepartment::Command) && $user->isAtLeastRank(StaffRank::Officer))) {
+            return true;
         }
 
         return $thread->isVisibleTo($user);

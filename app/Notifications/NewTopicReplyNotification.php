@@ -2,15 +2,16 @@
 
 namespace App\Notifications;
 
-use App\Models\Thread;
+use App\Models\Message;
 use App\Notifications\Channels\DiscordChannel;
 use App\Notifications\Channels\PushoverChannel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Str;
 
-class NewTopicNotification extends Notification implements ShouldQueue
+class NewTopicReplyNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
@@ -19,9 +20,9 @@ class NewTopicNotification extends Notification implements ShouldQueue
     protected ?string $pushoverKey = null;
 
     public function __construct(
-        public Thread $thread
+        public Message $message
     ) {
-        $this->thread->loadMissing('createdBy');
+        $this->message->loadMissing(['thread', 'user']);
     }
 
     public function setChannels(array $channels, ?string $pushoverKey = null): self
@@ -53,27 +54,32 @@ class NewTopicNotification extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
+        $thread = $this->message->thread;
+
         return (new MailMessage)
-            ->subject('New Discussion Topic: '.$this->thread->subject)
-            ->markdown('mail.new-topic', [
-                'thread' => $this->thread,
-                'topicUrl' => route('topics.show', $this->thread),
+            ->subject('New Reply: '.$thread->subject)
+            ->markdown('mail.new-topic-reply', [
+                'thread' => $thread,
+                'fromName' => $this->message->user?->name ?? 'Unknown',
+                'messagePreview' => Str::limit($this->message->body, 100),
+                'topicUrl' => route('topics.show', $thread),
             ]);
     }
 
     public function toPushover(object $notifiable): array
     {
         return [
-            'title' => 'New Discussion Topic',
-            'message' => $this->thread->subject,
-            'url' => route('topics.show', $this->thread),
+            'title' => 'New Discussion Reply',
+            'message' => Str::limit($this->message->body, 100),
+            'url' => route('topics.show', $this->message->thread),
         ];
     }
 
     public function toDiscord(object $notifiable): string
     {
-        $creatorName = $this->thread->createdBy?->name ?? 'Unknown';
+        $thread = $this->message->thread;
+        $fromName = $this->message->user?->name ?? 'Unknown';
 
-        return "**New Discussion Topic:** {$this->thread->subject}\n**Started by:** {$creatorName}\n".route('topics.show', $this->thread);
+        return "**New Discussion Reply:** {$thread->subject}\n**From:** {$fromName}\n".Str::limit($this->message->body, 200)."\n".route('topics.show', $thread);
     }
 }

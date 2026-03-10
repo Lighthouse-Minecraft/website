@@ -8,7 +8,7 @@ use App\Models\DisciplineReport;
 use App\Models\Message;
 use App\Models\Thread;
 use App\Models\User;
-use App\Notifications\NewTicketReplyNotification;
+use App\Notifications\NewTopicReplyNotification;
 use App\Services\TicketNotificationService;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
@@ -190,7 +190,7 @@ new class extends Component
 
             $notificationService = app(TicketNotificationService::class);
             foreach ($participants as $participant) {
-                $notificationService->send($participant->user, new NewTicketReplyNotification($message));
+                $notificationService->send($participant->user, new NewTopicReplyNotification($message));
                 Thread::clearUnreadCache($participant->user, ThreadType::Topic);
             }
         }
@@ -345,7 +345,7 @@ new class extends Component
         </div>
         <div class="flex flex-wrap gap-3">
             @foreach($this->participantsList as $participant)
-                <div class="flex items-center gap-2">
+                <div wire:key="participant-{{ $participant->id }}" class="flex items-center gap-2">
                     <flux:avatar size="xs" :src="$participant->user->avatarUrl()" :initials="$participant->user->initials()" />
                     <a href="{{ route('profile.show', $participant->user) }}" class="text-sm text-blue-600 dark:text-blue-400 hover:underline">{{ $participant->user->name }}</a>
                     @if($participant->is_viewer)

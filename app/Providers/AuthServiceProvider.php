@@ -167,7 +167,7 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('lock-topic', function ($user) {
-            return $user->isAtLeastRank(StaffRank::Officer);
+            return $user->hasRole('Admin') || $user->isAtLeastRank(StaffRank::Officer);
         });
     }
 }

@@ -1,12 +1,14 @@
 <x-mail::message>
-A new discussion topic has been created that includes you.
+There is a new reply on a discussion you're part of.
 
 **Subject:** {{ $thread->subject }}
 
-**Started by:** {{ $thread->createdBy?->name ?? 'Unknown' }}
+**From:** {{ $fromName }}
+
+**Message:** {{ $messagePreview }}
 
 <x-mail::button :url="$topicUrl">
-View Topic
+View Discussion
 </x-mail::button>
 
 Thank you!
