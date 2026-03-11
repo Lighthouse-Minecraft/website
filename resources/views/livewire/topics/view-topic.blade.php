@@ -222,7 +222,14 @@ new class extends Component
             'kind' => MessageKind::System,
         ]);
 
-        $this->thread->update(['last_message_at' => now()]);
+        $now = now();
+        $this->thread->update(['last_message_at' => $now]);
+
+        // Mark as read for the user who triggered the action
+        $this->thread->participants()
+            ->where('user_id', auth()->id())
+            ->update(['last_read_at' => $now]);
+        Thread::clearUnreadCache(auth()->user(), ThreadType::Topic);
 
         RecordActivity::run($this->thread, "topic_{$action}", "Topic {$action} by " . auth()->user()->name);
 

@@ -459,7 +459,13 @@ new class extends Component
             'kind' => MessageKind::System,
         ]);
 
-        $this->thread->update(['last_message_at' => now()]);
+        $now = now();
+        $this->thread->update(['last_message_at' => $now]);
+
+        // Mark as read for the user who triggered the close
+        $this->thread->participants()
+            ->where('user_id', auth()->id())
+            ->update(['last_read_at' => $now]);
 
         \App\Actions\RecordActivity::run(
             $this->thread,

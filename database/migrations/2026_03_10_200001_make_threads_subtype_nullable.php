@@ -17,7 +17,7 @@ return new class extends Migration
     public function down(): void
     {
         // Backfill null subtypes before making column NOT NULL
-        DB::table('threads')->whereNull('subtype')->update(['subtype' => 'topic']);
+        DB::table('threads')->whereNull('subtype')->update(['subtype' => 'support']);
 
         Schema::table('threads', function (Blueprint $table) {
             $table->string('subtype')->nullable(false)->change();
