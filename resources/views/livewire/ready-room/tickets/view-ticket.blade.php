@@ -4,6 +4,7 @@ use App\Actions\AcknowledgeFlag;
 use App\Actions\FlagMessage;
 use App\Enums\MessageKind;
 use App\Enums\ThreadStatus;
+use App\Enums\ThreadType;
 use App\Models\Message;
 use App\Models\MessageFlag;
 use App\Models\Thread;
@@ -59,6 +60,23 @@ new class extends Component
             $participant->update(['last_read_at' => now()]);
             // Clear caches so counts update immediately
             auth()->user()->clearTicketCaches();
+            Thread::clearUnreadCache(auth()->user(), ThreadType::Ticket);
+        }
+    }
+
+    public function checkForNewMessages(): void
+    {
+        $fresh = $this->thread->fresh();
+
+        if ($fresh->last_message_at && $fresh->last_message_at->gt($this->thread->last_message_at)) {
+            $this->thread = $fresh;
+            unset($this->messages);
+
+            // Mark as read since the user is actively viewing this thread
+            $this->thread->participants()
+                ->where('user_id', auth()->id())
+                ->update(['last_read_at' => now()]);
+            Thread::clearUnreadCache(auth()->user(), ThreadType::Ticket);
         }
     }
 
@@ -256,6 +274,7 @@ new class extends Component
         $allParticipants = $this->thread->participants()->with('user')->get();
         foreach ($allParticipants as $participant) {
             $participant->user->clearTicketCaches();
+            Thread::clearUnreadCache($participant->user, ThreadType::Ticket);
         }
     }
 
@@ -316,6 +335,7 @@ new class extends Component
         $allParticipants = $this->thread->participants()->with('user')->get();
         foreach ($allParticipants as $participant) {
             $participant->user->clearTicketCaches();
+            Thread::clearUnreadCache($participant->user, ThreadType::Ticket);
         }
 
         Flux::toast('Status updated successfully!', variant: 'success');
@@ -347,10 +367,12 @@ new class extends Component
             $allParticipants = $this->thread->participants()->with('user')->get();
             foreach ($allParticipants as $participant) {
                 $participant->user->clearTicketCaches();
+                Thread::clearUnreadCache($participant->user, ThreadType::Ticket);
             }
             // Also clear for old assignee if they existed
             if ($oldAssignee) {
                 $oldAssignee->clearTicketCaches();
+                Thread::clearUnreadCache($oldAssignee, ThreadType::Ticket);
             }
 
             Flux::toast('Ticket unassigned successfully!', variant: 'success');
@@ -396,12 +418,15 @@ new class extends Component
         $allParticipants = $this->thread->participants()->with('user')->get();
         foreach ($allParticipants as $participant) {
             $participant->user->clearTicketCaches();
+            Thread::clearUnreadCache($participant->user, ThreadType::Ticket);
         }
         // Also clear for old and new assignees if they exist
         if ($oldAssignee) {
             $oldAssignee->clearTicketCaches();
+            Thread::clearUnreadCache($oldAssignee, ThreadType::Ticket);
         }
         $newAssignee->clearTicketCaches();
+        Thread::clearUnreadCache($newAssignee, ThreadType::Ticket);
 
         Flux::toast('Ticket assigned successfully!', variant: 'success');
     }
@@ -440,7 +465,13 @@ new class extends Component
             'kind' => MessageKind::System,
         ]);
 
-        $this->thread->update(['last_message_at' => now()]);
+        $now = now();
+        $this->thread->update(['last_message_at' => $now]);
+
+        // Mark as read for the user who triggered the close
+        $this->thread->participants()
+            ->where('user_id', auth()->id())
+            ->update(['last_read_at' => $now]);
 
         \App\Actions\RecordActivity::run(
             $this->thread,
@@ -452,6 +483,7 @@ new class extends Component
         $allParticipants = $this->thread->participants()->with('user')->get();
         foreach ($allParticipants as $participant) {
             $participant->user->clearTicketCaches();
+            Thread::clearUnreadCache($participant->user, ThreadType::Ticket);
         }
 
         $toastMessage = $isStaff ? 'Ticket closed successfully!' : 'Ticket marked as resolved!';
@@ -584,99 +616,143 @@ new class extends Component
     @endif
 
     {{-- Messages --}}
-    <div class="space-y-4">
+    <div class="mx-auto w-full max-w-3xl" wire:poll.15s="checkForNewMessages">
+    <div class="flex flex-col gap-4">
         @php $tz = auth()->user()->timezone ?? 'UTC'; @endphp
         @foreach($this->messages as $message)
-            <div wire:key="message-{{ $message->id }}" class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-4 @if($message->kind === \App\Enums\MessageKind::InternalNote) bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800 @elseif($message->kind === \App\Enums\MessageKind::System) bg-zinc-100 dark:bg-zinc-800 @endif">
-                <div class="flex items-start justify-between">
-                    <div class="flex items-start gap-3">
-                        <flux:avatar size="sm" :src="$message->user->avatarUrl()" initials="{{ $message->user->initials() }}" />
-                        <div>
-                            <div class="font-semibold"><a href="{{ route('profile.show', $message->user) }}" class="text-blue-600 dark:text-blue-400 hover:underline">{{ $message->user->name }}</a></div>
-                            <div class="text-sm text-zinc-500 dark:text-zinc-400">
-                                {{ $message->created_at->setTimezone($tz)->format('M j, Y g:i A') }}
-                                @if($message->kind === \App\Enums\MessageKind::InternalNote)
-                                    <flux:badge size="sm" color="amber">Internal Note</flux:badge>
-                                @elseif($message->kind === \App\Enums\MessageKind::System)
-                                    <flux:badge size="sm" color="zinc">System</flux:badge>
-                                @endif
+            @php $isOwn = $message->user_id === auth()->id(); @endphp
+
+            @if($message->kind === \App\Enums\MessageKind::System)
+                {{-- System Message — centered --}}
+                <div wire:key="message-{{ $message->id }}" class="chat-system">
+                    <div class="inline-block rounded-lg bg-zinc-100 dark:bg-zinc-800 px-4 py-2">
+                        <div class="text-sm italic text-zinc-600 dark:text-zinc-400 prose prose-sm dark:prose-invert max-w-none">{!! Str::markdown($message->body, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}</div>
+                    </div>
+                    <div class="mt-1 text-xs text-zinc-400 dark:text-zinc-500">{{ $message->created_at->setTimezone($tz)->format('M j, Y g:i A') }}</div>
+                </div>
+
+            @elseif($message->kind === \App\Enums\MessageKind::InternalNote)
+                {{-- Internal Note — always left-aligned, amber --}}
+                <div wire:key="message-{{ $message->id }}" class="chat-message chat-message-start">
+                    <flux:avatar size="sm" :src="$message->user->avatarUrl()" :initials="$message->user->initials()" class="shrink-0 mt-1" />
+                    <div class="min-w-0">
+                        <div class="flex items-baseline gap-2 mb-1">
+                            <a href="{{ route('profile.show', $message->user) }}" class="font-semibold text-sm text-blue-600 dark:text-blue-400 hover:underline">{{ $message->user->name }}</a>
+                            <span class="text-xs text-zinc-400 dark:text-zinc-500">{{ $message->created_at->setTimezone($tz)->format('M j, Y g:i A') }}</span>
+                            <flux:badge size="sm" color="amber">Internal Note</flux:badge>
+                        </div>
+                        @if($message->user->staff_rank && $message->user->staff_rank !== \App\Enums\StaffRank::None)
+                            <div class="mb-1">
+                                <flux:badge size="sm" :color="$message->user->staff_rank->color()">{{ $message->user->staff_department?->label() }} &middot; {{ $message->user->staff_rank->label() }}</flux:badge>
+                            </div>
+                        @endif
+                        <div class="chat-bubble chat-bubble-start border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30">
+                            <div class="prose prose-sm dark:prose-invert max-w-none [&_a]:text-blue-600 dark:[&_a]:text-blue-400 [&_a]:underline [&_a]:font-medium hover:[&_a]:text-blue-700 dark:hover:[&_a]:text-blue-300">
+                                {!! Str::markdown($message->body, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
                             </div>
                         </div>
                     </div>
-
-                    @if($message->kind === \App\Enums\MessageKind::Message && $message->user_id !== auth()->id() && auth()->user()->can('flag', $message))
-                        <flux:button wire:click="openFlagModal({{ $message->id }})" variant="ghost" size="sm">
-                            <flux:icon.flag class="size-4" />
-                        </flux:button>
-                    @endif
                 </div>
 
-                <div class="mt-3 prose prose-sm dark:prose-invert max-w-none [&_a]:text-blue-600 dark:[&_a]:text-blue-400 [&_a]:underline [&_a]:font-medium hover:[&_a]:text-blue-700 dark:hover:[&_a]:text-blue-300">
-                    {!! Str::markdown($message->body, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
+            @elseif($isOwn)
+                {{-- Own message — right-aligned, cyan --}}
+                <div wire:key="message-{{ $message->id }}" class="chat-message chat-message-end">
+                    <flux:avatar size="sm" :src="$message->user->avatarUrl()" :initials="$message->user->initials()" class="shrink-0 mt-1" />
+                    <div class="min-w-0">
+                        <div class="flex items-baseline gap-2 mb-1 justify-end">
+                            <span class="text-xs text-zinc-400 dark:text-zinc-500">{{ $message->created_at->setTimezone($tz)->format('M j, Y g:i A') }}</span>
+                        </div>
+                        <div class="chat-bubble chat-bubble-end bg-cyan-50 dark:bg-cyan-950/40 border border-cyan-200 dark:border-cyan-800">
+                            <div class="prose prose-sm dark:prose-invert max-w-none [&_a]:text-blue-600 dark:[&_a]:text-blue-400 [&_a]:underline [&_a]:font-medium hover:[&_a]:text-blue-700 dark:hover:[&_a]:text-blue-300">
+                                {!! Str::markdown($message->body, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                {{-- Show flags for staff with viewFlagged permission --}}
-                @if($this->canViewFlagged && $message->flags->isNotEmpty())
-                    <div class="mt-4 space-y-2">
-                        @foreach($message->flags as $flag)
-                            <div wire:key="flag-{{ $flag->id }}" class="rounded border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950 p-3">
-                                <div class="flex items-start justify-between">
-                                    <div class="text-sm">
-                                        <strong>Flagged by <a href="{{ route('profile.show', $flag->flaggedBy) }}" class="text-blue-600 dark:text-blue-400 hover:underline">{{ $flag->flaggedBy->name }}</a></strong> on {{ $flag->created_at->setTimezone($tz)->format('M j, Y g:i A') }}
-                                        <div class="mt-1 text-zinc-700 dark:text-zinc-300">{{ $flag->note }}</div>
-                                        @if($flag->status->value === 'acknowledged')
-                                            <div class="mt-2 text-xs text-zinc-600 dark:text-zinc-400">
-                                                @if($flag->reviewedBy && $flag->reviewed_at)
-                                                    <strong>Acknowledged by <a href="{{ route('profile.show', $flag->reviewedBy) }}" class="text-blue-600 dark:text-blue-400 hover:underline">{{ $flag->reviewedBy->name }}</a></strong> on {{ $flag->reviewed_at->setTimezone($tz)->format('M j, Y g:i A') }}
-                                                @else
-                                                    <strong>Acknowledged</strong>
-                                                @endif
-                                                @if($flag->staff_notes)
-                                                    <div class="mt-1">{{ $flag->staff_notes }}</div>
+            @else
+                {{-- Other user's message — left-aligned, neutral --}}
+                <div wire:key="message-{{ $message->id }}" class="chat-message chat-message-start">
+                    <flux:avatar size="sm" :src="$message->user->avatarUrl()" :initials="$message->user->initials()" class="shrink-0 mt-1" />
+                    <div class="min-w-0">
+                        <div class="flex items-baseline gap-2 mb-1">
+                            <a href="{{ route('profile.show', $message->user) }}" class="font-semibold text-sm text-blue-600 dark:text-blue-400 hover:underline">{{ $message->user->name }}</a>
+                            <span class="text-xs text-zinc-400 dark:text-zinc-500">{{ $message->created_at->setTimezone($tz)->format('M j, Y g:i A') }}</span>
+                            @if(auth()->user()->can('flag', $message))
+                                <flux:button wire:click="openFlagModal({{ $message->id }})" variant="ghost" size="xs" class="!p-0.5" aria-label="Flag message">
+                                    <flux:icon.flag class="size-3.5" />
+                                </flux:button>
+                            @endif
+                        </div>
+                        @if($message->user->staff_rank && $message->user->staff_rank !== \App\Enums\StaffRank::None)
+                            <div class="mb-1">
+                                <flux:badge size="sm" :color="$message->user->staff_rank->color()">{{ $message->user->staff_department?->label() }} &middot; {{ $message->user->staff_rank->label() }}</flux:badge>
+                            </div>
+                        @endif
+                        <div class="chat-bubble chat-bubble-start bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
+                            <div class="prose prose-sm dark:prose-invert max-w-none [&_a]:text-blue-600 dark:[&_a]:text-blue-400 [&_a]:underline [&_a]:font-medium hover:[&_a]:text-blue-700 dark:hover:[&_a]:text-blue-300">
+                                {!! Str::markdown($message->body, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
+                            </div>
+                        </div>
+
+                        {{-- Show flags for staff with viewFlagged permission --}}
+                        @if($this->canViewFlagged && $message->flags->isNotEmpty())
+                            <div class="mt-2 space-y-2">
+                                @foreach($message->flags as $flag)
+                                    <div wire:key="flag-{{ $flag->id }}" class="rounded border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950 p-3">
+                                        <div class="flex items-start justify-between">
+                                            <div class="text-sm">
+                                                <strong>Flagged by <a href="{{ route('profile.show', $flag->flaggedBy) }}" class="text-blue-600 dark:text-blue-400 hover:underline">{{ $flag->flaggedBy->name }}</a></strong> on {{ $flag->created_at->setTimezone($tz)->format('M j, Y g:i A') }}
+                                                <div class="mt-1 text-zinc-700 dark:text-zinc-300">{{ $flag->note }}</div>
+                                                @if($flag->status->value === 'acknowledged')
+                                                    <div class="mt-2 text-xs text-zinc-600 dark:text-zinc-400">
+                                                        @if($flag->reviewedBy && $flag->reviewed_at)
+                                                            <strong>Acknowledged by <a href="{{ route('profile.show', $flag->reviewedBy) }}" class="text-blue-600 dark:text-blue-400 hover:underline">{{ $flag->reviewedBy->name }}</a></strong> on {{ $flag->reviewed_at->setTimezone($tz)->format('M j, Y g:i A') }}
+                                                        @else
+                                                            <strong>Acknowledged</strong>
+                                                        @endif
+                                                        @if($flag->staff_notes)
+                                                            <div class="mt-1">{{ $flag->staff_notes }}</div>
+                                                        @endif
+                                                    </div>
                                                 @endif
                                             </div>
-                                        @endif
+                                            @if($flag->status->value === 'new')
+                                                <flux:button wire:click="openAcknowledgeModal({{ $flag->id }})" variant="primary" size="sm">
+                                                    Acknowledge Flag
+                                                </flux:button>
+                                            @endif
+                                        </div>
                                     </div>
-                                    @if($flag->status->value === 'new')
-                                        <flux:button wire:click="openAcknowledgeModal({{ $flag->id }})" variant="primary" size="sm">
-                                            Acknowledge Flag
-                                        </flux:button>
-                                    @endif
-                                </div>
+                                @endforeach
                             </div>
-                        @endforeach
+                        @endif
                     </div>
-                @endif
-            </div>
+                </div>
+            @endif
         @endforeach
     </div>
 
     {{-- Reply Form --}}
     @if($this->canReply)
-        <div class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-4">
-            <form wire:submit="sendReply">
-                <flux:field>
-                    <flux:label>Reply</flux:label>
-                    <flux:textarea wire:model="replyMessage" rows="4" placeholder="Type your reply..." />
-                    <flux:error name="replyMessage" />
-                </flux:field>
-
-                <div class="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <div>
-                        @if($this->canAddInternalNotes)
-                            <flux:checkbox wire:model="isInternalNote" label="Internal Note (Staff Only)" />
-                        @endif
-                    </div>
-                    <div class="flex items-center gap-2">
-                        @if($this->canClose)
-                            <flux:button wire:click="closeTicket" variant="filled">Close Ticket</flux:button>
-                        @endif
-                        <flux:button type="submit" variant="primary">Send Reply</flux:button>
-                    </div>
-                </div>
-            </form>
-        </div>
+        <form wire:submit="sendReply" class="mt-6">
+            <flux:composer wire:model="replyMessage" submit="enter" rows="2" max-rows="6" label="Reply" label:sr-only placeholder="Type your reply...">
+                <x-slot name="actionsLeading">
+                    @if($this->canAddInternalNotes)
+                        <flux:checkbox wire:model="isInternalNote" label="Internal Note" />
+                    @endif
+                </x-slot>
+                <x-slot name="actionsTrailing">
+                    @if($this->canClose)
+                        <flux:button wire:click="closeTicket" variant="filled" size="sm">Close Ticket</flux:button>
+                    @endif
+                    <flux:button type="submit" size="sm" variant="primary" icon="paper-airplane" aria-label="Send reply" />
+                </x-slot>
+            </flux:composer>
+            <flux:error name="replyMessage" />
+        </form>
     @endif
+    </div> {{-- end max-w-3xl chat container --}}
 
     {{-- Back to Tickets Button (Bottom) --}}
     <div class="flex justify-end">

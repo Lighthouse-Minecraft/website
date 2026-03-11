@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Enums\StaffDepartment;
 use App\Enums\StaffRank;
+use App\Models\DisciplineReport;
 use App\Models\Thread;
 use App\Models\User;
 
@@ -11,7 +12,13 @@ class ThreadPolicy
 {
     public function before(User $user, string $ability): ?bool
     {
-        // Admin and Command Officers can do everything
+        // For reply and createTopic, always defer to the specific policy method
+        // so lock/draft checks are respected even for admins
+        if (in_array($ability, ['reply', 'createTopic'])) {
+            return null;
+        }
+
+        // Admin and Command Officers can do everything else
         if ($user->isAdmin() || ($user->isInDepartment(StaffDepartment::Command) && $user->isAtLeastRank(StaffRank::Officer))) {
             return true;
         }
@@ -76,11 +83,60 @@ class ThreadPolicy
     }
 
     /**
+     * Determine whether the user can create a topic on a discipline report.
+     * Report must be published. User must be the subject, a parent of the subject, or staff.
+     */
+    public function createTopic(User $user, DisciplineReport $report): bool
+    {
+        if (! $report->isPublished()) {
+            return false;
+        }
+
+        // Admin and Command Officers can create topics on any published report
+        if ($user->isAdmin() || ($user->isInDepartment(StaffDepartment::Command) && $user->isAtLeastRank(StaffRank::Officer))) {
+            return true;
+        }
+
+        // Report subject can create topic
+        if ($user->id === $report->subject_user_id) {
+            return true;
+        }
+
+        // Parent of report subject can create topic
+        if ($user->children()->where('child_user_id', $report->subject_user_id)->exists()) {
+            return true;
+        }
+
+        // Staff (JrCrew+) can create topic
+        return $user->isAtLeastRank(StaffRank::JrCrew);
+    }
+
+    /**
+     * Determine whether the user can add participants to a thread.
+     */
+    public function addParticipant(User $user, Thread $thread): bool
+    {
+        if (! $user->isAtLeastRank(StaffRank::CrewMember)) {
+            return false;
+        }
+
+        return $thread->isVisibleTo($user);
+    }
+
+    /**
      * Determine whether the user can reply to a thread
      */
     public function reply(User $user, Thread $thread): bool
     {
-        // User can reply if they can view the thread
+        if ($thread->is_locked) {
+            return false;
+        }
+
+        // Admin and Command Officers can reply to any unlocked thread
+        if ($user->isAdmin() || ($user->isInDepartment(StaffDepartment::Command) && $user->isAtLeastRank(StaffRank::Officer))) {
+            return true;
+        }
+
         return $thread->isVisibleTo($user);
     }
 

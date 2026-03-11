@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Thread extends Model
 {
@@ -26,6 +27,9 @@ class Thread extends Model
         'is_flagged',
         'has_open_flags',
         'last_message_at',
+        'topicable_type',
+        'topicable_id',
+        'is_locked',
     ];
 
     protected $casts = [
@@ -36,6 +40,7 @@ class Thread extends Model
         'is_flagged' => 'boolean',
         'has_open_flags' => 'boolean',
         'last_message_at' => 'datetime',
+        'is_locked' => 'boolean',
     ];
 
     public function createdBy(): BelongsTo
@@ -66,6 +71,11 @@ class Thread extends Model
     public function flags(): HasMany
     {
         return $this->hasMany(MessageFlag::class);
+    }
+
+    public function topicable(): MorphTo
+    {
+        return $this->morphTo();
     }
 
     /**
@@ -120,6 +130,11 @@ class Thread extends Model
             return true;
         }
 
+        // Topics: participant-only visibility (no department/flagged logic)
+        if ($this->type === ThreadType::Topic) {
+            return $this->participants()->where('user_id', $user->id)->exists();
+        }
+
         // Check if user can view flagged tickets and this is flagged
         if ($user->can('viewFlagged', Thread::class) && $this->is_flagged) {
             return true;
@@ -170,5 +185,35 @@ class Thread extends Model
         }
 
         return $this->last_message_at > $participant->last_read_at;
+    }
+
+    /**
+     * Count unread threads of a given type for a user.
+     * Cached with flexible TTL: fresh 30s, stale up to 120s with background refresh.
+     */
+    public static function unreadCountFor(User $user, ThreadType $type): int
+    {
+        return \Illuminate\Support\Facades\Cache::flexible(
+            "user.{$user->id}.unread_{$type->value}",
+            [30, 120],
+            fn () => static::where('type', $type)
+                ->whereHas('participants', fn ($q) => $q
+                    ->where('user_id', $user->id)
+                    ->where('is_viewer', false)
+                    ->where(fn ($sub) => $sub
+                        ->whereNull('last_read_at')
+                        ->orWhereColumn('last_read_at', '<', 'threads.last_message_at')
+                    )
+                )
+                ->count()
+        );
+    }
+
+    /**
+     * Clear the unread count cache for a user and thread type.
+     */
+    public static function clearUnreadCache(User $user, ThreadType $type): void
+    {
+        \Illuminate\Support\Facades\Cache::forget("user.{$user->id}.unread_{$type->value}");
     }
 }

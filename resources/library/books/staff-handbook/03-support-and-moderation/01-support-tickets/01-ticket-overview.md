@@ -43,6 +43,6 @@ Everyone can always see tickets they created or are a participant in, regardless
 
 ## Ticket Assignments
 
-Officers can **assign** tickets to specific staff members. Assigned tickets appear in the "Assigned to Me" filter. Assignments help the team know who's handling what so work doesn't get duplicated.
+Officers can **assign** tickets to specific staff members. Assigned tickets appear in the "Assigned to Me" filter. Assignments help the team know who's handling what so work doesn't get duplicated. If a staff member (who is not the ticket creator) posts a non-internal reply on an unassigned ticket, that staff member will be automatically assigned to the ticket.
 
 Officers can also **reroute** tickets to a different department if they were sent to the wrong one.

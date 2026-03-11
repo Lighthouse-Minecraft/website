@@ -137,3 +137,26 @@ select:focus[data-flux-control] {
 /* \[:where(&)\]:size-4 {
     @apply size-4;
 } */
+
+/* Chat bubble layout */
+.chat-message {
+    @apply flex gap-3 max-w-[85%];
+}
+.chat-message-start {
+    @apply justify-start self-start;
+}
+.chat-message-end {
+    @apply justify-end self-end flex-row-reverse;
+}
+.chat-bubble {
+    @apply rounded-2xl px-4 py-3 min-w-0;
+}
+.chat-bubble-start {
+    @apply rounded-tl-sm;
+}
+.chat-bubble-end {
+    @apply rounded-tr-sm;
+}
+.chat-system {
+    @apply self-center text-center max-w-[70%];
+}
