@@ -83,6 +83,11 @@ Volt::route('/reports/{report}', 'reports.view-report')
     ->name('reports.show')
     ->middleware(['auth']);
 
+// Community Stories
+Volt::route('/community-stories', 'community-stories.index')
+    ->name('community-stories.index')
+    ->middleware(['auth', 'verified', 'ensure-dob', 'can:view-community-stories']);
+
 // Topic System Routes
 Route::prefix('topics')
     ->name('topics.')

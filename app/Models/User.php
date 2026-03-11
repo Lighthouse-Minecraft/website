@@ -396,6 +396,16 @@ class User extends Authenticatable // implements MustVerifyEmail
         return $this->hasMany(DisciplineReport::class, 'subject_user_id');
     }
 
+    public function communityResponses(): HasMany
+    {
+        return $this->hasMany(CommunityResponse::class);
+    }
+
+    public function questionSuggestions(): HasMany
+    {
+        return $this->hasMany(QuestionSuggestion::class);
+    }
+
     /**
      * Calculate discipline risk score over 7/30/90-day windows.
      * Cached for 24 hours; cache is busted when a report is published for this user.

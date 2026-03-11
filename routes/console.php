@@ -42,3 +42,8 @@ Schedule::command('meetings:send-report-reminders')
 Schedule::command('parent-portal:process-age-transitions')
     ->dailyAt('02:00')
     ->runInBackground();
+
+// Activate/archive community questions based on schedule
+Schedule::command('community:process-schedule')
+    ->hourly()
+    ->runInBackground();
