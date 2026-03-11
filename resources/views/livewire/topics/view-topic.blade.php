@@ -59,6 +59,12 @@ new class extends Component
         if ($fresh->last_message_at && $fresh->last_message_at->gt($this->thread->last_message_at)) {
             $this->thread = $fresh;
             unset($this->messages);
+
+            // Mark as read since the user is actively viewing this thread
+            $this->thread->participants()
+                ->where('user_id', auth()->id())
+                ->update(['last_read_at' => now()]);
+            Thread::clearUnreadCache(auth()->user(), ThreadType::Topic);
         }
     }
 
@@ -455,7 +461,7 @@ new class extends Component
                     @endif
                 </x-slot>
                 <x-slot name="actionsTrailing">
-                    <flux:button type="submit" size="sm" variant="primary" icon="paper-airplane" />
+                    <flux:button type="submit" size="sm" variant="primary" icon="paper-airplane" aria-label="Send reply" />
                 </x-slot>
             </flux:composer>
             <flux:error name="replyMessage" />
