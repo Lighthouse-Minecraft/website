@@ -54,10 +54,10 @@ new class extends Component
 
     public function checkForNewMessages(): void
     {
-        $latest = $this->thread->fresh('messages')->last_message_at;
+        $fresh = $this->thread->fresh();
 
-        if ($latest && $latest->gt($this->thread->last_message_at)) {
-            $this->thread = $this->thread->fresh();
+        if ($fresh->last_message_at && $fresh->last_message_at->gt($this->thread->last_message_at)) {
+            $this->thread = $fresh;
             unset($this->messages);
         }
     }
@@ -478,7 +478,7 @@ new class extends Component
             @if(count($searchResults) > 0)
                 <div class="space-y-2">
                     @foreach($searchResults as $result)
-                        <div class="flex items-center justify-between rounded border border-zinc-200 dark:border-zinc-700 p-2">
+                        <div wire:key="search-result-{{ $result['id'] }}" class="flex items-center justify-between rounded border border-zinc-200 dark:border-zinc-700 p-2">
                             <flux:text>{{ $result['name'] }}</flux:text>
                             <flux:button size="xs" variant="primary" wire:click="addParticipantById({{ $result['id'] }})">Add</flux:button>
                         </div>

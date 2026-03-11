@@ -66,10 +66,10 @@ new class extends Component
 
     public function checkForNewMessages(): void
     {
-        $latest = $this->thread->fresh('messages')->last_message_at;
+        $fresh = $this->thread->fresh();
 
-        if ($latest && $latest->gt($this->thread->last_message_at)) {
-            $this->thread = $this->thread->fresh();
+        if ($fresh->last_message_at && $fresh->last_message_at->gt($this->thread->last_message_at)) {
+            $this->thread = $fresh;
             unset($this->messages);
         }
     }
