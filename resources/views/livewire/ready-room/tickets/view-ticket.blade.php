@@ -673,7 +673,7 @@ new class extends Component
                             <a href="{{ route('profile.show', $message->user) }}" class="font-semibold text-sm text-blue-600 dark:text-blue-400 hover:underline">{{ $message->user->name }}</a>
                             <span class="text-xs text-zinc-400 dark:text-zinc-500">{{ $message->created_at->setTimezone($tz)->format('M j, Y g:i A') }}</span>
                             @if(auth()->user()->can('flag', $message))
-                                <flux:button wire:click="openFlagModal({{ $message->id }})" variant="ghost" size="xs" class="!p-0.5">
+                                <flux:button wire:click="openFlagModal({{ $message->id }})" variant="ghost" size="xs" class="!p-0.5" aria-label="Flag message">
                                     <flux:icon.flag class="size-3.5" />
                                 </flux:button>
                             @endif

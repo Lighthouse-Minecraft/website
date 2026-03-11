@@ -241,6 +241,8 @@ new class extends Component
 
     public function searchUsers(): void
     {
+        $this->authorize('addParticipant', $this->thread);
+
         if (strlen($this->participantSearch) < 2) {
             $this->searchResults = [];
             return;
