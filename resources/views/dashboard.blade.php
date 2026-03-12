@@ -22,7 +22,6 @@
         @else
             @can('view-community-content')
                 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                    <livewire:dashboard.community-question-widget />
                     <livewire:dashboard.announcements-widget />
 
                     <flux:card>
@@ -86,6 +85,12 @@
                         </div>
                     </flux:card>
                 </div>
+
+                @can('view-community-stories')
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mt-4">
+                        <livewire:dashboard.community-question-widget />
+                    </div>
+                @endcan
             @else
                 <livewire:dashboard.in-brig-card />
             @endcan
