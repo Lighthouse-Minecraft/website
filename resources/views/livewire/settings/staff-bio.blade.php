@@ -44,10 +44,10 @@ new class extends Component {
 
         if ($this->photo) {
             if ($user->staff_photo_path) {
-                Storage::disk('public')->delete($user->staff_photo_path);
+                Storage::disk(config('filesystems.public'))->delete($user->staff_photo_path);
             }
 
-            $path = $this->photo->store('staff-photos', 'public');
+            $path = $this->photo->store('staff-photos', config('filesystems.public'));
             $user->staff_photo_path = $path;
         }
 
@@ -69,7 +69,7 @@ new class extends Component {
 
         $user = Auth::user();
         if ($user->staff_photo_path) {
-            Storage::disk('public')->delete($user->staff_photo_path);
+            Storage::disk(config('filesystems.public'))->delete($user->staff_photo_path);
             $user->update(['staff_photo_path' => null]);
             $this->existingPhotoUrl = null;
         }

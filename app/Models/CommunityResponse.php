@@ -87,6 +87,8 @@ class CommunityResponse extends Model
 
     public function imageUrl(): ?string
     {
-        return $this->image_path ? asset('storage/'.$this->image_path) : null;
+        return $this->image_path
+            ? \App\Services\StorageService::publicUrl($this->image_path)
+            : null;
     }
 }

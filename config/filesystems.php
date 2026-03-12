@@ -17,6 +17,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Public Filesystem Disk
+    |--------------------------------------------------------------------------
+    |
+    | This disk is used for all publicly accessible file uploads (images,
+    | photos, etc). Set to "s3" in production to use AWS S3 storage.
+    |
+    */
+
+    'public' => env('FILESYSTEM_PUBLIC_DISK', 'public'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Filesystem Disks
     |--------------------------------------------------------------------------
     |

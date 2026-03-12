@@ -61,7 +61,7 @@ class SubmitCommunityResponse
         // Store image if provided
         $imagePath = null;
         if ($image) {
-            $imagePath = $image->store('community-stories', 'public');
+            $imagePath = $image->store('community-stories', config('filesystems.public'));
         }
 
         $response = CommunityResponse::create([

@@ -368,7 +368,7 @@ class User extends Authenticatable // implements MustVerifyEmail
             return null;
         }
 
-        return asset('storage/'.$this->staff_photo_path);
+        return \App\Services\StorageService::publicUrl($this->staff_photo_path);
     }
 
     public function acknowledgedAnnouncements()

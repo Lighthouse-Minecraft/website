@@ -152,7 +152,7 @@ new class extends Component {
         $this->authorize('delete', $response);
 
         if ($response->image_path) {
-            \Illuminate\Support\Facades\Storage::disk('public')->delete($response->image_path);
+            \Illuminate\Support\Facades\Storage::disk(config('filesystems.public'))->delete($response->image_path);
         }
         $response->delete();
 
