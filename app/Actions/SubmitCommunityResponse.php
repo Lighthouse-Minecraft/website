@@ -50,7 +50,7 @@ class SubmitCommunityResponse
             // Per-cycle limit: only one archived question response per active question cycle
             $archivedResponseCount = CommunityResponse::where('user_id', $user->id)
                 ->where('community_question_id', '!=', $activeQuestion->id)
-                ->whereHas('question', fn ($q) => $q->archived())
+                ->whereHas('question', fn ($questionQuery) => $questionQuery->archived())
                 ->where('created_at', '>=', $activeQuestion->start_date)
                 ->count();
 
@@ -71,11 +71,19 @@ class SubmitCommunityResponse
             ]);
         });
 
-        // Store image after successful DB insert — if upload fails, clean up
+        // Store image after successful DB insert — clean up on failure
         if ($image) {
-            $imagePath = $image->store('community-stories', config('filesystems.public_disk'));
-            if ($imagePath) {
-                $response->update(['image_path' => $imagePath]);
+            try {
+                $imagePath = $image->store('community-stories', config('filesystems.public_disk'));
+                if ($imagePath) {
+                    $response->update(['image_path' => $imagePath]);
+                }
+            } catch (\Throwable $e) {
+                $response->delete();
+                if (isset($imagePath) && $imagePath) {
+                    Storage::disk(config('filesystems.public_disk'))->delete($imagePath);
+                }
+                throw $e;
             }
         }
 
