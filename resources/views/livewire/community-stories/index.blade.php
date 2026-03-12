@@ -359,9 +359,10 @@ new class extends Component {
     {
         $user = Auth::user();
         $activeQuestion = CommunityQuestion::active()->first();
-        $hasResponded = $activeQuestion
-            ? CommunityResponse::where('community_question_id', $activeQuestion->id)->where('user_id', $user->id)->exists()
-            : false;
+        $userResponse = $activeQuestion
+            ? CommunityResponse::where('community_question_id', $activeQuestion->id)->where('user_id', $user->id)->first()
+            : null;
+        $hasResponded = $userResponse !== null;
 
         // Check if user can respond to an archived question
         $canRespondToArchived = false;
@@ -420,6 +421,7 @@ new class extends Component {
         return [
             'activeQuestion' => $activeQuestion,
             'hasResponded' => $hasResponded,
+            'userResponse' => $userResponse,
             'canRespondToArchived' => $canRespondToArchived,
             'hasRespondedToArchived' => $hasRespondedToArchived,
             'approvedResponses' => $approvedResponses,
@@ -490,7 +492,13 @@ new class extends Component {
                     </flux:card>
                 @else
                     <flux:card class="mb-6">
-                        <flux:text variant="subtle">You've shared your story for this question! Your response is being reviewed.</flux:text>
+                        @if($userResponse->status === \App\Enums\CommunityResponseStatus::Approved)
+                            <flux:text variant="subtle">You've shared your story for this question! Your response has been approved and is visible below.</flux:text>
+                        @elseif($userResponse->status === \App\Enums\CommunityResponseStatus::Rejected)
+                            <flux:text variant="subtle">Your response to this question was not approved.</flux:text>
+                        @else
+                            <flux:text variant="subtle">You've shared your story for this question! Your response is being reviewed.</flux:text>
+                        @endif
                     </flux:card>
                 @endif
 
