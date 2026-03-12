@@ -2,14 +2,14 @@
 title: 'What Are Community Stories?'
 visibility: public
 order: 1
-summary: 'An overview of the Community Logbook and how it works.'
+summary: 'An overview of Community Stories and how it works.'
 ---
 
-## The Community Logbook
+## Community Stories
 
-The **Community Logbook** is a place where Lighthouse members can share stories, memories, and experiences with each other. Staff regularly post community questions -- things like "What's your favorite Lighthouse memory?" or "What does community mean to you?" -- and you write your response.
+**Community Stories** is a place where Lighthouse members can share stories, memories, and experiences with each other. Staff regularly post community questions -- things like "What's your favorite Lighthouse memory?" or "What does community mean to you?" -- and you write your response.
 
-After staff reviews and approves your story, it appears on the page for everyone to read and react to. Over time, the Logbook becomes a growing archive of shared experiences from across the community.
+After staff reviews and approves your story, it appears on the page for everyone to read and react to. Over time, Community Stories becomes a growing archive of shared experiences from across the community.
 
 ## Where to Find It
 

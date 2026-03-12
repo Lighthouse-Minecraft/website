@@ -5,4 +5,4 @@ order: 5
 summary: 'Share your experiences and read stories from the Lighthouse community.'
 ---
 
-The Community Logbook is where Lighthouse members share personal stories, memories, and experiences in response to rotating community questions. It's a place to connect with each other beyond the game.
+The Community Stories is where Lighthouse members share personal stories, memories, and experiences in response to rotating community questions. It's a place to connect with each other beyond the game.

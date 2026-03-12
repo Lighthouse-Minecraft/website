@@ -2,12 +2,12 @@
 title: 'Community Stories Overview'
 visibility: staff
 order: 1
-summary: 'What the Community Logbook is and who manages it.'
+summary: 'What Community Stories is and who manages it.'
 ---
 
 ## Overview
 
-The **Community Logbook** is a rotating Q&A feature where staff publish questions and members respond with personal stories. Approved stories are displayed publicly for the community to read and react to. The feature lives at [Community Stories]({{url:/community-stories}}) and has a widget on member dashboards.
+**Community Stories** is a rotating Q&A feature where staff publish questions and members respond with personal stories. Approved stories are displayed publicly for the community to read and react to. The feature lives at [Community Stories]({{url:/community-stories}}) and has a widget on member dashboards.
 
 ## Who Manages This
 

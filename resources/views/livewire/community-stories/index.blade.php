@@ -439,7 +439,7 @@ new class extends Component {
 <div>
     <div class="max-w-4xl mx-auto">
         <div class="mb-8">
-            <flux:heading size="lg">Community Logbook</flux:heading>
+            <flux:heading size="lg">Community Stories</flux:heading>
             <flux:text variant="subtle">Stories from the Lighthouse community</flux:text>
         </div>
 
