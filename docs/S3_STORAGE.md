@@ -63,8 +63,7 @@ Replace with the staging URL if setting up on the staging environment.
 2. Click **Users → Create user**.
 3. Name it something like `lighthouse-website-s3`.
 4. Do **not** enable console access.
-5. Attach an **inline policy** with the following JSON (replace `lighthouse-website-uploads`
-   with your actual bucket name):
+5. Attach an **inline policy** with the following JSON (replace `lighthouse-website-uploads` with your actual bucket name):
 
 ```json
 {
