@@ -49,12 +49,10 @@ class ProcessQuestionSchedule
                 RecordActivity::run($questionToActivate, 'community_question_activated', "Question #{$questionToActivate->id} auto-activated (start date reached).");
                 $activated++;
 
-                // Archive any remaining stale scheduled questions whose end_date has also passed
+                // Archive all other overdue scheduled questions so they don't activate on future runs
                 $staleScheduled = CommunityQuestion::scheduled()
                     ->where('start_date', '<=', now())
                     ->where('id', '!=', $questionToActivate->id)
-                    ->whereNotNull('end_date')
-                    ->where('end_date', '<=', now())
                     ->get();
 
                 foreach ($staleScheduled as $stale) {

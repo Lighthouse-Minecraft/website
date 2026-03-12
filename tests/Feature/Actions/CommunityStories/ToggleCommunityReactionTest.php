@@ -38,14 +38,25 @@ it('removes an existing reaction', function () {
     ]);
 });
 
-it('allows multiple different emojis from same user', function () {
+it('replaces existing reaction when switching to a different emoji', function () {
     $user = loginAs(User::factory()->create());
     $response = CommunityResponse::factory()->approved()->create();
 
     ToggleCommunityReaction::run($response, $user, '❤️');
-    ToggleCommunityReaction::run($response, $user, '🙏');
+    $result = ToggleCommunityReaction::run($response, $user, '🙏');
 
-    expect(CommunityReaction::where('user_id', $user->id)->where('community_response_id', $response->id)->count())->toBe(2);
+    expect($result)->toBeTrue();
+    expect(CommunityReaction::where('user_id', $user->id)->where('community_response_id', $response->id)->count())->toBe(1);
+    $this->assertDatabaseHas('community_reactions', [
+        'community_response_id' => $response->id,
+        'user_id' => $user->id,
+        'emoji' => '🙏',
+    ]);
+    $this->assertDatabaseMissing('community_reactions', [
+        'community_response_id' => $response->id,
+        'user_id' => $user->id,
+        'emoji' => '❤️',
+    ]);
 });
 
 it('rejects emoji not in allowed set', function () {

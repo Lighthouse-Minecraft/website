@@ -2,13 +2,14 @@
 
 namespace App\Actions;
 
-use App\Enums\CommunityQuestionStatus;
 use App\Enums\CommunityResponseStatus;
 use App\Enums\MembershipLevel;
 use App\Models\CommunityQuestion;
 use App\Models\CommunityResponse;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class SubmitCommunityResponse
@@ -60,19 +61,23 @@ class SubmitCommunityResponse
             throw new \RuntimeException('This question is not accepting responses.');
         }
 
-        // Store image if provided
-        $imagePath = null;
+        // Insert the DB record first (within a transaction), then store the image
+        $response = DB::transaction(function () use ($question, $user, $body) {
+            return CommunityResponse::create([
+                'community_question_id' => $question->id,
+                'user_id' => $user->id,
+                'body' => $body,
+                'status' => CommunityResponseStatus::Submitted,
+            ]);
+        });
+
+        // Store image after successful DB insert — if upload fails, clean up
         if ($image) {
             $imagePath = $image->store('community-stories', config('filesystems.public_disk'));
+            if ($imagePath) {
+                $response->update(['image_path' => $imagePath]);
+            }
         }
-
-        $response = CommunityResponse::create([
-            'community_question_id' => $question->id,
-            'user_id' => $user->id,
-            'body' => $body,
-            'image_path' => $imagePath,
-            'status' => CommunityResponseStatus::Submitted,
-        ]);
 
         RecordActivity::run($response, 'community_response_submitted', "Response submitted by {$user->name} to question #{$question->id}.");
 

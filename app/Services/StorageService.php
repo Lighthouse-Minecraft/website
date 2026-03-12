@@ -14,9 +14,10 @@ class StorageService
      */
     public static function publicUrl(string $path, int $expirationMinutes = 60): string
     {
-        $disk = Storage::disk(config('filesystems.public_disk'));
+        $diskName = config('filesystems.public_disk');
+        $disk = Storage::disk($diskName);
 
-        if ($disk->getConfig('driver') === 's3') {
+        if (config("filesystems.disks.{$diskName}.driver") === 's3') {
             return $disk->temporaryUrl($path, now()->addMinutes($expirationMinutes));
         }
 

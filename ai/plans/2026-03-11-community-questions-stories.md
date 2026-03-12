@@ -1203,7 +1203,7 @@ Add after the registration answer card:
 **Files to create**:
 
 #### `tests/Feature/Actions/CommunityStories/SubmitCommunityResponseTest.php`
-```
+```php
 uses()->group('community-stories', 'actions');
 
 it('allows a traveler to submit a response to the active question')
@@ -1221,7 +1221,7 @@ it('records activity when response is submitted')
 ```
 
 #### `tests/Feature/Actions/CommunityStories/ModerateResponsesTest.php`
-```
+```php
 uses()->group('community-stories', 'actions');
 
 it('approves a single response')
@@ -1234,7 +1234,7 @@ it('records activity for each moderated response')
 ```
 
 #### `tests/Feature/Actions/CommunityStories/CreateCommunityQuestionTest.php`
-```
+```php
 uses()->group('community-stories', 'actions');
 
 it('creates a question in draft status')
@@ -1244,7 +1244,7 @@ it('records activity')
 ```
 
 #### `tests/Feature/Actions/CommunityStories/ToggleCommunityReactionTest.php`
-```
+```php
 uses()->group('community-stories', 'actions');
 
 it('adds a reaction')
@@ -1254,7 +1254,7 @@ it('prevents duplicate same-emoji reactions')
 ```
 
 #### `tests/Feature/Actions/CommunityStories/SubmitQuestionSuggestionTest.php`
-```
+```php
 uses()->group('community-stories', 'actions');
 
 it('creates a suggestion with suggested status')
@@ -1262,7 +1262,7 @@ it('records activity')
 ```
 
 #### `tests/Feature/Actions/CommunityStories/ReviewQuestionSuggestionTest.php`
-```
+```php
 uses()->group('community-stories', 'actions');
 
 it('approves a suggestion')
@@ -1272,7 +1272,7 @@ it('records activity')
 ```
 
 #### `tests/Feature/Actions/CommunityStories/ProcessQuestionScheduleTest.php`
-```
+```php
 uses()->group('community-stories', 'actions');
 
 it('activates a scheduled question whose start_date has passed')
@@ -1286,7 +1286,7 @@ it('does not activate a question whose start_date is in the future')
 ### Step 13: Tests — Authorization
 
 **File to create**: `tests/Feature/Policies/CommunityStoriesAuthorizationTest.php`
-```
+```php
 uses()->group('community-stories', 'policies');
 
 it('allows traveler to view community stories')

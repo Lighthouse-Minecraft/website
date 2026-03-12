@@ -19,6 +19,7 @@ class ToggleCommunityReaction
             throw new \InvalidArgumentException("Emoji '{$emoji}' is not allowed.");
         }
 
+        // Check if user already reacted with this exact emoji (toggle off)
         $existing = CommunityReaction::where('community_response_id', $response->id)
             ->where('user_id', $user->id)
             ->where('emoji', $emoji)
@@ -29,6 +30,11 @@ class ToggleCommunityReaction
 
             return false;
         }
+
+        // Remove any existing reaction by this user on this response (one emoji per user)
+        CommunityReaction::where('community_response_id', $response->id)
+            ->where('user_id', $user->id)
+            ->delete();
 
         CommunityReaction::create([
             'community_response_id' => $response->id,

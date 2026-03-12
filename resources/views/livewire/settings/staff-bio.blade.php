@@ -43,10 +43,7 @@ new class extends Component {
         $user = Auth::user();
 
         if ($this->photo) {
-            if ($user->staff_photo_path) {
-                Storage::disk(config('filesystems.public_disk'))->delete($user->staff_photo_path);
-            }
-
+            $oldPath = $user->staff_photo_path;
             $path = $this->photo->store('staff-photos', config('filesystems.public_disk'));
             $user->staff_photo_path = $path;
         }
@@ -56,6 +53,11 @@ new class extends Component {
         $user->staff_bio = $this->bio ?: null;
         $user->staff_phone = $this->phone ?: null;
         $user->save();
+
+        // Delete old photo only after DB save succeeds
+        if (isset($oldPath) && $oldPath) {
+            Storage::disk(config('filesystems.public_disk'))->delete($oldPath);
+        }
 
         $this->existingPhotoUrl = $user->staffPhotoUrl();
         $this->photo = null;
@@ -69,8 +71,9 @@ new class extends Component {
 
         $user = Auth::user();
         if ($user->staff_photo_path) {
-            Storage::disk(config('filesystems.public_disk'))->delete($user->staff_photo_path);
+            $oldPath = $user->staff_photo_path;
             $user->update(['staff_photo_path' => null]);
+            Storage::disk(config('filesystems.public_disk'))->delete($oldPath);
             $this->existingPhotoUrl = null;
         }
         Flux::toast('Photo removed.', 'Done', variant: 'success');

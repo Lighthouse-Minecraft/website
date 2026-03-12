@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\CreateCommunityQuestion;
+use App\Actions\DeleteCommunityResponse;
 use App\Actions\EditCommunityResponse;
 use App\Actions\ModerateResponses;
 use App\Actions\ReviewQuestionSuggestion;
@@ -152,12 +153,16 @@ new class extends Component {
         $response = CommunityResponse::findOrFail($responseId);
         $this->authorize('delete', $response);
 
-        if ($response->image_path) {
-            \Illuminate\Support\Facades\Storage::disk(config('filesystems.public_disk'))->delete($response->image_path);
-        }
-        $response->delete();
+        DeleteCommunityResponse::run($response);
 
         Flux::toast('Response deleted.', 'Deleted', variant: 'success');
+    }
+
+    // --- Public: Past Questions ---
+
+    public function toggleSelectedQuestion(int $id): void
+    {
+        $this->selectedQuestionId = $this->selectedQuestionId === $id ? null : $id;
     }
 
     // --- Public: Reactions ---
@@ -333,6 +338,7 @@ new class extends Component {
         $question = CommunityQuestion::findOrFail($id);
         $this->authorize('delete', $question);
 
+        \App\Actions\RecordActivity::run($question, 'community_question_deleted', "Question #{$question->id} deleted.");
         $question->delete();
         Flux::toast('Question deleted.', 'Deleted', variant: 'success');
     }
@@ -420,7 +426,7 @@ new class extends Component {
                 ->orderBy('created_at')
                 ->get();
 
-            $allQuestions = CommunityQuestion::withCount('responses')
+            $allQuestions = CommunityQuestion::withCount(['responses', 'approvedResponses as approved_responses_count'])
                 ->orderByDesc('created_at')
                 ->get();
 
@@ -599,7 +605,7 @@ new class extends Component {
                                         @endif
                                     </flux:text>
                                 </div>
-                                <flux:button wire:click="$set('selectedQuestionId', {{ $question->id }})" size="sm" variant="ghost">
+                                <flux:button wire:click="toggleSelectedQuestion({{ $question->id }})" size="sm" variant="ghost">
                                     {{ $selectedQuestionId === $question->id ? 'Hide' : 'View Stories' }}
                                 </flux:button>
                             </div>
@@ -628,13 +634,13 @@ new class extends Component {
                                                             $count = $response->reactions->where('emoji', $emoji)->count();
                                                             $hasReacted = $response->reactions->where('emoji', $emoji)->where('user_id', auth()->id())->count() > 0;
                                                         @endphp
-                                                        @if($count > 0 || $hasReacted)
-                                                            <button wire:click="toggleReaction({{ $response->id }}, '{{ $emoji }}')"
-                                                                class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs {{ $hasReacted ? 'bg-accent/20 border border-accent' : 'bg-zinc-700 border border-zinc-600' }}">
-                                                                <span>{{ $emoji }}</span>
+                                                        <button wire:click="toggleReaction({{ $response->id }}, '{{ $emoji }}')"
+                                                            class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs {{ $hasReacted ? 'bg-accent/20 border border-accent' : 'bg-zinc-700 border border-zinc-600 hover:border-zinc-500' }}">
+                                                            <span>{{ $emoji }}</span>
+                                                            @if($count > 0)
                                                                 <span class="text-zinc-400">{{ $count }}</span>
-                                                            </button>
-                                                        @endif
+                                                            @endif
+                                                        </button>
                                                     @endforeach
                                                 </div>
                                             </div>
@@ -778,7 +784,7 @@ new class extends Component {
                                         <flux:table.cell>
                                             <div class="flex gap-1">
                                                 <flux:button wire:click="openQuestionModal({{ $question->id }})" size="xs" variant="ghost" icon="pencil">Edit</flux:button>
-                                                @if($question->approvedResponses()->doesntExist())
+                                                @if($question->approved_responses_count === 0)
                                                     <flux:button wire:click="deleteQuestion({{ $question->id }})" wire:confirm="Delete this question?" size="xs" variant="ghost" icon="trash" class="text-red-400">Delete</flux:button>
                                                 @endif
                                             </div>
