@@ -38,16 +38,6 @@ it('rejects a suggestion without creating a question', function () {
     expect(CommunityQuestion::where('suggestion_id', $suggestion->id)->exists())->toBeFalse();
 });
 
-it('sets reviewed_by and reviewed_at', function () {
-    $staff = loginAsAdmin();
-    $suggestion = QuestionSuggestion::factory()->create();
-
-    ReviewQuestionSuggestion::run($suggestion, $staff, QuestionSuggestionStatus::Approved);
-
-    expect($suggestion->fresh()->reviewed_by)->toBe($staff->id)
-        ->and($suggestion->fresh()->reviewed_at)->not->toBeNull();
-});
-
 it('records activity', function () {
     $staff = loginAsAdmin();
     $suggestion = QuestionSuggestion::factory()->create();

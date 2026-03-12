@@ -26,13 +26,13 @@ class EditCommunityResponse
         $response->body = $body;
 
         if ($removeImage && $response->image_path) {
-            Storage::disk(config('filesystems.public'))->delete($response->image_path);
+            Storage::disk(config('filesystems.public_disk'))->delete($response->image_path);
             $response->image_path = null;
         } elseif ($newImage) {
             if ($response->image_path) {
-                Storage::disk(config('filesystems.public'))->delete($response->image_path);
+                Storage::disk(config('filesystems.public_disk'))->delete($response->image_path);
             }
-            $response->image_path = $newImage->store('community-stories', config('filesystems.public'));
+            $response->image_path = $newImage->store('community-stories', config('filesystems.public_disk'));
         }
 
         $response->save();

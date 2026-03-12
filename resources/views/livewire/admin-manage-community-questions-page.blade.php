@@ -40,7 +40,7 @@ new class extends Component {
         $sortDirection = in_array($this->sortDirection, ['asc', 'desc'], true) ? $this->sortDirection : 'desc';
 
         return CommunityQuestion::orderBy($sortBy, $sortDirection)
-            ->withCount('responses')
+            ->withCount(['responses', 'approvedResponses as approved_responses_count'])
             ->with('creator')
             ->paginate(15);
     }
@@ -147,7 +147,7 @@ new class extends Component {
                     <flux:table.cell>
                         <div class="flex gap-1">
                             <flux:button size="sm" icon="pencil-square" wire:click="openEditModal({{ $question->id }})">Edit</flux:button>
-                            @if($question->approvedResponses()->doesntExist())
+                            @if($question->approved_responses_count === 0)
                                 <flux:button size="sm" icon="trash" variant="ghost" wire:click="deleteQuestion({{ $question->id }})" wire:confirm="Delete this question? This cannot be undone.">Delete</flux:button>
                             @endif
                         </div>

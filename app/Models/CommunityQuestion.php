@@ -6,6 +6,7 @@ use App\Enums\CommunityQuestionStatus;
 use App\Enums\CommunityResponseStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -57,17 +58,17 @@ class CommunityQuestion extends Model
 
     // Scopes
 
-    public function scopeActive($query)
+    public function scopeActive(Builder $query): Builder
     {
         return $query->where('status', CommunityQuestionStatus::Active);
     }
 
-    public function scopeArchived($query)
+    public function scopeArchived(Builder $query): Builder
     {
         return $query->where('status', CommunityQuestionStatus::Archived);
     }
 
-    public function scopeScheduled($query)
+    public function scopeScheduled(Builder $query): Builder
     {
         return $query->where('status', CommunityQuestionStatus::Scheduled);
     }

@@ -34,25 +34,27 @@ class SubmitCommunityResponse
 
             // Must have answered the current active question first
             $activeQuestion = CommunityQuestion::active()->first();
-            if ($activeQuestion) {
-                $hasAnsweredActive = CommunityResponse::where('community_question_id', $activeQuestion->id)
-                    ->where('user_id', $user->id)
-                    ->exists();
+            if (! $activeQuestion) {
+                throw new \RuntimeException('Cannot respond to past questions when no active cycle exists.');
+            }
 
-                if (! $hasAnsweredActive) {
-                    throw new \RuntimeException('You must answer the current question before responding to a past question.');
-                }
+            $hasAnsweredActive = CommunityResponse::where('community_question_id', $activeQuestion->id)
+                ->where('user_id', $user->id)
+                ->exists();
 
-                // Per-cycle limit: only one archived question response per active question cycle
-                $archivedResponseCount = CommunityResponse::where('user_id', $user->id)
-                    ->where('community_question_id', '!=', $activeQuestion->id)
-                    ->whereHas('question', fn ($q) => $q->archived())
-                    ->where('created_at', '>=', $activeQuestion->start_date)
-                    ->count();
+            if (! $hasAnsweredActive) {
+                throw new \RuntimeException('You must answer the current question before responding to a past question.');
+            }
 
-                if ($archivedResponseCount >= 1) {
-                    throw new \RuntimeException('You may only respond to one past question per cycle.');
-                }
+            // Per-cycle limit: only one archived question response per active question cycle
+            $archivedResponseCount = CommunityResponse::where('user_id', $user->id)
+                ->where('community_question_id', '!=', $activeQuestion->id)
+                ->whereHas('question', fn ($q) => $q->archived())
+                ->where('created_at', '>=', $activeQuestion->start_date)
+                ->count();
+
+            if ($archivedResponseCount >= 1) {
+                throw new \RuntimeException('You may only respond to one past question per cycle.');
             }
         } else {
             throw new \RuntimeException('This question is not accepting responses.');
@@ -61,7 +63,7 @@ class SubmitCommunityResponse
         // Store image if provided
         $imagePath = null;
         if ($image) {
-            $imagePath = $image->store('community-stories', config('filesystems.public'));
+            $imagePath = $image->store('community-stories', config('filesystems.public_disk'));
         }
 
         $response = CommunityResponse::create([

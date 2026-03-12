@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\CommunityResponse;
 use App\Models\User;
 use Livewire\Volt\Component;
 
@@ -29,7 +28,7 @@ new class extends Component {
 
             <div class="space-y-4 mt-3">
                 @foreach($approvedResponses as $response)
-                    <div wire:key="profile-story-{{ $response->id }}" class="p-3 bg-zinc-800/50 rounded-lg">
+                    <div wire:key="profile-story-{{ $response->id }}" class="p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg">
                         <flux:text variant="subtle" class="text-xs italic mb-1">"{{ $response->question->question_text }}"</flux:text>
                         <div class="text-sm mt-1">
                             {!! nl2br(e($response->body)) !!}

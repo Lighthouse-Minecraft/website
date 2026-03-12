@@ -49,6 +49,7 @@ new class extends Component {
     // Staff: moderation
     public array $selectedResponseIds = [];
     public ?int $viewingResponseId = null;
+    public ?CommunityResponse $viewingResponse = null;
     public string $staffEditBody = '';
 
     // Staff: question management
@@ -152,7 +153,7 @@ new class extends Component {
         $this->authorize('delete', $response);
 
         if ($response->image_path) {
-            \Illuminate\Support\Facades\Storage::disk(config('filesystems.public'))->delete($response->image_path);
+            \Illuminate\Support\Facades\Storage::disk(config('filesystems.public_disk'))->delete($response->image_path);
         }
         $response->delete();
 
@@ -212,9 +213,9 @@ new class extends Component {
     {
         $this->authorize('manage-community-stories');
 
-        $response = CommunityResponse::findOrFail($id);
+        $this->viewingResponse = CommunityResponse::with(['user', 'question'])->findOrFail($id);
         $this->viewingResponseId = $id;
-        $this->staffEditBody = $response->body;
+        $this->staffEditBody = $this->viewingResponse->body;
         Flux::modal('staff-response-modal')->show();
     }
 
@@ -231,6 +232,7 @@ new class extends Component {
         try {
             EditCommunityResponse::run($response, Auth::user(), $this->staffEditBody);
             Flux::modal('staff-response-modal')->close();
+            $this->viewingResponse = null;
             Flux::toast('Response edited.', 'Updated', variant: 'success');
         } catch (\RuntimeException $e) {
             Flux::toast($e->getMessage(), 'Error', variant: 'danger');
@@ -246,6 +248,7 @@ new class extends Component {
 
         Flux::modal('staff-response-modal')->close();
         $this->viewingResponseId = null;
+        $this->viewingResponse = null;
         Flux::toast('Response approved.', 'Approved', variant: 'success');
     }
 
@@ -258,6 +261,7 @@ new class extends Component {
 
         Flux::modal('staff-response-modal')->close();
         $this->viewingResponseId = null;
+        $this->viewingResponse = null;
         Flux::toast('Response rejected.', 'Done', variant: 'success');
     }
 
@@ -388,6 +392,14 @@ new class extends Component {
             ->orderByDesc('end_date')
             ->get();
 
+        // Pre-load which archived questions the user has already responded to
+        $userArchivedResponseQuestionIds = $archivedQuestions->isNotEmpty()
+            ? CommunityResponse::where('user_id', $user->id)
+                ->whereIn('community_question_id', $archivedQuestions->pluck('id'))
+                ->pluck('community_question_id')
+                ->toArray()
+            : [];
+
         // If viewing a specific archived question
         $selectedQuestionResponses = null;
         $selectedQuestion = null;
@@ -428,6 +440,7 @@ new class extends Component {
             'archivedQuestions' => $archivedQuestions,
             'selectedQuestion' => $selectedQuestion,
             'selectedQuestionResponses' => $selectedQuestionResponses,
+            'userArchivedResponseQuestionIds' => $userArchivedResponseQuestionIds,
             'pendingResponses' => $pendingResponses,
             'allQuestions' => $allQuestions,
             'pendingSuggestions' => $pendingSuggestions,
@@ -631,7 +644,7 @@ new class extends Component {
                                     @endforelse
 
                                     {{-- Respond to archived question --}}
-                                    @if($canRespondToArchived && !CommunityResponse::where('community_question_id', $question->id)->where('user_id', auth()->id())->exists())
+                                    @if($canRespondToArchived && !in_array($question->id, $userArchivedResponseQuestionIds))
                                         <div class="border-t border-zinc-700 pt-4">
                                             <flux:heading size="sm">Respond to This Question</flux:heading>
                                             <form wire:submit="submitArchivedResponse" class="mt-3 space-y-3">
@@ -816,9 +829,7 @@ new class extends Component {
 
     {{-- Staff: Response Detail Modal --}}
     <flux:modal name="staff-response-modal" class="w-full lg:w-1/2">
-        @if($viewingResponseId)
-            @php $viewingResponse = \App\Models\CommunityResponse::with(['user', 'question'])->find($viewingResponseId); @endphp
-            @if($viewingResponse)
+        @if($viewingResponse)
                 <flux:heading size="md">Review Response</flux:heading>
                 <flux:text variant="subtle" class="mb-4">By {{ $viewingResponse->user->name }} &middot; {{ $viewingResponse->created_at->diffForHumans() }}</flux:text>
                 <flux:text variant="subtle" class="mb-2">Question: {{ $viewingResponse->question->question_text }}</flux:text>
@@ -842,7 +853,6 @@ new class extends Component {
                     <flux:button wire:click="rejectViewing" size="sm" variant="danger">Reject</flux:button>
                     <flux:button wire:click="approveViewing" size="sm" variant="primary">Approve</flux:button>
                 </div>
-            @endif
         @endif
     </flux:modal>
 

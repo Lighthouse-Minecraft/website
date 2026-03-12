@@ -46,4 +46,6 @@ Schedule::command('parent-portal:process-age-transitions')
 // Activate/archive community questions based on schedule
 Schedule::command('community:process-schedule')
     ->hourly()
+    ->withoutOverlapping()
+    ->onOneServer()
     ->runInBackground();

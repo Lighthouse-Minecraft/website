@@ -28,8 +28,8 @@ it('creates a question with scheduled status and dates', function () {
     );
 
     expect($question->fresh()->status)->toBe(CommunityQuestionStatus::Scheduled)
-        ->and($question->start_date->toDateString())->toBe($start->toDateString())
-        ->and($question->end_date->toDateString())->toBe($end->toDateString())
+        ->and($question->start_date->toDateTimeString())->toBe($start->toDateTimeString())
+        ->and($question->end_date->toDateTimeString())->toBe($end->toDateTimeString())
         ->and($question->description)->toBe('Share your thoughts.');
 });
 

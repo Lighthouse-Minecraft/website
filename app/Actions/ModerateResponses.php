@@ -12,6 +12,7 @@ class ModerateResponses
 {
     use AsAction;
 
+    /** @param Collection<int, \App\Models\CommunityResponse> $responses */
     public function handle(Collection $responses, User $staff, CommunityResponseStatus $outcome): int
     {
         if (! in_array($outcome, [CommunityResponseStatus::Approved, CommunityResponseStatus::Rejected])) {

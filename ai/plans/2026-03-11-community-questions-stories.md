@@ -559,7 +559,7 @@ If we want to notify staff when new responses are submitted for review, that can
 **Methods**:
 - `submitResponse()` — authorize, validate, call SubmitCommunityResponse::run()
 - `editResponse()` — authorize, validate, call EditCommunityResponse::run()
-- `deleteResponse(int $id)` — authorize, delete own unnapproved response
+- `deleteResponse(int $id)` — authorize, delete own unapproved response
 - `toggleReaction(int $responseId, string $emoji)` — call ToggleCommunityReaction::run()
 - `suggestQuestion()` — authorize (citizen), call SubmitQuestionSuggestion::run()
 - `browseQuestion(int $questionId)` — set selectedQuestionId for past questions tab
