@@ -64,7 +64,7 @@ class BoardMember extends Model
         }
 
         if ($this->photo_path) {
-            return asset('storage/'.$this->photo_path);
+            return \App\Services\StorageService::publicUrl($this->photo_path);
         }
 
         return null;

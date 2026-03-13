@@ -368,7 +368,7 @@ class User extends Authenticatable // implements MustVerifyEmail
             return null;
         }
 
-        return asset('storage/'.$this->staff_photo_path);
+        return \App\Services\StorageService::publicUrl($this->staff_photo_path);
     }
 
     public function acknowledgedAnnouncements()
@@ -394,6 +394,16 @@ class User extends Authenticatable // implements MustVerifyEmail
     public function disciplineReports(): HasMany
     {
         return $this->hasMany(DisciplineReport::class, 'subject_user_id');
+    }
+
+    public function communityResponses(): HasMany
+    {
+        return $this->hasMany(CommunityResponse::class);
+    }
+
+    public function questionSuggestions(): HasMany
+    {
+        return $this->hasMany(QuestionSuggestion::class);
     }
 
     /**

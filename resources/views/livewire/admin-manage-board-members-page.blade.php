@@ -59,7 +59,7 @@ new class extends Component {
 
         $photoPath = null;
         if ($this->newPhoto) {
-            $photoPath = $this->newPhoto->store('board-member-photos', 'public');
+            $photoPath = $this->newPhoto->store('board-member-photos', config('filesystems.public_disk'));
         }
 
         try {
@@ -72,7 +72,7 @@ new class extends Component {
             );
         } catch (\Throwable $e) {
             if ($photoPath) {
-                Storage::disk('public')->delete($photoPath);
+                Storage::disk(config('filesystems.public_disk'))->delete($photoPath);
             }
             throw $e;
         }
@@ -112,7 +112,7 @@ new class extends Component {
         $photoPath = $boardMember->photo_path;
         $oldPhotoPath = null;
         if ($this->editPhoto) {
-            $newPath = $this->editPhoto->store('board-member-photos', 'public');
+            $newPath = $this->editPhoto->store('board-member-photos', config('filesystems.public_disk'));
             if ($newPath) {
                 $oldPhotoPath = $boardMember->photo_path;
                 $photoPath = $newPath;
@@ -130,13 +130,13 @@ new class extends Component {
             );
         } catch (\Throwable $e) {
             if ($photoPath !== $boardMember->photo_path) {
-                Storage::disk('public')->delete($photoPath);
+                Storage::disk(config('filesystems.public_disk'))->delete($photoPath);
             }
             throw $e;
         }
 
         if ($oldPhotoPath) {
-            Storage::disk('public')->delete($oldPhotoPath);
+            Storage::disk(config('filesystems.public_disk'))->delete($oldPhotoPath);
         }
 
         Flux::modal('edit-board-member-modal')->close();

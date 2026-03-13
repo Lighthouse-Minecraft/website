@@ -48,7 +48,7 @@ Staff can change a ticket's status using the status controls on the ticket page.
 
 - **Open to Pending** -- you're waiting on information from the member or another staff member
 - **Open/Pending to Closed** -- the issue is resolved and you're closing it out
-- A system message is posted when the status changes so everyone can see the update
+- A system message is posted to the conversation when the status changes so everyone can see the update
 
 ## Assigning and Rerouting
 
