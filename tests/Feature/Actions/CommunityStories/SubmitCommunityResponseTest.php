@@ -53,11 +53,11 @@ it('prevents response to a draft question', function () {
     SubmitCommunityResponse::run($question, $user, 'This should fail because the question is a draft.');
 })->throws(\RuntimeException::class, 'This question is not accepting responses.');
 
-it('prevents response to a scheduled question', function () {
+it('prevents response to a draft question with scheduled dates', function () {
     $user = loginAs(membershipTraveler());
-    $question = CommunityQuestion::factory()->scheduled()->create();
+    $question = CommunityQuestion::factory()->withSchedule()->create();
 
-    SubmitCommunityResponse::run($question, $user, 'This should fail because the question is scheduled.');
+    SubmitCommunityResponse::run($question, $user, 'This should fail because the question is a draft with schedule.');
 })->throws(\RuntimeException::class, 'This question is not accepting responses.');
 
 it('allows a resident to respond to one archived question after answering the active question', function () {

@@ -29,8 +29,8 @@ class ProcessQuestionSchedule
                 $archived++;
             }
 
-            // Pick the single best scheduled question to activate (deterministic: earliest start, lowest ID)
-            $questionToActivate = CommunityQuestion::scheduled()
+            // Pick the single best draft question with a start_date to activate (deterministic: earliest start, lowest ID)
+            $questionToActivate = CommunityQuestion::pendingActivation()
                 ->where('start_date', '<=', now())
                 ->orderBy('start_date', 'asc')
                 ->orderBy('id', 'asc')
@@ -49,15 +49,15 @@ class ProcessQuestionSchedule
                 RecordActivity::run($questionToActivate, 'community_question_activated', "Question #{$questionToActivate->id} auto-activated (start date reached).");
                 $activated++;
 
-                // Archive all other overdue scheduled questions so they don't activate on future runs
-                $staleScheduled = CommunityQuestion::scheduled()
+                // Archive all other overdue draft questions so they don't activate on future runs
+                $staleDrafts = CommunityQuestion::pendingActivation()
                     ->where('start_date', '<=', now())
                     ->where('id', '!=', $questionToActivate->id)
                     ->get();
 
-                foreach ($staleScheduled as $stale) {
+                foreach ($staleDrafts as $stale) {
                     $stale->update(['status' => CommunityQuestionStatus::Archived]);
-                    RecordActivity::run($stale, 'community_question_archived', "Question #{$stale->id} auto-archived (stale scheduled question).");
+                    RecordActivity::run($stale, 'community_question_archived', "Question #{$stale->id} auto-archived (stale draft question).");
                     $archived++;
                 }
             }

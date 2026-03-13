@@ -68,9 +68,10 @@ class CommunityQuestion extends Model
         return $query->where('status', CommunityQuestionStatus::Archived);
     }
 
-    public function scopeScheduled(Builder $query): Builder
+    public function scopePendingActivation(Builder $query): Builder
     {
-        return $query->where('status', CommunityQuestionStatus::Scheduled);
+        return $query->where('status', CommunityQuestionStatus::Draft)
+            ->whereNotNull('start_date');
     }
 
     // Helpers
@@ -93,10 +94,5 @@ class CommunityQuestion extends Model
     public function isDraft(): bool
     {
         return $this->status === CommunityQuestionStatus::Draft;
-    }
-
-    public function isScheduled(): bool
-    {
-        return $this->status === CommunityQuestionStatus::Scheduled;
     }
 }
