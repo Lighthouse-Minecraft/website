@@ -75,9 +75,11 @@ class SubmitCommunityResponse
         if ($image) {
             try {
                 $imagePath = $image->store('community-stories', config('filesystems.public_disk'));
-                if ($imagePath) {
-                    $response->update(['image_path' => $imagePath]);
+                if (! $imagePath) {
+                    $response->delete();
+                    throw new \RuntimeException('Failed to store uploaded image.');
                 }
+                $response->update(['image_path' => $imagePath]);
             } catch (\Throwable $e) {
                 $response->delete();
                 if (isset($imagePath) && $imagePath) {
