@@ -534,7 +534,7 @@ Not applicable for this feature.
 
 ### Submitting a Response to the Active Question
 
-```
+```text
 User clicks "Submit" on Stories tab (or dashboard widget)
   -> POST /community-stories (Livewire action)
     -> VoltComponent::submitResponse()
@@ -551,7 +551,7 @@ User clicks "Submit" on Stories tab (or dashboard widget)
 
 ### Moderating Responses (Staff)
 
-```
+```text
 Staff selects responses + clicks "Approve" or "Reject" on Manage > Pending tab
   -> POST /community-stories (Livewire action)
     -> VoltComponent::moderateSelected($outcome)
@@ -566,7 +566,7 @@ Staff selects responses + clicks "Approve" or "Reject" on Manage > Pending tab
 
 ### Suggesting a Question (Citizen+)
 
-```
+```text
 Citizen clicks "Suggest Question" and submits form
   -> POST /community-stories (Livewire action)
     -> VoltComponent::suggestQuestion()
@@ -580,7 +580,7 @@ Citizen clicks "Suggest Question" and submits form
 
 ### Reviewing a Suggestion (Staff)
 
-```
+```text
 Staff clicks "Approve" or "Reject" on a suggestion
   -> POST /community-stories (Livewire action)
     -> VoltComponent::reviewSuggestion($suggestion, $outcome)
@@ -596,7 +596,7 @@ Staff clicks "Approve" or "Reject" on a suggestion
 
 ### Creating a Question (Staff)
 
-```
+```text
 Staff fills out question form on Manage > Questions tab
   -> POST /community-stories (Livewire action)
     -> VoltComponent::createQuestion()
@@ -610,7 +610,7 @@ Staff fills out question form on Manage > Questions tab
 
 ### Automatic Question Lifecycle
 
-```
+```text
 Hourly cron triggers community:process-schedule
   -> ProcessCommunityQuestionSchedule::handle()
     -> ProcessQuestionSchedule::run()
@@ -625,7 +625,7 @@ Hourly cron triggers community:process-schedule
 
 ### Toggling Emoji Reaction
 
-```
+```text
 User clicks emoji button on an approved response
   -> POST /community-stories (Livewire action)
     -> VoltComponent::toggleReaction($responseId, $emoji)
