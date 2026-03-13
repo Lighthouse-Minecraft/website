@@ -32,10 +32,10 @@ class CommunityQuestionFactory extends Factory
         ]);
     }
 
-    public function scheduled(): static
+    public function withSchedule(): static
     {
         return $this->state(fn (array $attributes) => [
-            'status' => CommunityQuestionStatus::Scheduled,
+            'status' => CommunityQuestionStatus::Draft,
             'start_date' => now()->addDays(7),
             'end_date' => now()->addDays(14),
         ]);

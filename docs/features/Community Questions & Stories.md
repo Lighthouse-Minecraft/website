@@ -37,7 +37,7 @@ The feature is managed primarily by the **Chaplain department** (Jr Crew rank an
 
 Access is via a dashboard widget and a dedicated `/community-stories` page (no main nav/sidebar link). The page has three public-facing tabs (Stories, Past Questions) plus a staff-only Manage tab with sub-sections for pending response moderation, question CRUD, and suggestion review. Approved responses display on the community stories page with emoji reactions (❤️, 😂, 🙏, 👏, 🔥, ⛵) and on user profile pages.
 
-An hourly scheduled command (`community:process-schedule`) handles automatic lifecycle transitions — activating scheduled questions when their start date arrives and archiving active questions when their end date passes.
+An hourly scheduled command (`community:process-schedule`) handles automatic lifecycle transitions — activating draft questions with a start date when that date arrives, and archiving active questions when their end date passes.
 
 ---
 
@@ -134,14 +134,13 @@ An hourly scheduled command (`community:process-schedule`) handles automatic lif
 **Scopes:**
 - `scopeActive($query)` — filters to `status = Active`
 - `scopeArchived($query)` — filters to `status = Archived`
-- `scopeScheduled($query)` — filters to `status = Scheduled`
+- `scopePendingActivation($query)` — filters to `status = Draft` with a non-null `start_date`
 
 **Key Methods:**
 - `approvedResponses(): HasMany` — responses filtered to `status = Approved`
 - `isActive(): bool` — checks if status is Active
 - `isArchived(): bool` — checks if status is Archived
 - `isDraft(): bool` — checks if status is Draft
-- `isScheduled(): bool` — checks if status is Scheduled
 
 **Casts:**
 - `status` => `CommunityQuestionStatus`
@@ -217,8 +216,7 @@ An hourly scheduled command (`community:process-schedule`) handles automatic lif
 
 | Case | Value | Label | Color | Notes |
 |------|-------|-------|-------|-------|
-| Draft | `'draft'` | Draft | zinc | Default; not visible to members |
-| Scheduled | `'scheduled'` | Scheduled | sky | Has start_date in the future |
+| Draft | `'draft'` | Draft | zinc | Default; not visible to members. If `start_date` is set, auto-activates when that date arrives. |
 | Active | `'active'` | Active | emerald | Currently accepting responses |
 | Archived | `'archived'` | Archived | amber | Past question; Resident+ can respond |
 
@@ -400,7 +398,7 @@ Helper methods: `label(): string`
    - Requires Resident+ membership level
    - Requires user has answered the current active question
    - Enforces per-cycle limit: max 1 archived-question response since the active question's `start_date`
-4. If question is draft/scheduled: throws `RuntimeException`
+4. If question is draft: throws `RuntimeException`
 5. Stores uploaded image to `community-stories` directory on `public` disk (if provided)
 6. Creates `CommunityResponse` with status `Submitted`
 7. Logs activity: `RecordActivity::run($response, 'community_response_submitted', ...)`
@@ -478,9 +476,10 @@ Helper methods: `label(): string`
 
 **Step-by-step logic:**
 1. Finds active questions with `end_date <= now()` → archives them, logs `community_question_archived`
-2. Finds scheduled questions with `start_date <= now()`:
+2. Finds draft questions with a `start_date <= now()` (pending activation):
    - Archives any currently active questions first (logs `community_question_archived`)
-   - Activates the scheduled question (logs `community_question_activated`)
+   - Activates the draft question (logs `community_question_activated`)
+   - Archives any other stale draft questions with overdue start dates
 3. Returns `['activated' => int, 'archived' => int]`
 
 **Called by:** `ProcessCommunityQuestionSchedule` artisan command
@@ -504,7 +503,7 @@ Not applicable for this feature.
 ### `community:process-schedule`
 **File:** `app/Console/Commands/ProcessCommunityQuestionSchedule.php`
 **Scheduled:** Yes — hourly, runs in background (`routes/console.php`)
-**What it does:** Calls `ProcessQuestionSchedule::run()` to activate scheduled questions past their start date and archive active questions past their end date. Outputs summary of changes or "no changes needed" message.
+**What it does:** Calls `ProcessQuestionSchedule::run()` to activate draft questions (with a `start_date`) past their start date and archive active questions past their end date. Outputs summary of changes or "no changes needed" message.
 
 ---
 
@@ -609,7 +608,7 @@ Staff fills out question form on Manage > Questions tab
       -> Flux::toast('Question created!', variant: 'success')
 ```
 
-### Automatic Question Lifecycle (Scheduled)
+### Automatic Question Lifecycle
 
 ```
 Hourly cron triggers community:process-schedule
@@ -617,9 +616,10 @@ Hourly cron triggers community:process-schedule
     -> ProcessQuestionSchedule::run()
       -> Find active questions with end_date <= now()
         -> Archive each, log activity
-      -> Find scheduled questions with start_date <= now()
+      -> Find draft questions with start_date <= now() (pending activation)
         -> Archive any currently active question first, log activity
-        -> Activate scheduled question, log activity
+        -> Activate the draft question, log activity
+        -> Archive any other stale drafts with overdue start dates
     -> Output summary to console
 ```
 
@@ -652,8 +652,8 @@ Not applicable for this feature. No custom env variables or config values are us
 |------|-------|----------------|
 | `tests/Feature/Actions/CommunityStories/SubmitCommunityResponseTest.php` | 11 | Response submission, rank access, duplicate prevention, archived question rules, activity logging |
 | `tests/Feature/Actions/CommunityStories/ModerateResponsesTest.php` | 8 | Approve/reject single and bulk, metadata fields, activity logging, skip already-approved |
-| `tests/Feature/Actions/CommunityStories/CreateCommunityQuestionTest.php` | 4 | Draft/scheduled creation, suggestion linking, activity logging |
-| `tests/Feature/Actions/CommunityStories/ToggleCommunityReactionTest.php` | 4 | Add/remove toggle, multiple emojis, invalid emoji rejection |
+| `tests/Feature/Actions/CommunityStories/CreateCommunityQuestionTest.php` | 4 | Draft creation (with/without dates), suggestion linking, activity logging |
+| `tests/Feature/Actions/CommunityStories/ToggleCommunityReactionTest.php` | 4 | Add/remove toggle, emoji replacement, invalid emoji rejection |
 | `tests/Feature/Actions/CommunityStories/SubmitQuestionSuggestionTest.php` | 2 | Suggestion creation, activity logging |
 | `tests/Feature/Actions/CommunityStories/ReviewQuestionSuggestionTest.php` | 4 | Approve (auto-creates draft), reject, metadata, activity logging |
 | `tests/Feature/Actions/CommunityStories/ProcessQuestionScheduleTest.php` | 5 | Activation, archival, replacement, draft immunity, future immunity |
@@ -669,7 +669,7 @@ Not applicable for this feature. No custom env variables or config values are us
 - `it('prevents a drifter from submitting a response')`
 - `it('prevents a stowaway from submitting a response')`
 - `it('prevents response to a draft question')`
-- `it('prevents response to a scheduled question')`
+- `it('prevents response to a draft question with scheduled dates')`
 - `it('allows a resident to respond to one archived question after answering the active question')`
 - `it('prevents a traveler from responding to an archived question')`
 - `it('prevents responding to a second archived question in the same cycle')`
@@ -688,14 +688,14 @@ Not applicable for this feature. No custom env variables or config values are us
 
 **CreateCommunityQuestionTest:**
 - `it('creates a question in draft status')`
-- `it('creates a question with scheduled status and dates')`
+- `it('creates a draft question with scheduled dates')`
 - `it('links suggestion when created from a suggestion')`
 - `it('records activity')`
 
 **ToggleCommunityReactionTest:**
 - `it('adds a reaction')`
 - `it('removes an existing reaction')`
-- `it('allows multiple different emojis from same user')`
+- `it('replaces existing reaction when switching to a different emoji')`
 - `it('rejects emoji not in allowed set')`
 
 **SubmitQuestionSuggestionTest:**
@@ -709,11 +709,11 @@ Not applicable for this feature. No custom env variables or config values are us
 - `it('records activity')`
 
 **ProcessQuestionScheduleTest:**
-- `it('activates a scheduled question whose start_date has passed')`
+- `it('activates a draft question with start_date that has passed')`
 - `it('archives an active question whose end_date has passed')`
 - `it('archives old active question when new one activates')`
-- `it('does not change draft questions')`
-- `it('does not activate a question whose start_date is in the future')`
+- `it('does not change draft questions without a start_date')`
+- `it('does not activate a draft question whose start_date is in the future')`
 
 **CommunityStoriesAuthorizationTest:**
 - `it('allows traveler to view community stories')`

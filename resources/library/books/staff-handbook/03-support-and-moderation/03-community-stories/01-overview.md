@@ -18,12 +18,12 @@ If you're in the Chaplain department, you'll see a **Manage** tab on the Communi
 ## How It Works (High Level)
 
 1. A staff member creates a **question** (starts as a Draft)
-2. The question is set to **Scheduled** with a start and end date
+2. A **start date** and **end date** are set on the question
 3. An hourly process automatically **activates** the question when its start date arrives
 4. Members submit stories in response to the active question
 5. Staff **reviews** and approves or rejects submitted stories
 6. Approved stories appear publicly with emoji reactions
 7. When the end date passes, the question is automatically **archived**
-8. A new scheduled question takes its place
+8. The next draft question with a start date takes its place
 
 Members can also suggest questions. Citizens have a suggestion form at the bottom of the stories page. Suggestions land in your queue for review.

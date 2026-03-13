@@ -18,16 +18,16 @@ it('creates a question in draft status', function () {
         ->and($question->created_by)->toBe($staff->id);
 });
 
-it('creates a question with scheduled status and dates', function () {
+it('creates a draft question with scheduled dates', function () {
     $staff = loginAsAdmin();
     $start = now()->addDays(7);
     $end = now()->addDays(14);
 
     $question = CreateCommunityQuestion::run(
-        $staff, 'What does community mean to you?', 'Share your thoughts.', CommunityQuestionStatus::Scheduled, $start, $end
+        $staff, 'What does community mean to you?', 'Share your thoughts.', CommunityQuestionStatus::Draft, $start, $end
     );
 
-    expect($question->fresh()->status)->toBe(CommunityQuestionStatus::Scheduled)
+    expect($question->fresh()->status)->toBe(CommunityQuestionStatus::Draft)
         ->and($question->start_date->toDateTimeString())->toBe($start->toDateTimeString())
         ->and($question->end_date->toDateTimeString())->toBe($end->toDateTimeString())
         ->and($question->description)->toBe('Share your thoughts.');

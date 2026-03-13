@@ -8,10 +8,10 @@ use App\Models\CommunityQuestion;
 
 uses()->group('community-stories', 'actions');
 
-it('activates a scheduled question whose start_date has passed', function () {
+it('activates a draft question with start_date that has passed', function () {
     loginAsAdmin();
     $question = CommunityQuestion::factory()->create([
-        'status' => CommunityQuestionStatus::Scheduled,
+        'status' => CommunityQuestionStatus::Draft,
         'start_date' => now()->subHour(),
         'end_date' => now()->addDays(7),
     ]);
@@ -44,8 +44,8 @@ it('archives old active question when new one activates', function () {
         'end_date' => null,
     ]);
 
-    $newScheduled = CommunityQuestion::factory()->create([
-        'status' => CommunityQuestionStatus::Scheduled,
+    $newDraft = CommunityQuestion::factory()->create([
+        'status' => CommunityQuestionStatus::Draft,
         'start_date' => now()->subHour(),
         'end_date' => now()->addDays(7),
     ]);
@@ -53,14 +53,14 @@ it('archives old active question when new one activates', function () {
     ProcessQuestionSchedule::run();
 
     expect($oldActive->fresh()->status)->toBe(CommunityQuestionStatus::Archived)
-        ->and($newScheduled->fresh()->status)->toBe(CommunityQuestionStatus::Active);
+        ->and($newDraft->fresh()->status)->toBe(CommunityQuestionStatus::Active);
 });
 
-it('does not change draft questions', function () {
+it('does not change draft questions without a start_date', function () {
     loginAsAdmin();
     $question = CommunityQuestion::factory()->create([
         'status' => CommunityQuestionStatus::Draft,
-        'start_date' => now()->subHour(),
+        'start_date' => null,
     ]);
 
     ProcessQuestionSchedule::run();
@@ -68,11 +68,11 @@ it('does not change draft questions', function () {
     expect($question->fresh()->status)->toBe(CommunityQuestionStatus::Draft);
 });
 
-it('does not activate a question whose start_date is in the future', function () {
+it('does not activate a draft question whose start_date is in the future', function () {
     loginAsAdmin();
-    $question = CommunityQuestion::factory()->scheduled()->create();
+    $question = CommunityQuestion::factory()->withSchedule()->create();
 
     ProcessQuestionSchedule::run();
 
-    expect($question->fresh()->status)->toBe(CommunityQuestionStatus::Scheduled);
+    expect($question->fresh()->status)->toBe(CommunityQuestionStatus::Draft);
 });

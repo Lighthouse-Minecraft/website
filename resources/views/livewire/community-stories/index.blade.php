@@ -298,7 +298,7 @@ new class extends Component {
         $this->validate([
             'questionText' => 'required|string|min:10|max:1000',
             'questionDescription' => 'nullable|string|max:2000',
-            'questionStatus' => 'required|in:draft,scheduled,active,archived',
+            'questionStatus' => 'required|in:draft,active,archived',
             'questionStartDate' => 'nullable|date',
             'questionEndDate' => 'nullable|date|after_or_equal:questionStartDate',
         ]);
@@ -884,7 +884,6 @@ new class extends Component {
                 <flux:label>Status</flux:label>
                 <flux:select wire:model="questionStatus">
                     <flux:select.option value="draft">Draft</flux:select.option>
-                    <flux:select.option value="scheduled">Scheduled</flux:select.option>
                     <flux:select.option value="active">Active</flux:select.option>
                     <flux:select.option value="archived">Archived</flux:select.option>
                 </flux:select>
