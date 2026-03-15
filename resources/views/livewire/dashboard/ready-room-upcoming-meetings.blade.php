@@ -54,9 +54,11 @@ new class extends Component {
                             @endif
                         @else
                             <flux:tooltip content="Unlocks {{ config('lighthouse.meeting_report_unlock_days', 7) }} days before the meeting">
-                                <flux:button size="xs" disabled>
-                                    Staff Update Report
-                                </flux:button>
+                                <span class="inline-block">
+                                    <flux:button size="xs" disabled class="pointer-events-none">
+                                        Staff Update Report
+                                    </flux:button>
+                                </span>
                             </flux:tooltip>
                         @endif
                     @endif

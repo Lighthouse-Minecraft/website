@@ -48,7 +48,7 @@ new class extends Component {
     @if($this->staffMembers->isNotEmpty())
         <div class="mb-4">
             <flux:heading size="sm" class="mb-2">Staff Reports</flux:heading>
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                 @foreach($this->staffMembers as $member)
                     @php
                         $report = $this->reports->get($member->id);
@@ -71,6 +71,23 @@ new class extends Component {
                     </button>
                 @endforeach
             </div>
+            @if($meeting->isStaffMeeting() && auth()->user()->staff_department?->value === $department)
+                <div class="text-right mt-2">
+                    @if($meeting->isReportUnlocked())
+                        <flux:button href="{{ route('meeting.report', $meeting) }}" size="xs" variant="primary">
+                            {{ $this->reports->has(auth()->id()) ? 'Update Staff Update Report' : 'Submit Staff Update Report' }}
+                        </flux:button>
+                    @elseif(! $meeting->isReportLocked())
+                        <flux:tooltip content="Unlocks {{ config('lighthouse.meeting_report_unlock_days', 7) }} days before the meeting">
+                            <span class="inline-block">
+                                <flux:button size="xs" disabled class="pointer-events-none">
+                                    Staff Update Report
+                                </flux:button>
+                            </span>
+                        </flux:tooltip>
+                    @endif
+                </div>
+            @endif
         </div>
     @endif
 
