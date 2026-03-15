@@ -120,7 +120,7 @@ describe('Staff Engagement Widget', function () {
             'name' => 'Attendee Staff',
         ]);
 
-        $meeting->attendees()->attach($staff->id, ['added_at' => now()->subDays(14)]);
+        $meeting->attendees()->attach($staff->id, ['added_at' => now()->subDays(14), 'attended' => true]);
 
         $component = Volt::test('dashboard.command-staff-engagement');
 

@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\AutoLinkParentOnRegistration;
+use App\Actions\LinkParentByEmail;
 use App\Actions\PutUserInBrig;
 use App\Actions\RecordActivity;
 use App\Enums\BrigType;
@@ -114,8 +115,11 @@ new #[Layout('components.layouts.auth')] class extends Component {
         event(new Registered($user));
         RecordActivity::run($user, 'user_registered', 'User registered for an account');
 
-        // Auto-link parent if they already have an account
+        // Auto-link: check if this user's email matches any child's parent_email
         AutoLinkParentOnRegistration::run($user);
+
+        // Auto-link: check if this child's parent_email matches an existing parent account
+        LinkParentByEmail::run($user);
 
         // Send parent notification for minors
         if ($age < 17 && ! empty($this->parent_email)) {

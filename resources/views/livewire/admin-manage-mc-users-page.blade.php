@@ -115,10 +115,11 @@ new class extends Component {
         return MinecraftAccount::query()
             ->join('users', 'minecraft_accounts.user_id', '=', 'users.id')
             ->select('minecraft_accounts.*', 'users.name as user_name')
-            ->when($this->search, fn ($q) => $q->where(function ($q) {
-                $q->where('minecraft_accounts.username', 'like', "%{$this->search}%")
-                    ->orWhere('users.name', 'like', "%{$this->search}%")
-                    ->orWhere('minecraft_accounts.uuid', 'like', "%{$this->search}%");
+            ->when(trim($this->search) !== '', fn ($q) => $q->where(function ($q) {
+                $term = mb_strtolower(trim($this->search));
+                $q->whereRaw('LOWER(minecraft_accounts.username) like ?', ["%{$term}%"])
+                    ->orWhereRaw('LOWER(users.name) like ?', ["%{$term}%"])
+                    ->orWhereRaw('LOWER(minecraft_accounts.uuid) like ?', ["%{$term}%"]);
             }))
             ->orderBy($sortColumn, $direction)
             ->paginate(15);

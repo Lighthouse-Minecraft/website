@@ -50,6 +50,12 @@ new class extends Component {
             ->toArray();
     }
 
+    #[\Livewire\Attributes\On('attendeesUpdated')]
+    public function refreshAttendees(): void
+    {
+        $this->meeting->load('attendees');
+    }
+
     public function mount(Meeting $meeting) {
         $this->meeting = $meeting->load('attendees');
 
@@ -143,32 +149,6 @@ new class extends Component {
         $this->pollTime = 60;
 
         Flux::modal('start-meeting-confirmation')->close();
-    }
-
-    public function joinMeeting(): void
-    {
-        $this->authorize('attend', $this->meeting);
-
-        $attendeeId = auth()->id();
-
-        if ($this->meeting->attendees()->where('id', $attendeeId)->exists()) {
-            Flux::toast('You are already listed as an attendee.', variant: 'warning');
-
-            return;
-        }
-
-        $changes = $this->meeting->attendees()->syncWithoutDetaching([
-            $attendeeId => ['added_at' => now()],
-        ]);
-        $this->meeting->load('attendees');
-
-        if (empty($changes['attached'])) {
-            Flux::toast('You are already listed as an attendee.', variant: 'warning');
-
-            return;
-        }
-
-        Flux::toast('You have joined the meeting!', variant: 'success');
     }
 
     private function parseScheduledTime(string $day, string $time): CarbonImmutable
@@ -369,7 +349,7 @@ new class extends Component {
 }; ?>
 
 <div class="space-y-6">
-    <div wire:poll.{{ $pollTime }}>
+    <div wire:poll.{{ $pollTime }}s.keep-alive>
         <!-- Polling only affects this section -->
         <flux:heading size="xl" class="mb-6">{{  $meeting->title }} - {{  $meeting->day }}</flux:heading>
 
@@ -394,7 +374,11 @@ new class extends Component {
                         <strong>Start Time:</strong> {{ $meeting->start_time->setTimezone('America/New_York')->format('F j, Y g:i A') }} ET<br>
                     @endif
                     @if($meeting->attendees->count() > 0)
-                        <strong>Attendees:</strong> {{ $meeting->attendees->count() }}<br>
+                        @php
+                            $presentCount = $meeting->attendees->where('pivot.attended', true)->count();
+                            $totalCount = $meeting->attendees->count();
+                        @endphp
+                        <strong>Attendance:</strong> {{ $presentCount }} / {{ $totalCount }} present<br>
                     @endif
                 </flux:text>
 
@@ -404,44 +388,35 @@ new class extends Component {
                         <div class="space-y-1">
                             @foreach($meeting->attendees as $attendee)
                                 <div wire:key="attendee-{{ $meeting->id }}-{{ $attendee->id }}" class="flex items-center justify-between text-sm">
-                                    <span>
-                                        <strong><flux:link href="{{ route('profile.show', $attendee) }}">{{ $attendee->name }}</flux:link></strong>
-                                        @if($attendee->staff_rank && $attendee->staff_title)
-                                            <br>
-                                            <span class="text-xs text-gray-600 dark:text-gray-400">
-                                                {{ $attendee->staff_rank->label() }} - {{ $attendee->staff_title }}
-                                            </span>
-                                        @endif
-                                    </span>
-                                    <span class="text-xs text-gray-500 dark:text-gray-400">
-                                        @if(is_object($attendee->pivot->added_at))
-                                            {{ $attendee->pivot->added_at->setTimezone('America/New_York')->format('g:i A') }}
+                                    <span class="flex items-center gap-1.5">
+                                        @if($attendee->pivot->attended)
+                                            <flux:icon name="check-circle" variant="solid" class="w-4 h-4 text-green-500 shrink-0" />
                                         @else
-                                            {{ $attendee->pivot->added_at }}
+                                            <flux:icon name="x-circle" variant="solid" class="w-4 h-4 text-red-400 shrink-0" />
                                         @endif
+                                        <span>
+                                            <strong><flux:link href="{{ route('profile.show', $attendee) }}">{{ $attendee->name }}</flux:link></strong>
+                                            @if($attendee->staff_rank && $attendee->staff_title)
+                                                <br>
+                                                <span class="text-xs text-gray-600 dark:text-gray-400">
+                                                    {{ $attendee->staff_rank->label() }} - {{ $attendee->staff_title }}
+                                                </span>
+                                            @endif
+                                        </span>
                                     </span>
+                                    @if(! $attendee->pivot->attended)
+                                        <flux:badge size="sm" color="red">Absent</flux:badge>
+                                    @endif
                                 </div>
                             @endforeach
                         </div>
                     </div>
                 @endif
 
-                @if($meeting->status->value === 'in_progress')
+                @if(in_array($meeting->status->value, ['in_progress', 'finalizing']))
                     <div class="mt-4">
                         <livewire:meeting.manage-attendees :meeting="$meeting" :key="'attendees-' . $meeting->id" />
                     </div>
-                @endif
-
-                @if($meeting->status->value === 'in_progress')
-                    @can('attend', $meeting)
-                        @unless($meeting->attendees->contains(auth()->id()))
-                            <div class="mt-4">
-                                <flux:button wire:click="joinMeeting" variant="primary" size="sm">
-                                    Join Meeting
-                                </flux:button>
-                            </div>
-                        @endunless
-                    @endcan
                 @endif
 
                 @if($meeting->status == MeetingStatus::Pending && $meeting->isStaffMeeting() && $this->staffByDepartment->isNotEmpty())
@@ -450,25 +425,38 @@ new class extends Component {
                     <div class="space-y-3">
                         @foreach(StaffDepartment::cases() as $department)
                             @if($this->staffByDepartment->has($department->value))
-                                <div wire:key="department-{{ $department->value }}">
+                                <div wire:key="pre-department-{{ $department->value }}">
                                     <flux:text class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">{{ $department->label() }}</flux:text>
-                                    <div class="space-y-0.5">
-                                        @foreach($this->staffByDepartment[$department->value] as $member)
-                                            <div wire:key="member-{{ $member->id }}" class="flex items-center gap-1.5 text-sm">
-                                                @if(in_array($member->id, $this->submittedReportUserIds))
-                                                    <flux:icon name="check" variant="solid" class="w-4 h-4 text-green-500 shrink-0" aria-hidden="true" />
-                                                    <span class="sr-only">Report submitted</span>
-                                                @else
-                                                    <flux:icon name="x-mark" variant="solid" class="w-4 h-4 text-red-400 shrink-0" aria-hidden="true" />
-                                                    <span class="sr-only">Report missing</span>
-                                                @endif
-                                                <span><flux:link href="{{ route('profile.show', $member) }}">{{ $member->name }}</flux:link></span>
-                                            </div>
-                                        @endforeach
-                                    </div>
+                                    <livewire:meeting.department-report-cards :meeting="$meeting" :department="$department->value" :key="'pre-report-cards-' . $meeting->id . '-' . $department->value" />
                                 </div>
                             @endif
                         @endforeach
+                    </div>
+                    <div class="flex items-center justify-between mt-3">
+                        <div>
+                            @can('update', $meeting)
+                                <flux:modal.trigger name="configure-questions-modal">
+                                    <flux:button size="xs" variant="ghost" icon="cog-6-tooth">
+                                        Configure Staff Update Questions
+                                    </flux:button>
+                                </flux:modal.trigger>
+                            @endcan
+                        </div>
+                        <div>
+                            @if($meeting->isReportUnlocked())
+                                <flux:button href="{{ route('meeting.report', $meeting) }}" size="xs" variant="primary">
+                                    Submit Staff Update Report
+                                </flux:button>
+                            @elseif(! $meeting->isReportLocked())
+                                <flux:tooltip content="Unlocks {{ config('lighthouse.meeting_report_unlock_days', 7) }} days before the meeting">
+                                    <span class="inline-block">
+                                        <flux:button size="xs" disabled class="pointer-events-none">
+                                            Submit Staff Update Report
+                                        </flux:button>
+                                    </span>
+                                </flux:tooltip>
+                            @endif
+                        </div>
                     </div>
                 @endif
 
@@ -489,10 +477,6 @@ new class extends Component {
                 </flux:card>
             </div>
         </div>
-
-        @if ($meeting->status == MeetingStatus::Pending && $meeting->isStaffMeeting())
-            <livewire:meeting.manage-questions :meeting="$meeting" :key="'manage-questions-' . $meeting->id" />
-        @endif
 
         <div class="w-full mt-6 text-right">
             @if ($this->meeting->status == MeetingStatus::Pending)
@@ -576,6 +560,18 @@ new class extends Component {
     </div>
 
     {{-- Modals pre-rendered for upcoming transitions so Flux/Alpine initializes them before needed --}}
+    @if($meeting->status == MeetingStatus::Pending && $meeting->isStaffMeeting())
+        <flux:modal name="configure-questions-modal" class="min-w-[36rem] !text-left">
+            <div class="space-y-6">
+                <flux:heading size="lg">Staff Update Questions</flux:heading>
+                <flux:text variant="subtle">
+                    Staff will answer these questions before the meeting. You can add, remove, or reorder questions.
+                </flux:text>
+                <livewire:meeting.manage-questions :meeting="$meeting" :key="'manage-questions-' . $meeting->id" />
+            </div>
+        </flux:modal>
+    @endif
+
     @if($meeting->status == MeetingStatus::Pending)
         <flux:modal name="edit-meeting-modal" class="min-w-[28rem] !text-left">
             <div class="space-y-6">

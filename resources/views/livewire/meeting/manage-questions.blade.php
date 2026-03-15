@@ -82,40 +82,32 @@ new class extends Component {
     }
 }; ?>
 
-<div class="mt-6">
-    <flux:accordion>
-        <flux:accordion.item heading="Staff Check-In Questions" transition>
-            <flux:text variant="subtle" class="mb-4">
-                Staff will answer these questions before the meeting. You can add, remove, or reorder questions.
-            </flux:text>
-
-            @if($this->questions->isNotEmpty())
-                <div class="space-y-2 mb-4">
-                    @foreach($this->questions as $question)
-                        <div wire:key="question-{{ $question->id }}" class="flex items-center gap-2 p-2 rounded border border-zinc-200 dark:border-zinc-700">
-                            @can('update', $meeting)
-                                <div class="flex flex-col gap-0.5">
-                                    <flux:button wire:click="moveUp({{ $question->id }})" variant="ghost" size="xs" icon="chevron-up" class="!p-0.5" />
-                                    <flux:button wire:click="moveDown({{ $question->id }})" variant="ghost" size="xs" icon="chevron-down" class="!p-0.5" />
-                                </div>
-                            @endcan
-                            <flux:text class="flex-1 text-sm">{{ $question->question_text }}</flux:text>
-                            @can('update', $meeting)
-                                <flux:button wire:click="removeQuestion({{ $question->id }})" variant="ghost" size="xs" icon="trash" class="text-red-500 hover:text-red-700" />
-                            @endcan
+<div>
+    @if($this->questions->isNotEmpty())
+        <div class="space-y-2 mb-4">
+            @foreach($this->questions as $question)
+                <div wire:key="question-{{ $question->id }}" class="flex items-center gap-2 p-2 rounded border border-zinc-200 dark:border-zinc-700">
+                    @can('update', $meeting)
+                        <div class="flex flex-col gap-0.5">
+                            <flux:button wire:click="moveUp({{ $question->id }})" variant="ghost" size="xs" icon="chevron-up" class="!p-0.5" />
+                            <flux:button wire:click="moveDown({{ $question->id }})" variant="ghost" size="xs" icon="chevron-down" class="!p-0.5" />
                         </div>
-                    @endforeach
+                    @endcan
+                    <flux:text class="flex-1 text-sm">{{ $question->question_text }}</flux:text>
+                    @can('update', $meeting)
+                        <flux:button wire:click="removeQuestion({{ $question->id }})" variant="ghost" size="xs" icon="trash" class="text-red-500 hover:text-red-700" />
+                    @endcan
                 </div>
-            @else
-                <flux:text variant="subtle" class="mb-4">No questions configured yet.</flux:text>
-            @endif
+            @endforeach
+        </div>
+    @else
+        <flux:text variant="subtle" class="mb-4">No questions configured yet.</flux:text>
+    @endif
 
-            @can('update', $meeting)
-                <div class="flex gap-2">
-                    <flux:input wire:model="newQuestion" placeholder="Add a new question..." class="flex-1" wire:keydown.enter="addQuestion" />
-                    <flux:button wire:click="addQuestion" variant="primary" size="sm">Add</flux:button>
-                </div>
-            @endcan
-        </flux:accordion.item>
-    </flux:accordion>
+    @can('update', $meeting)
+        <div class="flex gap-2">
+            <flux:input wire:model="newQuestion" placeholder="Add a new question..." class="flex-1" wire:keydown.enter="addQuestion" />
+            <flux:button wire:click="addQuestion" variant="primary" size="sm">Add</flux:button>
+        </div>
+    @endcan
 </div>

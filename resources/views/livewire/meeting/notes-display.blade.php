@@ -32,35 +32,12 @@
                             @endif
                         </flux:card>
 
-                        @if($meeting->isStaffMeeting() && $meeting->reports->isNotEmpty())
-                            <flux:card>
-                                <flux:heading size="sm">Staff Reports</flux:heading>
-                                @foreach($meeting->reports as $report)
-                                    <div wire:key="report-{{ $report->id }}" class="mt-3 border-t border-zinc-200 dark:border-zinc-700 pt-3 first:border-t-0 first:pt-0">
-                                        <strong class="text-sm">{{ $report->user->name }}</strong>
-                                        @foreach($report->answers->sortBy(fn ($a) => $a->question->sort_order) as $answer)
-                                            <div wire:key="answer-{{ $answer->id }}" class="mt-1 ml-4">
-                                                <em class="text-xs text-zinc-500 dark:text-zinc-400">{{ $answer->question->question_text }}</em>
-                                                <p class="text-sm">{{ $answer->answer ?: 'No response' }}</p>
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                @endforeach
-                            </flux:card>
+                        @if($meeting->isStaffMeeting())
+                            <div>
+                                <flux:heading size="sm" class="mb-2">Staff Reports</flux:heading>
+                                <livewire:meeting.department-report-cards :meeting="$meeting" :department="$sectionKey" :key="'notes-report-cards-' . $meeting->id . '-' . $sectionKey" />
+                            </div>
                         @endif
-
-                        <flux:card>
-                            <flux:heading size="sm">Full Meeting Minutes</flux:heading>
-                            @if($meeting->minutes)
-                                <div class="mt-2 prose dark:prose-invert max-w-none">
-                                    {!! nl2br(e($meeting->minutes)) !!}
-                                </div>
-                            @else
-                                <flux:text class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-                                    No full meeting minutes are available.
-                                </flux:text>
-                            @endif
-                        </flux:card>
                     </div>
                 </flux:accordion.item>
             @endforeach

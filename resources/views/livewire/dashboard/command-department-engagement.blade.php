@@ -78,7 +78,7 @@ new class extends Component {
 
                 $nonJrCrewCount = User::where('staff_rank', '>=', StaffRank::CrewMember->value)
                     ->count();
-                $attendeeIds = $previousMeeting->attendees()->pluck('users.id');
+                $attendeeIds = $previousMeeting->attendees()->wherePivot('attended', true)->pluck('users.id');
                 $attendedNonJrCrew = User::whereIn('id', $attendeeIds)
                     ->where('staff_rank', '>=', StaffRank::CrewMember->value)
                     ->count();
@@ -137,7 +137,7 @@ new class extends Component {
                 $entry['pct'] = $totalStaff > 0 ? round(($submitted / $totalStaff) * 100) : 0;
             } elseif ($this->activeDetailMetric === 'attendance' && $meeting) {
                 $nonJrCrewCount = User::where('staff_rank', '>=', StaffRank::CrewMember->value)->count();
-                $attendeeIds = $meeting->attendees()->pluck('users.id');
+                $attendeeIds = $meeting->attendees()->wherePivot('attended', true)->pluck('users.id');
                 $attended = User::whereIn('id', $attendeeIds)->where('staff_rank', '>=', StaffRank::CrewMember->value)->count();
                 $entry['attended'] = $attended;
                 $entry['total'] = $nonJrCrewCount;
