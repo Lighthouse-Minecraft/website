@@ -22,34 +22,40 @@ new class extends Component {
             ->first();
 
         if (! $latestMeeting) {
-            return null;
+            return [
+                'meeting' => null,
+                'content' => null,
+                'department' => $department->label(),
+            ];
         }
 
         $note = MeetingNote::where('meeting_id', $latestMeeting->id)
             ->where('section_key', $department->value)
             ->first();
 
-        if (! $note || empty(trim($note->content ?? ''))) {
-            return null;
-        }
-
         return [
             'meeting' => $latestMeeting,
-            'content' => $note->content,
+            'content' => (! $note || empty(trim($note->content ?? ''))) ? null : $note->content,
             'department' => $department->label(),
         ];
     }
 }; ?>
 
 <div>
-    @if($this->departmentNote)
-        @php $note = $this->departmentNote; @endphp
+    @php $note = $this->departmentNote; @endphp
+
+    @if($note)
         <flux:card>
-            <div class="flex items-center justify-between mb-4">
-                <flux:heading>Most Recent {{ $note['department'] }} Meeting Notes</flux:heading>
-                <flux:text variant="subtle" class="text-xs">{{ $note['meeting']->title }} &mdash; {{ \Carbon\Carbon::parse($note['meeting']->day)->format('M j, Y') }}</flux:text>
-            </div>
-            <flux:text>{!! nl2br(e($note['content'])) !!}</flux:text>
+            @if($note['meeting'] && $note['content'])
+                <flux:heading class="mb-4">{{ $note['department'] }} Meeting Notes from {{ \Carbon\Carbon::parse($note['meeting']->day)->format('M j, Y') }} Staff Meeting</flux:heading>
+                <flux:text>{!! nl2br(e($note['content'])) !!}</flux:text>
+            @elseif($note['meeting'])
+                <flux:heading class="mb-2">{{ $note['department'] }} Meeting Notes from {{ \Carbon\Carbon::parse($note['meeting']->day)->format('M j, Y') }} Staff Meeting</flux:heading>
+                <flux:text variant="subtle" class="text-sm">No {{ $note['department'] }} notes were recorded for this meeting.</flux:text>
+            @else
+                <flux:heading class="mb-2">{{ $note['department'] }} Meeting Notes</flux:heading>
+                <flux:text variant="subtle" class="text-sm">No completed staff meetings found.</flux:text>
+            @endif
         </flux:card>
     @endif
 </div>

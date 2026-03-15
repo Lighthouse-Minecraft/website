@@ -1,13 +1,31 @@
 <?php
 
+use App\Enums\StaffDepartment;
 use Livewire\Volt\Component;
 
 new class extends Component {
     public $tab;
+    public string $selectedDepartment = '';
 
     public function mount()
     {
         $this->tab = 'my-board';
+        $this->selectedDepartment = auth()->user()->staff_department?->value ?? StaffDepartment::Command->value;
+    }
+
+    #[\Livewire\Attributes\Computed]
+    public function availableDepartments()
+    {
+        $user = auth()->user();
+        $departments = [];
+
+        foreach (StaffDepartment::cases() as $dept) {
+            if ($user->can("view-ready-room-{$dept->value}")) {
+                $departments[] = $dept;
+            }
+        }
+
+        return $departments;
     }
 }; ?>
 
@@ -18,26 +36,8 @@ new class extends Component {
         <div class="text-center flex">
             <flux:tabs variant="segmented" size="xs" wire:model="tab">
                 <flux:tab name="my-board">My Board</flux:tab>
-
-                @can('view-ready-room-command')
-                    <flux:tab name="command">Command</flux:tab>
-                @endcan
-
-                @can('view-ready-room-chaplain')
-                    <flux:tab name="chaplain">Chaplain</flux:tab>
-                @endcan
-
-                @can('view-ready-room-engineer')
-                    <flux:tab name="engineer">Engineer</flux:tab>
-                @endcan
-
-                @can('view-ready-room-quartermaster')
-                    <flux:tab name="quartermaster">Quartermaster</flux:tab>
-                @endcan
-
-                @can('view-ready-room-steward')
-                    <flux:tab name="steward">Steward</flux:tab>
-                @endcan
+                <flux:tab name="department">Department Board</flux:tab>
+                <flux:tab name="meeting-minutes">Meeting Minutes</flux:tab>
             </flux:tabs>
         </div>
 
@@ -60,34 +60,26 @@ new class extends Component {
             <livewire:dashboard.ready-room-my-department-notes />
         </flux:tab.panel>
 
-        @can('view-ready-room-command')
-            <flux:tab.panel name="command">
-                <livewire:dashboard.ready-room-department department="command" />
-            </flux:tab.panel>
-        @endcan
+        <flux:tab.panel name="department">
+            @if(count($this->availableDepartments) > 0)
+                <div class="mb-6">
+                    <flux:select wire:model.live="selectedDepartment" class="w-64">
+                        @foreach($this->availableDepartments as $dept)
+                            <flux:select.option value="{{ $dept->value }}">{{ $dept->label() }}</flux:select.option>
+                        @endforeach
+                    </flux:select>
+                </div>
 
-        @can('view-ready-room-chaplain')
-            <flux:tab.panel name="chaplain">
-                <livewire:dashboard.ready-room-department department="chaplain" />
-            </flux:tab.panel>
-        @endcan
+                <livewire:dashboard.ready-room-department :department="$selectedDepartment" :key="'dept-' . $selectedDepartment" />
+            @else
+                <flux:card>
+                    <flux:text variant="subtle" class="text-sm">You do not have access to any department boards.</flux:text>
+                </flux:card>
+            @endif
+        </flux:tab.panel>
 
-        @can('view-ready-room-engineer')
-            <flux:tab.panel name="engineer">
-                <livewire:dashboard.ready-room-department department="engineer" />
-            </flux:tab.panel>
-        @endcan
-
-        @can('view-ready-room-quartermaster')
-            <flux:tab.panel name="quartermaster">
-                <livewire:dashboard.ready-room-department department="quartermaster" />
-            </flux:tab.panel>
-        @endcan
-
-        @can('view-ready-room-steward')
-            <flux:tab.panel name="steward">
-                <livewire:dashboard.ready-room-department department="steward" />
-            </flux:tab.panel>
-        @endcan
+        <flux:tab.panel name="meeting-minutes">
+            <livewire:dashboard.ready-room-meeting-minutes />
+        </flux:tab.panel>
     </flux:tab.group>
 </div>

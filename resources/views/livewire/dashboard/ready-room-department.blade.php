@@ -15,12 +15,15 @@ new class extends Component {
 }; ?>
 
 <div class="space-y-6">
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div>
             <livewire:dashboard.ready-room-upcoming-meetings />
         </div>
-        <div class="md:col-span-3">
+        <div class="max-h-[32rem] overflow-y-auto">
             <livewire:task.department-list :section_key="$department" :meeting="$meeting" />
+        </div>
+        <div>
+            <livewire:dashboard.ready-room-department-tickets :department="$department" />
         </div>
     </div>
 
