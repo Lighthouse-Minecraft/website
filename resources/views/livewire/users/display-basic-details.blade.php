@@ -416,12 +416,19 @@ new class extends Component {
             'editUserData.parent_email' => ['nullable', 'email'],
         ]);
 
+        $oldParentEmail = $this->user->parent_email;
+        $newParentEmail = $this->editUserData['parent_email'] ?: null;
+
         $this->user->update([
             'name' => $this->editUserData['name'],
             'email' => $this->editUserData['email'],
             'date_of_birth' => $this->editUserData['date_of_birth'] ?: null,
-            'parent_email' => $this->editUserData['parent_email'] ?: null,
+            'parent_email' => $newParentEmail,
         ]);
+
+        if ($newParentEmail && strtolower($newParentEmail ?? '') !== strtolower($oldParentEmail ?? '')) {
+            \App\Actions\LinkParentByEmail::run($this->user);
+        }
 
         \App\Actions\RecordActivity::run($this->user, 'update_profile', 'User profile updated.');
 

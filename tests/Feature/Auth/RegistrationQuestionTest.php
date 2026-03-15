@@ -24,7 +24,7 @@ it('skips step 2 for adult users when no registration question is configured', f
 });
 
 it('shows step 2 for adult users when registration question is configured', function () {
-    SiteConfig::create(['key' => 'registration_question', 'value' => 'How did you find us?']);
+    SiteConfig::setValue('registration_question', 'How did you find us?');
 
     Volt::test('auth.register')
         ->set('name', 'Adult User')
@@ -38,7 +38,7 @@ it('shows step 2 for adult users when registration question is configured', func
 });
 
 it('saves registration answer and question text on account creation', function () {
-    SiteConfig::create(['key' => 'registration_question', 'value' => 'How did you find us?']);
+    SiteConfig::setValue('registration_question', 'How did you find us?');
 
     Volt::test('auth.register')
         ->set('name', 'New User')
@@ -58,7 +58,7 @@ it('saves registration answer and question text on account creation', function (
 });
 
 it('requires registration answer when question is configured', function () {
-    SiteConfig::create(['key' => 'registration_question', 'value' => 'How did you find us?']);
+    SiteConfig::setValue('registration_question', 'How did you find us?');
 
     Volt::test('auth.register')
         ->set('name', 'New User')
@@ -72,7 +72,7 @@ it('requires registration answer when question is configured', function () {
 });
 
 it('still requires parent email for under 17 users', function () {
-    SiteConfig::create(['key' => 'registration_question', 'value' => 'How did you find us?']);
+    SiteConfig::setValue('registration_question', 'How did you find us?');
 
     Volt::test('auth.register')
         ->set('name', 'Teen User')
@@ -102,7 +102,7 @@ it('does not save registration answer fields when no question configured', funct
 });
 
 it('saves both parent email and registration answer for under 17 with question', function () {
-    SiteConfig::create(['key' => 'registration_question', 'value' => 'Why do you want to join?']);
+    SiteConfig::setValue('registration_question', 'Why do you want to join?');
 
     Volt::test('auth.register')
         ->set('name', 'Teen With Answer')
@@ -124,7 +124,7 @@ it('saves both parent email and registration answer for under 17 with question',
 });
 
 it('skips step 2 for adult when registration question is empty string', function () {
-    SiteConfig::create(['key' => 'registration_question', 'value' => '']);
+    SiteConfig::setValue('registration_question', '');
 
     Volt::test('auth.register')
         ->set('name', 'Empty Q User')

@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\LinkParentByEmail;
 use App\Actions\PutUserInBrig;
 use App\Actions\ReleaseUserFromBrig;
 use App\Enums\BrigType;
@@ -86,6 +87,9 @@ new #[Layout('components.layouts.auth')] class extends Component {
                 ReleaseUserFromBrig::run($user, $user, 'Date of birth verified (13-16).');
             }
         }
+
+        // Auto-link parent account if it already exists
+        LinkParentByEmail::run($user);
 
         // Send parent notification
         $requiresApproval = $age < 13;
