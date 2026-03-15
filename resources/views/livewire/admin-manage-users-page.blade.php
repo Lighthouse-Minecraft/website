@@ -118,10 +118,10 @@ new class extends Component {
             ])
             ->with('roles')
             ->when(trim($this->search) !== '', function ($q) {
-                $term = trim($this->search);
+                $term = mb_strtolower(trim($this->search));
                 $q->where(fn ($q) =>
-                    $q->where('name', 'like', "%{$term}%")
-                      ->orWhere('email', 'like', "%{$term}%")
+                    $q->whereRaw('LOWER(name) like ?', ["%{$term}%"])
+                      ->orWhereRaw('LOWER(email) like ?', ["%{$term}%"])
                 );
             })
             ->when($this->filterBrig === 'in_brig', fn ($q) => $q->where('in_brig', true))
