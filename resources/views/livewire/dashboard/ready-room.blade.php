@@ -43,14 +43,21 @@ new class extends Component {
 
 
         <flux:tab.panel name="my-board">
-            <div class="w-full block md:flex gap-6">
-                <div class="w-full md:w-1/3 lg:w-1/4 mb-6 md:mb-0">
-                    <livewire:dashboard.ready-room-upcoming-meetings />
-                </div>
-                <div class="w-full md:w-2/3 lg:w-3/4">
-                    <livewire:dashboard.ready-room-my-tasks />
-                </div>
+            {{-- Row 1: Upcoming Meetings | Engagement Stats | Recent Reports --}}
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <livewire:dashboard.ready-room-upcoming-meetings />
+                <livewire:dashboard.ready-room-my-engagement />
+                <livewire:dashboard.ready-room-my-reports />
             </div>
+
+            {{-- Row 2: Tasks | Tickets --}}
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <livewire:dashboard.ready-room-my-tasks />
+                <livewire:dashboard.ready-room-my-tickets />
+            </div>
+
+            {{-- Row 3: Department Meeting Notes --}}
+            <livewire:dashboard.ready-room-my-department-notes />
         </flux:tab.panel>
 
         @can('view-ready-room-command')
