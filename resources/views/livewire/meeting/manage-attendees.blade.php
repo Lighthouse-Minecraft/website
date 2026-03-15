@@ -2,6 +2,7 @@
 
 use App\Enums\StaffDepartment;
 use App\Models\Meeting;
+use Flux\Flux;
 use Livewire\Volt\Component;
 
 new class extends Component {
@@ -58,7 +59,7 @@ new class extends Component {
         $this->authorize('update', $this->meeting);
         $this->meeting->load('attendees');
         unset($this->attendeesByDepartment);
-        $this->modal('manage-attendees')->show();
+        Flux::modal('manage-attendees')->show();
     }
 }; ?>
 

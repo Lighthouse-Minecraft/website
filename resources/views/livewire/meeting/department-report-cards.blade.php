@@ -12,6 +12,8 @@ new class extends Component {
     public string $department;
     public ?int $viewingUserId = null;
 
+    protected $listeners = ['attendeesUpdated' => '$refresh'];
+
     public function mount(Meeting $meeting, string $department): void
     {
         $this->meeting = $meeting;

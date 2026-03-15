@@ -97,7 +97,7 @@ new class extends Component {
         <flux:input.group>
             <flux:input wire:model="taskName" placeholder="Task Name" />
 
-            <flux:button icon="plus" wire:click="addTask">Add Task</flux:button>
+            <flux:button type="submit" icon="plus">Add Task</flux:button>
         </flux:input.group>
     </form>
 </flux:card>
