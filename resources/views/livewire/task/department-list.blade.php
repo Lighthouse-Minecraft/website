@@ -69,37 +69,35 @@ new class extends Component {
     }
 }; ?>
 
-<div class="space-y-6">
+<flux:card>
     <flux:heading class="mb-4">{{ ucfirst($section_key) }} Tasks</flux:heading>
 
-    <flux:card>
-        @if (! $completedTasks->isEmpty())
-            <flux:heading class="mb-4">Recently Completed Tasks</flux:heading>
-            @foreach ($completedTasks as $task)
-                <livewire:task.show-task :task="$task" :meeting="$meeting" wire:key="task-{{ $task->id }}->completed" />
-            @endforeach
-        @endif
+    @if (! $completedTasks->isEmpty())
+        <flux:heading size="sm" class="mb-4">Recently Completed Tasks</flux:heading>
+        @foreach ($completedTasks as $task)
+            <livewire:task.show-task :task="$task" :meeting="$meeting" wire:key="task-{{ $task->id }}->completed" />
+        @endforeach
+    @endif
 
-        @if(! $tasks->isEmpty())
-            <flux:heading class="my-4">In Progress Tasks</flux:heading>
-            @foreach ($tasks as $task)
-                <livewire:task.show-task :task="$task" :meeting="$meeting" wire:key="task-{{ $task->id }}->in_progress" />
-            @endforeach
-        @endif
+    @if(! $tasks->isEmpty())
+        <flux:heading size="sm" class="my-4">In Progress Tasks</flux:heading>
+        @foreach ($tasks as $task)
+            <livewire:task.show-task :task="$task" :meeting="$meeting" wire:key="task-{{ $task->id }}->in_progress" />
+        @endforeach
+    @endif
 
-        @if($archivedTasks && ! $archivedTasks->isEmpty())
-            <flux:heading class="my-4">Archived Tasks This Meeting</flux:heading>
-            @foreach ($archivedTasks as $task)
-                <livewire:task.show-task :task="$task" :meeting="$meeting" wire:key="task-{{ $task->id }}->archived" />
-            @endforeach
-        @endif
-    </flux:card>
+    @if($archivedTasks && ! $archivedTasks->isEmpty())
+        <flux:heading size="sm" class="my-4">Archived Tasks This Meeting</flux:heading>
+        @foreach ($archivedTasks as $task)
+            <livewire:task.show-task :task="$task" :meeting="$meeting" wire:key="task-{{ $task->id }}->archived" />
+        @endforeach
+    @endif
 
-    <form wire:submit.prevent="addTask">
+    <form wire:submit.prevent="addTask" class="mt-4">
         <flux:input.group>
             <flux:input wire:model="taskName" placeholder="Task Name" />
 
             <flux:button icon="plus" wire:click="addTask">Add Task</flux:button>
         </flux:input.group>
     </form>
-</div>
+</flux:card>

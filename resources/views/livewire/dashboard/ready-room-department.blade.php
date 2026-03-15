@@ -14,19 +14,15 @@ new class extends Component {
     }
 }; ?>
 
-<div>
-    {{-- <flux:heading size="lg" class="mb-4">Department: {{ ucfirst($department) }}</flux:heading> --}}
-
-    <div class="w-full block md:flex">
-        <div class="w-full md:w-1/3 lg:w-1/4">
+<div class="space-y-6">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div>
             <livewire:dashboard.ready-room-upcoming-meetings />
         </div>
-        <div class="w-full md:w-2/3 lg:w-3/4">
+        <div class="md:col-span-3">
             <livewire:task.department-list :section_key="$department" :meeting="$meeting" />
         </div>
     </div>
 
-    <div class="mt-6">
-        <livewire:meeting.notes-display :section-key="$department" />
-    </div>
+    <livewire:meeting.notes-display :section-key="$department" />
 </div>

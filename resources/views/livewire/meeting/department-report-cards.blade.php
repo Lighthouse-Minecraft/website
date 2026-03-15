@@ -5,6 +5,7 @@ use App\Models\Meeting;
 use App\Models\MeetingReport;
 use App\Models\User;
 use Flux\Flux;
+use Illuminate\Support\Facades\DB;
 use Livewire\Volt\Component;
 
 new class extends Component {
@@ -37,43 +38,52 @@ new class extends Component {
             ->keyBy('user_id');
     }
 
+    #[\Livewire\Attributes\Computed]
+    public function attendeeIds()
+    {
+        return DB::table('meeting_user')
+            ->where('meeting_id', $this->meeting->id)
+            ->where('attended', true)
+            ->pluck('user_id')
+            ->toArray();
+    }
+
     public function viewReport(int $userId): void
     {
         $this->viewingUserId = $userId;
-        Flux::modal("view-staff-report-{$this->department}")->show();
+        Flux::modal("view-staff-report-{$this->department}-{$this->meeting->id}")->show();
     }
 }; ?>
 
 <div>
     @if($this->staffMembers->isNotEmpty())
-        <div class="mb-2">
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                @foreach($this->staffMembers as $member)
-                    @php
-                        $report = $this->reports->get($member->id);
-                        $hasSubmitted = $report !== null;
-                    @endphp
-                    <button
-                        wire:key="staff-{{ $member->id }}"
-                        wire:click="viewReport({{ $member->id }})"
-                        class="flex items-center gap-2 p-2 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-left"
-                    >
-                        <flux:avatar size="xs" :src="$member->avatarUrl()" />
-                        <div class="min-w-0 flex-1">
-                            <p class="text-xs font-medium truncate">{{ $member->name }}</p>
-                        </div>
-                        @if($hasSubmitted)
-                            <flux:icon name="check-circle" variant="solid" class="w-4 h-4 text-green-500 shrink-0" />
-                        @else
-                            <flux:icon name="x-circle" variant="solid" class="w-4 h-4 text-red-400 shrink-0" />
-                        @endif
-                    </button>
-                @endforeach
-            </div>
+        <div class="flex flex-wrap gap-2">
+            @foreach($this->staffMembers as $member)
+                @php
+                    $report = $this->reports->get($member->id);
+                    $hasSubmitted = $report !== null;
+                    $wasPresent = in_array($member->id, $this->attendeeIds);
+                @endphp
+                <button
+                    wire:key="staff-{{ $member->id }}"
+                    wire:click="viewReport({{ $member->id }})"
+                    class="w-72 flex items-center gap-2 p-2 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700 hover:shadow-sm transition-all cursor-pointer text-left"
+                >
+                    <flux:avatar size="xs" :src="$member->avatarUrl()" />
+                    <div class="min-w-0 flex-1">
+                        <p class="text-xs font-medium truncate">{{ $member->name }}</p>
+                    </div>
+                    @if($hasSubmitted)
+                        <flux:icon name="check-circle" variant="solid" class="w-4 h-4 text-green-500 shrink-0" />
+                    @else
+                        <flux:icon name="x-circle" variant="solid" class="w-4 h-4 text-red-400 shrink-0" />
+                    @endif
+                </button>
+            @endforeach
         </div>
     @endif
 
-    <flux:modal name="view-staff-report-{{ $department }}" class="min-w-[32rem] !text-left">
+    <flux:modal name="view-staff-report-{{ $department }}-{{ $meeting->id }}" class="min-w-[32rem] !text-left">
         @if($viewingUserId)
             @php
                 $viewUser = $this->staffMembers->firstWhere('id', $viewingUserId);
@@ -81,6 +91,7 @@ new class extends Component {
             @endphp
 
             @if($viewUser)
+                @php $viewPresent = in_array($viewUser->id, $this->attendeeIds); @endphp
                 <div class="space-y-4">
                     <div class="flex items-center gap-3">
                         <flux:avatar size="sm" :src="$viewUser->avatarUrl()" />
@@ -90,6 +101,11 @@ new class extends Component {
                                 <flux:text variant="subtle" class="text-sm">{{ $viewUser->staff_title }}</flux:text>
                             @endif
                         </div>
+                        @if($viewPresent)
+                            <flux:badge size="sm" color="green">Present</flux:badge>
+                        @else
+                            <flux:badge size="sm" color="red">Absent</flux:badge>
+                        @endif
                     </div>
 
                     @if($viewReport)
