@@ -2,8 +2,13 @@
 
 use App\Enums\MeetingStatus;
 use App\Enums\MeetingType;
+use App\Enums\TaskStatus;
+use App\Enums\ThreadStatus;
+use App\Enums\ThreadType;
 use App\Models\Meeting;
 use App\Models\MeetingReport;
+use App\Models\Task;
+use App\Models\Thread;
 use Illuminate\Support\Facades\DB;
 use Livewire\Volt\Component;
 
@@ -44,11 +49,24 @@ new class extends Component {
                 ->count();
         }
 
+        $tasksCompleted = Task::where('assigned_to_user_id', $userId)
+            ->where('status', TaskStatus::Completed)
+            ->where('completed_at', '>=', $ninetyDaysAgo)
+            ->count();
+
+        $ticketsCompleted = Thread::where('type', ThreadType::Ticket)
+            ->where('assigned_to_user_id', $userId)
+            ->where('status', ThreadStatus::Closed)
+            ->where('updated_at', '>=', $ninetyDaysAgo)
+            ->count();
+
         return [
             'total_meetings' => $totalMeetings,
             'attended' => $attended,
             'absent' => $absent,
             'reports_submitted' => $reportsSubmitted,
+            'tasks_completed' => $tasksCompleted,
+            'tickets_completed' => $ticketsCompleted,
         ];
     }
 }; ?>
@@ -58,12 +76,10 @@ new class extends Component {
 
     @php $stats = $this->stats; @endphp
 
-    @if($stats['total_meetings'] === 0)
-        <flux:text variant="subtle" class="text-sm">No completed staff meetings in the last 90 days.</flux:text>
-    @else
-        <div class="space-y-3">
-            <flux:text class="text-sm">Last 90 days ({{ $stats['total_meetings'] }} meetings)</flux:text>
+    <div class="space-y-3">
+        <flux:text class="text-sm">Last 90 days</flux:text>
 
+        @if($stats['total_meetings'] > 0)
             <div class="flex items-center justify-between">
                 <flux:text class="text-sm">Meetings Attended</flux:text>
                 <flux:badge size="sm" color="green">{{ $stats['attended'] }}</flux:badge>
@@ -78,8 +94,6 @@ new class extends Component {
                 @endif
             </div>
 
-            <flux:separator variant="subtle" />
-
             <div class="flex items-center justify-between">
                 <flux:text class="text-sm">Staff Reports Submitted</flux:text>
                 <flux:text class="text-sm font-semibold">{{ $stats['reports_submitted'] }} / {{ $stats['total_meetings'] }}</flux:text>
@@ -88,6 +102,18 @@ new class extends Component {
             @if($stats['total_meetings'] - $stats['reports_submitted'] > 0)
                 <flux:text variant="subtle" class="text-xs">{{ $stats['total_meetings'] - $stats['reports_submitted'] }} report(s) missed</flux:text>
             @endif
+
+            <flux:separator variant="subtle" />
+        @endif
+
+        <div class="flex items-center justify-between">
+            <flux:text class="text-sm">Tasks Completed</flux:text>
+            <flux:badge size="sm" color="green">{{ $stats['tasks_completed'] }}</flux:badge>
         </div>
-    @endif
+
+        <div class="flex items-center justify-between">
+            <flux:text class="text-sm">Tickets Completed</flux:text>
+            <flux:badge size="sm" color="green">{{ $stats['tickets_completed'] }}</flux:badge>
+        </div>
+    </div>
 </flux:card>

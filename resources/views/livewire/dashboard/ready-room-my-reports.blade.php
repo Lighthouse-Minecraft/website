@@ -70,12 +70,10 @@ new class extends Component {
                     :variant="$hasSubmitted ? 'filled' : 'ghost'"
                     :disabled="! $hasSubmitted"
                     :class="! $hasSubmitted ? 'pointer-events-none opacity-50' : ''"
+                    :icon-trailing="$hasSubmitted ? 'check' : null"
                     class="w-full justify-center"
                 >
                     {{ \Carbon\Carbon::parse($meeting->day)->format('M j, Y') }}
-                    @if($hasSubmitted)
-                        <flux:icon name="check" variant="micro" class="ml-1" />
-                    @endif
                 </flux:button>
             @endforeach
         </div>
