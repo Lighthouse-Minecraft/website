@@ -16,7 +16,7 @@ new class extends Component {
 
     protected $listeners = ['taskUpdated' => 'loadTasks'];
 
-    public function mount(?Meeting $meeting, string $section_key) {
+    public function mount(?Meeting $meeting = null, string $section_key = '') {
         $this->meeting = $meeting;
         $this->section_key = $section_key;
 

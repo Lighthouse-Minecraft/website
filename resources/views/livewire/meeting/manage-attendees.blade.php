@@ -20,7 +20,7 @@ new class extends Component {
             ->get()
             ->groupBy(fn ($user) => $user->staff_department?->value ?? 'other')
             ->sortKeys()
-            ->map(fn ($group) => $group->sortByDesc(fn ($u) => $u->staff_rank->value)->values());
+            ->map(fn ($group) => $group->sortByDesc(fn ($u) => $u->staff_rank?->value ?? 0)->values());
     }
 
     public function toggleAttendance(int $userId): void
@@ -94,7 +94,7 @@ new class extends Component {
                                             <flux:avatar size="xs" :src="$member->avatarUrl()" />
                                             <div>
                                                 <flux:text class="text-sm font-medium">{{ $member->name }}</flux:text>
-                                                <flux:text variant="subtle" class="text-xs">{{ $member->staff_rank->label() }}</flux:text>
+                                                <flux:text variant="subtle" class="text-xs">{{ $member->staff_rank?->label() ?? '—' }}</flux:text>
                                             </div>
                                         </div>
                                         <flux:switch
