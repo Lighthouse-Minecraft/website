@@ -116,6 +116,7 @@ new class extends Component {
             $meetingsAttended = DB::table('meeting_user')
                 ->whereIn('meeting_id', $staffMeetings3mo)
                 ->whereIn('user_id', $staffIds)
+                ->where('attended', true)
                 ->selectRaw('user_id, COUNT(*) as count')
                 ->groupBy('user_id')
                 ->pluck('count', 'user_id');
@@ -187,7 +188,10 @@ new class extends Component {
                 : null;
 
             $attended = $meeting
-                ? $meeting->attendees()->where('users.id', $user->id)->exists()
+                ? $meeting->attendees()
+                    ->where('users.id', $user->id)
+                    ->wherePivot('attended', true)
+                    ->exists()
                 : null;
 
             $detail[] = [

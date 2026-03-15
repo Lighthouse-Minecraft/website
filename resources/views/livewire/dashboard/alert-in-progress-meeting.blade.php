@@ -19,7 +19,7 @@ new class extends Component {
                 <flux:callout.heading>{{ $meeting->title }} In Progress!</flux:callout.heading>
                 <x-slot name="actions">
                     <flux:button href="{{ route('meeting.edit', $meeting) }}" variant="primary">
-                        Join Meeting
+                        Go to Meeting
                     </flux:button>
                 </x-slot>
             </flux:callout>

@@ -50,6 +50,12 @@ new class extends Component {
             ->toArray();
     }
 
+    #[\Livewire\Attributes\On('attendeesUpdated')]
+    public function refreshAttendees(): void
+    {
+        $this->meeting->load('attendees');
+    }
+
     public function mount(Meeting $meeting) {
         $this->meeting = $meeting->load('attendees');
 
@@ -143,32 +149,6 @@ new class extends Component {
         $this->pollTime = 60;
 
         Flux::modal('start-meeting-confirmation')->close();
-    }
-
-    public function joinMeeting(): void
-    {
-        $this->authorize('attend', $this->meeting);
-
-        $attendeeId = auth()->id();
-
-        if ($this->meeting->attendees()->where('id', $attendeeId)->exists()) {
-            Flux::toast('You are already listed as an attendee.', variant: 'warning');
-
-            return;
-        }
-
-        $changes = $this->meeting->attendees()->syncWithoutDetaching([
-            $attendeeId => ['added_at' => now()],
-        ]);
-        $this->meeting->load('attendees');
-
-        if (empty($changes['attached'])) {
-            Flux::toast('You are already listed as an attendee.', variant: 'warning');
-
-            return;
-        }
-
-        Flux::toast('You have joined the meeting!', variant: 'success');
     }
 
     private function parseScheduledTime(string $day, string $time): CarbonImmutable
@@ -394,7 +374,11 @@ new class extends Component {
                         <strong>Start Time:</strong> {{ $meeting->start_time->setTimezone('America/New_York')->format('F j, Y g:i A') }} ET<br>
                     @endif
                     @if($meeting->attendees->count() > 0)
-                        <strong>Attendees:</strong> {{ $meeting->attendees->count() }}<br>
+                        @php
+                            $presentCount = $meeting->attendees->where('pivot.attended', true)->count();
+                            $totalCount = $meeting->attendees->count();
+                        @endphp
+                        <strong>Attendance:</strong> {{ $presentCount }} / {{ $totalCount }} present<br>
                     @endif
                 </flux:text>
 
@@ -404,44 +388,35 @@ new class extends Component {
                         <div class="space-y-1">
                             @foreach($meeting->attendees as $attendee)
                                 <div wire:key="attendee-{{ $meeting->id }}-{{ $attendee->id }}" class="flex items-center justify-between text-sm">
-                                    <span>
-                                        <strong><flux:link href="{{ route('profile.show', $attendee) }}">{{ $attendee->name }}</flux:link></strong>
-                                        @if($attendee->staff_rank && $attendee->staff_title)
-                                            <br>
-                                            <span class="text-xs text-gray-600 dark:text-gray-400">
-                                                {{ $attendee->staff_rank->label() }} - {{ $attendee->staff_title }}
-                                            </span>
-                                        @endif
-                                    </span>
-                                    <span class="text-xs text-gray-500 dark:text-gray-400">
-                                        @if(is_object($attendee->pivot->added_at))
-                                            {{ $attendee->pivot->added_at->setTimezone('America/New_York')->format('g:i A') }}
+                                    <span class="flex items-center gap-1.5">
+                                        @if($attendee->pivot->attended)
+                                            <flux:icon name="check-circle" variant="solid" class="w-4 h-4 text-green-500 shrink-0" />
                                         @else
-                                            {{ $attendee->pivot->added_at }}
+                                            <flux:icon name="x-circle" variant="solid" class="w-4 h-4 text-red-400 shrink-0" />
                                         @endif
+                                        <span>
+                                            <strong><flux:link href="{{ route('profile.show', $attendee) }}">{{ $attendee->name }}</flux:link></strong>
+                                            @if($attendee->staff_rank && $attendee->staff_title)
+                                                <br>
+                                                <span class="text-xs text-gray-600 dark:text-gray-400">
+                                                    {{ $attendee->staff_rank->label() }} - {{ $attendee->staff_title }}
+                                                </span>
+                                            @endif
+                                        </span>
                                     </span>
+                                    @if(! $attendee->pivot->attended)
+                                        <flux:badge size="sm" color="red">Absent</flux:badge>
+                                    @endif
                                 </div>
                             @endforeach
                         </div>
                     </div>
                 @endif
 
-                @if($meeting->status->value === 'in_progress')
+                @if(in_array($meeting->status->value, ['in_progress', 'finalizing']))
                     <div class="mt-4">
                         <livewire:meeting.manage-attendees :meeting="$meeting" :key="'attendees-' . $meeting->id" />
                     </div>
-                @endif
-
-                @if($meeting->status->value === 'in_progress')
-                    @can('attend', $meeting)
-                        @unless($meeting->attendees->contains(auth()->id()))
-                            <div class="mt-4">
-                                <flux:button wire:click="joinMeeting" variant="primary" size="sm">
-                                    Join Meeting
-                                </flux:button>
-                            </div>
-                        @endunless
-                    @endcan
                 @endif
 
                 @if($meeting->status == MeetingStatus::Pending && $meeting->isStaffMeeting() && $this->staffByDepartment->isNotEmpty())

@@ -1,104 +1,134 @@
 <?php
 
-use App\Enums\StaffRank;
+use App\Enums\StaffDepartment;
 use App\Models\Meeting;
-use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Livewire\Volt\Component;
 
 new class extends Component {
     public Meeting $meeting;
-    public array $selectedAttendees = [];
 
     public function mount(Meeting $meeting)
     {
         $this->meeting = $meeting;
     }
 
-    public function getStaffMembersProperty()
+    #[\Livewire\Attributes\Computed]
+    public function attendeesByDepartment()
     {
-        return User::whereIn('staff_rank', [
-            StaffRank::JrCrew->value,
-            StaffRank::CrewMember->value,
-            StaffRank::Officer->value,
-        ])
-        ->whereNotIn('id', $this->meeting->attendees->pluck('id')->toArray())
-        ->orderBy('name')
-        ->get();
+        return $this->meeting->attendees()
+            ->get()
+            ->groupBy(fn ($user) => $user->staff_department?->value ?? 'other')
+            ->sortKeys()
+            ->map(fn ($group) => $group->sortByDesc(fn ($u) => $u->staff_rank->value)->values());
     }
 
-    public function addAttendees()
+    public function toggleAttendance(int $userId): void
     {
         $this->authorize('update', $this->meeting);
 
-        if (empty($this->selectedAttendees)) {
-            return;
-        }
+        $current = DB::table('meeting_user')
+            ->where('meeting_id', $this->meeting->id)
+            ->where('user_id', $userId)
+            ->value('attended');
 
-        $attendeesToAdd = [];
-        foreach ($this->selectedAttendees as $userId) {
-            $attendeesToAdd[$userId] = ['added_at' => now()];
-        }
+        DB::table('meeting_user')
+            ->where('meeting_id', $this->meeting->id)
+            ->where('user_id', $userId)
+            ->update(['attended' => ! $current]);
 
-        $this->meeting->attendees()->attach($attendeesToAdd);
+        unset($this->attendeesByDepartment);
+        $this->dispatch('attendeesUpdated');
+    }
 
-        $this->selectedAttendees = [];
-        $this->modal('add-attendees')->close();
+    public function markAllPresent(): void
+    {
+        $this->authorize('update', $this->meeting);
 
-        // Refresh the meeting relationship
+        DB::table('meeting_user')
+            ->where('meeting_id', $this->meeting->id)
+            ->update(['attended' => true]);
+
+        unset($this->attendeesByDepartment);
+        $this->dispatch('attendeesUpdated');
+    }
+
+    public function markAllAbsent(): void
+    {
+        $this->authorize('update', $this->meeting);
+
+        DB::table('meeting_user')
+            ->where('meeting_id', $this->meeting->id)
+            ->update(['attended' => false]);
+
+        unset($this->attendeesByDepartment);
+        $this->dispatch('attendeesUpdated');
+    }
+
+    public function openModal(): void
+    {
+        $this->authorize('update', $this->meeting);
         $this->meeting->load('attendees');
-    }
-
-    public function openModal()
-    {
-        $this->authorize('update', $this->meeting);
-        $this->modal('add-attendees')->show();
+        unset($this->attendeesByDepartment);
+        $this->modal('manage-attendees')->show();
     }
 }; ?>
 
 <div>
-    @if($meeting->status->value === 'in_progress')
+    @if(in_array($meeting->status->value, ['in_progress', 'finalizing']))
         @can('update', $meeting)
-            <flux:button wire:click="openModal" variant="primary" color="indigo" size="sm" icon="plus">
-                Add Attendee
+            <flux:button wire:click="openModal" variant="primary" color="indigo" size="sm" icon="user-group">
+                Manage Attendees
             </flux:button>
         @endcan
 
-        <flux:modal name="add-attendees" class="min-w-[32rem]">
-            <form wire:submit="addAttendees">
-                <div class="space-y-6">
-                    <div>
-                        <flux:heading size="lg">Add Attendees</flux:heading>
-                        <flux:text class="mt-2">Select staff members to add to this meeting.</flux:text>
-                    </div>
-
-                    @if($this->staffMembers->count() > 0)
-                        <div class="space-y-3 max-h-64 overflow-y-auto">
-                            @foreach($this->staffMembers as $staffMember)
-                                <flux:checkbox
-                                    wire:model="selectedAttendees"
-                                    value="{{ $staffMember->id }}"
-                                    label="{{ $staffMember->name }}"
-                                    description="{{ $staffMember->staff_rank?->label() }} - {{ $staffMember->staff_title }}"
-                                />
-                            @endforeach
-                        </div>
-                    @else
-                        <flux:text>All eligible staff members are already attending this meeting.</flux:text>
-                    @endif
-
+        <flux:modal name="manage-attendees" class="min-w-[36rem]">
+            <div class="space-y-6">
+                <div class="flex items-center justify-between">
+                    <flux:heading size="lg">Manage Attendees</flux:heading>
                     <div class="flex gap-2">
-                        <flux:spacer />
-
-                        <flux:modal.close>
-                            <flux:button variant="ghost">Cancel</flux:button>
-                        </flux:modal.close>
-
-                        @if($this->staffMembers->count() > 0)
-                            <flux:button type="submit" variant="primary">Add Selected</flux:button>
-                        @endif
+                        <flux:button wire:click="markAllPresent" size="xs" variant="ghost">All Present</flux:button>
+                        <flux:button wire:click="markAllAbsent" size="xs" variant="ghost">All Absent</flux:button>
                     </div>
                 </div>
-            </form>
+
+                <div class="space-y-4 max-h-[28rem] overflow-y-auto">
+                    @foreach($this->attendeesByDepartment as $department => $members)
+                        <div wire:key="dept-{{ $department }}">
+                            <flux:text class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">
+                                {{ \App\Enums\StaffDepartment::tryFrom($department)?->label() ?? ucfirst($department) }}
+                            </flux:text>
+                            <div class="space-y-1">
+                                @foreach($members as $member)
+                                    <div wire:key="att-{{ $member->id }}" class="flex items-center justify-between p-2 rounded-lg border border-zinc-200 dark:border-zinc-700">
+                                        <div class="flex items-center gap-2">
+                                            <flux:avatar size="xs" :src="$member->avatarUrl()" />
+                                            <div>
+                                                <flux:text class="text-sm font-medium">{{ $member->name }}</flux:text>
+                                                <flux:text variant="subtle" class="text-xs">{{ $member->staff_rank->label() }}</flux:text>
+                                            </div>
+                                        </div>
+                                        <flux:switch
+                                            wire:click="toggleAttendance({{ $member->id }})"
+                                            :checked="(bool) $member->pivot->attended"
+                                        />
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endforeach
+
+                    @if($this->attendeesByDepartment->isEmpty())
+                        <flux:text variant="subtle">No staff members have been seeded for this meeting yet.</flux:text>
+                    @endif
+                </div>
+
+                <div class="flex justify-end">
+                    <flux:modal.close>
+                        <flux:button variant="ghost">Close</flux:button>
+                    </flux:modal.close>
+                </div>
+            </div>
         </flux:modal>
     @endif
 </div>

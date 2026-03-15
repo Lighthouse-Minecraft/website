@@ -174,7 +174,7 @@ describe('Department Engagement Widget', function () {
         $jrCrew = User::factory()->withStaffPosition(StaffDepartment::Command, StaffRank::JrCrew)->create();
 
         // Both attend meeting2
-        $meeting2->attendees()->attach([$officer->id, $jrCrew->id], ['added_at' => now()->subDays(14)]);
+        $meeting2->attendees()->attach([$officer->id, $jrCrew->id], ['added_at' => now()->subDays(14), 'attended' => true]);
 
         $component = Volt::test('dashboard.command-department-engagement');
 
