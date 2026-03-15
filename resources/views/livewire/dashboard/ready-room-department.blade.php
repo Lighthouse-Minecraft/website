@@ -1,16 +1,13 @@
 <?php
 
-use App\Models\Meeting;
 use Livewire\Volt\Component;
 
 new class extends Component {
     public $department;
-    public Meeting $meeting;
 
     public function mount($department)
     {
         $this->department = $department;
-        $this->meeting = new Meeting();
     }
 }; ?>
 
@@ -20,7 +17,7 @@ new class extends Component {
             <livewire:dashboard.ready-room-upcoming-meetings />
         </div>
         <div class="max-h-[32rem] overflow-y-auto">
-            <livewire:task.department-list :section_key="$department" :meeting="$meeting" />
+            <livewire:task.department-list :section_key="$department" :meeting="null" />
         </div>
         <div>
             <livewire:dashboard.ready-room-department-tickets :department="$department" />

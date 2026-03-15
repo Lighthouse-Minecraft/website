@@ -47,8 +47,8 @@ new class extends Component {
         return DiscordAccount::query()
             ->join('users', 'discord_accounts.user_id', '=', 'users.id')
             ->select('discord_accounts.*', 'users.name as user_name')
-            ->when($this->search !== '', fn ($q) => $q->where(function ($q) {
-                $term = mb_strtolower($this->search);
+            ->when(trim($this->search) !== '', fn ($q) => $q->where(function ($q) {
+                $term = mb_strtolower(trim($this->search));
                 $q->whereRaw('LOWER(discord_accounts.username) like ?', ["%{$term}%"])
                     ->orWhereRaw('LOWER(discord_accounts.global_name) like ?', ["%{$term}%"])
                     ->orWhereRaw('LOWER(users.name) like ?', ["%{$term}%"]);

@@ -58,6 +58,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        // Only delete rows this migration actually inserted (not pre-existing ones).
+        // The migration timestamp serves as a lower bound — rows created before it were not ours.
+        $migrationDate = '2026-03-15 00:00:00';
+
         DB::table('site_configs')->whereIn('key', [
             'registration_question',
             'ai_meeting_notes_prompt',
@@ -66,6 +70,6 @@ return new class extends Migration
             'donation_current_month_name',
             'donation_last_month_amount',
             'donation_last_month_name',
-        ])->delete();
+        ])->where('created_at', '>=', $migrationDate)->delete();
     }
 };

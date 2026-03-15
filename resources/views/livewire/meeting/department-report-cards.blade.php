@@ -5,7 +5,6 @@ use App\Models\Meeting;
 use App\Models\MeetingReport;
 use App\Models\User;
 use Flux\Flux;
-use Illuminate\Support\Facades\DB;
 use Livewire\Volt\Component;
 
 new class extends Component {
@@ -41,10 +40,9 @@ new class extends Component {
     #[\Livewire\Attributes\Computed]
     public function attendeeIds()
     {
-        return DB::table('meeting_user')
-            ->where('meeting_id', $this->meeting->id)
-            ->where('attended', true)
-            ->pluck('user_id')
+        return $this->meeting->attendees()
+            ->wherePivot('attended', true)
+            ->pluck('users.id')
             ->toArray();
     }
 
@@ -62,7 +60,6 @@ new class extends Component {
                 @php
                     $report = $this->reports->get($member->id);
                     $hasSubmitted = $report !== null;
-                    $wasPresent = in_array($member->id, $this->attendeeIds);
                 @endphp
                 <button
                     wire:key="staff-{{ $member->id }}"

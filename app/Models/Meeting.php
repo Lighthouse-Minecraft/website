@@ -32,7 +32,7 @@ class Meeting extends Model
         ];
     }
 
-    public function startMeeting(): void
+    public function startMeeting(?int $starterId = null): void
     {
         if ($this->status !== MeetingStatus::Pending) {
             throw new \Exception('Meeting cannot be started unless it is pending.');
@@ -42,17 +42,18 @@ class Meeting extends Model
         $this->start_time = now();
         $this->save();
 
+        $starterId = $starterId ?? Auth::id();
+
         // Seed attendance records for all active staff
         $staffUserIds = User::where('staff_rank', '>=', StaffRank::JrCrew->value)
             ->pluck('id');
 
         $now = now();
-        $starterId = Auth::id();
         $records = [];
         foreach ($staffUserIds as $userId) {
             $records[$userId] = [
                 'added_at' => $now,
-                'attended' => $userId === $starterId,
+                'attended' => $starterId !== null && $userId === $starterId,
             ];
         }
 

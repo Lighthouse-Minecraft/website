@@ -52,7 +52,7 @@ new class extends Component {
                             by {{ $ticket->createdBy?->name ?? 'Unknown' }}
                         </flux:text>
                     </div>
-                    <flux:badge size="sm" color="{{ $ticket->status === \App\Enums\ThreadStatus::Pending ? 'amber' : 'blue' }}">
+                    <flux:badge size="sm" color="{{ $ticket->status === ThreadStatus::Pending ? 'amber' : 'blue' }}">
                         {{ ucfirst($ticket->status->value) }}
                     </flux:badge>
                 </div>
@@ -78,7 +78,7 @@ new class extends Component {
                             by {{ $ticket->createdBy?->name ?? 'Unknown' }} &mdash; assigned to {{ $ticket->assignedTo?->name ?? 'Unknown' }}
                         </flux:text>
                     </div>
-                    <flux:badge size="sm" color="{{ $ticket->status === \App\Enums\ThreadStatus::Pending ? 'amber' : 'blue' }}">
+                    <flux:badge size="sm" color="{{ $ticket->status === ThreadStatus::Pending ? 'amber' : 'blue' }}">
                         {{ ucfirst($ticket->status->value) }}
                     </flux:badge>
                 </div>

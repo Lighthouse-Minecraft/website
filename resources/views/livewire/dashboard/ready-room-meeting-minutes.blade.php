@@ -88,7 +88,7 @@
                             <flux:text class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">{{ $dept->label() }}</flux:text>
                             <div class="space-y-1">
                                 @foreach($deptMembers as $member)
-                                    <div class="flex items-center gap-2 py-1">
+                                    <div wire:key="att-modal-{{ $member->id }}" class="flex items-center gap-2 py-1">
                                         @if($member->pivot->attended)
                                             <flux:icon name="check" variant="micro" class="w-4 h-4 text-green-500 shrink-0" />
                                         @else

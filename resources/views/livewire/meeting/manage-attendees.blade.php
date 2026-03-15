@@ -2,7 +2,6 @@
 
 use App\Enums\StaffDepartment;
 use App\Models\Meeting;
-use Illuminate\Support\Facades\DB;
 use Livewire\Volt\Component;
 
 new class extends Component {
@@ -27,15 +26,8 @@ new class extends Component {
     {
         $this->authorize('update', $this->meeting);
 
-        $current = DB::table('meeting_user')
-            ->where('meeting_id', $this->meeting->id)
-            ->where('user_id', $userId)
-            ->value('attended');
-
-        DB::table('meeting_user')
-            ->where('meeting_id', $this->meeting->id)
-            ->where('user_id', $userId)
-            ->update(['attended' => ! $current]);
+        $current = $this->meeting->attendees()->where('user_id', $userId)->first()?->pivot->attended;
+        $this->meeting->attendees()->updateExistingPivot($userId, ['attended' => ! $current]);
 
         unset($this->attendeesByDepartment);
         $this->dispatch('attendeesUpdated');
@@ -45,9 +37,7 @@ new class extends Component {
     {
         $this->authorize('update', $this->meeting);
 
-        DB::table('meeting_user')
-            ->where('meeting_id', $this->meeting->id)
-            ->update(['attended' => true]);
+        $this->meeting->attendees()->newPivotQuery()->update(['attended' => true]);
 
         unset($this->attendeesByDepartment);
         $this->dispatch('attendeesUpdated');
@@ -57,9 +47,7 @@ new class extends Component {
     {
         $this->authorize('update', $this->meeting);
 
-        DB::table('meeting_user')
-            ->where('meeting_id', $this->meeting->id)
-            ->update(['attended' => false]);
+        $this->meeting->attendees()->newPivotQuery()->update(['attended' => false]);
 
         unset($this->attendeesByDepartment);
         $this->dispatch('attendeesUpdated');

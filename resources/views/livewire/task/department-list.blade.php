@@ -7,7 +7,7 @@ use Flux\Flux;
 use Livewire\Volt\Component;
 
 new class extends Component {
-    public Meeting $meeting;
+    public ?Meeting $meeting = null;
     public string $section_key;
     public ?string $taskName = null;
     public $tasks;
@@ -16,7 +16,7 @@ new class extends Component {
 
     protected $listeners = ['taskUpdated' => 'loadTasks'];
 
-    public function mount(Meeting $meeting, string $section_key) {
+    public function mount(?Meeting $meeting, string $section_key) {
         $this->meeting = $meeting;
         $this->section_key = $section_key;
 
@@ -57,7 +57,7 @@ new class extends Component {
             'name' => $this->taskName,
             'section_key' => $this->section_key,
             'status' => TaskStatus::Pending,
-            'assigned_meeting_id' => $this->meeting->id,
+            'assigned_meeting_id' => $this->meeting?->id,
             'created_by' => auth()->id(),
         ]);
 
@@ -75,21 +75,21 @@ new class extends Component {
     @if (! $completedTasks->isEmpty())
         <flux:heading size="sm" class="mb-4">Recently Completed Tasks</flux:heading>
         @foreach ($completedTasks as $task)
-            <livewire:task.show-task :task="$task" :meeting="$meeting" wire:key="task-{{ $task->id }}->completed" />
+            <livewire:task.show-task :task="$task" :meeting="$meeting" wire:key="task-{{ $task->id }}-completed" />
         @endforeach
     @endif
 
     @if(! $tasks->isEmpty())
         <flux:heading size="sm" class="my-4">In Progress Tasks</flux:heading>
         @foreach ($tasks as $task)
-            <livewire:task.show-task :task="$task" :meeting="$meeting" wire:key="task-{{ $task->id }}->in_progress" />
+            <livewire:task.show-task :task="$task" :meeting="$meeting" wire:key="task-{{ $task->id }}-in-progress" />
         @endforeach
     @endif
 
     @if($archivedTasks && ! $archivedTasks->isEmpty())
         <flux:heading size="sm" class="my-4">Archived Tasks This Meeting</flux:heading>
         @foreach ($archivedTasks as $task)
-            <livewire:task.show-task :task="$task" :meeting="$meeting" wire:key="task-{{ $task->id }}->archived" />
+            <livewire:task.show-task :task="$task" :meeting="$meeting" wire:key="task-{{ $task->id }}-archived" />
         @endforeach
     @endif
 

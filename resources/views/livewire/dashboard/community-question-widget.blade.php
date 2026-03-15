@@ -73,13 +73,19 @@ new class extends Component {
                 $hasUsedBonusThisCycle = $archivedResponseCount >= 1;
 
                 if (! $hasUsedBonusThisCycle) {
-                    // Pick a random archived question the user hasn't answered
-                    $answeredQuestionIds = CommunityResponse::where('user_id', $user->id)->pluck('community_question_id');
+                    // Re-use previously selected bonus question if still valid
+                    if ($this->respondingToQuestionId && $this->respondingToQuestionId !== $activeQuestion->id) {
+                        $bonusQuestion = CommunityQuestion::archived()->find($this->respondingToQuestionId);
+                    }
 
-                    $bonusQuestion = CommunityQuestion::archived()
-                        ->whereNotIn('id', $answeredQuestionIds)
-                        ->inRandomOrder()
-                        ->first();
+                    if (! $bonusQuestion) {
+                        $answeredQuestionIds = CommunityResponse::where('user_id', $user->id)->pluck('community_question_id');
+
+                        $bonusQuestion = CommunityQuestion::archived()
+                            ->whereNotIn('id', $answeredQuestionIds)
+                            ->inRandomOrder()
+                            ->first();
+                    }
                 }
 
                 // Citizens can suggest questions after using their bonus (or if no bonus available)
@@ -122,11 +128,13 @@ new class extends Component {
 
                     <form wire:submit="submitResponse" class="mt-4 space-y-3">
                         <flux:field>
+                            <flux:label class="sr-only">Your response</flux:label>
                             <flux:textarea wire:model="responseBody" rows="3" placeholder="Share your story..." />
                             <flux:error name="responseBody" />
                         </flux:field>
 
                         <flux:field>
+                            <flux:label class="sr-only">Attach an image (optional)</flux:label>
                             <input type="file" wire:model="responseImage" accept="image/*" class="text-sm text-zinc-400" />
                             <flux:error name="responseImage" />
                         </flux:field>
@@ -141,11 +149,13 @@ new class extends Component {
 
                     <form wire:submit="submitResponse" class="mt-4 space-y-3">
                         <flux:field>
+                            <flux:label class="sr-only">Your response</flux:label>
                             <flux:textarea wire:model="responseBody" rows="3" placeholder="Share your story..." />
                             <flux:error name="responseBody" />
                         </flux:field>
 
                         <flux:field>
+                            <flux:label class="sr-only">Attach an image (optional)</flux:label>
                             <input type="file" wire:model="responseImage" accept="image/*" class="text-sm text-zinc-400" />
                             <flux:error name="responseImage" />
                         </flux:field>

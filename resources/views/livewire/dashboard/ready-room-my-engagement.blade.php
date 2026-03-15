@@ -9,14 +9,13 @@ use App\Models\Meeting;
 use App\Models\MeetingReport;
 use App\Models\Task;
 use App\Models\Thread;
-use Illuminate\Support\Facades\DB;
 use Livewire\Volt\Component;
 
 new class extends Component {
     #[\Livewire\Attributes\Computed]
     public function stats()
     {
-        $userId = auth()->id();
+        $user = auth()->user();
         $ninetyDaysAgo = now()->subDays(90);
 
         $staffMeetingIds = Meeting::where('type', MeetingType::StaffMeeting)
@@ -24,38 +23,34 @@ new class extends Component {
             ->where('end_time', '>=', $ninetyDaysAgo)
             ->pluck('id');
 
-        $totalMeetings = $staffMeetingIds->count();
-
         $attended = 0;
         $absent = 0;
+        $totalMeetings = 0;
         $reportsSubmitted = 0;
 
         if ($staffMeetingIds->isNotEmpty()) {
-            $attended = DB::table('meeting_user')
-                ->whereIn('meeting_id', $staffMeetingIds)
-                ->where('user_id', $userId)
-                ->where('attended', true)
-                ->count();
+            $userMeetings = $user->belongsToMany(Meeting::class)
+                ->withPivot('attended')
+                ->whereIn('meetings.id', $staffMeetingIds)
+                ->get();
 
-            $absent = DB::table('meeting_user')
-                ->whereIn('meeting_id', $staffMeetingIds)
-                ->where('user_id', $userId)
-                ->where('attended', false)
-                ->count();
+            $totalMeetings = $userMeetings->count();
+            $attended = $userMeetings->where('pivot.attended', true)->count();
+            $absent = $userMeetings->where('pivot.attended', false)->count();
 
             $reportsSubmitted = MeetingReport::whereIn('meeting_id', $staffMeetingIds)
-                ->where('user_id', $userId)
+                ->where('user_id', $user->id)
                 ->whereNotNull('submitted_at')
                 ->count();
         }
 
-        $tasksCompleted = Task::where('assigned_to_user_id', $userId)
+        $tasksCompleted = Task::where('assigned_to_user_id', $user->id)
             ->where('status', TaskStatus::Completed)
             ->where('completed_at', '>=', $ninetyDaysAgo)
             ->count();
 
         $ticketsCompleted = Thread::where('type', ThreadType::Ticket)
-            ->where('assigned_to_user_id', $userId)
+            ->where('assigned_to_user_id', $user->id)
             ->where('status', ThreadStatus::Closed)
             ->where('updated_at', '>=', $ninetyDaysAgo)
             ->count();
