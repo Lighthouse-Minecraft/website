@@ -94,24 +94,24 @@ new class extends Component {
     }
 }; ?>
 
-<div class="flex items-center">
-    @if ($this->isArchived)
-        <flux:text class="mr-2 flex" variant="strong"><flux:icon name="check-circle" class="mr-2 text-emerald-300" /> {{ $task->name }}</flux:text>
-    @else
-        <flux:checkbox class="mb-2"
-            :label="$task->name"
-            :checked="$this->isCompleted"
-            wire:change="toggleCompletion"
-        />
-    @endif
+<div class="flex flex-wrap items-center gap-1">
+    <div class="flex items-center min-w-0 flex-1">
+        @if ($this->isArchived)
+            <flux:text class="mr-2 flex" variant="strong"><flux:icon name="check-circle" class="mr-2 text-emerald-300" /> {{ $task->name }}</flux:text>
+        @else
+            <flux:checkbox class="mb-2"
+                :label="$task->name"
+                :checked="$this->isCompleted"
+                wire:change="toggleCompletion"
+            />
+        @endif
 
-    @if($task->assignedTo)
-        <flux:badge size="sm" color="zinc" class="ml-2">{{ $task->assignedTo->name }}</flux:badge>
-    @endif
+        @if($task->assignedTo)
+            <flux:badge size="sm" color="zinc" class="ml-2">{{ $task->assignedTo->name }}</flux:badge>
+        @endif
+    </div>
 
-    <flux:spacer />
-
-    <div class="flex items-center gap-1">
+    <div class="flex items-center gap-1 shrink-0">
         @if(! $this->isArchived)
             @can('update', $task)
                 <flux:button size="xs" variant="ghost" icon="pencil-square" wire:click="openEditModal" />

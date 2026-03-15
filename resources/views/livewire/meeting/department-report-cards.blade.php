@@ -40,7 +40,7 @@ new class extends Component {
     public function viewReport(int $userId): void
     {
         $this->viewingUserId = $userId;
-        Flux::modal('view-staff-report')->show();
+        Flux::modal("view-staff-report-{$this->department}")->show();
     }
 }; ?>
 
@@ -74,7 +74,7 @@ new class extends Component {
         </div>
     @endif
 
-    <flux:modal name="view-staff-report" class="min-w-[32rem] !text-left">
+    <flux:modal name="view-staff-report-{{ $department }}" class="min-w-[32rem] !text-left">
         @if($viewingUserId)
             @php
                 $viewUser = $this->staffMembers->firstWhere('id', $viewingUserId);

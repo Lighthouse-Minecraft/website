@@ -38,7 +38,7 @@ new class extends Component {
         $this->updatedContent = $this->note->content;
         $this->noteExists = ($this->note->id) ? true : false;
 
-        $this->pollTime = ($meeting->status == MeetingStatus::InProgress) ? 10 : 60;
+        $this->pollTime = ($meeting->status == MeetingStatus::InProgress) ? 30 : 60;
 
         $this->syncLockState();
     }
@@ -149,6 +149,13 @@ new class extends Component {
         }
     }
 
+    public function updatedUpdatedContent(): void
+    {
+        if ($this->isLockedByMe && $this->note->id) {
+            $this->UpdateNote();
+        }
+    }
+
     // UpdateNote will do a periodic save but not release the lock
     public function UpdateNote() {
         $this->authorize('updateSave', $this->note);
@@ -201,7 +208,7 @@ new class extends Component {
     @if ($isLockedByMe)
         <div wire:poll.30s="HeartbeatCheck"></div>
         @php $rows = ($section_key == 'agenda') ? 15 : 6; @endphp
-        <flux:textarea wire:model.live.debounce.5s="updatedContent" wire:input.debounce.5s="UpdateNote" rows="{{ $rows }}" />
+        <flux:textarea wire:model.live.debounce.5s="updatedContent" rows="{{ $rows }}" />
 
         <div class="flex my-4">
             <div class="text-left w-full">
@@ -215,7 +222,7 @@ new class extends Component {
             </div>
         </div>
     @else
-        <div wire:poll.{{  $pollTime }}="RefreshNote">
+        <div wire:poll.{{  $pollTime }}s.keep-alive="RefreshNote">
 
             @if(! $this->noteExists)
                 <div class="w-full text-center">

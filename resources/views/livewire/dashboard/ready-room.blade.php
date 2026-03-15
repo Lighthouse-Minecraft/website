@@ -12,6 +12,7 @@ new class extends Component {
 }; ?>
 
 <div class="w-full">
+    <livewire:dashboard.alert-in-progress-meeting />
 
     <flux:tab.group class=" ">
         <div class="text-center flex">

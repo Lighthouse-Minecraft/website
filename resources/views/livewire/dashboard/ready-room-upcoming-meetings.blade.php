@@ -44,18 +44,20 @@ new class extends Component {
                     @if($meeting->isStaffMeeting() && $meeting->questions_count > 0)
                         @if($meeting->isReportUnlocked())
                             @if(in_array($meeting->id, $userReports))
-                                <flux:button href="{{ route('meeting.report', $meeting) }}" variant="ghost" size="xs">
-                                    Update Check-In
+                                <flux:button href="{{ route('meeting.report', $meeting) }}" size="xs">
+                                    Staff Update Report
                                 </flux:button>
                             @else
                                 <flux:button href="{{ route('meeting.report', $meeting) }}" variant="primary" size="xs">
-                                    Submit Check-In
+                                    Staff Update Report
                                 </flux:button>
                             @endif
                         @else
-                            <flux:button variant="ghost" size="xs" disabled class="opacity-50">
-                                Check-In
-                            </flux:button>
+                            <flux:tooltip content="Unlocks {{ config('lighthouse.meeting_report_unlock_days', 7) }} days before the meeting">
+                                <flux:button size="xs" disabled>
+                                    Staff Update Report
+                                </flux:button>
+                            </flux:tooltip>
                         @endif
                     @endif
                 </div>

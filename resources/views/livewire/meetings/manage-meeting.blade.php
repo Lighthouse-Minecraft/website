@@ -369,7 +369,7 @@ new class extends Component {
 }; ?>
 
 <div class="space-y-6">
-    <div wire:poll.{{ $pollTime }}>
+    <div wire:poll.{{ $pollTime }}s.keep-alive>
         <!-- Polling only affects this section -->
         <flux:heading size="xl" class="mb-6">{{  $meeting->title }} - {{  $meeting->day }}</flux:heading>
 
@@ -450,22 +450,9 @@ new class extends Component {
                     <div class="space-y-3">
                         @foreach(StaffDepartment::cases() as $department)
                             @if($this->staffByDepartment->has($department->value))
-                                <div wire:key="department-{{ $department->value }}">
+                                <div wire:key="pre-department-{{ $department->value }}">
                                     <flux:text class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">{{ $department->label() }}</flux:text>
-                                    <div class="space-y-0.5">
-                                        @foreach($this->staffByDepartment[$department->value] as $member)
-                                            <div wire:key="member-{{ $member->id }}" class="flex items-center gap-1.5 text-sm">
-                                                @if(in_array($member->id, $this->submittedReportUserIds))
-                                                    <flux:icon name="check" variant="solid" class="w-4 h-4 text-green-500 shrink-0" aria-hidden="true" />
-                                                    <span class="sr-only">Report submitted</span>
-                                                @else
-                                                    <flux:icon name="x-mark" variant="solid" class="w-4 h-4 text-red-400 shrink-0" aria-hidden="true" />
-                                                    <span class="sr-only">Report missing</span>
-                                                @endif
-                                                <span><flux:link href="{{ route('profile.show', $member) }}">{{ $member->name }}</flux:link></span>
-                                            </div>
-                                        @endforeach
-                                    </div>
+                                    <livewire:meeting.department-report-cards :meeting="$meeting" :department="$department->value" :key="'pre-report-cards-' . $meeting->id . '-' . $department->value" />
                                 </div>
                             @endif
                         @endforeach
