@@ -457,6 +457,32 @@ new class extends Component {
                             @endif
                         @endforeach
                     </div>
+                    <div class="flex items-center justify-between mt-3">
+                        <div>
+                            @can('update', $meeting)
+                                <flux:modal.trigger name="configure-questions-modal">
+                                    <flux:button size="xs" variant="ghost" icon="cog-6-tooth">
+                                        Configure Staff Update Questions
+                                    </flux:button>
+                                </flux:modal.trigger>
+                            @endcan
+                        </div>
+                        <div>
+                            @if($meeting->isReportUnlocked())
+                                <flux:button href="{{ route('meeting.report', $meeting) }}" size="xs" variant="primary">
+                                    Submit Staff Update Report
+                                </flux:button>
+                            @elseif(! $meeting->isReportLocked())
+                                <flux:tooltip content="Unlocks {{ config('lighthouse.meeting_report_unlock_days', 7) }} days before the meeting">
+                                    <span class="inline-block">
+                                        <flux:button size="xs" disabled class="pointer-events-none">
+                                            Submit Staff Update Report
+                                        </flux:button>
+                                    </span>
+                                </flux:tooltip>
+                            @endif
+                        </div>
+                    </div>
                 @endif
 
             </flux:card>
@@ -476,10 +502,6 @@ new class extends Component {
                 </flux:card>
             </div>
         </div>
-
-        @if ($meeting->status == MeetingStatus::Pending && $meeting->isStaffMeeting())
-            <livewire:meeting.manage-questions :meeting="$meeting" :key="'manage-questions-' . $meeting->id" />
-        @endif
 
         <div class="w-full mt-6 text-right">
             @if ($this->meeting->status == MeetingStatus::Pending)
@@ -563,6 +585,18 @@ new class extends Component {
     </div>
 
     {{-- Modals pre-rendered for upcoming transitions so Flux/Alpine initializes them before needed --}}
+    @if($meeting->status == MeetingStatus::Pending && $meeting->isStaffMeeting())
+        <flux:modal name="configure-questions-modal" class="min-w-[36rem] !text-left">
+            <div class="space-y-6">
+                <flux:heading size="lg">Staff Update Questions</flux:heading>
+                <flux:text variant="subtle">
+                    Staff will answer these questions before the meeting. You can add, remove, or reorder questions.
+                </flux:text>
+                <livewire:meeting.manage-questions :meeting="$meeting" :key="'manage-questions-' . $meeting->id" />
+            </div>
+        </flux:modal>
+    @endif
+
     @if($meeting->status == MeetingStatus::Pending)
         <flux:modal name="edit-meeting-modal" class="min-w-[28rem] !text-left">
             <div class="space-y-6">
