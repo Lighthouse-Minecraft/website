@@ -69,6 +69,7 @@ class NewTicketReplyNotification extends Notification implements ShouldQueue
                 'thread' => $thread,
                 'fromName' => $this->message->user->name,
                 'messagePreview' => Str::limit($this->message->body, 100),
+                'hasImage' => (bool) $this->message->image_path,
                 'ticketUrl' => route('tickets.show', $thread),
             ]);
     }

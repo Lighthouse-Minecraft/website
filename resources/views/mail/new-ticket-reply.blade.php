@@ -7,6 +7,10 @@ There is a new reply on a ticket you're following.
 
 **Message:** {{ $messagePreview }}
 
+@if($hasImage ?? false)
+*An image was attached to this reply.*
+@endif
+
 <x-mail::button :url="$ticketUrl">
 View Ticket
 </x-mail::button>

@@ -7,6 +7,10 @@ There is a new reply on a discussion you're part of.
 
 **Message:** {{ $messagePreview }}
 
+@if($hasImage ?? false)
+*An image was attached to this reply.*
+@endif
+
 <x-mail::button :url="$topicUrl">
 View Discussion
 </x-mail::button>

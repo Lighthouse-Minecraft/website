@@ -12,16 +12,20 @@ use App\Notifications\NewTicketNotification;
 use App\Services\TicketNotificationService;
 use Livewire\Attributes\Validate;
 use Livewire\Volt\Component;
+use Livewire\WithFileUploads;
 
 new class extends Component {
+    use WithFileUploads;
+
     #[Validate('required|string|max:255')]
     public string $subject = '';
 
     #[Validate('required|string')]
     public string $department = '';
 
-    #[Validate('required|string|min:10')]
     public string $message = '';
+
+    public $ticketImage = null;
 
     public function mount(): void
     {
@@ -29,9 +33,21 @@ new class extends Component {
         $this->department = StaffDepartment::Command->value;
     }
 
+    public function removeTicketImage(): void
+    {
+        $this->ticketImage = null;
+    }
+
     public function createTicket(): void
     {
-        $this->validate();
+        $maxKb = \App\Models\SiteConfig::getValue('max_image_size_kb', '2048');
+
+        $this->validate([
+            'subject' => 'required|string|max:255',
+            'department' => 'required|string',
+            'message' => 'required_without:ticketImage|nullable|string|min:10',
+            'ticketImage' => 'nullable|mimes:jpg,jpeg,png,gif,webp,heic,heif|max:' . $maxKb,
+        ]);
 
         $thread = Thread::create([
             'type' => ThreadType::Ticket,
@@ -47,12 +63,19 @@ new class extends Component {
         $thread->addParticipant(auth()->user());
 
         // Create first message
-        Message::create([
+        $firstMessage = Message::create([
             'thread_id' => $thread->id,
             'user_id' => auth()->id(),
-            'body' => $this->message,
+            'body' => $this->message ?? '',
             'kind' => MessageKind::Message,
         ]);
+
+        if ($this->ticketImage) {
+            $imagePath = $this->ticketImage->store('message-images', config('filesystems.public_disk'));
+            if ($imagePath) {
+                $firstMessage->update(['image_path' => $imagePath]);
+            }
+        }
 
         // Record activity
         \App\Actions\RecordActivity::run($thread, 'ticket_opened', "Opened ticket: {$this->subject}");
@@ -105,6 +128,31 @@ new class extends Component {
                 <flux:textarea wire:model="message" rows="6" placeholder="Please describe your issue in detail..." />
                 <flux:error name="message" />
             </flux:field>
+
+            @php
+                $maxKb = (int) \App\Models\SiteConfig::getValue('max_image_size_kb', '2048');
+                $maxImageSizeLabel = $maxKb >= 1024 ? round($maxKb / 1024) . 'MB' : $maxKb . 'KB';
+            @endphp
+            <div>
+                <flux:file-upload wire:model="ticketImage" label="Image (optional)">
+                    <flux:file-upload.dropzone
+                        heading="Drop an image here or click to browse"
+                        :text="'JPG, PNG, GIF, WEBP, HEIC up to ' . $maxImageSizeLabel"
+                    />
+                </flux:file-upload>
+                @if($ticketImage)
+                    <flux:file-item
+                        :heading="$ticketImage->getClientOriginalName()"
+                        :image="$ticketImage->temporaryUrl()"
+                        :size="$ticketImage->getSize()"
+                    >
+                        <x-slot name="actions">
+                            <flux:file-item.remove wire:click="removeTicketImage" />
+                        </x-slot>
+                    </flux:file-item>
+                @endif
+                <flux:error name="ticketImage" />
+            </div>
 
             <div class="flex items-center gap-4">
                 <flux:button type="submit" variant="primary">Create Ticket</flux:button>
