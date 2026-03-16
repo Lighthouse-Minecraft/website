@@ -62,7 +62,7 @@ class NewTopicReplyNotification extends Notification implements ShouldQueue
                 'thread' => $thread,
                 'fromName' => $this->message->user?->name ?? 'Unknown',
                 'messagePreview' => Str::limit($this->message->body, 100),
-                'topicUrl' => route('topics.show', $thread),
+                'topicUrl' => route('discussions.show', $thread),
             ]);
     }
 
@@ -71,7 +71,7 @@ class NewTopicReplyNotification extends Notification implements ShouldQueue
         return [
             'title' => 'New Discussion Reply',
             'message' => Str::limit($this->message->body, 100),
-            'url' => route('topics.show', $this->message->thread),
+            'url' => route('discussions.show', $this->message->thread),
         ];
     }
 
@@ -80,6 +80,6 @@ class NewTopicReplyNotification extends Notification implements ShouldQueue
         $thread = $this->message->thread;
         $fromName = $this->message->user?->name ?? 'Unknown';
 
-        return "**New Discussion Reply:** {$thread->subject}\n**From:** {$fromName}\n".Str::limit($this->message->body, 200)."\n".route('topics.show', $thread);
+        return "**New Discussion Reply:** {$thread->subject}\n**From:** {$fromName}\n".Str::limit($this->message->body, 200)."\n".route('discussions.show', $thread);
     }
 }

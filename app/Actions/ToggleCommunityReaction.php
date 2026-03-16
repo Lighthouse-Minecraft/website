@@ -11,7 +11,7 @@ class ToggleCommunityReaction
 {
     use AsAction;
 
-    public const ALLOWED_EMOJIS = ['❤️', '😂', '🙏', '👏', '🔥', '⛵'];
+    public const ALLOWED_EMOJIS = ['👍', '❤️', '😂', '🙏', '👏', '🔥'];
 
     public function handle(CommunityResponse $response, User $user, string $emoji): bool
     {

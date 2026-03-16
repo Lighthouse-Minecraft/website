@@ -88,9 +88,9 @@ Volt::route('/community-stories', 'community-stories.index')
     ->name('community-stories.index')
     ->middleware(['auth', 'verified', 'ensure-dob', 'can:view-community-stories']);
 
-// Topic System Routes
-Route::prefix('topics')
-    ->name('topics.')
+// Discussion System Routes
+Route::prefix('discussions')
+    ->name('discussions.')
     ->middleware(['auth'])
     ->group(function () {
         Volt::route('/', 'topics.topics-list')->name('index');
