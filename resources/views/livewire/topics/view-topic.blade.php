@@ -1,15 +1,19 @@
 <?php
 
+use App\Actions\AcknowledgeFlag;
+use App\Actions\FlagMessage;
 use App\Actions\RecordActivity;
 use App\Enums\MessageKind;
 use App\Enums\ThreadStatus;
 use App\Enums\ThreadType;
 use App\Models\DisciplineReport;
 use App\Models\Message;
+use App\Models\MessageFlag;
 use App\Models\Thread;
 use App\Models\User;
 use App\Notifications\NewTopicReplyNotification;
 use App\Services\TicketNotificationService;
+use Flux\Flux;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
 use Livewire\Attributes\Computed;
@@ -26,6 +30,14 @@ new class extends Component
     public string $participantSearch = '';
 
     public array $searchResults = [];
+
+    public ?int $flaggingMessageId = null;
+
+    public string $flagReason = '';
+
+    public ?int $acknowledgingFlagId = null;
+
+    public string $staffNotes = '';
 
     public function mount(Thread $thread): void
     {
@@ -72,7 +84,7 @@ new class extends Component
     public function messages()
     {
         $messages = $this->thread->messages()
-            ->with(['user.minecraftAccounts', 'user.discordAccounts'])
+            ->with(['user.minecraftAccounts', 'user.discordAccounts', 'flags.flaggedBy', 'flags.reviewedBy'])
             ->orderBy('created_at')
             ->get();
 
@@ -112,6 +124,12 @@ new class extends Component
     public function canAddParticipant(): bool
     {
         return auth()->user()->can('addParticipant', $this->thread);
+    }
+
+    #[Computed]
+    public function canViewFlagged(): bool
+    {
+        return auth()->user()->can('viewFlagged', Thread::class);
     }
 
     #[Computed]
@@ -299,6 +317,75 @@ new class extends Component
         unset($this->messages);
         unset($this->participantsList);
     }
+
+    public function openFlagModal(int $messageId): void
+    {
+        $message = Message::findOrFail($messageId);
+        $this->authorize('flag', $message);
+
+        $this->flaggingMessageId = $messageId;
+        $this->flagReason = '';
+
+        Flux::modal('flag-message')->show();
+    }
+
+    public function submitFlag(): void
+    {
+        $validator = Validator::make(
+            ['flagReason' => $this->flagReason],
+            ['flagReason' => 'required|string|min:10']
+        );
+
+        if ($validator->fails()) {
+            $this->addError('flagReason', $validator->errors()->first('flagReason'));
+
+            return;
+        }
+
+        $message = Message::findOrFail($this->flaggingMessageId);
+        $this->authorize('flag', $message);
+
+        FlagMessage::run($message, auth()->user(), $this->flagReason);
+
+        $this->flaggingMessageId = null;
+        $this->flagReason = '';
+
+        Flux::modal('flag-message')->close();
+        Flux::toast('Message flagged for review. Staff will be notified.', variant: 'success');
+
+        unset($this->messages);
+    }
+
+    public function openAcknowledgeModal(int $flagId): void
+    {
+        if (! $this->canViewFlagged) {
+            abort(403);
+        }
+
+        $this->acknowledgingFlagId = $flagId;
+        $this->staffNotes = '';
+
+        Flux::modal('acknowledge-flag')->show();
+    }
+
+    public function acknowledgeFlag(): void
+    {
+        if (! $this->canViewFlagged) {
+            abort(403);
+        }
+
+        $flag = MessageFlag::findOrFail($this->acknowledgingFlagId);
+
+        AcknowledgeFlag::run($flag, auth()->user(), $this->staffNotes ?: null);
+
+        $this->acknowledgingFlagId = null;
+        $this->staffNotes = '';
+
+        Flux::modal('acknowledge-flag')->close();
+        Flux::toast('Flag acknowledged successfully!', variant: 'success');
+
+        unset($this->messages);
+    }
 }; ?>
 
 <div class="space-y-6">
@@ -423,6 +510,7 @@ new class extends Component
                                 {!! Str::markdown($message->body, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
                             </div>
                         </div>
+                        @include('livewire.topics.partials.flag-display', ['message' => $message, 'tz' => $tz])
                     </div>
                 </div>
 
@@ -434,6 +522,11 @@ new class extends Component
                         <div class="flex items-baseline gap-2 mb-1">
                             <a href="{{ route('profile.show', $message->user) }}" class="font-semibold text-sm text-blue-600 dark:text-blue-400 hover:underline">{{ $message->user->name }}</a>
                             <span class="text-xs text-zinc-400 dark:text-zinc-500">{{ $message->created_at->setTimezone($tz)->format('M j, Y g:i A') }}</span>
+                            @if(auth()->user()->can('flag', $message))
+                                <flux:button wire:click="openFlagModal({{ $message->id }})" variant="ghost" size="xs" class="!p-0.5" aria-label="Flag message">
+                                    <flux:icon.flag class="size-3.5" />
+                                </flux:button>
+                            @endif
                         </div>
                         @if($message->user->staff_rank && $message->user->staff_rank !== \App\Enums\StaffRank::None)
                             <div class="mb-1">
@@ -445,6 +538,7 @@ new class extends Component
                                 {!! Str::markdown($message->body, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
                             </div>
                         </div>
+                        @include('livewire.topics.partials.flag-display', ['message' => $message, 'tz' => $tz])
                     </div>
                 </div>
             @endif
@@ -497,4 +591,41 @@ new class extends Component
             @endif
         </div>
     </flux:modal>
+
+    {{-- Flag Message Modal --}}
+    <flux:modal name="flag-message" class="space-y-6">
+        <div>
+            <flux:heading size="lg">Flag Message</flux:heading>
+            <flux:subheading>Why are you flagging this message?</flux:subheading>
+        </div>
+
+        <flux:field>
+            <flux:label>Reason <span class="text-red-500">*</span></flux:label>
+            <flux:textarea wire:model="flagReason" rows="4" placeholder="Please explain why this message should be reviewed by staff..." />
+            <flux:error name="flagReason" />
+        </flux:field>
+
+        <div class="flex justify-end">
+            <flux:button wire:click="submitFlag" variant="danger">Submit Flag</flux:button>
+        </div>
+    </flux:modal>
+
+    {{-- Acknowledge Flag Modal (staff only) --}}
+    @if($this->canViewFlagged)
+        <flux:modal name="acknowledge-flag" class="space-y-6">
+            <div>
+                <flux:heading size="lg">Acknowledge Flag</flux:heading>
+                <flux:subheading>Add notes about your review of this flag (optional)</flux:subheading>
+            </div>
+
+            <flux:field>
+                <flux:label>Staff Notes</flux:label>
+                <flux:textarea wire:model="staffNotes" rows="4" placeholder="Add any notes about your review of this flag..." />
+            </flux:field>
+
+            <div class="flex justify-end">
+                <flux:button wire:click="acknowledgeFlag" variant="primary">Acknowledge Flag</flux:button>
+            </div>
+        </flux:modal>
+    @endif
 </div>

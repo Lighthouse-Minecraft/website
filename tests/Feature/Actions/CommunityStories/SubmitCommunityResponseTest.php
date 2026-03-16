@@ -5,10 +5,8 @@ declare(strict_types=1);
 use App\Actions\SubmitCommunityResponse;
 use App\Enums\CommunityQuestionStatus;
 use App\Enums\CommunityResponseStatus;
-use App\Enums\MembershipLevel;
 use App\Models\CommunityQuestion;
 use App\Models\CommunityResponse;
-use App\Models\User;
 
 uses()->group('community-stories', 'actions');
 

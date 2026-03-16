@@ -3,7 +3,6 @@
 namespace App\Actions;
 
 use App\Enums\CommunityResponseStatus;
-use App\Models\CommunityResponse;
 use App\Models\User;
 use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsAction;
