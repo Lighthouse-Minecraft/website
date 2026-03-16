@@ -7,6 +7,7 @@ use App\Models\Role;
 use Livewire\Volt\Component;
 use Illuminate\Support\Facades\Validator;
 use Livewire\WithPagination;
+use App\Actions\LinkParentByEmail;
 use Flux\Flux;
 
 
@@ -200,6 +201,10 @@ new class extends Component {
         // Use the scheduled ProcessAgeTransitions command for automated transitions.
         $user->update($updateData);
         $user->roles()->sync($this->editUserRoles);
+
+        if ($updateData['parent_email']) {
+            LinkParentByEmail::run($user);
+        }
 
         $this->editUserId = null;
         Flux::modal('edit-user-modal')->close();
