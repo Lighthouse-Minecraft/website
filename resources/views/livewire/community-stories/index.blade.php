@@ -115,6 +115,16 @@ new class extends Component {
         }
     }
 
+    public function removeResponseImage(): void
+    {
+        $this->responseImage = null;
+    }
+
+    public function removeArchivedResponseImage(): void
+    {
+        $this->archivedResponseImage = null;
+    }
+
     // --- Public: Edit Own Response ---
 
     public function startEditing(int $responseId): void
@@ -125,6 +135,7 @@ new class extends Component {
         $this->editingResponseId = $responseId;
         $this->editBody = $response->body;
         $this->editRemoveImage = false;
+        $this->editImage = null;
         Flux::modal('edit-response-modal')->show();
     }
 
@@ -146,6 +157,11 @@ new class extends Component {
         } catch (\RuntimeException $e) {
             Flux::toast($e->getMessage(), 'Error', variant: 'danger');
         }
+    }
+
+    public function removeEditImage(): void
+    {
+        $this->editImage = null;
     }
 
     public function deleteResponse(int $responseId): void
@@ -502,11 +518,23 @@ new class extends Component {
                                 <flux:error name="responseBody" />
                             </flux:field>
 
-                            <flux:field>
-                                <flux:label>Image (optional)</flux:label>
-                                <input type="file" wire:model="responseImage" accept="image/*" class="text-sm text-zinc-400" />
-                                <flux:error name="responseImage" />
-                            </flux:field>
+                            <flux:file-upload wire:model="responseImage" label="Image (optional)">
+                                <flux:file-upload.dropzone
+                                    heading="Drop an image here or click to browse"
+                                    text="JPG, PNG, GIF up to 2MB"
+                                />
+                            </flux:file-upload>
+                            @if($responseImage)
+                                <flux:file-item
+                                    :heading="$responseImage->getClientOriginalName()"
+                                    :image="$responseImage->temporaryUrl()"
+                                    :size="$responseImage->getSize()"
+                                >
+                                    <x-slot name="actions">
+                                        <flux:file-item.remove wire:click="removeResponseImage" />
+                                    </x-slot>
+                                </flux:file-item>
+                            @endif
 
                             <flux:button type="submit" variant="primary">Submit Response</flux:button>
                         </form>
@@ -660,11 +688,23 @@ new class extends Component {
                                                     <flux:textarea wire:model="archivedResponseBody" rows="4" placeholder="Share your story..." />
                                                     <flux:error name="archivedResponseBody" />
                                                 </flux:field>
-                                                <flux:field>
-                                                    <flux:label>Image (optional)</flux:label>
-                                                    <input type="file" wire:model="archivedResponseImage" accept="image/*" class="text-sm text-zinc-400" />
-                                                    <flux:error name="archivedResponseImage" />
-                                                </flux:field>
+                                                <flux:file-upload wire:model="archivedResponseImage" label="Image (optional)">
+                                                    <flux:file-upload.dropzone
+                                                        heading="Drop an image here or click to browse"
+                                                        text="JPG, PNG, GIF up to 2MB"
+                                                    />
+                                                </flux:file-upload>
+                                                @if($archivedResponseImage)
+                                                    <flux:file-item
+                                                        :heading="$archivedResponseImage->getClientOriginalName()"
+                                                        :image="$archivedResponseImage->temporaryUrl()"
+                                                        :size="$archivedResponseImage->getSize()"
+                                                    >
+                                                        <x-slot name="actions">
+                                                            <flux:file-item.remove wire:click="removeArchivedResponseImage" />
+                                                        </x-slot>
+                                                    </flux:file-item>
+                                                @endif
                                                 <flux:button type="submit" variant="primary" size="sm">Submit Response</flux:button>
                                             </form>
                                         </div>
@@ -921,11 +961,23 @@ new class extends Component {
                 <flux:error name="editBody" />
             </flux:field>
 
-            <flux:field>
-                <flux:label>Replace Image</flux:label>
-                <input type="file" wire:model="editImage" accept="image/*" class="text-sm text-zinc-400" />
-                <flux:error name="editImage" />
-            </flux:field>
+            <flux:file-upload wire:model="editImage" label="Replace Image">
+                <flux:file-upload.dropzone
+                    heading="Drop an image here or click to browse"
+                    text="JPG, PNG, GIF up to 2MB"
+                />
+            </flux:file-upload>
+            @if($editImage)
+                <flux:file-item
+                    :heading="$editImage->getClientOriginalName()"
+                    :image="$editImage->temporaryUrl()"
+                    :size="$editImage->getSize()"
+                >
+                    <x-slot name="actions">
+                        <flux:file-item.remove wire:click="removeEditImage" />
+                    </x-slot>
+                </flux:file-item>
+            @endif
 
             <label class="flex items-center gap-2">
                 <input type="checkbox" wire:model="editRemoveImage" class="rounded border-zinc-600" />
