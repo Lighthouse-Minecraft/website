@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use App\Enums\CommunityResponseStatus;
 use App\Models\CommunityResponse;
-use App\Models\User;
 
 uses()->group('community-stories', 'policies');
 

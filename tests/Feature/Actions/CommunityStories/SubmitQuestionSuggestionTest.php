@@ -5,7 +5,6 @@ declare(strict_types=1);
 use App\Actions\SubmitQuestionSuggestion;
 use App\Enums\QuestionSuggestionStatus;
 use App\Models\QuestionSuggestion;
-use App\Models\User;
 
 uses()->group('community-stories', 'actions');
 

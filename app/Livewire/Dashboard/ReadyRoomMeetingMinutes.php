@@ -17,6 +17,7 @@ class ReadyRoomMeetingMinutes extends Component
     public int $perPage = 10;
 
     public ?int $viewingMeetingId = null;
+
     public string $viewingModal = '';
 
     public function getMeetingsProperty()

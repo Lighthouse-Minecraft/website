@@ -6,7 +6,6 @@ use App\Actions\ModerateResponses;
 use App\Enums\CommunityResponseStatus;
 use App\Models\CommunityQuestion;
 use App\Models\CommunityResponse;
-use App\Models\User;
 
 uses()->group('community-stories', 'actions');
 

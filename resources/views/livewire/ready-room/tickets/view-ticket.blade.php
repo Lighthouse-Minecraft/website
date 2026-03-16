@@ -44,6 +44,13 @@ new class extends Component
      */
     public function mount(Thread $thread): void
     {
+        // Redirect topic threads to the discussions route
+        if ($thread->type === ThreadType::Topic) {
+            $this->redirect(route('discussions.show', $thread), navigate: true);
+
+            return;
+        }
+
         $this->authorize('view', $thread);
         $this->thread = $thread;
 

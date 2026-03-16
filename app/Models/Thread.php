@@ -130,8 +130,12 @@ class Thread extends Model
             return true;
         }
 
-        // Topics: participant-only visibility (no department/flagged logic)
+        // Topics: participant-only or viewFlagged (while flags are open)
         if ($this->type === ThreadType::Topic) {
+            if ($user->can('viewFlagged', Thread::class) && $this->has_open_flags) {
+                return true;
+            }
+
             return $this->participants()->where('user_id', $user->id)->exists();
         }
 
