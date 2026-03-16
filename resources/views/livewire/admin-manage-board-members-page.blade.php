@@ -6,6 +6,7 @@ use App\Actions\DeleteBoardMember;
 use App\Actions\LinkBoardMemberToUser;
 use App\Actions\UnlinkBoardMemberFromUser;
 use App\Models\BoardMember;
+use App\Models\SiteConfig;
 use App\Models\User;
 use Flux\Flux;
 use Illuminate\Support\Facades\Storage;
@@ -53,7 +54,7 @@ new class extends Component {
             'newDisplayName' => 'required|string|max:255',
             'newTitle' => 'nullable|string|max:255',
             'newBio' => 'nullable|string|max:2000',
-            'newPhoto' => 'nullable|image|max:2048',
+            'newPhoto' => 'nullable|mimes:jpg,jpeg,png,gif,webp,heic,heif|max:' . SiteConfig::getValue('max_image_size_kb', '2048'),
             'newSortOrder' => 'required|integer|min:0',
         ]);
 
@@ -105,7 +106,7 @@ new class extends Component {
             'editDisplayName' => 'required|string|max:255',
             'editTitle' => 'nullable|string|max:255',
             'editBio' => 'nullable|string|max:2000',
-            'editPhoto' => 'nullable|image|max:2048',
+            'editPhoto' => 'nullable|mimes:jpg,jpeg,png,gif,webp,heic,heif|max:' . SiteConfig::getValue('max_image_size_kb', '2048'),
             'editSortOrder' => 'required|integer|min:0',
         ]);
 
@@ -266,7 +267,7 @@ new class extends Component {
                 <flux:field>
                     <flux:label>Photo</flux:label>
                     <flux:description>Upload a photo (max 2MB). For linked users, their staff photo is used instead.</flux:description>
-                    <input type="file" wire:model="newPhoto" accept="image/*" class="block w-full text-sm text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-950 dark:file:text-blue-300" />
+                    <input type="file" wire:model="newPhoto" accept="image/*,.heic,.heif" class="block w-full text-sm text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-950 dark:file:text-blue-300" />
                     @error('newPhoto') <flux:error>{{ $message }}</flux:error> @enderror
                 </flux:field>
 
@@ -289,7 +290,7 @@ new class extends Component {
                 @if(! $editIsLinked)
                     <flux:field>
                         <flux:label>Photo</flux:label>
-                        <input type="file" wire:model="editPhoto" accept="image/*" class="block w-full text-sm text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-950 dark:file:text-blue-300" />
+                        <input type="file" wire:model="editPhoto" accept="image/*,.heic,.heif" class="block w-full text-sm text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-950 dark:file:text-blue-300" />
                         @error('editPhoto') <flux:error>{{ $message }}</flux:error> @enderror
                     </flux:field>
                     <flux:textarea label="Bio" wire:model="editBio" rows="4" />
