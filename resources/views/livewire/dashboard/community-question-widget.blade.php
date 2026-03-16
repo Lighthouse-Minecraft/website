@@ -64,11 +64,13 @@ new class extends Component {
 
             // Check if user is Resident+ and eligible for a bonus archived question
             if ($user->isAtLeastLevel(MembershipLevel::Resident)) {
-                $archivedResponseCount = CommunityResponse::where('user_id', $user->id)
+                $archivedQuery = CommunityResponse::where('user_id', $user->id)
                     ->where('community_question_id', '!=', $activeQuestion->id)
-                    ->whereHas('question', fn ($questionQuery) => $questionQuery->archived())
-                    ->where('created_at', '>=', $activeQuestion->start_date)
-                    ->count();
+                    ->whereHas('question', fn ($questionQuery) => $questionQuery->archived());
+                if ($activeQuestion->start_date) {
+                    $archivedQuery->where('created_at', '>=', $activeQuestion->start_date);
+                }
+                $archivedResponseCount = $archivedQuery->count();
 
                 $hasUsedBonusThisCycle = $archivedResponseCount >= 1;
 

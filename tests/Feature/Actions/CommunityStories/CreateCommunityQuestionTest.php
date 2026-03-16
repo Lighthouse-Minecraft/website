@@ -47,6 +47,18 @@ it('links suggestion when created from a suggestion', function () {
         ->and($question->suggested_by)->toBe($suggestion->user_id);
 });
 
+it('archives existing active question when creating a new one as active', function () {
+    $staff = loginAsAdmin();
+
+    $existing = CreateCommunityQuestion::run($staff, 'Existing active question for community?', status: CommunityQuestionStatus::Active);
+    expect($existing->fresh()->status)->toBe(CommunityQuestionStatus::Active);
+
+    $newQuestion = CreateCommunityQuestion::run($staff, 'New active question for community?', status: CommunityQuestionStatus::Active);
+
+    expect($existing->fresh()->status)->toBe(CommunityQuestionStatus::Archived)
+        ->and($newQuestion->fresh()->status)->toBe(CommunityQuestionStatus::Active);
+});
+
 it('records activity', function () {
     $staff = loginAsAdmin();
 

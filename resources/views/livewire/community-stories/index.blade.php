@@ -378,11 +378,13 @@ new class extends Component {
         $canRespondToArchived = false;
         $hasRespondedToArchived = false;
         if ($activeQuestion && $hasResponded && $user->isAtLeastLevel(MembershipLevel::Resident)) {
-            $hasRespondedToArchived = CommunityResponse::where('user_id', $user->id)
+            $query = CommunityResponse::where('user_id', $user->id)
                 ->where('community_question_id', '!=', $activeQuestion->id)
-                ->whereHas('question', fn ($q) => $q->archived())
-                ->where('created_at', '>=', $activeQuestion->start_date)
-                ->exists();
+                ->whereHas('question', fn ($q) => $q->archived());
+            if ($activeQuestion->start_date) {
+                $query->where('created_at', '>=', $activeQuestion->start_date);
+            }
+            $hasRespondedToArchived = $query->exists();
             $canRespondToArchived = ! $hasRespondedToArchived;
         }
 

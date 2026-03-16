@@ -22,6 +22,12 @@ class CreateCommunityQuestion
         ?int $suggestionId = null,
         ?int $suggestedBy = null,
     ): CommunityQuestion {
+        // If creating as active, archive any other active questions first
+        if ($status === CommunityQuestionStatus::Active) {
+            CommunityQuestion::where('status', CommunityQuestionStatus::Active)
+                ->update(['status' => CommunityQuestionStatus::Archived]);
+        }
+
         $question = CommunityQuestion::create([
             'question_text' => $questionText,
             'description' => $description,
