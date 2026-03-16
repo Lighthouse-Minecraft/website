@@ -398,7 +398,7 @@ Conditionally show flagged topics when that filter is selected:
 
 Test cases:
 
-```
+```text
 it('allows participants to flag messages from other users')
 it('prevents users from flagging their own messages')
 it('prevents non-participants from flagging messages')
