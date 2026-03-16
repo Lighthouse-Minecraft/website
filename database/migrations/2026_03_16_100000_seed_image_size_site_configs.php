@@ -33,11 +33,9 @@ return new class extends Migration
 
     public function down(): void
     {
-        $migrationDate = '2026-03-16 00:00:00';
-
         DB::table('site_configs')->whereIn('key', [
             'max_image_size_kb',
             'community_stories_max_image_size_kb',
-        ])->where('created_at', '>=', $migrationDate)->delete();
+        ])->delete();
     }
 };

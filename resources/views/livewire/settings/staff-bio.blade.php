@@ -71,6 +71,15 @@ new class extends Component {
         $this->photo = null;
     }
 
+    public function with(): array
+    {
+        $maxKb = (int) SiteConfig::getValue('max_image_size_kb', '2048');
+
+        return [
+            'maxImageSizeLabel' => $maxKb >= 1024 ? round($maxKb / 1024) . 'MB' : $maxKb . 'KB',
+        ];
+    }
+
     public function removePhoto(): void
     {
         $this->authorize('edit-staff-bio');
@@ -98,14 +107,10 @@ new class extends Component {
                 </div>
             @endif
 
-            @php
-                $maxKb = (int) SiteConfig::getValue('max_image_size_kb', '2048');
-                $maxLabel = $maxKb >= 1024 ? round($maxKb / 1024) . 'MB' : $maxKb . 'KB';
-            @endphp
             <flux:file-upload wire:model="photo" label="Photo">
                 <flux:file-upload.dropzone
                     heading="Drop a photo or click to browse"
-                    :text="'JPG, PNG, GIF, HEIC up to ' . $maxLabel"
+                    :text="'JPG, PNG, GIF, WEBP, HEIC up to ' . $maxImageSizeLabel"
                 />
             </flux:file-upload>
             @if($photo)

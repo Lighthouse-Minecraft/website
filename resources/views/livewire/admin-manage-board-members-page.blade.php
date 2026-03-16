@@ -46,6 +46,14 @@ new class extends Component {
         return BoardMember::with('user')->ordered()->get();
     }
 
+    #[Computed]
+    public function photoMaxSizeLabel(): string
+    {
+        $maxKb = (int) SiteConfig::getValue('max_image_size_kb', '2048');
+
+        return $maxKb >= 1024 ? round($maxKb / 1024) . 'MB' : $maxKb . 'KB';
+    }
+
     public function createBoardMember(): void
     {
         $this->authorize('create', BoardMember::class);
@@ -266,7 +274,7 @@ new class extends Component {
 
                 <flux:field>
                     <flux:label>Photo</flux:label>
-                    <flux:description>Upload a photo (max 2MB). For linked users, their staff photo is used instead.</flux:description>
+                    <flux:description>Upload a photo (max {{ $this->photoMaxSizeLabel }}). For linked users, their staff photo is used instead.</flux:description>
                     <input type="file" wire:model="newPhoto" accept="image/*,.heic,.heif" class="block w-full text-sm text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-950 dark:file:text-blue-300" />
                     @error('newPhoto') <flux:error>{{ $message }}</flux:error> @enderror
                 </flux:field>

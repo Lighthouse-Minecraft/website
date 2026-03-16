@@ -526,7 +526,7 @@ new class extends Component {
                             <flux:file-upload wire:model="responseImage" label="Image (optional)">
                                 <flux:file-upload.dropzone
                                     heading="Drop an image here or click to browse"
-                                    :text="'JPG, PNG, GIF, HEIC up to ' . $maxImageSizeLabel"
+                                    :text="'JPG, PNG, GIF, WEBP, HEIC up to ' . $maxImageSizeLabel"
                                 />
                             </flux:file-upload>
                             @if($responseImage)
@@ -696,7 +696,7 @@ new class extends Component {
                                                 <flux:file-upload wire:model="archivedResponseImage" label="Image (optional)">
                                                     <flux:file-upload.dropzone
                                                         heading="Drop an image here or click to browse"
-                                                        :text="'JPG, PNG, GIF, HEIC up to ' . $maxImageSizeLabel"
+                                                        :text="'JPG, PNG, GIF, WEBP, HEIC up to ' . $maxImageSizeLabel"
                                                     />
                                                 </flux:file-upload>
                                                 @if($archivedResponseImage)
@@ -969,7 +969,7 @@ new class extends Component {
             <flux:file-upload wire:model="editImage" label="Replace Image">
                 <flux:file-upload.dropzone
                     heading="Drop an image here or click to browse"
-                    :text="'JPG, PNG, GIF, HEIC up to ' . $maxImageSizeLabel"
+                    :text="'JPG, PNG, GIF, WEBP, HEIC up to ' . $maxImageSizeLabel"
                 />
             </flux:file-upload>
             @if($editImage)

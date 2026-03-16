@@ -148,7 +148,7 @@ new class extends Component {
                         <flux:file-upload wire:model="responseImage">
                             <flux:file-upload.dropzone
                                 heading="Drop an image or click to browse"
-                                :text="'JPG, PNG, GIF, HEIC up to ' . $maxImageSizeLabel"
+                                :text="'JPG, PNG, GIF, WEBP, HEIC up to ' . $maxImageSizeLabel"
                             />
                         </flux:file-upload>
                         @if($responseImage)
@@ -181,7 +181,7 @@ new class extends Component {
                         <flux:file-upload wire:model="responseImage">
                             <flux:file-upload.dropzone
                                 heading="Drop an image or click to browse"
-                                :text="'JPG, PNG, GIF, HEIC up to ' . $maxImageSizeLabel"
+                                :text="'JPG, PNG, GIF, WEBP, HEIC up to ' . $maxImageSizeLabel"
                             />
                         </flux:file-upload>
                         @if($responseImage)
