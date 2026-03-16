@@ -10,6 +10,7 @@ use App\Models\Thread;
 use App\Models\User;
 use App\Notifications\NewTicketNotification;
 use App\Services\TicketNotificationService;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Validate;
 use Livewire\Volt\Component;
 use Livewire\WithFileUploads;
@@ -44,41 +45,46 @@ new class extends Component {
 
         $this->validate([
             'subject' => 'required|string|max:255',
-            'department' => 'required|string',
+            'department' => ['required', 'string', Rule::enum(StaffDepartment::class)],
             'message' => 'required_without:ticketImage|nullable|string|min:10',
             'ticketImage' => 'nullable|mimes:jpg,jpeg,png,gif,webp,heic,heif|max:' . $maxKb,
         ]);
 
-        $thread = Thread::create([
-            'type' => ThreadType::Ticket,
-            'subtype' => ThreadSubtype::Support,
-            'department' => StaffDepartment::from($this->department),
-            'subject' => $this->subject,
-            'status' => ThreadStatus::Open,
-            'created_by_user_id' => auth()->id(),
-            'last_message_at' => now(),
-        ]);
+        $thread = \Illuminate\Support\Facades\DB::transaction(function () {
+            $thread = Thread::create([
+                'type' => ThreadType::Ticket,
+                'subtype' => ThreadSubtype::Support,
+                'department' => StaffDepartment::from($this->department),
+                'subject' => $this->subject,
+                'status' => ThreadStatus::Open,
+                'created_by_user_id' => auth()->id(),
+                'last_message_at' => now(),
+            ]);
 
-        // Add creator as participant
-        $thread->addParticipant(auth()->user());
+            // Add creator as participant
+            $thread->addParticipant(auth()->user());
 
-        // Create first message
-        $firstMessage = Message::create([
-            'thread_id' => $thread->id,
-            'user_id' => auth()->id(),
-            'body' => $this->message ?? '',
-            'kind' => MessageKind::Message,
-        ]);
+            // Create first message
+            $firstMessage = Message::create([
+                'thread_id' => $thread->id,
+                'user_id' => auth()->id(),
+                'body' => $this->message ?? '',
+                'kind' => MessageKind::Message,
+            ]);
 
-        if ($this->ticketImage) {
-            $imagePath = $this->ticketImage->store('message-images', config('filesystems.public_disk'));
-            if ($imagePath) {
+            if ($this->ticketImage) {
+                $imagePath = $this->ticketImage->store('message-images', config('filesystems.public_disk'));
+                if ($imagePath === false) {
+                    throw new \RuntimeException('Failed to store uploaded image.');
+                }
                 $firstMessage->update(['image_path' => $imagePath]);
             }
-        }
 
-        // Record activity
-        \App\Actions\RecordActivity::run($thread, 'ticket_opened', "Opened ticket: {$this->subject}");
+            // Record activity
+            \App\Actions\RecordActivity::run($thread, 'ticket_opened', "Opened ticket: {$this->subject}");
+
+            return $thread;
+        });
 
         // Notify department staff
         $departmentStaff = User::where('staff_department', $this->department)

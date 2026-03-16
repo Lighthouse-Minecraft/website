@@ -6,6 +6,7 @@ use App\Enums\ThreadType;
 use App\Models\Message;
 use App\Models\SiteConfig;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class PurgeMessageImages extends Command
@@ -52,18 +53,29 @@ class PurgeMessageImages extends Command
             ->get();
 
         $count = 0;
+        $filesToDelete = [];
 
         foreach ($messages as $message) {
-            if ($message->image_path && $disk->exists($message->image_path)) {
-                $disk->delete($message->image_path);
+            $oldPath = $message->image_path;
+
+            DB::transaction(function () use ($message) {
+                $message->update([
+                    'image_path' => null,
+                    'image_was_purged' => true,
+                ]);
+            });
+
+            if ($oldPath) {
+                $filesToDelete[] = $oldPath;
             }
 
-            $message->update([
-                'image_path' => null,
-                'image_was_purged' => true,
-            ]);
-
             $count++;
+        }
+
+        foreach ($filesToDelete as $path) {
+            if ($disk->exists($path)) {
+                $disk->delete($path);
+            }
         }
 
         $this->info("Purged {$count} message image(s).");

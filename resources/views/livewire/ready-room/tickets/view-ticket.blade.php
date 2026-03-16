@@ -309,7 +309,7 @@ new class extends Component
      */
     public function sendReply(): void
     {
-        $maxKb = \App\Models\SiteConfig::getValue('max_image_size_kb', '2048');
+        $maxKb = max(1, min(10240, (int) \App\Models\SiteConfig::getValue('max_image_size_kb', '2048')));
 
         $validator = Validator::make(
             ['replyMessage' => $this->replyMessage, 'replyImage' => $this->replyImage],
@@ -473,8 +473,24 @@ new class extends Component
     {
         $this->authorize('close', $this->thread);
 
-        // If there's a reply message or image, send it first
+        // If there's a reply message or image, validate and send it first
         if (! empty(trim($this->replyMessage)) || $this->replyImage) {
+            if ($this->replyImage) {
+                $maxKb = max(1, min(10240, (int) \App\Models\SiteConfig::getValue('max_image_size_kb', '2048')));
+                $validator = Validator::make(
+                    ['replyImage' => $this->replyImage],
+                    ['replyImage' => 'nullable|mimes:jpg,jpeg,png,gif,webp,heic,heif|max:' . $maxKb]
+                );
+
+                if ($validator->fails()) {
+                    foreach ($validator->errors()->toArray() as $field => $messages) {
+                        $this->addError($field, $messages[0]);
+                    }
+
+                    return;
+                }
+            }
+
             $this->processReply($this->replyMessage, $this->isInternalNote, $this->replyImage);
 
             $this->replyMessage = '';
