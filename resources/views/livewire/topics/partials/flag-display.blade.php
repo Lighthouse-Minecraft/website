@@ -1,4 +1,5 @@
 @php
+    $tz = $tz ?? auth()->user()->timezone ?? 'UTC';
     $visibleFlags = $message->flags->filter(function ($flag) {
         return auth()->user()->can('viewFlagged', \App\Models\Thread::class)
             || $flag->flagged_by_user_id === auth()->id();

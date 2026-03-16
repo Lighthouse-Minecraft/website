@@ -18,8 +18,6 @@ class ReadyRoomMeetingMinutes extends Component
 
     public ?int $viewingMeetingId = null;
 
-    public string $viewingModal = '';
-
     public function getMeetingsProperty()
     {
         return Meeting::where('type', MeetingType::StaffMeeting)
