@@ -16,6 +16,7 @@ new class extends Component {
     public string $newResponsibilities = '';
     public string $newRequirements = '';
     public int $newSortOrder = 0;
+    public bool $newAcceptingApplications = false;
 
     // Edit form
     public string $editTitle = '';
@@ -25,6 +26,7 @@ new class extends Component {
     public string $editResponsibilities = '';
     public string $editRequirements = '';
     public int $editSortOrder = 0;
+    public bool $editAcceptingApplications = false;
     public ?int $editId = null;
 
     public function getPositionsProperty()
@@ -56,11 +58,12 @@ new class extends Component {
             'responsibilities' => $this->newResponsibilities ?: null,
             'requirements' => $this->newRequirements ?: null,
             'sort_order' => $this->newSortOrder,
+            'accepting_applications' => $this->newAcceptingApplications,
         ]);
 
         Flux::modal('create-position-modal')->close();
         Flux::toast('Staff position created.', 'Created', variant: 'success');
-        $this->reset(['newTitle', 'newDepartment', 'newRank', 'newDescription', 'newResponsibilities', 'newRequirements', 'newSortOrder']);
+        $this->reset(['newTitle', 'newDepartment', 'newRank', 'newDescription', 'newResponsibilities', 'newRequirements', 'newSortOrder', 'newAcceptingApplications']);
     }
 
     public function openEditModal(int $id): void
@@ -76,6 +79,7 @@ new class extends Component {
         $this->editResponsibilities = $position->responsibilities ?? '';
         $this->editRequirements = $position->requirements ?? '';
         $this->editSortOrder = $position->sort_order;
+        $this->editAcceptingApplications = $position->accepting_applications;
     }
 
     public function updatePosition(): void
@@ -101,11 +105,12 @@ new class extends Component {
             'responsibilities' => $this->editResponsibilities ?: null,
             'requirements' => $this->editRequirements ?: null,
             'sort_order' => $this->editSortOrder,
+            'accepting_applications' => $this->editAcceptingApplications,
         ]);
 
         Flux::modal('edit-position-modal')->close();
         Flux::toast('Staff position updated.', 'Updated', variant: 'success');
-        $this->reset(['editTitle', 'editDepartment', 'editRank', 'editDescription', 'editResponsibilities', 'editRequirements', 'editSortOrder', 'editId']);
+        $this->reset(['editTitle', 'editDepartment', 'editRank', 'editDescription', 'editResponsibilities', 'editRequirements', 'editSortOrder', 'editAcceptingApplications', 'editId']);
     }
 
     public function deletePosition(int $id): void
@@ -133,6 +138,7 @@ new class extends Component {
             <flux:table.column>Department</flux:table.column>
             <flux:table.column>Rank</flux:table.column>
             <flux:table.column>Assigned To</flux:table.column>
+            <flux:table.column>Apps</flux:table.column>
             <flux:table.column></flux:table.column>
         </flux:table.columns>
         <flux:table.rows>
@@ -149,6 +155,13 @@ new class extends Component {
                             <flux:link href="{{ route('profile.show', $position->user) }}" wire:navigate>{{ $position->user->name }}</flux:link>
                         @else
                             <flux:badge size="sm" color="zinc">Vacant</flux:badge>
+                        @endif
+                    </flux:table.cell>
+                    <flux:table.cell>
+                        @if($position->accepting_applications)
+                            <flux:badge size="sm" color="emerald">Open</flux:badge>
+                        @else
+                            <flux:badge size="sm" color="zinc">Closed</flux:badge>
                         @endif
                     </flux:table.cell>
                     <flux:table.cell>
@@ -195,6 +208,7 @@ new class extends Component {
                 <flux:textarea label="Responsibilities" wire:model="newResponsibilities" rows="3" placeholder="What this position is responsible for (shown for open positions)..." />
                 <flux:textarea label="Requirements" wire:model="newRequirements" rows="2" placeholder="Special requirements (e.g. minimum age)..." />
                 <flux:input label="Sort Order" wire:model="newSortOrder" type="number" min="0" />
+                <flux:checkbox wire:model="newAcceptingApplications" label="Accepting Applications" />
 
                 <flux:button type="submit" variant="primary">Create</flux:button>
             </div>
@@ -223,6 +237,7 @@ new class extends Component {
                 <flux:textarea label="Responsibilities" wire:model="editResponsibilities" rows="3" />
                 <flux:textarea label="Requirements" wire:model="editRequirements" rows="2" />
                 <flux:input label="Sort Order" wire:model="editSortOrder" type="number" min="0" />
+                <flux:checkbox wire:model="editAcceptingApplications" label="Accepting Applications" />
 
                 <flux:button type="submit" variant="primary">Save Changes</flux:button>
             </div>

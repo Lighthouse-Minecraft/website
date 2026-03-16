@@ -7,6 +7,7 @@ use App\Enums\StaffRank;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class StaffPosition extends Model
 {
@@ -21,6 +22,7 @@ class StaffPosition extends Model
         'requirements',
         'user_id',
         'sort_order',
+        'accepting_applications',
     ];
 
     protected function casts(): array
@@ -28,6 +30,7 @@ class StaffPosition extends Model
         return [
             'department' => StaffDepartment::class,
             'rank' => StaffRank::class,
+            'accepting_applications' => 'boolean',
         ];
     }
 
@@ -64,5 +67,25 @@ class StaffPosition extends Model
     public function scopeOrdered($query)
     {
         return $query->orderBy('sort_order')->orderBy('rank', 'desc')->orderBy('title');
+    }
+
+    public function applications(): HasMany
+    {
+        return $this->hasMany(StaffApplication::class);
+    }
+
+    public function applicationQuestions(): HasMany
+    {
+        return $this->hasMany(ApplicationQuestion::class);
+    }
+
+    public function isAcceptingApplications(): bool
+    {
+        return $this->accepting_applications;
+    }
+
+    public function scopeAcceptingApplications($query)
+    {
+        return $query->where('accepting_applications', true);
     }
 }

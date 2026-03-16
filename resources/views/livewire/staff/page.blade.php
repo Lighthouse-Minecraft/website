@@ -328,6 +328,16 @@ new class extends Component {
                                 </div>
                             @endif
                         @endif
+
+                        @if($selected->isAcceptingApplications())
+                            @can('create', \App\Models\StaffApplication::class)
+                                <div>
+                                    <flux:button href="{{ route('applications.apply', $selected) }}" variant="primary" icon="paper-airplane" wire:navigate>
+                                        Apply for this Position
+                                    </flux:button>
+                                </div>
+                            @endcan
+                        @endif
                     </flux:card>
                 @else
                     <flux:card>

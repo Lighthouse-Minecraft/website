@@ -52,6 +52,15 @@
                         >
                             Discussions
                         </flux:navlist.item>
+
+                        <flux:navlist.item
+                            icon="document-text"
+                            :href="route('applications.index')"
+                            :current="request()->routeIs('applications.*')"
+                            wire:navigate
+                        >
+                            My Applications
+                        </flux:navlist.item>
                     @endauth
 
                     @can('view-parent-portal')
