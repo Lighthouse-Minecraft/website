@@ -17,6 +17,11 @@ new class extends Component {
     public $responseImage = null;
     public ?int $respondingToQuestionId = null;
 
+    public function removeResponseImage(): void
+    {
+        $this->responseImage = null;
+    }
+
     public function submitResponse(): void
     {
         $this->authorize('submit-community-response');
@@ -64,11 +69,13 @@ new class extends Component {
 
             // Check if user is Resident+ and eligible for a bonus archived question
             if ($user->isAtLeastLevel(MembershipLevel::Resident)) {
-                $archivedResponseCount = CommunityResponse::where('user_id', $user->id)
+                $archivedQuery = CommunityResponse::where('user_id', $user->id)
                     ->where('community_question_id', '!=', $activeQuestion->id)
-                    ->whereHas('question', fn ($questionQuery) => $questionQuery->archived())
-                    ->where('created_at', '>=', $activeQuestion->start_date)
-                    ->count();
+                    ->whereHas('question', fn ($questionQuery) => $questionQuery->archived());
+                if ($activeQuestion->start_date) {
+                    $archivedQuery->where('created_at', '>=', $activeQuestion->start_date);
+                }
+                $archivedResponseCount = $archivedQuery->count();
 
                 $hasUsedBonusThisCycle = $archivedResponseCount >= 1;
 
@@ -133,11 +140,23 @@ new class extends Component {
                             <flux:error name="responseBody" />
                         </flux:field>
 
-                        <flux:field>
-                            <flux:label class="sr-only">Attach an image (optional)</flux:label>
-                            <input type="file" wire:model="responseImage" accept="image/*" class="text-sm text-zinc-400" />
-                            <flux:error name="responseImage" />
-                        </flux:field>
+                        <flux:file-upload wire:model="responseImage">
+                            <flux:file-upload.dropzone
+                                heading="Drop an image or click to browse"
+                                text="JPG, PNG, GIF up to 2MB"
+                            />
+                        </flux:file-upload>
+                        @if($responseImage)
+                            <flux:file-item
+                                :heading="$responseImage->getClientOriginalName()"
+                                :image="$responseImage->temporaryUrl()"
+                                :size="$responseImage->getSize()"
+                            >
+                                <x-slot name="actions">
+                                    <flux:file-item.remove wire:click="removeResponseImage" />
+                                </x-slot>
+                            </flux:file-item>
+                        @endif
 
                         <flux:button type="submit" variant="primary" size="sm">Submit</flux:button>
                     </form>
@@ -154,11 +173,23 @@ new class extends Component {
                             <flux:error name="responseBody" />
                         </flux:field>
 
-                        <flux:field>
-                            <flux:label class="sr-only">Attach an image (optional)</flux:label>
-                            <input type="file" wire:model="responseImage" accept="image/*" class="text-sm text-zinc-400" />
-                            <flux:error name="responseImage" />
-                        </flux:field>
+                        <flux:file-upload wire:model="responseImage">
+                            <flux:file-upload.dropzone
+                                heading="Drop an image or click to browse"
+                                text="JPG, PNG, GIF up to 2MB"
+                            />
+                        </flux:file-upload>
+                        @if($responseImage)
+                            <flux:file-item
+                                :heading="$responseImage->getClientOriginalName()"
+                                :image="$responseImage->temporaryUrl()"
+                                :size="$responseImage->getSize()"
+                            >
+                                <x-slot name="actions">
+                                    <flux:file-item.remove wire:click="removeResponseImage" />
+                                </x-slot>
+                            </flux:file-item>
+                        @endif
 
                         <flux:button type="submit" variant="primary" size="sm">Submit</flux:button>
                     </form>
