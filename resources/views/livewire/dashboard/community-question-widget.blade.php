@@ -5,6 +5,7 @@ use App\Enums\CommunityResponseStatus;
 use App\Enums\MembershipLevel;
 use App\Models\CommunityQuestion;
 use App\Models\CommunityResponse;
+use App\Models\SiteConfig;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Volt\Component;
@@ -28,7 +29,7 @@ new class extends Component {
 
         $this->validate([
             'responseBody' => 'required|string|min:20|max:5000',
-            'responseImage' => 'nullable|image|max:2048',
+            'responseImage' => 'nullable|mimes:jpg,jpeg,png,gif,webp,heic,heif|max:' . SiteConfig::getValue('community_stories_max_image_size_kb', '5120'),
         ]);
 
         $question = CommunityQuestion::find($this->respondingToQuestionId);
@@ -111,6 +112,9 @@ new class extends Component {
             }
         }
 
+        $maxImageSizeKb = (int) SiteConfig::getValue('community_stories_max_image_size_kb', '5120');
+        $maxImageSizeLabel = $maxImageSizeKb >= 1024 ? round($maxImageSizeKb / 1024) . 'MB' : $maxImageSizeKb . 'KB';
+
         return [
             'activeQuestion' => $activeQuestion,
             'hasRespondedToActive' => $hasRespondedToActive,
@@ -118,6 +122,7 @@ new class extends Component {
             'bonusQuestion' => $bonusQuestion,
             'hasUsedBonusThisCycle' => $hasUsedBonusThisCycle,
             'canSuggest' => $canSuggest,
+            'maxImageSizeLabel' => $maxImageSizeLabel,
         ];
     }
 }; ?>
@@ -143,7 +148,7 @@ new class extends Component {
                         <flux:file-upload wire:model="responseImage">
                             <flux:file-upload.dropzone
                                 heading="Drop an image or click to browse"
-                                text="JPG, PNG, GIF up to 2MB"
+                                :text="'JPG, PNG, GIF, WEBP, HEIC up to ' . $maxImageSizeLabel"
                             />
                         </flux:file-upload>
                         @if($responseImage)
@@ -176,7 +181,7 @@ new class extends Component {
                         <flux:file-upload wire:model="responseImage">
                             <flux:file-upload.dropzone
                                 heading="Drop an image or click to browse"
-                                text="JPG, PNG, GIF up to 2MB"
+                                :text="'JPG, PNG, GIF, WEBP, HEIC up to ' . $maxImageSizeLabel"
                             />
                         </flux:file-upload>
                         @if($responseImage)

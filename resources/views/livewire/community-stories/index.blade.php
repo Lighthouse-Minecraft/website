@@ -10,6 +10,7 @@ use App\Actions\SubmitQuestionSuggestion;
 use App\Actions\ToggleCommunityReaction;
 use App\Actions\UpdateCommunityQuestion;
 use App\Enums\CommunityQuestionStatus;
+use App\Models\SiteConfig;
 use App\Enums\CommunityResponseStatus;
 use App\Enums\MembershipLevel;
 use App\Enums\QuestionSuggestionStatus;
@@ -74,7 +75,7 @@ new class extends Component {
 
         $this->validate([
             'responseBody' => 'required|string|min:20|max:5000',
-            'responseImage' => 'nullable|image|max:2048',
+            'responseImage' => 'nullable|mimes:jpg,jpeg,png,gif,webp,heic,heif|max:' . SiteConfig::getValue('community_stories_max_image_size_kb', '5120'),
         ]);
 
         $activeQuestion = CommunityQuestion::active()->first();
@@ -100,7 +101,7 @@ new class extends Component {
 
         $this->validate([
             'archivedResponseBody' => 'required|string|min:20|max:5000',
-            'archivedResponseImage' => 'nullable|image|max:2048',
+            'archivedResponseImage' => 'nullable|mimes:jpg,jpeg,png,gif,webp,heic,heif|max:' . SiteConfig::getValue('community_stories_max_image_size_kb', '5120'),
             'selectedQuestionId' => 'required|exists:community_questions,id',
         ]);
 
@@ -146,7 +147,7 @@ new class extends Component {
 
         $this->validate([
             'editBody' => 'required|string|min:20|max:5000',
-            'editImage' => 'nullable|image|max:2048',
+            'editImage' => 'nullable|mimes:jpg,jpeg,png,gif,webp,heic,heif|max:' . SiteConfig::getValue('community_stories_max_image_size_kb', '5120'),
         ]);
 
         try {
@@ -454,6 +455,9 @@ new class extends Component {
                 ->get();
         }
 
+        $maxImageSizeKb = (int) SiteConfig::getValue('community_stories_max_image_size_kb', '5120');
+        $maxImageSizeLabel = $maxImageSizeKb >= 1024 ? round($maxImageSizeKb / 1024) . 'MB' : $maxImageSizeKb . 'KB';
+
         return [
             'activeQuestion' => $activeQuestion,
             'hasResponded' => $hasResponded,
@@ -469,6 +473,7 @@ new class extends Component {
             'allQuestions' => $allQuestions,
             'pendingSuggestions' => $pendingSuggestions,
             'allowedEmojis' => \App\Actions\ToggleCommunityReaction::ALLOWED_EMOJIS,
+            'maxImageSizeLabel' => $maxImageSizeLabel,
         ];
     }
 }; ?>
@@ -521,7 +526,7 @@ new class extends Component {
                             <flux:file-upload wire:model="responseImage" label="Image (optional)">
                                 <flux:file-upload.dropzone
                                     heading="Drop an image here or click to browse"
-                                    text="JPG, PNG, GIF up to 2MB"
+                                    :text="'JPG, PNG, GIF, WEBP, HEIC up to ' . $maxImageSizeLabel"
                                 />
                             </flux:file-upload>
                             @if($responseImage)
@@ -691,7 +696,7 @@ new class extends Component {
                                                 <flux:file-upload wire:model="archivedResponseImage" label="Image (optional)">
                                                     <flux:file-upload.dropzone
                                                         heading="Drop an image here or click to browse"
-                                                        text="JPG, PNG, GIF up to 2MB"
+                                                        :text="'JPG, PNG, GIF, WEBP, HEIC up to ' . $maxImageSizeLabel"
                                                     />
                                                 </flux:file-upload>
                                                 @if($archivedResponseImage)
@@ -964,7 +969,7 @@ new class extends Component {
             <flux:file-upload wire:model="editImage" label="Replace Image">
                 <flux:file-upload.dropzone
                     heading="Drop an image here or click to browse"
-                    text="JPG, PNG, GIF up to 2MB"
+                    :text="'JPG, PNG, GIF, WEBP, HEIC up to ' . $maxImageSizeLabel"
                 />
             </flux:file-upload>
             @if($editImage)

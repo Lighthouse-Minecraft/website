@@ -56,6 +56,11 @@ new class extends Component
 <div>
     <div class="flex items-center justify-between mb-6">
         <flux:heading size="xl">Discussions</flux:heading>
+        <flux:tooltip content="Coming Soon...">
+            <div>
+                <flux:button variant="primary" disabled>Create Discussion</flux:button>
+            </div>
+        </flux:tooltip>
     </div>
 
     {{-- Active Topics --}}

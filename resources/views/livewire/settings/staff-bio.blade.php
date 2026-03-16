@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\SiteConfig;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Volt\Component;
@@ -37,7 +38,7 @@ new class extends Component {
             'lastInitial' => 'nullable|string|max:1|alpha',
             'bio' => 'nullable|string|max:2000',
             'phone' => ['nullable', 'string', 'min:10', 'max:30', 'regex:/^[\d\s\-\(\)\+\.]+$/'],
-            'photo' => 'nullable|image|max:2048',
+            'photo' => 'nullable|mimes:jpg,jpeg,png,gif,webp,heic,heif|max:' . SiteConfig::getValue('max_image_size_kb', '2048'),
         ]);
 
         $user = Auth::user();
@@ -63,6 +64,20 @@ new class extends Component {
         $this->photo = null;
 
         Flux::toast('Staff bio updated successfully.', 'Saved', variant: 'success');
+    }
+
+    public function removeUploadedPhoto(): void
+    {
+        $this->photo = null;
+    }
+
+    public function with(): array
+    {
+        $maxKb = (int) SiteConfig::getValue('max_image_size_kb', '2048');
+
+        return [
+            'maxImageSizeLabel' => $maxKb >= 1024 ? round($maxKb / 1024) . 'MB' : $maxKb . 'KB',
+        ];
     }
 
     public function removePhoto(): void
@@ -92,12 +107,23 @@ new class extends Component {
                 </div>
             @endif
 
-            <flux:field>
-                <flux:label>Photo</flux:label>
-                <flux:description>Upload a photo of yourself. Max 2MB. JPG or PNG recommended.</flux:description>
-                <input type="file" wire:model="photo" accept="image/*" class="block w-full text-sm text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-950 dark:file:text-blue-300" />
-                @error('photo') <flux:error>{{ $message }}</flux:error> @enderror
-            </flux:field>
+            <flux:file-upload wire:model="photo" label="Photo">
+                <flux:file-upload.dropzone
+                    heading="Drop a photo or click to browse"
+                    :text="'JPG, PNG, GIF, WEBP, HEIC up to ' . $maxImageSizeLabel"
+                />
+            </flux:file-upload>
+            @if($photo)
+                <flux:file-item
+                    :heading="$photo->getClientOriginalName()"
+                    :image="$photo->temporaryUrl()"
+                    :size="$photo->getSize()"
+                >
+                    <x-slot name="actions">
+                        <flux:file-item.remove wire:click="removeUploadedPhoto" />
+                    </x-slot>
+                </flux:file-item>
+            @endif
 
             <flux:input wire:model="firstName" label="First Name" placeholder="e.g. Jonathan" />
             <flux:input wire:model="lastInitial" label="Last Initial" maxlength="1" placeholder="e.g. Z" />
