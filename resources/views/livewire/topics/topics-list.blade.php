@@ -63,7 +63,7 @@ new class extends Component
         <div class="rounded-lg border border-zinc-200 dark:border-zinc-700 divide-y divide-zinc-200 dark:divide-zinc-700">
             @foreach($this->topics as $topic)
                 <a
-                    href="{{ route('topics.show', $topic) }}"
+                    href="{{ route('discussions.show', $topic) }}"
                     wire:navigate
                     wire:key="topic-{{ $topic->id }}"
                     class="block p-4 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition"
@@ -112,7 +112,7 @@ new class extends Component
                 <div class="mt-3 rounded-lg border border-zinc-200 dark:border-zinc-700 divide-y divide-zinc-200 dark:divide-zinc-700 opacity-75">
                     @foreach($this->archivedTopics as $topic)
                         <a
-                            href="{{ route('topics.show', $topic) }}"
+                            href="{{ route('discussions.show', $topic) }}"
                             wire:navigate
                             wire:key="archived-{{ $topic->id }}"
                             class="block p-4 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition"

@@ -244,7 +244,7 @@ new class extends Component {
         Flux::modal('create-topic-modal')->close();
         Flux::modal('view-report-modal')->close();
 
-        $this->redirect(route('topics.show', $thread), navigate: true);
+        $this->redirect(route('discussions.show', $thread), navigate: true);
     }
 
     private function resetForm(): void
@@ -566,7 +566,7 @@ new class extends Component {
                         @else
                             <div class="space-y-2">
                                 @foreach($this->reportTopics as $topic)
-                                    <a href="{{ route('topics.show', $topic) }}" wire:key="report-topic-{{ $topic->id }}" class="flex items-center justify-between rounded border border-zinc-200 dark:border-zinc-700 p-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition">
+                                    <a href="{{ route('discussions.show', $topic) }}" wire:key="report-topic-{{ $topic->id }}" class="flex items-center justify-between rounded border border-zinc-200 dark:border-zinc-700 p-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition">
                                         <div>
                                             <flux:text class="font-medium text-sm">{{ $topic->subject }}</flux:text>
                                             <flux:text variant="subtle" class="text-xs">{{ $topic->created_at->diffForHumans() }}</flux:text>

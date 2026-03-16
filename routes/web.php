@@ -88,9 +88,13 @@ Volt::route('/community-stories', 'community-stories.index')
     ->name('community-stories.index')
     ->middleware(['auth', 'verified', 'ensure-dob', 'can:view-community-stories']);
 
-// Topic System Routes
-Route::prefix('topics')
-    ->name('topics.')
+// Legacy redirects for old /topics URLs
+Route::redirect('/topics', '/discussions', 301);
+Route::get('/topics/{any}', fn (string $any) => redirect("/discussions/{$any}", 301))->where('any', '.*');
+
+// Discussion System Routes
+Route::prefix('discussions')
+    ->name('discussions.')
     ->middleware(['auth'])
     ->group(function () {
         Volt::route('/', 'topics.topics-list')->name('index');

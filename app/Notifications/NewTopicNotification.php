@@ -57,7 +57,7 @@ class NewTopicNotification extends Notification implements ShouldQueue
             ->subject('New Discussion Topic: '.$this->thread->subject)
             ->markdown('mail.new-topic', [
                 'thread' => $this->thread,
-                'topicUrl' => route('topics.show', $this->thread),
+                'topicUrl' => route('discussions.show', $this->thread),
             ]);
     }
 
@@ -66,7 +66,7 @@ class NewTopicNotification extends Notification implements ShouldQueue
         return [
             'title' => 'New Discussion Topic',
             'message' => $this->thread->subject,
-            'url' => route('topics.show', $this->thread),
+            'url' => route('discussions.show', $this->thread),
         ];
     }
 
@@ -74,6 +74,6 @@ class NewTopicNotification extends Notification implements ShouldQueue
     {
         $creatorName = $this->thread->createdBy?->name ?? 'Unknown';
 
-        return "**New Discussion Topic:** {$this->thread->subject}\n**Started by:** {$creatorName}\n".route('topics.show', $this->thread);
+        return "**New Discussion Topic:** {$this->thread->subject}\n**Started by:** {$creatorName}\n".route('discussions.show', $this->thread);
     }
 }
