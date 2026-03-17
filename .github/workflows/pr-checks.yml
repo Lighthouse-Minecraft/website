@@ -89,7 +89,7 @@ jobs:
           php-version: '8.4'
           extensions: mbstring, intl, pcntl, pdo_pgsql
           coverage: pcov
-          ini-values: memory_limit=512M
+          ini-values: memory_limit=1G
 
       - name: Authenticate to FluxUI Composer repo
         run: |
