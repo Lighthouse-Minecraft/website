@@ -50,10 +50,6 @@ class DenyApplication
     {
         $systemUser = User::where('email', 'system@lighthouse.local')->first();
 
-        if (! $systemUser) {
-            return;
-        }
-
         $applicantName = $application->user->name ?? 'Applicant';
 
         $body = "**Application denied.** {$applicantName}'s application has been denied.";
@@ -76,12 +72,14 @@ class DenyApplication
                 continue;
             }
 
-            Message::create([
-                'thread_id' => $thread->id,
-                'user_id' => $systemUser->id,
-                'body' => $body,
-                'kind' => MessageKind::System,
-            ]);
+            if ($systemUser) {
+                Message::create([
+                    'thread_id' => $thread->id,
+                    'user_id' => $systemUser->id,
+                    'body' => $body,
+                    'kind' => MessageKind::System,
+                ]);
+            }
 
             $thread->update([
                 'status' => ThreadStatus::Closed,

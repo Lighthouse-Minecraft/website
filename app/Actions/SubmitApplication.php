@@ -155,7 +155,7 @@ class SubmitApplication
         // Last promotion date from activity log
         $lastPromotion = ActivityLog::where('subject_type', User::class)
             ->where('subject_id', $applicant->id)
-            ->whereIn('action', ['user_promoted', 'user_promoted_to_admin'])
+            ->where('action', 'user_promoted')
             ->orderBy('created_at', 'desc')
             ->first();
 

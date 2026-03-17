@@ -43,7 +43,8 @@ new class extends Component {
         }
 
         // Auto-transition from Submitted to Under Review when first staff member views
-        if ($this->staffApplication->status === ApplicationStatus::Submitted) {
+        if ($this->staffApplication->status === ApplicationStatus::Submitted
+            && Auth::user()->can('update', $this->staffApplication)) {
             UpdateApplicationStatus::run(
                 $this->staffApplication,
                 ApplicationStatus::UnderReview,
@@ -86,12 +87,16 @@ new class extends Component {
     public function moveToBackgroundCheck(): void
     {
         $this->authorize('update', $this->staffApplication);
+        $bgStatus = $this->resolveBackgroundCheckStatus($this->bgCheckStatus);
+        if (! $bgStatus) {
+            return;
+        }
         UpdateApplicationStatus::run(
             $this->staffApplication,
             ApplicationStatus::BackgroundCheck,
             Auth::user(),
             $this->bgCheckNotes ?: null,
-            BackgroundCheckStatus::from($this->bgCheckStatus),
+            $bgStatus,
         );
         $this->bgCheckNotes = '';
         Flux::modal('bg-check-modal')->close();
@@ -102,10 +107,14 @@ new class extends Component {
     public function updateBackgroundCheck(): void
     {
         $this->authorize('update', $this->staffApplication);
+        $bgStatus = $this->resolveBackgroundCheckStatus($this->updateBgCheckStatus);
+        if (! $bgStatus) {
+            return;
+        }
         UpdateBackgroundCheck::run(
             $this->staffApplication,
             Auth::user(),
-            BackgroundCheckStatus::from($this->updateBgCheckStatus),
+            $bgStatus,
             $this->updateBgCheckNotes ?: null,
         );
         $this->updateBgCheckNotes = '';
@@ -117,10 +126,14 @@ new class extends Component {
     public function approve(): void
     {
         $this->authorize('update', $this->staffApplication);
+        $bgStatus = $this->resolveBackgroundCheckStatus($this->approveBgCheck);
+        if (! $bgStatus) {
+            return;
+        }
         ApproveApplication::run(
             $this->staffApplication,
             Auth::user(),
-            BackgroundCheckStatus::from($this->approveBgCheck),
+            $bgStatus,
             $this->approveConditions ?: null,
             $this->approveNotes ?: null,
         );
@@ -172,6 +185,17 @@ new class extends Component {
         $this->newNote = '';
         $this->refreshApplication();
         Flux::toast('Note added.', 'Success', variant: 'success');
+    }
+
+    private function resolveBackgroundCheckStatus(string $value): ?BackgroundCheckStatus
+    {
+        $status = BackgroundCheckStatus::tryFrom($value);
+
+        if (! $status) {
+            $this->addError('bgCheckStatus', 'Invalid background check status.');
+        }
+
+        return $status;
     }
 
     private function refreshApplication(): void

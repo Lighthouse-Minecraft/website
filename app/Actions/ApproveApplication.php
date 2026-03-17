@@ -63,10 +63,6 @@ class ApproveApplication
     {
         $systemUser = User::where('email', 'system@lighthouse.local')->first();
 
-        if (! $systemUser) {
-            return;
-        }
-
         $applicantName = $application->user->name ?? 'Applicant';
         $positionTitle = $application->staffPosition->title ?? 'position';
 
@@ -90,12 +86,14 @@ class ApproveApplication
                 continue;
             }
 
-            Message::create([
-                'thread_id' => $thread->id,
-                'user_id' => $systemUser->id,
-                'body' => $body,
-                'kind' => MessageKind::System,
-            ]);
+            if ($systemUser) {
+                Message::create([
+                    'thread_id' => $thread->id,
+                    'user_id' => $systemUser->id,
+                    'body' => $body,
+                    'kind' => MessageKind::System,
+                ]);
+            }
 
             $thread->update([
                 'status' => ThreadStatus::Closed,

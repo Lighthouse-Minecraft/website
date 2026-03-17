@@ -11,6 +11,7 @@ use App\Models\StaffApplication;
 use App\Models\User;
 use App\Notifications\ApplicationStatusChangedNotification;
 use App\Services\TicketNotificationService;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdateApplicationStatus
@@ -24,36 +25,38 @@ class UpdateApplicationStatus
         ?string $notes = null,
         ?BackgroundCheckStatus $bgCheck = null,
     ): void {
-        $updates = [
-            'status' => $newStatus,
-            'reviewed_by' => $reviewer->id,
-        ];
+        DB::transaction(function () use ($application, $newStatus, $reviewer, $notes, $bgCheck) {
+            $updates = [
+                'status' => $newStatus,
+                'reviewed_by' => $reviewer->id,
+            ];
 
-        $timestamp = now()->format('Y-m-d H:i');
-        $newNote = "[{$timestamp}] [{$newStatus->label()}] {$reviewer->name}".($notes ? ": {$notes}" : '');
-        $updates['reviewer_notes'] = $application->reviewer_notes
-            ? $application->reviewer_notes."\n".$newNote
-            : $newNote;
+            $timestamp = now()->format('Y-m-d H:i');
+            $newNote = "[{$timestamp}] [{$newStatus->label()}] {$reviewer->name}".($notes ? ": {$notes}" : '');
+            $updates['reviewer_notes'] = $application->reviewer_notes
+                ? $application->reviewer_notes."\n".$newNote
+                : $newNote;
 
-        if ($newStatus === ApplicationStatus::BackgroundCheck) {
-            $updates['background_check_status'] = $bgCheck ?? BackgroundCheckStatus::Pending;
-        }
+            if ($newStatus === ApplicationStatus::BackgroundCheck) {
+                $updates['background_check_status'] = $bgCheck ?? BackgroundCheckStatus::Pending;
+            }
 
-        $application->update($updates);
+            $application->update($updates);
 
-        // Create interview discussion when moving to Interview
-        if ($newStatus === ApplicationStatus::Interview) {
-            $this->createInterviewDiscussion($application, $reviewer);
-        }
+            // Create interview discussion when moving to Interview (skip if already exists)
+            if ($newStatus === ApplicationStatus::Interview && ! $application->interview_thread_id) {
+                $this->createInterviewDiscussion($application, $reviewer);
+            }
 
-        // Post system message in staff review discussion
-        $this->postStatusChangeMessage($application, $newStatus, $reviewer);
+            // Post system message in staff review discussion
+            $this->postStatusChangeMessage($application, $newStatus, $reviewer);
 
-        RecordActivity::run(
-            $application,
-            'application_status_changed',
-            "Status changed to {$newStatus->label()} by {$reviewer->name}.",
-        );
+            RecordActivity::run(
+                $application,
+                'application_status_changed',
+                "Status changed to {$newStatus->label()} by {$reviewer->name}.",
+            );
+        });
 
         $notificationService = app(TicketNotificationService::class);
         $notificationService->send(
