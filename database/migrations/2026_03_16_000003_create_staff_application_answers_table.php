@@ -14,6 +14,8 @@ return new class extends Migration
             $table->foreignId('application_question_id')->constrained('application_questions')->cascadeOnDelete();
             $table->text('answer')->nullable();
             $table->timestamps();
+
+            $table->unique(['staff_application_id', 'application_question_id']);
         });
     }
 

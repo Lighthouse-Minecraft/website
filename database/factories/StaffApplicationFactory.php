@@ -4,6 +4,8 @@ namespace Database\Factories;
 
 use App\Enums\ApplicationStatus;
 use App\Models\StaffApplication;
+use App\Models\StaffPosition;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class StaffApplicationFactory extends Factory
@@ -13,6 +15,8 @@ class StaffApplicationFactory extends Factory
     public function definition(): array
     {
         return [
+            'user_id' => User::factory(),
+            'staff_position_id' => StaffPosition::factory(),
             'status' => ApplicationStatus::Submitted,
             'reviewer_notes' => null,
             'background_check_status' => null,

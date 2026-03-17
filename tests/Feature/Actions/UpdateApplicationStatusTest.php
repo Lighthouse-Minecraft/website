@@ -84,5 +84,5 @@ it('adds applicant as participant in interview discussion', function () {
 
     $thread = $application->fresh()->interviewThread;
     expect($thread)->not->toBeNull()
-        ->and($thread->participants->pluck('id'))->toContain($user->id);
+        ->and($thread->participants->pluck('user_id'))->toContain($user->id);
 });

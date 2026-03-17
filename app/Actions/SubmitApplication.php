@@ -15,6 +15,7 @@ use App\Notifications\ApplicationStatusChangedNotification;
 use App\Notifications\NewStaffApplicationNotification;
 use App\Services\TicketNotificationService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class SubmitApplication
@@ -56,6 +57,9 @@ class SubmitApplication
 
             // Create staff-only review discussion
             $systemUser = User::where('email', 'system@lighthouse.local')->first();
+            if (! $systemUser) {
+                Log::warning('System user (system@lighthouse.local) not found — skipping review discussion creation for application #'.$application->id);
+            }
             if ($systemUser) {
                 $reviewUrl = route('admin.applications.show', $application);
                 $profileUrl = route('profile.show', $applicant);

@@ -78,6 +78,7 @@ new class extends Component {
 
     public function openEditModal(int $id): void
     {
+        $this->authorize('manage-application-questions');
         $question = ApplicationQuestion::findOrFail($id);
         $this->editingId = $id;
         $this->editQuestionText = $question->question_text;

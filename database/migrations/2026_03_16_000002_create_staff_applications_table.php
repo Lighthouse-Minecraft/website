@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('staff_applications', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
-            $table->foreignId('staff_position_id')->constrained('staff_positions')->cascadeOnDelete();
+            $table->foreignId('staff_position_id')->nullable()->constrained('staff_positions')->nullOnDelete();
             $table->string('status');
             $table->text('reviewer_notes')->nullable();
             $table->string('background_check_status')->nullable();

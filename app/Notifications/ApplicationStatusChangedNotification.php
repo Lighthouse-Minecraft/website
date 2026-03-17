@@ -21,7 +21,9 @@ class ApplicationStatusChangedNotification extends Notification implements Shoul
     public function __construct(
         public StaffApplication $application,
         public ApplicationStatus $status,
-    ) {}
+    ) {
+        $this->application->loadMissing('staffPosition');
+    }
 
     public function setChannels(array $channels, ?string $pushoverKey = null): self
     {

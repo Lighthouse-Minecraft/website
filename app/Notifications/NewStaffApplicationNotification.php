@@ -19,7 +19,9 @@ class NewStaffApplicationNotification extends Notification implements ShouldQueu
 
     public function __construct(
         public StaffApplication $application,
-    ) {}
+    ) {
+        $this->application->loadMissing(['user', 'staffPosition']);
+    }
 
     public function setChannels(array $channels, ?string $pushoverKey = null): self
     {

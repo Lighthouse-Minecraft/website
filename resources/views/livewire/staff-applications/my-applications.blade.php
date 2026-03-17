@@ -5,6 +5,11 @@ use Illuminate\Support\Facades\Auth;
 use Livewire\Volt\Component;
 
 new class extends Component {
+    public function mount(): void
+    {
+        abort_unless(Auth::check(), 403);
+    }
+
     public function getApplicationsProperty()
     {
         return Auth::user()->staffApplications()
