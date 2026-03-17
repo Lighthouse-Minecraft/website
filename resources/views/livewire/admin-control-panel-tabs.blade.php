@@ -59,6 +59,7 @@ new class extends Component {
             || $user->can('viewAny', \App\Models\StaffPosition::class)
             || $user->can('viewAny', \App\Models\BoardMember::class)
             || $user->can('manage-community-stories')
+            || $user->can('manage-application-questions')
         );
     }
 
@@ -104,6 +105,7 @@ new class extends Component {
                 $user?->can('viewAny', \App\Models\StaffPosition::class) => 'staff-position-manager',
                 $user?->can('viewAny', \App\Models\BoardMember::class) => 'board-member-manager',
                 $user?->can('manage-community-stories') => 'community-questions',
+                $user?->can('manage-application-questions') => 'application-questions',
                 default => 'page-manager',
             },
             'logs' => match (true) {
@@ -197,6 +199,9 @@ new class extends Component {
                 @can('manage-community-stories')
                     <flux:tab name="community-questions">Community Questions</flux:tab>
                 @endcan
+                @can('manage-application-questions')
+                    <flux:tab name="application-questions">App Questions</flux:tab>
+                @endcan
             </flux:tabs>
 
             <flux:tab.panel name="page-manager">
@@ -227,6 +232,11 @@ new class extends Component {
             <flux:tab.panel name="community-questions">
                 @can('manage-community-stories')
                     <livewire:admin-manage-community-questions-page />
+                @endcan
+            </flux:tab.panel>
+            <flux:tab.panel name="application-questions">
+                @can('manage-application-questions')
+                    <livewire:admin-manage-application-questions-page />
                 @endcan
             </flux:tab.panel>
         </flux:tab.group>
