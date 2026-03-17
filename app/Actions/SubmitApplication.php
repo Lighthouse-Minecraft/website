@@ -94,12 +94,14 @@ class SubmitApplication
                                 ->where('staff_rank', '>=', StaffRank::JrCrew->value);
                         });
                 })
+                    ->where('staff_rank', '!=', StaffRank::None->value)
                     ->where('id', '!=', $applicant->id)
                     ->where('id', '!=', $systemUser->id)
                     ->get();
 
                 // Also add admins
                 $admins = User::whereHas('roles', fn ($q) => $q->where('name', 'Admin'))
+                    ->where('id', '!=', $applicant->id)
                     ->where('id', '!=', $systemUser->id)
                     ->get();
 

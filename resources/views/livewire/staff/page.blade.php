@@ -329,15 +329,21 @@ new class extends Component {
                             @endif
                         @endif
 
-                        @if($selected->isAcceptingApplications())
-                            @can('create', \App\Models\StaffApplication::class)
-                                <div>
-                                    <flux:button href="{{ route('applications.apply', $selected) }}" variant="primary" icon="paper-airplane" wire:navigate>
-                                        Apply for this Position
-                                    </flux:button>
-                                </div>
-                            @endcan
-                        @endif
+                        @auth
+                            @if($selected->isAcceptingApplications())
+                                @can('create', \App\Models\StaffApplication::class)
+                                    <div>
+                                        <flux:button href="{{ route('applications.apply', $selected) }}" variant="primary" icon="paper-airplane" wire:navigate>
+                                            Apply for this Position
+                                        </flux:button>
+                                    </div>
+                                @else
+                                    <flux:text variant="subtle" class="text-sm italic">You are not eligible to apply at this time.</flux:text>
+                                @endcan
+                            @else
+                                <flux:text variant="subtle" class="text-sm italic">This position is not currently accepting applications.</flux:text>
+                            @endif
+                        @endauth
                     </flux:card>
                 @else
                     <flux:card>
