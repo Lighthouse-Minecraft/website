@@ -50,7 +50,7 @@ class ApplicationStatusChangedNotification extends Notification implements Shoul
 
     public function toMail(object $notifiable): MailMessage
     {
-        $position = $this->application->staffPosition->title;
+        $position = $this->application->staffPosition?->title ?? 'Unknown Position';
 
         $subject = match ($this->status) {
             ApplicationStatus::Submitted => "Application Received — {$position}",
@@ -80,7 +80,7 @@ class ApplicationStatusChangedNotification extends Notification implements Shoul
 
     public function toPushover(object $notifiable): array
     {
-        $position = $this->application->staffPosition->title;
+        $position = $this->application->staffPosition?->title ?? 'Unknown Position';
 
         return [
             'title' => "Application: {$this->status->label()}",

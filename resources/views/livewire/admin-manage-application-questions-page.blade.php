@@ -50,7 +50,8 @@ new class extends Component {
             'questionText' => 'required|string|min:5',
             'type' => 'required|string|in:' . implode(',', array_column(ApplicationQuestionType::cases(), 'value')),
             'category' => 'required|string|in:' . implode(',', array_column(ApplicationQuestionCategory::cases(), 'value')),
-            'staffPositionId' => 'nullable|exists:staff_positions,id',
+            'staffPositionId' => $this->category === 'position_specific' ? 'required|exists:staff_positions,id' : 'nullable|exists:staff_positions,id',
+            'selectOptionsInput' => $this->type === 'select' ? 'required|string' : 'nullable',
             'sortOrder' => 'required|integer|min:0',
         ]);
 
@@ -99,7 +100,8 @@ new class extends Component {
             'editQuestionText' => 'required|string|min:5',
             'editType' => 'required|string|in:' . implode(',', array_column(ApplicationQuestionType::cases(), 'value')),
             'editCategory' => 'required|string|in:' . implode(',', array_column(ApplicationQuestionCategory::cases(), 'value')),
-            'editStaffPositionId' => 'nullable|exists:staff_positions,id',
+            'editStaffPositionId' => $this->editCategory === 'position_specific' ? 'required|exists:staff_positions,id' : 'nullable|exists:staff_positions,id',
+            'editSelectOptionsInput' => $this->editType === 'select' ? 'required|string' : 'nullable',
             'editSortOrder' => 'required|integer|min:0',
         ]);
 
@@ -178,8 +180,8 @@ new class extends Component {
                     </flux:table.cell>
                     <flux:table.cell>
                         <div class="flex gap-1">
-                            <flux:button variant="ghost" size="sm" icon="pencil" wire:click="openEditModal({{ $question->id }})" />
-                            <flux:button variant="ghost" size="sm" icon="trash" wire:click="deleteQuestion({{ $question->id }})" wire:confirm="Are you sure you want to delete this question?" />
+                            <flux:button variant="ghost" size="sm" icon="pencil" wire:click="openEditModal({{ $question->id }})" wire:loading.attr="disabled" wire:target="openEditModal({{ $question->id }})" />
+                            <flux:button variant="ghost" size="sm" icon="trash" wire:click="deleteQuestion({{ $question->id }})" wire:confirm="Are you sure you want to delete this question?" wire:loading.attr="disabled" wire:target="deleteQuestion({{ $question->id }})" />
                         </div>
                     </flux:table.cell>
                 </flux:table.row>
@@ -224,20 +226,22 @@ new class extends Component {
             </div>
             @if($category === 'position_specific')
                 <flux:field>
-                    <flux:label>Position</flux:label>
+                    <flux:label>Position <span class="text-red-500">*</span></flux:label>
                     <flux:select wire:model="staffPositionId">
                         <flux:select.option value="">Select a position...</flux:select.option>
                         @foreach($this->positions as $pos)
                             <flux:select.option value="{{ $pos->id }}">{{ $pos->title }} ({{ $pos->department->label() }})</flux:select.option>
                         @endforeach
                     </flux:select>
+                    <flux:error name="staffPositionId" />
                 </flux:field>
             @endif
             @if($type === 'select')
                 <flux:field>
-                    <flux:label>Dropdown Options</flux:label>
+                    <flux:label>Dropdown Options <span class="text-red-500">*</span></flux:label>
                     <flux:description>Comma-separated list of options</flux:description>
                     <flux:input wire:model="selectOptionsInput" placeholder="Option 1, Option 2, Option 3" />
+                    <flux:error name="selectOptionsInput" />
                 </flux:field>
             @endif
             <div class="grid grid-cols-2 gap-4">
@@ -285,20 +289,22 @@ new class extends Component {
             </div>
             @if($editCategory === 'position_specific')
                 <flux:field>
-                    <flux:label>Position</flux:label>
+                    <flux:label>Position <span class="text-red-500">*</span></flux:label>
                     <flux:select wire:model="editStaffPositionId">
                         <flux:select.option value="">Select a position...</flux:select.option>
                         @foreach($this->positions as $pos)
                             <flux:select.option value="{{ $pos->id }}">{{ $pos->title }} ({{ $pos->department->label() }})</flux:select.option>
                         @endforeach
                     </flux:select>
+                    <flux:error name="editStaffPositionId" />
                 </flux:field>
             @endif
             @if($editType === 'select')
                 <flux:field>
-                    <flux:label>Dropdown Options</flux:label>
+                    <flux:label>Dropdown Options <span class="text-red-500">*</span></flux:label>
                     <flux:description>Comma-separated list of options</flux:description>
                     <flux:input wire:model="editSelectOptionsInput" placeholder="Option 1, Option 2, Option 3" />
+                    <flux:error name="editSelectOptionsInput" />
                 </flux:field>
             @endif
             <div class="grid grid-cols-2 gap-4">

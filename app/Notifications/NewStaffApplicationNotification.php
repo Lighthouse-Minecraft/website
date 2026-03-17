@@ -48,8 +48,8 @@ class NewStaffApplicationNotification extends Notification implements ShouldQueu
 
     public function toMail(object $notifiable): MailMessage
     {
-        $applicant = $this->application->user->name;
-        $position = $this->application->staffPosition->title;
+        $applicant = $this->application->user?->name ?? 'Unknown Applicant';
+        $position = $this->application->staffPosition?->title ?? 'Unknown Position';
 
         return (new MailMessage)
             ->subject("New Staff Application: {$applicant} for {$position}")
@@ -61,8 +61,8 @@ class NewStaffApplicationNotification extends Notification implements ShouldQueu
 
     public function toPushover(object $notifiable): array
     {
-        $applicant = $this->application->user->name;
-        $position = $this->application->staffPosition->title;
+        $applicant = $this->application->user?->name ?? 'Unknown Applicant';
+        $position = $this->application->staffPosition?->title ?? 'Unknown Position';
 
         return [
             'title' => 'New Staff Application',
