@@ -16,9 +16,12 @@ use Illuminate\Support\Facades\Validator;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Url;
 use Livewire\Volt\Component;
+use Livewire\WithFileUploads;
 
 new class extends Component
 {
+    use WithFileUploads;
+
     public Thread $thread;
 
     #[Url]
@@ -27,6 +30,8 @@ new class extends Component
     public string $replyMessage = '';
 
     public bool $isInternalNote = false;
+
+    public $replyImage = null;
 
     public ?int $flaggingMessageId = null;
 
@@ -199,7 +204,12 @@ new class extends Component
      * @param bool $isInternal Whether this is an internal note
      * @return void
      */
-    private function processReply(string $body, bool $isInternal): void
+    public function removeReplyImage(): void
+    {
+        $this->replyImage = null;
+    }
+
+    private function processReply(string $body, bool $isInternal, $image = null): void
     {
         $this->authorize('reply', $this->thread);
 
@@ -219,6 +229,13 @@ new class extends Component
             'body' => $body,
             'kind' => $kind,
         ]);
+
+        if ($image) {
+            $imagePath = $image->store('message-images', config('filesystems.public_disk'));
+            if ($imagePath) {
+                $message->update(['image_path' => $imagePath]);
+            }
+        }
 
         // Add sender as participant (not viewer) if not already
         $existingParticipant = $this->thread->participants()
@@ -292,21 +309,29 @@ new class extends Component
      */
     public function sendReply(): void
     {
+        $maxKb = max(1, min(10240, (int) \App\Models\SiteConfig::getValue('max_image_size_kb', '2048')));
+
         $validator = Validator::make(
-            ['replyMessage' => $this->replyMessage],
-            ['replyMessage' => 'required|string|min:1']
+            ['replyMessage' => $this->replyMessage, 'replyImage' => $this->replyImage],
+            [
+                'replyMessage' => 'required_without:replyImage|nullable|string|min:1',
+                'replyImage' => 'nullable|mimes:jpg,jpeg,png,gif,webp,heic,heif|max:' . $maxKb,
+            ]
         );
 
         if ($validator->fails()) {
-            $this->addError('replyMessage', $validator->errors()->first('replyMessage'));
+            foreach ($validator->errors()->toArray() as $field => $messages) {
+                $this->addError($field, $messages[0]);
+            }
 
             return;
         }
 
-        $this->processReply($this->replyMessage, $this->isInternalNote);
+        $this->processReply($this->replyMessage ?? '', $this->isInternalNote, $this->replyImage);
 
         $this->replyMessage = '';
         $this->isInternalNote = false;
+        $this->replyImage = null;
 
         Flux::toast('Reply sent successfully!', variant: 'success');
 
@@ -330,7 +355,13 @@ new class extends Component
         }
 
         $oldStatus = $this->thread->status;
-        $this->thread->update(['status' => $status]);
+        $updateData = ['status' => $status];
+        if ($status === ThreadStatus::Closed) {
+            $updateData['closed_at'] = now();
+        } elseif ($oldStatus === ThreadStatus::Closed) {
+            $updateData['closed_at'] = null;
+        }
+        $this->thread->update($updateData);
 
         \App\Actions\RecordActivity::run(
             $this->thread,
@@ -442,12 +473,29 @@ new class extends Component
     {
         $this->authorize('close', $this->thread);
 
-        // If there's a reply message, send it first
-        if (! empty(trim($this->replyMessage))) {
-            $this->processReply($this->replyMessage, $this->isInternalNote);
+        // If there's a reply message or image, validate and send it first
+        if (! empty(trim($this->replyMessage)) || $this->replyImage) {
+            if ($this->replyImage) {
+                $maxKb = max(1, min(10240, (int) \App\Models\SiteConfig::getValue('max_image_size_kb', '2048')));
+                $validator = Validator::make(
+                    ['replyImage' => $this->replyImage],
+                    ['replyImage' => 'nullable|mimes:jpg,jpeg,png,gif,webp,heic,heif|max:' . $maxKb]
+                );
+
+                if ($validator->fails()) {
+                    foreach ($validator->errors()->toArray() as $field => $messages) {
+                        $this->addError($field, $messages[0]);
+                    }
+
+                    return;
+                }
+            }
+
+            $this->processReply($this->replyMessage, $this->isInternalNote, $this->replyImage);
 
             $this->replyMessage = '';
             $this->isInternalNote = false;
+            $this->replyImage = null;
         }
 
         $oldStatus = $this->thread->status;
@@ -456,7 +504,11 @@ new class extends Component
         $isStaff = auth()->user()->isAtLeastRank(\App\Enums\StaffRank::CrewMember);
         $newStatus = $isStaff ? ThreadStatus::Closed : ThreadStatus::Resolved;
 
-        $this->thread->update(['status' => $newStatus]);
+        $updateData = ['status' => $newStatus];
+        if ($newStatus === ThreadStatus::Closed) {
+            $updateData['closed_at'] = now();
+        }
+        $this->thread->update($updateData);
 
         $systemUser = User::where('email', 'system@lighthouse.local')->firstOrFail();
 
@@ -657,6 +709,7 @@ new class extends Component
                             <div class="prose prose-sm dark:prose-invert max-w-none [&_a]:text-blue-600 dark:[&_a]:text-blue-400 [&_a]:underline [&_a]:font-medium hover:[&_a]:text-blue-700 dark:hover:[&_a]:text-blue-300">
                                 {!! Str::markdown($message->body, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
                             </div>
+                            @include('livewire.partials.message-image', ['message' => $message])
                         </div>
                     </div>
                 </div>
@@ -673,6 +726,7 @@ new class extends Component
                             <div class="prose prose-sm dark:prose-invert max-w-none [&_a]:text-blue-600 dark:[&_a]:text-blue-400 [&_a]:underline [&_a]:font-medium hover:[&_a]:text-blue-700 dark:hover:[&_a]:text-blue-300">
                                 {!! Str::markdown($message->body, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
                             </div>
+                            @include('livewire.partials.message-image', ['message' => $message])
                         </div>
                     </div>
                 </div>
@@ -700,6 +754,7 @@ new class extends Component
                             <div class="prose prose-sm dark:prose-invert max-w-none [&_a]:text-blue-600 dark:[&_a]:text-blue-400 [&_a]:underline [&_a]:font-medium hover:[&_a]:text-blue-700 dark:hover:[&_a]:text-blue-300">
                                 {!! Str::markdown($message->body, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
                             </div>
+                            @include('livewire.partials.message-image', ['message' => $message])
                         </div>
 
                         {{-- Show flags for staff with viewFlagged permission --}}
@@ -757,6 +812,31 @@ new class extends Component
                 </x-slot>
             </flux:composer>
             <flux:error name="replyMessage" />
+
+            @php
+                $maxKb = (int) \App\Models\SiteConfig::getValue('max_image_size_kb', '2048');
+                $maxImageSizeLabel = $maxKb >= 1024 ? round($maxKb / 1024) . 'MB' : $maxKb . 'KB';
+            @endphp
+            <div class="mt-2">
+                <flux:file-upload wire:model="replyImage" label="Image (optional)">
+                    <flux:file-upload.dropzone
+                        heading="Drop an image here or click to browse"
+                        :text="'JPG, PNG, GIF, WEBP, HEIC up to ' . $maxImageSizeLabel"
+                    />
+                </flux:file-upload>
+                @if($replyImage)
+                    <flux:file-item
+                        :heading="$replyImage->getClientOriginalName()"
+                        :image="$replyImage->temporaryUrl()"
+                        :size="$replyImage->getSize()"
+                    >
+                        <x-slot name="actions">
+                            <flux:file-item.remove wire:click="removeReplyImage" />
+                        </x-slot>
+                    </flux:file-item>
+                @endif
+                <flux:error name="replyImage" />
+            </div>
         </form>
     @endif
     </div> {{-- end max-w-3xl chat container --}}

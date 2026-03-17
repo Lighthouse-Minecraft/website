@@ -62,6 +62,7 @@ class NewTopicReplyNotification extends Notification implements ShouldQueue
                 'thread' => $thread,
                 'fromName' => $this->message->user?->name ?? 'Unknown',
                 'messagePreview' => Str::limit($this->message->body, 100),
+                'hasImage' => (bool) $this->message->image_path,
                 'topicUrl' => route('discussions.show', $thread),
             ]);
     }

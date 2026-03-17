@@ -30,6 +30,8 @@ class Thread extends Model
         'topicable_type',
         'topicable_id',
         'is_locked',
+        'closed_at',
+        'locked_at',
     ];
 
     protected $casts = [
@@ -41,6 +43,8 @@ class Thread extends Model
         'has_open_flags' => 'boolean',
         'last_message_at' => 'datetime',
         'is_locked' => 'boolean',
+        'closed_at' => 'datetime',
+        'locked_at' => 'datetime',
     ];
 
     public function createdBy(): BelongsTo

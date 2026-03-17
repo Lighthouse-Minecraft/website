@@ -1,5 +1,5 @@
-<div class="flex aspect-square size-8 items-center justify-center rounded-md bg-accent-content text-accent-foreground">
-    <x-app-logo-icon class="size-5 fill-current text-white dark:text-black" />
+<div class="flex aspect-square size-8 items-center justify-center">
+    <img src="{{ asset('img/LighthouseMC_Logo.png') }}" alt="Lighthouse MC" class="size-8 rounded-md" />
 </div>
 
 @php
