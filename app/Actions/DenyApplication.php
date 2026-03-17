@@ -26,18 +26,16 @@ class DenyApplication
             'reviewed_by' => $reviewer->id,
         ];
 
-        if ($notes) {
-            $timestamp = now()->format('Y-m-d H:i');
-            $newNote = "[{$timestamp}] {$reviewer->name}: {$notes}";
-            $updates['reviewer_notes'] = $application->reviewer_notes
-                ? $application->reviewer_notes."\n".$newNote
-                : $newNote;
-        }
+        $timestamp = now()->format('Y-m-d H:i');
+        $newNote = "[{$timestamp}] [Denied] {$reviewer->name}".($notes ? ": {$notes}" : '');
+        $updates['reviewer_notes'] = $application->reviewer_notes
+            ? $application->reviewer_notes."\n".$newNote
+            : $newNote;
 
         $application->update($updates);
 
         // Close related discussions with system messages
-        $this->closeDiscussions($application);
+        $this->closeDiscussions($application, $notes);
 
         RecordActivity::run($application, 'application_denied', "Denied by {$reviewer->name}.");
 
@@ -48,7 +46,7 @@ class DenyApplication
         );
     }
 
-    private function closeDiscussions(StaffApplication $application): void
+    private function closeDiscussions(StaffApplication $application, ?string $notes): void
     {
         $systemUser = User::where('email', 'system@lighthouse.local')->first();
 
@@ -57,6 +55,14 @@ class DenyApplication
         }
 
         $applicantName = $application->user->name ?? 'Applicant';
+
+        $body = "**Application denied.** {$applicantName}'s application has been denied.";
+
+        if ($notes) {
+            $body .= "\n\n**Notes:** {$notes}";
+        }
+
+        $body .= "\n\nThis discussion is now closed.";
 
         $threadIds = array_filter([
             $application->staff_review_thread_id,
@@ -73,7 +79,7 @@ class DenyApplication
             Message::create([
                 'thread_id' => $thread->id,
                 'user_id' => $systemUser->id,
-                'body' => "**Application denied.** {$applicantName}'s application has been denied. This discussion is now closed.",
+                'body' => $body,
                 'kind' => MessageKind::System,
             ]);
 

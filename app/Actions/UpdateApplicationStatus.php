@@ -29,13 +29,11 @@ class UpdateApplicationStatus
             'reviewed_by' => $reviewer->id,
         ];
 
-        if ($notes) {
-            $timestamp = now()->format('Y-m-d H:i');
-            $newNote = "[{$timestamp}] {$reviewer->name}: {$notes}";
-            $updates['reviewer_notes'] = $application->reviewer_notes
-                ? $application->reviewer_notes."\n".$newNote
-                : $newNote;
-        }
+        $timestamp = now()->format('Y-m-d H:i');
+        $newNote = "[{$timestamp}] [{$newStatus->label()}] {$reviewer->name}".($notes ? ": {$notes}" : '');
+        $updates['reviewer_notes'] = $application->reviewer_notes
+            ? $application->reviewer_notes."\n".$newNote
+            : $newNote;
 
         if ($newStatus === ApplicationStatus::BackgroundCheck) {
             $updates['background_check_status'] = $bgCheck ?? BackgroundCheckStatus::Pending;
