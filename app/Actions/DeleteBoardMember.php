@@ -30,7 +30,7 @@ class DeleteBoardMember
         });
 
         if ($photoPath) {
-            Storage::disk('public')->delete($photoPath);
+            Storage::disk(config('filesystems.public_disk'))->delete($photoPath);
         }
     }
 }

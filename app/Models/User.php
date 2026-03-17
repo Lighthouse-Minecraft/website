@@ -368,7 +368,7 @@ class User extends Authenticatable // implements MustVerifyEmail
             return null;
         }
 
-        return asset('storage/'.$this->staff_photo_path);
+        return \App\Services\StorageService::publicUrl($this->staff_photo_path);
     }
 
     public function acknowledgedAnnouncements()
@@ -394,6 +394,16 @@ class User extends Authenticatable // implements MustVerifyEmail
     public function disciplineReports(): HasMany
     {
         return $this->hasMany(DisciplineReport::class, 'subject_user_id');
+    }
+
+    public function communityResponses(): HasMany
+    {
+        return $this->hasMany(CommunityResponse::class);
+    }
+
+    public function questionSuggestions(): HasMany
+    {
+        return $this->hasMany(QuestionSuggestion::class);
     }
 
     /**
@@ -604,7 +614,8 @@ class User extends Authenticatable // implements MustVerifyEmail
             function () {
                 // Fetch minimal ticket data in ONE query
                 $query = Thread::query()
-                    ->select('id', 'status', 'department', 'assigned_to_user_id', 'has_open_flags', 'is_flagged', 'last_message_at')
+                    ->where('type', \App\Enums\ThreadType::Ticket)
+                    ->select('id', 'type', 'status', 'department', 'assigned_to_user_id', 'has_open_flags', 'is_flagged', 'last_message_at')
                     ->with(['participants' => function ($q) {
                         $q->where('user_id', $this->id)
                             ->select('thread_id', 'user_id', 'is_viewer', 'last_read_at');

@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\CreateDisciplineReport;
+use App\Actions\CreateTopic;
 use App\Actions\PublishDisciplineReport;
 use App\Actions\UpdateDisciplineReport;
 use App\Enums\ReportLocation;
@@ -8,6 +9,7 @@ use App\Enums\ReportSeverity;
 use App\Enums\StaffRank;
 use App\Models\DisciplineReport;
 use App\Models\ReportCategory;
+use App\Models\Thread;
 use App\Models\User;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
@@ -37,6 +39,9 @@ new class extends Component {
     // Viewing state
     #[Locked]
     public ?int $viewingReportId = null;
+
+    // Topic creation state
+    public string $topicSubject = '';
 
     public function mount(User $user): void
     {
@@ -195,6 +200,51 @@ new class extends Component {
 
         $this->viewingReportId = $reportId;
         Flux::modal('view-report-modal')->show();
+    }
+
+    public function getReportTopicsProperty()
+    {
+        if (! $this->viewingReportId) {
+            return collect();
+        }
+
+        $report = DisciplineReport::find($this->viewingReportId);
+        if (! $report) {
+            return collect();
+        }
+
+        return $report->topics()
+            ->withCount('messages')
+            ->latest()
+            ->get()
+            ->filter(fn ($topic) => $topic->isVisibleTo(Auth::user()));
+    }
+
+    public function openCreateTopicModal(): void
+    {
+        $report = DisciplineReport::findOrFail($this->viewingReportId);
+        $this->authorize('createTopic', [Thread::class, $report]);
+
+        $this->topicSubject = '';
+        Flux::modal('create-topic-modal')->show();
+    }
+
+    public function startTopic(): void
+    {
+        $report = DisciplineReport::findOrFail($this->viewingReportId);
+        $this->authorize('createTopic', [Thread::class, $report]);
+
+        $this->validate([
+            'topicSubject' => 'required|string|min:3|max:255',
+        ]);
+
+        $thread = CreateTopic::run($report, Auth::user(), $this->topicSubject);
+
+        $this->topicSubject = '';
+        Flux::modal('create-topic-modal')->close();
+        Flux::modal('view-report-modal')->close();
+
+        $this->redirect(route('discussions.show', $thread), navigate: true);
     }
 
     private function resetForm(): void
@@ -497,7 +547,62 @@ new class extends Component {
                         <flux:text>{{ ($viewReport->published_at ?? $viewReport->created_at)->format('M j, Y g:i A') }}</flux:text>
                     </div>
                 @endif
+
+                {{-- Discussion Topics Section --}}
+                @if($viewReport->isPublished())
+                    <flux:separator variant="subtle" />
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <flux:text class="font-bold text-sm">Discussions</flux:text>
+                            @can('createTopic', [\App\Models\Thread::class, $viewReport])
+                                <flux:button size="xs" variant="primary" wire:click="openCreateTopicModal">
+                                    Start Discussion
+                                </flux:button>
+                            @endcan
+                        </div>
+
+                        @if($this->reportTopics->isEmpty())
+                            <flux:text variant="subtle" class="text-sm">No discussions yet.</flux:text>
+                        @else
+                            <div class="space-y-2">
+                                @foreach($this->reportTopics as $topic)
+                                    <a href="{{ route('discussions.show', $topic) }}" wire:key="report-topic-{{ $topic->id }}" class="flex items-center justify-between rounded border border-zinc-200 dark:border-zinc-700 p-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition">
+                                        <div>
+                                            <flux:text class="font-medium text-sm">{{ $topic->subject }}</flux:text>
+                                            <flux:text variant="subtle" class="text-xs">{{ $topic->created_at->diffForHumans() }}</flux:text>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            @if($topic->is_locked)
+                                                <flux:badge color="red" size="sm">Locked</flux:badge>
+                                            @endif
+                                            <flux:badge color="zinc" size="sm">{{ $topic->messages_count }} {{ Str::plural('message', $topic->messages_count) }}</flux:badge>
+                                        </div>
+                                    </a>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
+                @endif
             </div>
         @endif
+    </flux:modal>
+
+    {{-- Create Topic Modal --}}
+    <flux:modal name="create-topic-modal" class="w-full md:w-1/3">
+        <div class="space-y-4">
+            <flux:heading size="lg">Start Discussion</flux:heading>
+            <flux:text variant="subtle">Create a new discussion topic related to this report.</flux:text>
+
+            <flux:field>
+                <flux:label>Subject</flux:label>
+                <flux:input wire:model="topicSubject" placeholder="What would you like to discuss?" />
+                <flux:error name="topicSubject" />
+            </flux:field>
+
+            <div class="flex gap-2 justify-end">
+                <flux:button variant="ghost" x-on:click="$flux.modal('create-topic-modal').close()">Cancel</flux:button>
+                <flux:button wire:click="startTopic" variant="primary">Create Topic</flux:button>
+            </div>
+        </div>
     </flux:modal>
 </div>

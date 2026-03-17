@@ -45,12 +45,12 @@ new class extends Component {
             <livewire:note.editor :meeting="$meeting" :section_key="$departmentValue"/>
         </div>
     @else
-        <div class="block lg:flex w-full gap-4">
-            <div class="w-full lg:w-2/3">
+        <div class="block xl:flex w-full gap-4">
+            <div class="w-full xl:w-2/3 mb-4 xl:mb-0">
                 <livewire:note.editor :meeting="$meeting" :section_key="$departmentValue"/>
             </div>
 
-            <div class="w-full lg:w-1/3">
+            <div class="w-full xl:w-1/3">
                 <livewire:task.department-list :meeting="$meeting" :section_key="$departmentValue"/>
             </div>
         </div>

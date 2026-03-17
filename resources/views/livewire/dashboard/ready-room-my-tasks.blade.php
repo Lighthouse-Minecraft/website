@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\StaffDepartment;
 use App\Enums\TaskStatus;
 use App\Models\Task;
 use Livewire\Volt\Component;
@@ -19,26 +20,28 @@ new class extends Component {
     }
 }; ?>
 
-<div class="space-y-6">
-    <flux:heading size="lg">My Assigned Tasks</flux:heading>
+<flux:card>
+    <flux:heading class="mb-4">My Assigned Tasks</flux:heading>
 
     @if($this->tasksBySection->isEmpty())
-        <flux:card>
-            <div class="text-center py-8 text-gray-500 dark:text-gray-400">
-                <flux:icon name="clipboard-document-check" class="mx-auto h-12 w-12 mb-3" />
-                <p>No tasks assigned to you.</p>
-            </div>
-        </flux:card>
+        <div class="text-center py-6 text-gray-500 dark:text-gray-400">
+            <flux:icon name="clipboard-document-check" class="mx-auto h-10 w-10 mb-2" />
+            <flux:text variant="subtle" class="text-sm">No tasks assigned to you.</flux:text>
+        </div>
     @else
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="space-y-4">
             @foreach($this->tasksBySection as $section => $tasks)
-                <flux:card wire:key="task-section-{{ $section }}">
-                    <flux:heading class="mb-4">{{ ucfirst($section) }}</flux:heading>
-                    @foreach($tasks as $task)
-                        <livewire:task.show-task :task="$task" wire:key="my-task-{{ $task->id }}" />
-                    @endforeach
-                </flux:card>
+                <div wire:key="task-section-{{ $section }}">
+                    <flux:text class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">
+                        {{ StaffDepartment::tryFrom($section)?->label() ?? ucfirst($section) }}
+                    </flux:text>
+                    <div class="space-y-1">
+                        @foreach($tasks as $task)
+                            <livewire:task.show-task :task="$task" wire:key="my-task-{{ $task->id }}" />
+                        @endforeach
+                    </div>
+                </div>
             @endforeach
         </div>
     @endif
-</div>
+</flux:card>

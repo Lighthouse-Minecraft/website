@@ -78,6 +78,29 @@ Route::prefix('tickets')
         Volt::route('/{thread}', 'ready-room.tickets.view-ticket')->name('show');
     });
 
+// Discipline Report Routes
+Volt::route('/reports/{report}', 'reports.view-report')
+    ->name('reports.show')
+    ->middleware(['auth']);
+
+// Community Stories
+Volt::route('/community-stories', 'community-stories.index')
+    ->name('community-stories.index')
+    ->middleware(['auth', 'verified', 'ensure-dob', 'can:view-community-stories']);
+
+// Legacy redirects for old /topics URLs
+Route::redirect('/topics', '/discussions', 301);
+Route::get('/topics/{any}', fn (string $any) => redirect("/discussions/{$any}", 301))->where('any', '.*');
+
+// Discussion System Routes
+Route::prefix('discussions')
+    ->name('discussions.')
+    ->middleware(['auth'])
+    ->group(function () {
+        Volt::route('/', 'topics.topics-list')->name('index');
+        Volt::route('/{thread}', 'topics.view-topic')->name('show');
+    });
+
 Route::prefix('meetings')
     ->name('meeting.')
     ->controller(App\Http\Controllers\MeetingController::class)

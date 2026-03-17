@@ -1,32 +1,28 @@
 <?php
 
-use App\Models\Meeting;
 use Livewire\Volt\Component;
 
 new class extends Component {
     public $department;
-    public Meeting $meeting;
 
     public function mount($department)
     {
         $this->department = $department;
-        $this->meeting = new Meeting();
     }
 }; ?>
 
-<div>
-    {{-- <flux:heading size="lg" class="mb-4">Department: {{ ucfirst($department) }}</flux:heading> --}}
-
-    <div class="w-full block md:flex">
-        <div class="w-full md:w-1/3 lg:w-1/4">
+<div class="space-y-6">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div>
             <livewire:dashboard.ready-room-upcoming-meetings />
         </div>
-        <div class="w-full md:w-2/3 lg:w-3/4">
-            <livewire:task.department-list :section_key="$department" :meeting="$meeting" />
+        <div class="max-h-[32rem] overflow-y-auto">
+            <livewire:task.department-list :section_key="$department" :meeting="null" />
+        </div>
+        <div>
+            <livewire:dashboard.ready-room-department-tickets :department="$department" />
         </div>
     </div>
 
-    <div class="mt-6">
-        <livewire:meeting.notes-display :section-key="$department" />
-    </div>
+    <livewire:meeting.notes-display :section-key="$department" />
 </div>

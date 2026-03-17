@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\MeetingStatus;
 use App\Enums\MeetingType;
+use App\Enums\StaffRank;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -31,7 +32,7 @@ class Meeting extends Model
         ];
     }
 
-    public function startMeeting(): void
+    public function startMeeting(?int $starterId = null): void
     {
         if ($this->status !== MeetingStatus::Pending) {
             throw new \Exception('Meeting cannot be started unless it is pending.');
@@ -41,12 +42,22 @@ class Meeting extends Model
         $this->start_time = now();
         $this->save();
 
-        // Auto-add the person who starts the meeting as an attendee
-        if (Auth::check()) {
-            $this->attendees()->syncWithoutDetaching([
-                Auth::id() => ['added_at' => now()],
-            ]);
+        $starterId = $starterId ?? Auth::id();
+
+        // Seed attendance records for all active staff
+        $staffUserIds = User::where('staff_rank', '>=', StaffRank::JrCrew->value)
+            ->pluck('id');
+
+        $now = now();
+        $records = [];
+        foreach ($staffUserIds as $userId) {
+            $records[$userId] = [
+                'added_at' => $now,
+                'attended' => $starterId !== null && $userId === $starterId,
+            ];
         }
+
+        $this->attendees()->syncWithoutDetaching($records);
     }
 
     public function endMeeting(): void
@@ -80,7 +91,7 @@ class Meeting extends Model
     public function attendees(): BelongsToMany
     {
         return $this->belongsToMany(User::class)
-            ->withPivot('added_at')
+            ->withPivot('added_at', 'attended')
             ->withTimestamps()
             ->orderBy('meeting_user.added_at');
     }
@@ -93,6 +104,11 @@ class Meeting extends Model
     public function reports(): HasMany
     {
         return $this->hasMany(MeetingReport::class);
+    }
+
+    public function archivedTasks(): HasMany
+    {
+        return $this->hasMany(Task::class, 'archived_meeting_id');
     }
 
     public function isStaffMeeting(): bool

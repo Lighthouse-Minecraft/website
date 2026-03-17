@@ -85,6 +85,14 @@
                         </div>
                     </flux:card>
                 </div>
+
+                @can('view-community-stories')
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mt-4">
+                        <div class="md:col-span-2">
+                            <livewire:dashboard.community-question-widget />
+                        </div>
+                    </div>
+                @endcan
             @else
                 <livewire:dashboard.in-brig-card />
             @endcan

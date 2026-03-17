@@ -17,11 +17,21 @@ class Message extends Model
         'user_id',
         'body',
         'kind',
+        'image_path',
+        'image_was_purged',
     ];
 
     protected $casts = [
         'kind' => MessageKind::class,
+        'image_was_purged' => 'boolean',
     ];
+
+    public function imageUrl(): ?string
+    {
+        return $this->image_path
+            ? \App\Services\StorageService::publicUrl($this->image_path)
+            : null;
+    }
 
     public function thread(): BelongsTo
     {

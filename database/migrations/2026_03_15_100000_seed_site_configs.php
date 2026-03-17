@@ -1,13 +1,11 @@
 <?php
 
-namespace Database\Seeders;
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\DB;
 
-use App\Models\SiteConfig;
-use Illuminate\Database\Seeder;
-
-class SiteConfigSeeder extends Seeder
+return new class extends Migration
 {
-    public function run(): void
+    public function up(): void
     {
         $configs = [
             [
@@ -17,7 +15,7 @@ class SiteConfigSeeder extends Seeder
             ],
             [
                 'key' => 'ai_meeting_notes_prompt',
-                'value' => config('lighthouse.ai.meeting_notes_system_prompt'),
+                'value' => config('lighthouse.ai.meeting_notes_system_prompt', ''),
                 'description' => 'System prompt for AI meeting notes summarization.',
             ],
             [
@@ -48,10 +46,30 @@ class SiteConfigSeeder extends Seeder
         ];
 
         foreach ($configs as $config) {
-            SiteConfig::firstOrCreate(
-                ['key' => $config['key']],
-                ['value' => $config['value'], 'description' => $config['description']]
-            );
+            DB::table('site_configs')->insertOrIgnore([
+                'key' => $config['key'],
+                'value' => $config['value'],
+                'description' => $config['description'],
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
         }
     }
-}
+
+    public function down(): void
+    {
+        // Only delete rows this migration actually inserted (not pre-existing ones).
+        // The migration timestamp serves as a lower bound — rows created before it were not ours.
+        $migrationDate = '2026-03-15 00:00:00';
+
+        DB::table('site_configs')->whereIn('key', [
+            'registration_question',
+            'ai_meeting_notes_prompt',
+            'donation_goal',
+            'donation_current_month_amount',
+            'donation_current_month_name',
+            'donation_last_month_amount',
+            'donation_last_month_name',
+        ])->where('created_at', '>=', $migrationDate)->delete();
+    }
+};

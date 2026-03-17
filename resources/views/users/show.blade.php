@@ -7,6 +7,12 @@
         <livewire:users.registration-answer-card :user="$user" />
     </div>
 
+    @can('view-community-stories')
+        <div class="my-6">
+            <livewire:users.community-stories-card :user="$user" />
+        </div>
+    @endcan
+
     @can('viewActivityLog', $user)
         <div class="w-full my-6 flex justify-end">
             <flux:modal.trigger name="activity-log-modal">

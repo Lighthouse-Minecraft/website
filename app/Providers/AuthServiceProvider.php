@@ -24,6 +24,8 @@ class AuthServiceProvider extends ServiceProvider
         \App\Models\ReportCategory::class => \App\Policies\ReportCategoryPolicy::class,
         \App\Models\StaffPosition::class => \App\Policies\StaffPositionPolicy::class,
         \App\Models\BoardMember::class => \App\Policies\BoardMemberPolicy::class,
+        \App\Models\CommunityQuestion::class => \App\Policies\CommunityQuestionPolicy::class,
+        \App\Models\CommunityResponse::class => \App\Policies\CommunityResponsePolicy::class,
     ];
 
     /**
@@ -164,6 +166,29 @@ class AuthServiceProvider extends ServiceProvider
 
         Gate::define('edit-docs', function ($user) {
             return $user->hasRole('Admin') || $user->isAtLeastRank(StaffRank::Officer);
+        });
+
+        Gate::define('lock-topic', function ($user) {
+            return $user->hasRole('Admin') || $user->isAtLeastRank(StaffRank::Officer);
+        });
+
+        // Community Questions & Stories
+        Gate::define('view-community-stories', function ($user) {
+            return ! $user->in_brig && $user->isAtLeastLevel(MembershipLevel::Traveler);
+        });
+
+        Gate::define('submit-community-response', function ($user) {
+            return ! $user->in_brig && $user->isAtLeastLevel(MembershipLevel::Traveler);
+        });
+
+        Gate::define('suggest-community-question', function ($user) {
+            return ! $user->in_brig && $user->isAtLeastLevel(MembershipLevel::Citizen);
+        });
+
+        Gate::define('manage-community-stories', function ($user) {
+            return $user->hasRole('Admin')
+                || ($user->isAtLeastRank(StaffRank::Officer) && $user->isInDepartment(StaffDepartment::Command))
+                || ($user->isAtLeastRank(StaffRank::JrCrew) && $user->isInDepartment(StaffDepartment::Chaplain));
         });
     }
 }

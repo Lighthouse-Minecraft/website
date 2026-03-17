@@ -55,8 +55,13 @@ class FlagMessage
 
             // Create system message in review ticket with flag details
             // Escape user-provided content to prevent XSS when rendered as Markdown
+            $originalUrl = $thread->type === ThreadType::Topic
+                ? "/discussions/{$thread->id}"
+                : "/tickets/{$thread->id}";
+            $originalLabel = $thread->type === ThreadType::Topic ? 'Original Discussion' : 'Original Ticket';
+
             $flagDetails = "**Flagged Message Review Request**\n\n";
-            $flagDetails .= "\n**Original Ticket:** [".e($thread->subject)."](/tickets/{$thread->id})\n\n";
+            $flagDetails .= "\n**{$originalLabel}:** [".e($thread->subject)."]({$originalUrl})\n\n";
             $flagDetails .= "**Flagged Message ID:** {$message->id}\n\n";
             $flagDetails .= '**Flagged By:** ['.e($flaggingUser->name)."](/profile/{$flaggingUser->id})\n\n";
             $flagDetails .= '**Timestamp:** '.now()->format('M j, Y g:i A')."\n\n";
@@ -72,6 +77,9 @@ class FlagMessage
 
             // Link the flag to the review ticket
             $flag->update(['flag_review_ticket_id' => $reviewTicket->id]);
+
+            // Add the flagging user as a participant so they can follow the resolution
+            $reviewTicket->addParticipant($flaggingUser);
 
             // Record activity
             RecordActivity::run($thread, 'message_flagged', "Message flagged by {$flaggingUser->name}");

@@ -54,4 +54,19 @@ class MessageFactory extends Factory
             'user_id' => $user->id,
         ]);
     }
+
+    public function withImage(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'image_path' => 'message-images/test-image.jpg',
+        ]);
+    }
+
+    public function purgedImage(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'image_path' => null,
+            'image_was_purged' => true,
+        ]);
+    }
 }

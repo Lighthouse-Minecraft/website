@@ -40,6 +40,18 @@
                         >
                             Tickets
                         </flux:navlist.item>
+
+                        @php $topicUnread = \App\Models\Thread::unreadCountFor(auth()->user(), \App\Enums\ThreadType::Topic); @endphp
+                        <flux:navlist.item
+                            icon="chat-bubble-left-right"
+                            :href="route('discussions.index')"
+                            :current="request()->routeIs('discussions.*')"
+                            wire:navigate
+                            :badge="$topicUnread ?: null"
+                            badge:color="red"
+                        >
+                            Discussions
+                        </flux:navlist.item>
                     @endauth
 
                     @can('view-parent-portal')
@@ -57,6 +69,9 @@
                 <flux:navlist.group heading="Community" class="grid">
                     <flux:navlist.item icon="user-group" :href="route('staff.index')" :current="request()->routeIs('staff.index')" wire:navigate>Our Team</flux:navlist.item>
                     <flux:navlist.item icon="newspaper" :href="route('community-updates.index')" :current="request()->routeIs('community-updates.index')" wire:navigate>Community Updates</flux:navlist.item>
+                    @can('view-community-stories')
+                        <flux:navlist.item icon="chat-bubble-bottom-center-text" :href="route('community-stories.index')" :current="request()->routeIs('community-stories.*')" wire:navigate>Community Stories</flux:navlist.item>
+                    @endcan
                     <flux:navlist.item icon="book-open" :href="route('library.books.index')" :current="request()->routeIs('library.books.*') || request()->routeIs('library.guides.*')" wire:navigate>Help</flux:navlist.item>
                 </flux:navlist.group>
 

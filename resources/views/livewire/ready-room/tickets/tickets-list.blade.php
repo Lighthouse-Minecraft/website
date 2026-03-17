@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\ThreadType;
 use App\Models\Thread;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Url;
@@ -27,6 +28,7 @@ new class extends Component
         $query = Thread::with(['createdBy', 'assignedTo.minecraftAccounts', 'assignedTo.discordAccounts', 'participants' => function ($q) use ($user) {
             $q->where('user_id', $user->id);
         }])
+            ->where('type', ThreadType::Ticket)
             ->orderBy('last_message_at', 'desc');
 
         // Handle filter-specific visibility

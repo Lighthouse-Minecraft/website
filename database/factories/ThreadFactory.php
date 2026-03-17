@@ -92,4 +92,20 @@ class ThreadFactory extends Factory
             'has_open_flags' => true,
         ]);
     }
+
+    public function topic(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'type' => ThreadType::Topic,
+            'subtype' => null,
+            'department' => null,
+        ]);
+    }
+
+    public function locked(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_locked' => true,
+        ]);
+    }
 }
