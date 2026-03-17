@@ -160,6 +160,45 @@ new class extends Component {
             </flux:card>
         </div>
 
+        {{-- Applicant Background (snapshotted at submission) --}}
+        <flux:card class="mb-6">
+            <flux:heading size="sm" class="mb-3">Applicant Background <flux:text variant="subtle" class="text-xs">(at time of application)</flux:text></flux:heading>
+            <div class="grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-3">
+                @if($staffApplication->applicant_age)
+                    <div>
+                        <flux:text variant="subtle" class="text-xs">Age</flux:text>
+                        <flux:text class="font-medium">{{ $staffApplication->applicant_age }}</flux:text>
+                    </div>
+                @endif
+                @if($staffApplication->applicant_member_since)
+                    <div>
+                        <flux:text variant="subtle" class="text-xs">Member Since</flux:text>
+                        <flux:text class="font-medium">{{ $staffApplication->applicant_member_since->format('M j, Y') }} ({{ $staffApplication->applicant_member_since->diffForHumans(null, true) }})</flux:text>
+                    </div>
+                @endif
+                @if($staffApplication->applicant_membership_level)
+                    <div>
+                        <flux:text variant="subtle" class="text-xs">Membership Level</flux:text>
+                        <flux:text class="font-medium">{{ $staffApplication->applicant_membership_level }}</flux:text>
+                    </div>
+                @endif
+                @if($staffApplication->applicant_membership_level_since)
+                    <div>
+                        <flux:text variant="subtle" class="text-xs">At Current Level Since</flux:text>
+                        <flux:text class="font-medium">{{ $staffApplication->applicant_membership_level_since->format('M j, Y') }} ({{ $staffApplication->applicant_membership_level_since->diffForHumans(null, true) }})</flux:text>
+                    </div>
+                @endif
+                <div>
+                    <flux:text variant="subtle" class="text-xs">Reports</flux:text>
+                    <flux:text class="font-medium">{{ $staffApplication->applicant_report_count }}</flux:text>
+                </div>
+                <div>
+                    <flux:text variant="subtle" class="text-xs">Commendations</flux:text>
+                    <flux:text class="font-medium">{{ $staffApplication->applicant_commendation_count }}</flux:text>
+                </div>
+            </div>
+        </flux:card>
+
         {{-- Status --}}
         <flux:card class="mb-6">
             <div class="flex items-center justify-between">

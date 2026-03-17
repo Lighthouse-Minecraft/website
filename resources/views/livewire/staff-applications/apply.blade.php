@@ -4,6 +4,7 @@ use App\Actions\SubmitApplication;
 use App\Enums\ApplicationQuestionCategory;
 use App\Enums\ApplicationQuestionType;
 use App\Models\ApplicationQuestion;
+use App\Models\SiteConfig;
 use App\Models\StaffApplication;
 use App\Models\StaffPosition;
 use App\Enums\StaffRank;
@@ -15,6 +16,8 @@ new class extends Component {
     public StaffPosition $staffPosition;
     public array $answers = [];
     public array $questions = [];
+    public bool $infoAcknowledged = false;
+    public string $infoContent = '';
 
     public function mount(StaffPosition $staffPosition): void
     {
@@ -25,6 +28,7 @@ new class extends Component {
         }
 
         $this->staffPosition = $staffPosition;
+        $this->infoContent = SiteConfig::getValue('application_info_page', '') ?? '';
         $this->loadQuestions();
         $this->prepopulateAnswers();
     }
@@ -78,6 +82,11 @@ new class extends Component {
         }
     }
 
+    public function acknowledgeInfo(): void
+    {
+        $this->infoAcknowledged = true;
+    }
+
     public function submit(): void
     {
         $this->authorize('create', StaffApplication::class);
@@ -106,6 +115,7 @@ new class extends Component {
     <div class="max-w-3xl px-4 py-8 mx-auto">
         <flux:heading size="2xl" class="mb-2">Apply for Position</flux:heading>
 
+        {{-- Position Info Card (always visible) --}}
         <flux:card class="mb-6">
             <div class="space-y-2">
                 <flux:heading size="lg">{{ $staffPosition->title }}</flux:heading>
@@ -131,47 +141,64 @@ new class extends Component {
             </div>
         </flux:card>
 
-        <form wire:submit="submit" class="space-y-6">
-            @foreach($questions as $question)
-                <flux:field wire:key="question-{{ $question['id'] }}">
-                    <flux:label>{{ $question['question_text'] }} <span class="text-red-500">*</span></flux:label>
-
-                    @if($question['type'] === 'short_text')
-                        <flux:input wire:model="answers.{{ $question['id'] }}" />
-                    @elseif($question['type'] === 'long_text')
-                        <flux:textarea wire:model="answers.{{ $question['id'] }}" rows="4" />
-                    @elseif($question['type'] === 'yes_no')
-                        <div class="flex gap-4">
-                            <label class="flex items-center gap-2">
-                                <input type="radio" wire:model="answers.{{ $question['id'] }}" value="Yes" class="text-blue-600" />
-                                <span>Yes</span>
-                            </label>
-                            <label class="flex items-center gap-2">
-                                <input type="radio" wire:model="answers.{{ $question['id'] }}" value="No" class="text-blue-600" />
-                                <span>No</span>
-                            </label>
-                        </div>
-                    @elseif($question['type'] === 'select')
-                        <flux:select wire:model="answers.{{ $question['id'] }}">
-                            <flux:select.option value="">Select an option...</flux:select.option>
-                            @foreach($question['select_options'] ?? [] as $option)
-                                <flux:select.option value="{{ $option }}">{{ $option }}</flux:select.option>
-                            @endforeach
-                        </flux:select>
-                    @endif
-
-                    <flux:error name="answers.{{ $question['id'] }}" />
-                </flux:field>
-            @endforeach
-
-            @if(count($questions) > 0)
-                <div class="flex justify-end gap-3">
-                    <flux:button href="{{ route('staff.index') }}" variant="ghost" wire:navigate>Cancel</flux:button>
-                    <flux:button type="submit" variant="primary" icon="paper-airplane">Submit Application</flux:button>
-                </div>
-            @else
-                <flux:text variant="subtle" class="py-8 text-center">No application questions have been configured for this position type yet. Please check back later.</flux:text>
+        @if(! $infoAcknowledged)
+            {{-- Pre-Application Info Screen --}}
+            @if($infoContent)
+                <flux:card class="mb-6">
+                    <div class="prose prose-sm dark:prose-invert max-w-none">
+                        {!! Str::markdown($infoContent) !!}
+                    </div>
+                </flux:card>
             @endif
-        </form>
+
+            <div class="flex justify-end gap-3">
+                <flux:button href="{{ route('staff.index') }}" variant="ghost" wire:navigate>Cancel</flux:button>
+                <flux:button wire:click="acknowledgeInfo" variant="primary" icon="arrow-right">Continue</flux:button>
+            </div>
+        @else
+            {{-- Application Form --}}
+            <form wire:submit="submit" class="space-y-6">
+                @foreach($questions as $question)
+                    <flux:field wire:key="question-{{ $question['id'] }}">
+                        <flux:label>{{ $question['question_text'] }} <span class="text-red-500">*</span></flux:label>
+
+                        @if($question['type'] === 'short_text')
+                            <flux:input wire:model="answers.{{ $question['id'] }}" />
+                        @elseif($question['type'] === 'long_text')
+                            <flux:textarea wire:model="answers.{{ $question['id'] }}" rows="4" />
+                        @elseif($question['type'] === 'yes_no')
+                            <div class="flex gap-4">
+                                <label class="flex items-center gap-2">
+                                    <input type="radio" wire:model="answers.{{ $question['id'] }}" value="Yes" class="text-blue-600" />
+                                    <span>Yes</span>
+                                </label>
+                                <label class="flex items-center gap-2">
+                                    <input type="radio" wire:model="answers.{{ $question['id'] }}" value="No" class="text-blue-600" />
+                                    <span>No</span>
+                                </label>
+                            </div>
+                        @elseif($question['type'] === 'select')
+                            <flux:select wire:model="answers.{{ $question['id'] }}">
+                                <flux:select.option value="">Select an option...</flux:select.option>
+                                @foreach($question['select_options'] ?? [] as $option)
+                                    <flux:select.option value="{{ $option }}">{{ $option }}</flux:select.option>
+                                @endforeach
+                            </flux:select>
+                        @endif
+
+                        <flux:error name="answers.{{ $question['id'] }}" />
+                    </flux:field>
+                @endforeach
+
+                @if(count($questions) > 0)
+                    <div class="flex justify-end gap-3">
+                        <flux:button href="{{ route('staff.index') }}" variant="ghost" wire:navigate>Cancel</flux:button>
+                        <flux:button type="submit" variant="primary" icon="paper-airplane">Submit Application</flux:button>
+                    </div>
+                @else
+                    <flux:text variant="subtle" class="py-8 text-center">No application questions have been configured for this position type yet. Please check back later.</flux:text>
+                @endif
+            </form>
+        @endif
     </div>
 </section>

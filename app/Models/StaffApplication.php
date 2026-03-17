@@ -23,6 +23,12 @@ class StaffApplication extends Model
         'reviewed_by',
         'staff_review_thread_id',
         'interview_thread_id',
+        'applicant_age',
+        'applicant_member_since',
+        'applicant_membership_level',
+        'applicant_membership_level_since',
+        'applicant_report_count',
+        'applicant_commendation_count',
     ];
 
     protected function casts(): array
@@ -30,6 +36,8 @@ class StaffApplication extends Model
         return [
             'status' => ApplicationStatus::class,
             'background_check_status' => BackgroundCheckStatus::class,
+            'applicant_member_since' => 'date',
+            'applicant_membership_level_since' => 'date',
         ];
     }
 
