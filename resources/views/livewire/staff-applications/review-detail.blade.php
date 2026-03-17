@@ -4,6 +4,7 @@ use App\Actions\AddApplicationNote;
 use App\Actions\ApproveApplication;
 use App\Actions\DenyApplication;
 use App\Actions\UpdateApplicationStatus;
+use App\Actions\UpdateBackgroundCheck;
 use App\Enums\ApplicationStatus;
 use App\Enums\BackgroundCheckStatus;
 use App\Models\StaffApplication;
@@ -14,14 +15,19 @@ use Livewire\Volt\Component;
 new class extends Component {
     public StaffApplication $staffApplication;
 
-    public string $transitionNotes = '';
     public string $approveNotes = '';
     public string $approveBgCheck = 'passed';
     public string $approveConditions = '';
     public string $denyNotes = '';
     public string $bgCheckNotes = '';
     public string $bgCheckStatus = 'pending';
+    public string $updateBgCheckNotes = '';
+    public string $updateBgCheckStatus = 'pending';
     public string $newNote = '';
+    public string $startReviewNotes = '';
+    public string $scheduleInterviewNotes = '';
+    public string $approveNoBgNotes = '';
+    public string $approveNoBgConditions = '';
 
     public function mount(StaffApplication $staffApplication): void
     {
@@ -33,33 +39,46 @@ new class extends Component {
 
         if ($staffApplication->background_check_status) {
             $this->approveBgCheck = $staffApplication->background_check_status->value;
+            $this->updateBgCheckStatus = $staffApplication->background_check_status->value;
+        }
+
+        // Auto-transition from Submitted to Under Review when first staff member views
+        if ($this->staffApplication->status === ApplicationStatus::Submitted) {
+            UpdateApplicationStatus::run(
+                $this->staffApplication,
+                ApplicationStatus::UnderReview,
+                Auth::user(),
+            );
+            $this->refreshApplication();
         }
     }
 
-    public function moveToUnderReview(): void
+    public function confirmStartReview(): void
     {
         $this->authorize('update', $this->staffApplication);
         UpdateApplicationStatus::run(
             $this->staffApplication,
             ApplicationStatus::UnderReview,
             Auth::user(),
-            $this->transitionNotes ?: null,
+            $this->startReviewNotes ?: null,
         );
-        $this->transitionNotes = '';
+        $this->startReviewNotes = '';
+        Flux::modal('start-review-modal')->close();
         $this->refreshApplication();
         Flux::toast('Application moved to Under Review.', 'Updated', variant: 'success');
     }
 
-    public function moveToInterview(): void
+    public function confirmScheduleInterview(): void
     {
         $this->authorize('update', $this->staffApplication);
         UpdateApplicationStatus::run(
             $this->staffApplication,
             ApplicationStatus::Interview,
             Auth::user(),
-            $this->transitionNotes ?: null,
+            $this->scheduleInterviewNotes ?: null,
         );
-        $this->transitionNotes = '';
+        $this->scheduleInterviewNotes = '';
+        Flux::modal('schedule-interview-modal')->close();
         $this->refreshApplication();
         Flux::toast('Application moved to Interview. Discussion created.', 'Updated', variant: 'success');
     }
@@ -80,6 +99,21 @@ new class extends Component {
         Flux::toast('Application moved to Background Check.', 'Updated', variant: 'success');
     }
 
+    public function updateBackgroundCheck(): void
+    {
+        $this->authorize('update', $this->staffApplication);
+        UpdateBackgroundCheck::run(
+            $this->staffApplication,
+            Auth::user(),
+            BackgroundCheckStatus::from($this->updateBgCheckStatus),
+            $this->updateBgCheckNotes ?: null,
+        );
+        $this->updateBgCheckNotes = '';
+        Flux::modal('update-bg-check-modal')->close();
+        $this->refreshApplication();
+        Flux::toast('Background check status updated.', 'Updated', variant: 'success');
+    }
+
     public function approve(): void
     {
         $this->authorize('update', $this->staffApplication);
@@ -94,7 +128,24 @@ new class extends Component {
         $this->approveConditions = '';
         Flux::modal('approve-modal')->close();
         $this->refreshApplication();
-        Flux::toast('Application approved.', 'Approved', variant: 'success');
+        Flux::toast('Application approved. Applicant assigned to position.', 'Approved', variant: 'success');
+    }
+
+    public function approveWithoutBgCheck(): void
+    {
+        $this->authorize('update', $this->staffApplication);
+        ApproveApplication::run(
+            $this->staffApplication,
+            Auth::user(),
+            BackgroundCheckStatus::Waived,
+            $this->approveNoBgConditions ?: null,
+            $this->approveNoBgNotes ?: null,
+        );
+        $this->approveNoBgNotes = '';
+        $this->approveNoBgConditions = '';
+        Flux::modal('approve-no-bg-modal')->close();
+        $this->refreshApplication();
+        Flux::toast('Application approved without background check. Applicant assigned to position.', 'Approved', variant: 'success');
     }
 
     public function deny(): void
@@ -249,8 +300,9 @@ new class extends Component {
             @endforeach
         </div>
 
-        {{-- Staff Notes --}}
-        <flux:heading size="lg" class="mb-3">Staff Notes</flux:heading>
+        {{-- Staff Notes (staff-only) --}}
+        <flux:heading size="lg" class="mb-1">Staff Notes</flux:heading>
+        <flux:text variant="subtle" class="text-xs mb-3">These notes are only visible to staff reviewers and are not shown to the applicant.</flux:text>
         <div class="space-y-3 mb-4">
             @forelse($staffApplication->notes as $note)
                 <flux:card wire:key="note-{{ $note->id }}">
@@ -283,37 +335,41 @@ new class extends Component {
         @if(! $staffApplication->isTerminal())
             <flux:card>
                 <flux:heading size="md" class="mb-3">Actions</flux:heading>
-                <div class="space-y-3">
-                    @if($staffApplication->status === \App\Enums\ApplicationStatus::Submitted)
-                        <div class="flex gap-2 items-end">
-                            <flux:textarea wire:model="transitionNotes" rows="2" placeholder="Notes (optional)..." class="flex-1" />
-                            <div class="flex gap-2">
-                                <flux:button wire:click="moveToUnderReview" variant="primary" size="sm">Start Review</flux:button>
-                                <flux:button x-on:click="$flux.modal('deny-modal').show()" variant="danger" size="sm">Deny</flux:button>
-                            </div>
-                        </div>
-                    @elseif($staffApplication->status === \App\Enums\ApplicationStatus::UnderReview)
-                        <div class="flex gap-2 items-end">
-                            <flux:textarea wire:model="transitionNotes" rows="2" placeholder="Notes (optional)..." class="flex-1" />
-                            <div class="flex gap-2">
-                                <flux:button wire:click="moveToInterview" variant="primary" size="sm">Schedule Interview</flux:button>
-                                <flux:button x-on:click="$flux.modal('deny-modal').show()" variant="danger" size="sm">Deny</flux:button>
-                            </div>
-                        </div>
+                <div class="flex flex-wrap gap-2">
+                    @if($staffApplication->status === \App\Enums\ApplicationStatus::UnderReview)
+                        <flux:button x-on:click="$flux.modal('schedule-interview-modal').show()" variant="primary" size="sm" icon="calendar">Schedule Interview</flux:button>
+                        <flux:button x-on:click="$flux.modal('deny-modal').show()" variant="danger" size="sm">Deny</flux:button>
                     @elseif($staffApplication->status === \App\Enums\ApplicationStatus::Interview)
-                        <div class="flex gap-2">
-                            <flux:button x-on:click="$flux.modal('bg-check-modal').show()" variant="primary" size="sm">Move to Background Check</flux:button>
-                            <flux:button x-on:click="$flux.modal('deny-modal').show()" variant="danger" size="sm">Deny</flux:button>
-                        </div>
+                        <flux:button x-on:click="$flux.modal('bg-check-modal').show()" variant="primary" size="sm">Move to Background Check</flux:button>
+                        <flux:button x-on:click="$flux.modal('approve-no-bg-modal').show()" variant="primary" size="sm" icon="check-circle">Approve without Background Check</flux:button>
+                        @if($staffApplication->interview_thread_id)
+                            <flux:button href="{{ route('discussions.show', $staffApplication->interview_thread_id) }}" variant="ghost" size="sm" icon="chat-bubble-left-right" wire:navigate>Interview Discussion</flux:button>
+                        @endif
+                        <flux:button x-on:click="$flux.modal('deny-modal').show()" variant="danger" size="sm">Deny</flux:button>
                     @elseif($staffApplication->status === \App\Enums\ApplicationStatus::BackgroundCheck)
-                        <div class="flex gap-2">
-                            <flux:button x-on:click="$flux.modal('approve-modal').show()" variant="primary" size="sm">Approve</flux:button>
-                            <flux:button x-on:click="$flux.modal('deny-modal').show()" variant="danger" size="sm">Deny</flux:button>
-                        </div>
+                        <flux:button x-on:click="$flux.modal('update-bg-check-modal').show()" variant="ghost" size="sm" icon="arrow-path">Update Background Check</flux:button>
+                        <flux:button x-on:click="$flux.modal('approve-modal').show()" variant="primary" size="sm" icon="check-circle">Approve Application</flux:button>
+                        <flux:button x-on:click="$flux.modal('deny-modal').show()" variant="danger" size="sm">Deny</flux:button>
                     @endif
                 </div>
             </flux:card>
         @endif
+
+        {{-- Schedule Interview Modal --}}
+        <flux:modal name="schedule-interview-modal" class="w-full lg:w-1/3">
+            <flux:heading size="lg" class="mb-4">Schedule Interview</flux:heading>
+            <flux:text variant="subtle" class="mb-4">This will create an interview discussion and add the applicant and relevant staff as participants.</flux:text>
+            <form wire:submit="confirmScheduleInterview" class="space-y-4">
+                <flux:field>
+                    <flux:label>Notes (optional)</flux:label>
+                    <flux:textarea wire:model="scheduleInterviewNotes" rows="3" />
+                </flux:field>
+                <div class="flex justify-end gap-2">
+                    <flux:button variant="ghost" x-on:click="$flux.modal('schedule-interview-modal').close()">Cancel</flux:button>
+                    <flux:button type="submit" variant="primary">Schedule Interview</flux:button>
+                </div>
+            </form>
+        </flux:modal>
 
         {{-- Background Check Modal --}}
         <flux:modal name="bg-check-modal" class="w-full lg:w-1/3">
@@ -328,7 +384,7 @@ new class extends Component {
                     </flux:select>
                 </flux:field>
                 <flux:field>
-                    <flux:label>Notes</flux:label>
+                    <flux:label>Notes (optional)</flux:label>
                     <flux:textarea wire:model="bgCheckNotes" rows="3" />
                 </flux:field>
                 <div class="flex justify-end gap-2">
@@ -338,12 +394,37 @@ new class extends Component {
             </form>
         </flux:modal>
 
+        {{-- Update Background Check Modal --}}
+        <flux:modal name="update-bg-check-modal" class="w-full lg:w-1/3">
+            <flux:heading size="lg" class="mb-4">Update Background Check</flux:heading>
+            <flux:text variant="subtle" class="mb-4">Update the background check status without changing the application status.</flux:text>
+            <form wire:submit="updateBackgroundCheck" class="space-y-4">
+                <flux:field>
+                    <flux:label>Background Check Status</flux:label>
+                    <flux:select wire:model="updateBgCheckStatus">
+                        @foreach(BackgroundCheckStatus::cases() as $s)
+                            <flux:select.option value="{{ $s->value }}">{{ $s->label() }}</flux:select.option>
+                        @endforeach
+                    </flux:select>
+                </flux:field>
+                <flux:field>
+                    <flux:label>Notes (optional)</flux:label>
+                    <flux:textarea wire:model="updateBgCheckNotes" rows="3" />
+                </flux:field>
+                <div class="flex justify-end gap-2">
+                    <flux:button variant="ghost" x-on:click="$flux.modal('update-bg-check-modal').close()">Cancel</flux:button>
+                    <flux:button type="submit" variant="primary">Update</flux:button>
+                </div>
+            </form>
+        </flux:modal>
+
         {{-- Approve Modal --}}
         <flux:modal name="approve-modal" class="w-full lg:w-1/3">
             <flux:heading size="lg" class="mb-4">Approve Application</flux:heading>
+            <flux:text variant="subtle" class="mb-4">The applicant will be automatically assigned to the position upon approval.</flux:text>
             <form wire:submit="approve" class="space-y-4">
                 <flux:field>
-                    <flux:label>Background Check Status</flux:label>
+                    <flux:label>Final Background Check Status</flux:label>
                     <flux:select wire:model="approveBgCheck">
                         @foreach(BackgroundCheckStatus::cases() as $s)
                             <flux:select.option value="{{ $s->value }}">{{ $s->label() }}</flux:select.option>
@@ -351,17 +432,38 @@ new class extends Component {
                     </flux:select>
                 </flux:field>
                 <flux:field>
-                    <flux:label>Conditions</flux:label>
+                    <flux:label>Conditions (optional)</flux:label>
                     <flux:description>e.g. "30-day trial period"</flux:description>
                     <flux:textarea wire:model="approveConditions" rows="3" />
                 </flux:field>
                 <flux:field>
-                    <flux:label>Notes</flux:label>
+                    <flux:label>Notes (optional)</flux:label>
                     <flux:textarea wire:model="approveNotes" rows="3" />
                 </flux:field>
                 <div class="flex justify-end gap-2">
                     <flux:button variant="ghost" x-on:click="$flux.modal('approve-modal').close()">Cancel</flux:button>
-                    <flux:button type="submit" variant="primary">Approve</flux:button>
+                    <flux:button type="submit" variant="primary">Approve Application</flux:button>
+                </div>
+            </form>
+        </flux:modal>
+
+        {{-- Approve without Background Check Modal --}}
+        <flux:modal name="approve-no-bg-modal" class="w-full lg:w-1/3">
+            <flux:heading size="lg" class="mb-4">Approve without Background Check</flux:heading>
+            <flux:text variant="subtle" class="mb-4">The background check will be marked as waived. The applicant will be automatically assigned to the position.</flux:text>
+            <form wire:submit="approveWithoutBgCheck" class="space-y-4">
+                <flux:field>
+                    <flux:label>Conditions (optional)</flux:label>
+                    <flux:description>e.g. "30-day trial period"</flux:description>
+                    <flux:textarea wire:model="approveNoBgConditions" rows="3" />
+                </flux:field>
+                <flux:field>
+                    <flux:label>Notes (optional)</flux:label>
+                    <flux:textarea wire:model="approveNoBgNotes" rows="3" />
+                </flux:field>
+                <div class="flex justify-end gap-2">
+                    <flux:button variant="ghost" x-on:click="$flux.modal('approve-no-bg-modal').close()">Cancel</flux:button>
+                    <flux:button type="submit" variant="primary">Approve Application</flux:button>
                 </div>
             </form>
         </flux:modal>

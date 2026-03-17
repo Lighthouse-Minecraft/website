@@ -4,7 +4,11 @@ namespace App\Actions;
 
 use App\Enums\ApplicationStatus;
 use App\Enums\BackgroundCheckStatus;
+use App\Enums\MessageKind;
+use App\Enums\ThreadStatus;
+use App\Models\Message;
 use App\Models\StaffApplication;
+use App\Models\Thread;
 use App\Models\User;
 use App\Notifications\ApplicationStatusChangedNotification;
 use App\Services\TicketNotificationService;
@@ -21,6 +25,8 @@ class ApproveApplication
         ?string $conditions = null,
         ?string $notes = null,
     ): void {
+        $application->loadMissing(['staffPosition', 'user']);
+
         $updates = [
             'status' => ApplicationStatus::Approved,
             'background_check_status' => $bgCheck,
@@ -38,6 +44,14 @@ class ApproveApplication
 
         $application->update($updates);
 
+        // Auto-assign the applicant to the staff position
+        if ($application->staffPosition) {
+            $application->staffPosition->update(['user_id' => $application->user_id]);
+        }
+
+        // Close related discussions with system messages
+        $this->closeDiscussions($application);
+
         RecordActivity::run($application, 'application_approved', "Approved by {$reviewer->name}.");
 
         app(TicketNotificationService::class)->send(
@@ -45,5 +59,42 @@ class ApproveApplication
             new ApplicationStatusChangedNotification($application, ApplicationStatus::Approved),
             'staff_alerts',
         );
+    }
+
+    private function closeDiscussions(StaffApplication $application): void
+    {
+        $systemUser = User::where('email', 'system@lighthouse.local')->first();
+
+        if (! $systemUser) {
+            return;
+        }
+
+        $applicantName = $application->user->name ?? 'Applicant';
+        $positionTitle = $application->staffPosition->title ?? 'position';
+
+        $threadIds = array_filter([
+            $application->staff_review_thread_id,
+            $application->interview_thread_id,
+        ]);
+
+        foreach ($threadIds as $threadId) {
+            $thread = Thread::find($threadId);
+
+            if (! $thread || $thread->status === ThreadStatus::Closed) {
+                continue;
+            }
+
+            Message::create([
+                'thread_id' => $thread->id,
+                'user_id' => $systemUser->id,
+                'body' => "**Application approved.** {$applicantName} has been assigned to {$positionTitle}. This discussion is now closed.",
+                'kind' => MessageKind::System,
+            ]);
+
+            $thread->update([
+                'status' => ThreadStatus::Closed,
+                'is_locked' => true,
+            ]);
+        }
     }
 }

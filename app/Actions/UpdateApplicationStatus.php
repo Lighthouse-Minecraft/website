@@ -4,7 +4,9 @@ namespace App\Actions;
 
 use App\Enums\ApplicationStatus;
 use App\Enums\BackgroundCheckStatus;
+use App\Enums\MessageKind;
 use App\Enums\StaffRank;
+use App\Models\Message;
 use App\Models\StaffApplication;
 use App\Models\User;
 use App\Notifications\ApplicationStatusChangedNotification;
@@ -46,6 +48,9 @@ class UpdateApplicationStatus
             $this->createInterviewDiscussion($application, $reviewer);
         }
 
+        // Post system message in staff review discussion
+        $this->postStatusChangeMessage($application, $newStatus, $reviewer);
+
         RecordActivity::run(
             $application,
             'application_status_changed',
@@ -86,6 +91,7 @@ class UpdateApplicationStatus
                         ->where('staff_rank', '>=', StaffRank::JrCrew->value);
                 });
         })
+            ->where('staff_rank', '!=', StaffRank::None->value)
             ->where('id', '!=', $reviewer->id)
             ->where('id', '!=', $applicant->id)
             ->get();
@@ -100,5 +106,25 @@ class UpdateApplicationStatus
         }
 
         $application->update(['interview_thread_id' => $thread->id]);
+    }
+
+    private function postStatusChangeMessage(StaffApplication $application, ApplicationStatus $newStatus, User $reviewer): void
+    {
+        if (! $application->staff_review_thread_id) {
+            return;
+        }
+
+        $systemUser = User::where('email', 'system@lighthouse.local')->first();
+
+        if (! $systemUser) {
+            return;
+        }
+
+        Message::create([
+            'thread_id' => $application->staff_review_thread_id,
+            'user_id' => $systemUser->id,
+            'body' => "**Application status changed to {$newStatus->label()}** by {$reviewer->name}.",
+            'kind' => MessageKind::System,
+        ]);
     }
 }
