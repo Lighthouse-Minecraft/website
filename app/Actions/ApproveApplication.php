@@ -12,6 +12,7 @@ use App\Models\Thread;
 use App\Models\User;
 use App\Notifications\ApplicationStatusChangedNotification;
 use App\Services\TicketNotificationService;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ApproveApplication
@@ -40,17 +41,19 @@ class ApproveApplication
             ? $application->reviewer_notes."\n".$newNote
             : $newNote;
 
-        $application->update($updates);
+        DB::transaction(function () use ($application, $updates, $reviewer, $notes) {
+            $application->update($updates);
 
-        // Auto-assign the applicant to the staff position
-        if ($application->staffPosition) {
-            $application->staffPosition->update(['user_id' => $application->user_id]);
-        }
+            // Auto-assign the applicant to the staff position
+            if ($application->staffPosition) {
+                $application->staffPosition->update(['user_id' => $application->user_id]);
+            }
 
-        // Close related discussions with system messages
-        $this->closeDiscussions($application, $notes);
+            // Close related discussions with system messages
+            $this->closeDiscussions($application, $notes);
 
-        RecordActivity::run($application, 'application_approved', "Approved by {$reviewer->name}.");
+            RecordActivity::run($application, 'application_approved', "Approved by {$reviewer->name}.");
+        });
 
         app(TicketNotificationService::class)->send(
             $application->user,
