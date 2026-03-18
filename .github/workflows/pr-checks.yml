@@ -89,7 +89,7 @@ jobs:
           php-version: '8.4'
           extensions: mbstring, intl, pcntl, pdo_pgsql
           coverage: pcov
-          ini-values: memory_limit=1G
+          ini-values: memory_limit=2G
 
       - name: Authenticate to FluxUI Composer repo
         run: |
@@ -127,6 +127,10 @@ jobs:
       # Run Pest with coverage + clover. We allow this step to continue so we can post a PR comment,
       # then we re-fail the job at the end if it actually failed.
       # 1) Run Pest with JUnit output (keep your coverage flags)
+      - name: Set PHP memory limit globally
+        run: |
+          echo "memory_limit=2G" | sudo tee -a "$(php -r 'echo php_ini_loaded_file();')"
+
       - name: Run Pest with coverage
         id: pest
         continue-on-error: true
