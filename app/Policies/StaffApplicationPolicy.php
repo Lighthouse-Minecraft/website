@@ -24,7 +24,7 @@ class StaffApplicationPolicy
 
     public function viewAny(User $user): bool
     {
-        return false;
+        return $user->isAtLeastRank(StaffRank::CrewMember);
     }
 
     public function view(User $user, StaffApplication $application): bool

@@ -23,9 +23,17 @@ it('command officer can see review list', function () {
         ->assertStatus(200);
 });
 
-it('non-command staff cannot access review page', function () {
+it('crew member from any department can access review page', function () {
     $crew = crewEngineer();
     actingAs($crew);
+
+    Livewire::test('staff-applications.review-list')
+        ->assertStatus(200);
+});
+
+it('jr crew cannot access review page', function () {
+    $jrCrew = jrCrewEngineer();
+    actingAs($jrCrew);
 
     Livewire::test('staff-applications.review-list')
         ->assertStatus(403);
