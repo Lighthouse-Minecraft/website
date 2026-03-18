@@ -26,7 +26,15 @@ class ReadyRoomMeetingMinutes extends Component
                 'archivedTasks as archived_tasks_count' => fn ($q) => $q->where('status', TaskStatus::Archived),
             ])
             ->orderBy('scheduled_time', 'desc')
-            ->paginate($this->perPage);
+            ->paginate($this->perPage, ['*'], 'staff-page');
+    }
+
+    public function getOtherMeetingsProperty()
+    {
+        return Meeting::where('type', '!=', MeetingType::StaffMeeting)
+            ->where('status', MeetingStatus::Completed)
+            ->orderBy('scheduled_time', 'desc')
+            ->paginate($this->perPage, ['*'], 'other-page');
     }
 
     public function getViewingMeetingProperty()

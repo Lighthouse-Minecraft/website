@@ -46,7 +46,7 @@ test('expires the associated verification record when removing a verifying accou
     expect($verification->fresh()->status)->toBe('expired');
 });
 
-test('marks account cancelled if RCON server is offline', function () {
+test('marks account cancelling if RCON server is offline', function () {
     $account = MinecraftAccount::factory()->for($this->user)->verifying()->create();
 
     $this->mock(MinecraftRconService::class, function ($mock) {
@@ -60,7 +60,7 @@ test('marks account cancelled if RCON server is offline', function () {
         ->call('confirmRemoveVerifying', $account->id)
         ->call('removeVerifyingAccount');
 
-    expect($account->fresh()->status)->toBe(MinecraftAccountStatus::Cancelled);
+    expect($account->fresh()->status)->toBe(MinecraftAccountStatus::Cancelling);
 });
 
 test('cannot remove another users verifying account', function () {

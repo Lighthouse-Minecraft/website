@@ -16,12 +16,12 @@ class ExpireVerification
      * Expire a single pending verification.
      *
      * Marks the verification as expired, locates the associated MinecraftAccount
-     * in 'verifying' state, marks it 'cancelled' (so it enters the retry pool if
-     * RCON is unreachable), attempts synchronous whitelist removal, issues a
-     * best-effort kick on success, then deletes the account.
+     * in 'verifying' state, marks it 'cancelling' (so it enters the retry pool if
+     * RCON is unreachable), attempts synchronous whitelist removal, and on success
+     * transitions the account to 'cancelled' (final state where user can retry).
      *
-     * Returns true if the account was deleted, false if the account was not found
-     * or the server was unreachable (account stays cancelled for the retry pass).
+     * Returns true if the whitelist removal succeeded, false if the account was
+     * not found or the server was unreachable (account stays 'cancelling' for retry).
      */
     public function handle(MinecraftVerification $verification): bool
     {
@@ -36,9 +36,9 @@ class ExpireVerification
             return false;
         }
 
-        // Mark cancelled BEFORE attempting removal so it enters the retry pool
-        // if the process crashes or the server is unreachable.
-        $account->update(['status' => MinecraftAccountStatus::Cancelled]);
+        // Mark as 'cancelling' BEFORE attempting removal so it enters the retry
+        // pool if the process crashes or the server is unreachable.
+        $account->update(['status' => MinecraftAccountStatus::Cancelling]);
 
         $rcon = app(MinecraftRconService::class);
 
@@ -60,12 +60,14 @@ class ExpireVerification
                 ['action' => 'kick_expired_verification', 'verification_id' => $verification->id]
             );
 
-            // Account stays as Cancelled so the user can retry verification
-            // without re-entering their username.
+            // Whitelist removed — transition to final 'cancelled' state so the
+            // user can retry verification without re-entering their username.
+            $account->update(['status' => MinecraftAccountStatus::Cancelled]);
+
             return true;
         }
 
-        // Server offline — account stays cancelled for retryCancelledAccounts().
+        // Server offline — account stays 'cancelling' for retryCancelledAccounts().
         return false;
     }
 }

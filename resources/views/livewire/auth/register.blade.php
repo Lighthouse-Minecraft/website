@@ -82,10 +82,23 @@ new #[Layout('components.layouts.auth')] class extends Component {
 
     /**
      * Create the user account with appropriate age handling.
+     *
+     * Under-13 users are not stored per COPPA — only the parent is notified.
      */
     private function createAccount(): void
     {
         $age = \Carbon\Carbon::parse($this->date_of_birth)->age;
+
+        // COPPA: do not create an account for users under 13
+        if ($age < 13) {
+            Notification::route('mail', $this->parent_email)
+                ->notify(new ParentAccountNotification($this->name, requiresApproval: true));
+
+            $this->step = 3;
+
+            return;
+        }
+
         $questionText = SiteConfig::getValue('registration_question');
 
         $userData = [
@@ -104,12 +117,6 @@ new #[Layout('components.layouts.auth')] class extends Component {
             $userData['registration_answer'] = $this->registration_answer;
         }
 
-        if ($age < 13) {
-            $userData['parent_allows_site'] = false;
-            $userData['parent_allows_minecraft'] = false;
-            $userData['parent_allows_discord'] = false;
-        }
-
         $user = User::create($userData);
 
         event(new Registered($user));
@@ -121,32 +128,38 @@ new #[Layout('components.layouts.auth')] class extends Component {
         // Auto-link: check if this child's parent_email matches an existing parent account
         LinkParentByEmail::run($user);
 
-        // Send parent notification for minors
+        // Send parent notification for minors (13-16)
         if ($age < 17 && ! empty($this->parent_email)) {
-            $requiresApproval = $age < 13;
             Notification::route('mail', $this->parent_email)
-                ->notify(new ParentAccountNotification($user, $requiresApproval));
+                ->notify(new ParentAccountNotification($user, requiresApproval: false));
         }
 
-        // Under 13: put in brig, log in (brig card will restrict access)
-        if ($age < 13) {
-            PutUserInBrig::run(
-                target: $user,
-                admin: $user,
-                reason: 'Account pending parental approval (under 13).',
-                brigType: BrigType::ParentalPending,
-                notify: false,
-            );
-        }
-
-        // Log in all users and redirect to dashboard
+        // Log in and redirect to dashboard
         Auth::login($user);
         $this->redirect(route('dashboard', absolute: false), navigate: true);
     }
 }; ?>
 
 <div class="flex flex-col gap-6">
-    @if($step === 1)
+    @if($step === 3)
+        <x-auth-header title="Almost There!" description="" />
+
+        <flux:card class="text-center space-y-4">
+            <flux:icon name="envelope" class="w-12 h-12 text-green-500 mx-auto" />
+            <flux:heading size="lg">We've Emailed Your Parent</flux:heading>
+            <flux:text>
+                We've sent an email to your parent or guardian with instructions on how to create your account.
+                Please ask them to check their email and follow the link to set up your account through the Parent Portal.
+            </flux:text>
+            <flux:text variant="subtle" class="text-sm">
+                Once your parent creates their account, they will be able to set up your account for you.
+            </flux:text>
+        </flux:card>
+
+        <div class="space-x-1 text-center text-sm text-zinc-600 dark:text-zinc-400">
+            <x-text-link href="{{ route('login') }}">Return to Login</x-text-link>
+        </div>
+    @elseif($step === 1)
         <x-auth-header title="Create an account" description="Enter your details below to create your account" />
 
         <!-- Session Status -->

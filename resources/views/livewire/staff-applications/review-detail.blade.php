@@ -341,11 +341,13 @@ new class extends Component {
             @endforelse
         </div>
 
+        @can('update', $staffApplication)
         <form wire:submit="addNote" class="flex gap-2 mb-6">
             <flux:textarea wire:model="newNote" rows="2" placeholder="Add a staff note..." class="flex-1" />
             <flux:button type="submit" variant="primary" size="sm" icon="plus">Add</flux:button>
         </form>
         @error('newNote') <flux:text class="text-red-500 text-sm">{{ $message }}</flux:text> @enderror
+        @endcan
 
         {{-- Reviewer Notes History --}}
         @if($staffApplication->reviewer_notes)
@@ -356,6 +358,7 @@ new class extends Component {
         @endif
 
         {{-- Action Buttons --}}
+        @can('update', $staffApplication)
         @if(! $staffApplication->isTerminal())
             <flux:card>
                 <flux:heading size="md" class="mb-3">Actions</flux:heading>
@@ -378,7 +381,9 @@ new class extends Component {
                 </div>
             </flux:card>
         @endif
+        @endcan
 
+        @can('update', $staffApplication)
         {{-- Schedule Interview Modal --}}
         <flux:modal name="schedule-interview-modal" class="w-full lg:w-1/3">
             <flux:heading size="lg" class="mb-4">Schedule Interview</flux:heading>
@@ -506,5 +511,6 @@ new class extends Component {
                 </div>
             </form>
         </flux:modal>
+        @endcan
     </div>
 </section>

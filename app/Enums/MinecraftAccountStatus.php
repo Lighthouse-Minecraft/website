@@ -6,6 +6,7 @@ enum MinecraftAccountStatus: string
 {
     case Verifying = 'verifying';
     case Active = 'active';
+    case Cancelling = 'cancelling';
     case Cancelled = 'cancelled';
     case Banned = 'banned';
     case Removed = 'removed';
@@ -19,6 +20,7 @@ enum MinecraftAccountStatus: string
         return match ($this) {
             self::Verifying => 'Pending Verification',
             self::Active => 'Active',
+            self::Cancelling => 'Cancelling Verification',
             self::Cancelled => 'Cancelled',
             self::Banned => 'Banned',
             self::Removed => 'Removed',
@@ -34,6 +36,7 @@ enum MinecraftAccountStatus: string
         return match ($this) {
             self::Verifying => 'yellow',
             self::Active => 'green',
+            self::Cancelling => 'amber',
             self::Cancelled => 'red',
             self::Banned => 'orange',
             self::Removed => 'zinc',

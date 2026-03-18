@@ -12,7 +12,7 @@ it('admin can see review list', function () {
     $admin = loginAsAdmin();
 
     Livewire::test('staff-applications.review-list')
-        ->assertStatus(200);
+        ->assertOk();
 });
 
 it('command officer can see review list', function () {
@@ -20,13 +20,21 @@ it('command officer can see review list', function () {
     actingAs($officer);
 
     Livewire::test('staff-applications.review-list')
-        ->assertStatus(200);
+        ->assertOk();
 });
 
-it('non-command staff cannot access review page', function () {
+it('crew member from any department can access review page', function () {
     $crew = crewEngineer();
     actingAs($crew);
 
     Livewire::test('staff-applications.review-list')
-        ->assertStatus(403);
+        ->assertOk();
+});
+
+it('jr crew cannot access review page', function () {
+    $jrCrew = jrCrewEngineer();
+    actingAs($jrCrew);
+
+    Livewire::test('staff-applications.review-list')
+        ->assertForbidden();
 });

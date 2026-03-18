@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Actions\ExpireVerification;
+use App\Enums\MinecraftAccountStatus;
 use App\Models\MinecraftAccount;
 use App\Models\MinecraftVerification;
 use App\Services\MinecraftRconService;
@@ -30,7 +31,7 @@ class CleanupExpiredVerifications extends Command
     public function handle(): int
     {
         $this->handleExpiredVerifications();
-        $this->retryCancelledAccounts();
+        $this->retryCancellingAccounts();
 
         return Command::SUCCESS;
     }
@@ -70,28 +71,29 @@ class CleanupExpiredVerifications extends Command
     }
 
     /**
-     * Pass 2: Retry whitelist removal for accounts stuck in 'cancelled' state
+     * Pass 2: Retry whitelist removal for accounts stuck in 'cancelling' state
      * (i.e., server was offline during Pass 1 on a previous run).
      *
-     * Only targets accounts cancelled more than 5 minutes ago to avoid
-     * re-processing accounts that were just cancelled in Pass 1.
-     * Accounts are kept as Cancelled so users can retry verification.
+     * Only targets accounts in 'cancelling' state older than 5 minutes to avoid
+     * re-processing accounts that were just set to cancelling in Pass 1.
+     * On success, transitions the account to 'cancelled' (final state) so it
+     * exits the retry pool permanently.
      */
-    private function retryCancelledAccounts(): void
+    private function retryCancellingAccounts(): void
     {
-        $cancelledAccounts = MinecraftAccount::cancelled()
+        $cancellingAccounts = MinecraftAccount::cancelling()
             ->where('updated_at', '<', now()->subMinutes(5))
             ->with('user')
             ->get();
 
-        if ($cancelledAccounts->isEmpty()) {
+        if ($cancellingAccounts->isEmpty()) {
             return;
         }
 
         $rconService = app(MinecraftRconService::class);
         $cleaned = 0;
 
-        foreach ($cancelledAccounts as $account) {
+        foreach ($cancellingAccounts as $account) {
             $result = $rconService->executeCommand(
                 $account->whitelistRemoveCommand(),
                 'whitelist',
@@ -101,6 +103,7 @@ class CleanupExpiredVerifications extends Command
             );
 
             if ($result['success']) {
+                $account->update(['status' => MinecraftAccountStatus::Cancelled]);
                 $cleaned++;
                 $this->info("Retry succeeded — removed whitelist for {$account->username}.");
             } else {
@@ -109,7 +112,7 @@ class CleanupExpiredVerifications extends Command
         }
 
         if ($cleaned > 0) {
-            $this->info("Retry pass cleaned {$cleaned} cancelled account(s).");
+            $this->info("Retry pass cleaned {$cleaned} cancelling account(s).");
         }
     }
 }

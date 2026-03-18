@@ -18,6 +18,7 @@ new class extends Component {
     public array $questions = [];
     public bool $infoAcknowledged = false;
     public string $infoContent = '';
+    public bool $hasOpenApplication = false;
 
     public function mount(StaffPosition $staffPosition): void
     {
@@ -28,6 +29,15 @@ new class extends Component {
         }
 
         $this->staffPosition = $staffPosition;
+
+        $this->hasOpenApplication = StaffApplication::where('user_id', Auth::id())
+            ->pending()
+            ->exists();
+
+        if ($this->hasOpenApplication) {
+            return;
+        }
+
         $this->infoContent = SiteConfig::getValue('application_info_page', '') ?? '';
         $this->loadQuestions();
         $this->prepopulateAnswers();
@@ -115,6 +125,16 @@ new class extends Component {
     <div class="max-w-3xl px-4 py-8 mx-auto">
         <flux:heading size="2xl" class="mb-2">Apply for Position</flux:heading>
 
+        @if($hasOpenApplication)
+            <flux:card class="mb-6">
+                <div class="space-y-3">
+                    <flux:heading size="lg">Application Already in Progress</flux:heading>
+                    <flux:text>You already have an open application in progress. You may only have one active application at a time.</flux:text>
+                    <flux:button href="{{ route('applications.index') }}" variant="primary" wire:navigate>View My Applications</flux:button>
+                </div>
+            </flux:card>
+        @else
+
         {{-- Position Info Card (always visible) --}}
         <flux:card class="mb-6">
             <div class="space-y-2">
@@ -200,5 +220,7 @@ new class extends Component {
                 @endif
             </form>
         @endif
+
+        @endif {{-- end hasOpenApplication --}}
     </div>
 </section>

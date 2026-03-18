@@ -2,9 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Enums\BrigType;
 use App\Models\User;
-use App\Services\MinecraftRconService;
 use Livewire\Volt\Volt;
 
 uses()->group('parent-portal', 'auth');
@@ -41,9 +39,7 @@ it('shows parent email step for under 17', function () {
         ->assertSee('Parent/Guardian Email');
 });
 
-it('puts under 13 in brig with parental_pending type', function () {
-    $this->mock(MinecraftRconService::class)->shouldReceive('executeCommand')->andReturn(['success' => true, 'response' => null, 'error' => null]);
-
+it('does not create account for under 13 and shows parent notification step', function () {
     Volt::test('auth.register')
         ->set('name', 'Young User')
         ->set('email', 'young@example.com')
@@ -52,19 +48,18 @@ it('puts under 13 in brig with parental_pending type', function () {
         ->set('password_confirmation', 'password')
         ->call('register')
         ->set('parent_email', 'parent@example.com')
-        ->call('submitStep2');
+        ->call('submitStep2')
+        ->assertSet('step', 3)
+        ->assertSee('Emailed Your Parent');
 
+    // No account should be created for under-13 users (COPPA compliance)
     $user = User::where('email', 'young@example.com')->first();
-    expect($user)->not->toBeNull()
-        ->and($user->in_brig)->toBeTrue()
-        ->and($user->brig_type)->toBe(BrigType::ParentalPending)
-        ->and($user->parent_allows_site)->toBeFalse()
-        ->and($user->parent_email)->toBe('parent@example.com');
+    expect($user)->toBeNull();
+
+    $this->assertGuest();
 });
 
-it('logs in under 13 user but puts them in brig', function () {
-    $this->mock(MinecraftRconService::class)->shouldReceive('executeCommand')->andReturn(['success' => true, 'response' => null, 'error' => null]);
-
+it('does not log in under 13 user and does not redirect to dashboard', function () {
     Volt::test('auth.register')
         ->set('name', 'Young User')
         ->set('email', 'young2@example.com')
@@ -74,12 +69,12 @@ it('logs in under 13 user but puts them in brig', function () {
         ->call('register')
         ->set('parent_email', 'parent@example.com')
         ->call('submitStep2')
-        ->assertRedirect(route('dashboard', absolute: false));
+        ->assertSet('step', 3)
+        ->assertNoRedirect();
 
-    $this->assertAuthenticated();
+    $this->assertGuest();
     $user = User::where('email', 'young2@example.com')->first();
-    expect($user->in_brig)->toBeTrue()
-        ->and($user->brig_type)->toBe(BrigType::ParentalPending);
+    expect($user)->toBeNull();
 });
 
 it('logs in 13-16 user after registration', function () {

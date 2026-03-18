@@ -575,7 +575,7 @@ new class extends Component {
                                             </flux:button>
                                         @endcan
                                     </div>
-                                @elseif($account->status !== \App\Enums\MinecraftAccountStatus::Cancelled && $account->status !== \App\Enums\MinecraftAccountStatus::Removed)
+                                @elseif($account->status !== \App\Enums\MinecraftAccountStatus::Cancelled && $account->status !== \App\Enums\MinecraftAccountStatus::Cancelling && $account->status !== \App\Enums\MinecraftAccountStatus::Removed)
                                     @can('revoke', $account)
                                         <flux:button
                                             wire:click="confirmRevoke({{ $account->id }})"

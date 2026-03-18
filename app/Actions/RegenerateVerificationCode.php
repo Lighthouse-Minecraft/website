@@ -14,7 +14,7 @@ class RegenerateVerificationCode
     use AsAction;
 
     /**
-     * Regenerate a verification code for an existing Cancelled MinecraftAccount.
+     * Regenerate a verification code for an existing Cancelled or Cancelling MinecraftAccount.
      *
      * Skips the API username/UUID lookup since the account already has verified data.
      * Re-whitelists the player and creates a fresh verification record.
@@ -27,8 +27,8 @@ class RegenerateVerificationCode
             return ['success' => false, 'code' => null, 'expires_at' => null, 'error' => 'Account does not belong to you.'];
         }
 
-        if ($account->status !== MinecraftAccountStatus::Cancelled) {
-            return ['success' => false, 'code' => null, 'expires_at' => null, 'error' => 'Only cancelled accounts can be retried.'];
+        if (! in_array($account->status, [MinecraftAccountStatus::Cancelled, MinecraftAccountStatus::Cancelling])) {
+            return ['success' => false, 'code' => null, 'expires_at' => null, 'error' => 'Only cancelled or cancelling accounts can be retried.'];
         }
 
         if ($user->isInBrig()) {

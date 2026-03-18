@@ -20,10 +20,16 @@ it('allows command officer to review applications', function () {
     expect($officer->can('viewAny', StaffApplication::class))->toBeTrue();
 });
 
-it('denies non-command crew from reviewing', function () {
+it('allows crew member from any department to view applications', function () {
     $crew = crewEngineer();
 
-    expect($crew->can('viewAny', StaffApplication::class))->toBeFalse();
+    expect($crew->can('viewAny', StaffApplication::class))->toBeTrue();
+});
+
+it('denies jr crew from viewing applications', function () {
+    $jrCrew = jrCrewEngineer();
+
+    expect($jrCrew->can('viewAny', StaffApplication::class))->toBeFalse();
 });
 
 it('allows user to view own application', function () {

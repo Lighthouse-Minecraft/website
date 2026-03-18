@@ -66,6 +66,11 @@ class MinecraftAccount extends Model
         $query->where('status', MinecraftAccountStatus::Verifying);
     }
 
+    public function scopeCancelling(Builder $query): void
+    {
+        $query->where('status', MinecraftAccountStatus::Cancelling);
+    }
+
     public function scopeCancelled(Builder $query): void
     {
         $query->where('status', MinecraftAccountStatus::Cancelled);
