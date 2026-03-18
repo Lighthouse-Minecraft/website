@@ -49,7 +49,7 @@ test('rejects regeneration for non-cancelled account', function () {
     $result = RegenerateVerificationCode::run($account, $this->user);
 
     expect($result['success'])->toBeFalse();
-    expect($result['error'])->toBe('Only cancelled accounts can be retried.');
+    expect($result['error'])->toBe('Only cancelled or cancelling accounts can be retried.');
 });
 
 test('rejects regeneration for another users account', function () {

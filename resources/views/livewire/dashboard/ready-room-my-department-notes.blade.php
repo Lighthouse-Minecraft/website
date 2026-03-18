@@ -56,6 +56,12 @@ new class extends Component {
                 <flux:heading class="mb-2">{{ $note['department'] }} Meeting Notes</flux:heading>
                 <flux:text variant="subtle" class="text-sm">No completed staff meetings found.</flux:text>
             @endif
+
+            @if($note['meeting'])
+                <div class="mt-4">
+                    <flux:button variant="subtle" size="sm" wire:click="$parent.$set('tab', 'meeting-minutes')">View Full Minutes</flux:button>
+                </div>
+            @endif
         </flux:card>
     @endif
 </div>

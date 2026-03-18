@@ -26,6 +26,7 @@ class AuthServiceProvider extends ServiceProvider
         \App\Models\BoardMember::class => \App\Policies\BoardMemberPolicy::class,
         \App\Models\CommunityQuestion::class => \App\Policies\CommunityQuestionPolicy::class,
         \App\Models\CommunityResponse::class => \App\Policies\CommunityResponsePolicy::class,
+        \App\Models\StaffApplication::class => \App\Policies\StaffApplicationPolicy::class,
     ];
 
     /**
@@ -190,5 +191,14 @@ class AuthServiceProvider extends ServiceProvider
                 || ($user->isAtLeastRank(StaffRank::Officer) && $user->isInDepartment(StaffDepartment::Command))
                 || ($user->isAtLeastRank(StaffRank::JrCrew) && $user->isInDepartment(StaffDepartment::Chaplain));
         });
+
+        // Staff Applications
+        $canManageApplications = function ($user) {
+            return $user->hasRole('Admin')
+                || ($user->isInDepartment(StaffDepartment::Command) && $user->isAtLeastRank(StaffRank::Officer));
+        };
+
+        Gate::define('review-staff-applications', $canManageApplications);
+        Gate::define('manage-application-questions', $canManageApplications);
     }
 }

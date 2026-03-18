@@ -150,6 +150,25 @@ require __DIR__.'/auth.php';
 
 Volt::route('/staff', 'staff.page')->name('staff.index');
 
+// Staff Applications
+Route::prefix('applications')
+    ->name('applications.')
+    ->middleware(['auth'])
+    ->group(function () {
+        Volt::route('/', 'staff-applications.my-applications')->name('index');
+        Volt::route('/apply/{staffPosition}', 'staff-applications.apply')->name('apply');
+        Volt::route('/{staffApplication}', 'staff-applications.show')->name('show');
+    });
+
+// Staff Application Review (Command Officers + Admin)
+Route::prefix('admin/applications')
+    ->name('admin.applications.')
+    ->middleware(['auth', 'can:review-staff-applications'])
+    ->group(function () {
+        Volt::route('/', 'staff-applications.review-list')->name('index');
+        Volt::route('/{staffApplication}', 'staff-applications.review-detail')->name('show');
+    });
+
 // Documentation / Library routes
 Route::prefix('library')->name('library.')->group(function () {
     Volt::route('/books', 'library.books-index')->name('books.index');

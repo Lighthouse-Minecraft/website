@@ -373,7 +373,7 @@ new class extends Component {
 
         $account = auth()->user()->minecraftAccounts()
             ->where('id', $accountId)
-            ->where('status', MinecraftAccountStatus::Cancelled)
+            ->whereIn('status', [MinecraftAccountStatus::Cancelled, MinecraftAccountStatus::Cancelling])
             ->first();
 
         if (! $account) {
@@ -398,7 +398,7 @@ new class extends Component {
     {
         $account = auth()->user()->minecraftAccounts()
             ->where('id', $accountId)
-            ->where('status', MinecraftAccountStatus::Cancelled)
+            ->whereIn('status', [MinecraftAccountStatus::Cancelled, MinecraftAccountStatus::Cancelling])
             ->first();
 
         if (! $account) {
@@ -414,10 +414,10 @@ new class extends Component {
 
     private function cancelAndRemoveFromWhitelist(MinecraftAccount $account, array $context): void
     {
-        $account->update(['status' => MinecraftAccountStatus::Cancelled]);
+        $account->update(['status' => MinecraftAccountStatus::Cancelling]);
 
         $rconService = app(MinecraftRconService::class);
-        $rconService->executeCommand(
+        $result = $rconService->executeCommand(
             $account->whitelistRemoveCommand(),
             'whitelist',
             $account->username,
@@ -425,7 +425,10 @@ new class extends Component {
             $context
         );
 
-        // Account stays as Cancelled so the user can retry verification.
+        if ($result['success']) {
+            $account->update(['status' => MinecraftAccountStatus::Cancelled]);
+        }
+        // If RCON failed, account stays 'cancelling' for the retry pool.
     }
 
     public function with(): array
@@ -509,7 +512,7 @@ new class extends Component {
                                 size="sm">
                                 Remove
                             </flux:button>
-                        @elseif($account->status === \App\Enums\MinecraftAccountStatus::Cancelled)
+                        @elseif($account->status === \App\Enums\MinecraftAccountStatus::Cancelled || $account->status === \App\Enums\MinecraftAccountStatus::Cancelling)
                             <div class="flex gap-2">
                                 @if(!$verificationCode && Gate::allows('link-minecraft-account'))
                                     <flux:button
