@@ -69,6 +69,51 @@
         @endif
     </flux:card>
 
+    {{-- Other Meeting Minutes --}}
+    <flux:card class="mt-6">
+        <flux:heading class="mb-4">Other Meeting Minutes</flux:heading>
+
+        @if($this->otherMeetings->count() > 0)
+            <flux:table>
+                <flux:table.columns>
+                    <flux:table.column>Meeting</flux:table.column>
+                    <flux:table.column>Type</flux:table.column>
+                    <flux:table.column>Date</flux:table.column>
+                    <flux:table.column>Minutes</flux:table.column>
+                </flux:table.columns>
+
+                <flux:table.rows>
+                    @foreach($this->otherMeetings as $meeting)
+                        <flux:table.row wire:key="other-meeting-row-{{ $meeting->id }}">
+                            <flux:table.cell>{{ $meeting->title }}</flux:table.cell>
+                            <flux:table.cell>
+                                <flux:badge size="sm" color="zinc">{{ $meeting->type->label() }}</flux:badge>
+                            </flux:table.cell>
+                            <flux:table.cell>{{ \Carbon\Carbon::parse($meeting->day)->format('M j, Y') }}</flux:table.cell>
+                            <flux:table.cell>
+                                @if($meeting->minutes)
+                                    <flux:button size="xs" variant="ghost" icon="document-text" wire:click="showMinutes({{ $meeting->id }})">
+                                        View
+                                    </flux:button>
+                                @else
+                                    <flux:text variant="subtle" class="text-xs">None</flux:text>
+                                @endif
+                            </flux:table.cell>
+                        </flux:table.row>
+                    @endforeach
+                </flux:table.rows>
+            </flux:table>
+
+            @if($this->otherMeetings->hasPages())
+                <div class="mt-4">
+                    {{ $this->otherMeetings->links() }}
+                </div>
+            @endif
+        @else
+            <flux:text variant="subtle" class="text-sm">No other completed meetings found.</flux:text>
+        @endif
+    </flux:card>
+
     {{-- Attendance Modal --}}
     <flux:modal name="meeting-attendance-modal" class="min-w-[36rem] !text-left">
         @if($this->viewingMeeting)

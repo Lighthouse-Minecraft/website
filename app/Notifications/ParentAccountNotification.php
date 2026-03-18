@@ -19,10 +19,17 @@ class ParentAccountNotification extends Notification implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
+    public string $childName;
+
+    /**
+     * @param  User|string  $child  A User model or the child's display name (for under-13 COPPA flow where no account is created)
+     */
     public function __construct(
-        public User $child,
+        User|string $child,
         public bool $requiresApproval,
-    ) {}
+    ) {
+        $this->childName = $child instanceof User ? $child->name : $child;
+    }
 
     public function via(object $notifiable): array
     {
@@ -34,7 +41,7 @@ class ParentAccountNotification extends Notification implements ShouldQueue
         return (new MailMessage)
             ->subject('Your Child Has Created a Lighthouse Account')
             ->markdown('mail.parent-account', [
-                'childName' => $this->child->name,
+                'childName' => $this->childName,
                 'requiresApproval' => $this->requiresApproval,
                 'registerUrl' => route('register'),
             ]);

@@ -312,9 +312,14 @@ new class extends Component
             })
             ->whereNotIn('id', $existingIds)
             ->limit(10)
-            ->get(['id', 'name']);
+            ->get();
 
-        $this->searchResults = $users->map(fn ($u) => ['id' => $u->id, 'name' => $u->name])->toArray();
+        $this->searchResults = $users->map(fn ($u) => [
+            'id' => $u->id,
+            'name' => $u->name,
+            'avatar_url' => $u->avatarUrl(),
+            'initials' => $u->initials(),
+        ])->toArray();
     }
 
     public function addParticipantById(int $userId): void
@@ -640,7 +645,10 @@ new class extends Component
                 <div class="space-y-2">
                     @foreach($searchResults as $result)
                         <div wire:key="search-result-{{ $result['id'] }}" class="flex items-center justify-between rounded border border-zinc-200 dark:border-zinc-700 p-2">
-                            <flux:text>{{ $result['name'] }}</flux:text>
+                            <div class="flex items-center gap-2">
+                                <flux:avatar size="xs" :src="$result['avatar_url']" :initials="$result['initials']" />
+                                <flux:text>{{ $result['name'] }}</flux:text>
+                            </div>
                             <flux:button size="xs" variant="primary" wire:click="addParticipantById({{ $result['id'] }})">Add</flux:button>
                         </div>
                     @endforeach

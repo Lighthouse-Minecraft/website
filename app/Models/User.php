@@ -357,6 +357,11 @@ class User extends Authenticatable // implements MustVerifyEmail
         return $this->hasMany(MeetingReport::class);
     }
 
+    public function loginLogs(): HasMany
+    {
+        return $this->hasMany(UserLoginLog::class);
+    }
+
     public function boardMembership(): HasOne
     {
         return $this->hasOne(BoardMember::class);

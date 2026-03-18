@@ -13,6 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->appendToGroup('web', [
             \App\Http\Middleware\EnsureParentAllowsLogin::class,
+            \App\Http\Middleware\LogDailyActivity::class,
         ]);
 
         $middleware->alias([

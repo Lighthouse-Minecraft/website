@@ -27,7 +27,7 @@ class RegenerateVerificationCode
             return ['success' => false, 'code' => null, 'expires_at' => null, 'error' => 'Account does not belong to you.'];
         }
 
-        if ($account->status !== MinecraftAccountStatus::Cancelled) {
+        if (! in_array($account->status, [MinecraftAccountStatus::Cancelled, MinecraftAccountStatus::Cancelling])) {
             return ['success' => false, 'code' => null, 'expires_at' => null, 'error' => 'Only cancelled accounts can be retried.'];
         }
 

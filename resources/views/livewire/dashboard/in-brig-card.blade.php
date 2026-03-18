@@ -2,13 +2,13 @@
 
 use App\Enums\MessageKind;
 use App\Enums\StaffDepartment;
+use App\Enums\StaffRank;
 use App\Enums\ThreadStatus;
-use App\Enums\ThreadSubtype;
 use App\Enums\ThreadType;
 use App\Models\Message;
 use App\Models\Thread;
 use App\Models\User;
-use App\Notifications\NewTicketNotification;
+use App\Notifications\NewTopicNotification;
 use App\Services\TicketNotificationService;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
@@ -19,13 +19,10 @@ new class extends Component {
     public string $appealMessage = '';
 
     /**
-     * Submit the current user's brig appeal.
+     * Submit the current user's brig appeal as a discussion.
      *
-     * Validates the appeal message, creates a Quartermaster ticket containing the appeal,
-     * records ticket activity, sets a 7-day next-appeal cooldown for the user, attempts
-     * to notify Quartermaster staff, and updates the UI (closes modal, clears input, shows toast).
-     *
-     * If the user is not eligible to appeal or ticket creation fails, a danger toast is shown and the method exits.
+     * Creates a Discussion thread with the appeal message, auto-adds Command Officers+
+     * and all Quartermasters as participants, sets a 7-day cooldown, and notifies staff.
      */
     public function submitAppeal(): void
     {
@@ -42,9 +39,7 @@ new class extends Component {
 
         $thread = null;
 
-        // Create appeal ticket directly — brig users are exempt from the ticket create policy for appeals only
         DB::transaction(function () use ($user, &$thread) {
-            // Re-check with a row lock to prevent duplicate appeals from concurrent requests
             $lockedUser = User::where('id', $user->id)->lockForUpdate()->firstOrFail();
 
             if (! $lockedUser->canAppeal()) {
@@ -56,17 +51,52 @@ new class extends Component {
                 : 'Brig Appeal: '.$lockedUser->name;
 
             $thread = Thread::create([
-                'type' => ThreadType::Ticket,
-                'subtype' => ThreadSubtype::AdminAction,
-                'department' => StaffDepartment::Quartermaster,
+                'type' => ThreadType::Topic,
                 'subject' => $subject,
                 'status' => ThreadStatus::Open,
                 'created_by_user_id' => $lockedUser->id,
                 'last_message_at' => now(),
             ]);
 
+            // Add the appealing user
             $thread->addParticipant($lockedUser);
 
+            // Auto-add Command Officers+ and all Quartermasters
+            $staffToAdd = User::where(function ($query) {
+                $query->where(function ($q) {
+                    // Command department, Officer rank or above
+                    $q->where('staff_department', StaffDepartment::Command)
+                      ->where('staff_rank', '>=', StaffRank::Officer->value);
+                })->orWhere(function ($q) {
+                    // All Quartermaster department members with a rank
+                    $q->where('staff_department', StaffDepartment::Quartermaster)
+                      ->whereNotNull('staff_rank');
+                });
+            })->where('id', '!=', $lockedUser->id)->get();
+
+            foreach ($staffToAdd as $staff) {
+                $thread->addParticipant($staff);
+            }
+
+            // System message with context
+            $systemUser = User::where('email', 'system@lighthouse.local')->first();
+            if ($systemUser) {
+                $brigTypeLabel = $lockedUser->brig_type?->isParental() ? 'Staff Contact' : 'Brig Appeal';
+                $lines = ["**{$brigTypeLabel} from {$lockedUser->name}**"];
+                if ($lockedUser->brig_reason) {
+                    $lines[] = "**Brig Reason:** {$lockedUser->brig_reason}";
+                }
+                $lines[] = "**Brig Type:** ".($lockedUser->brig_type?->label() ?? 'Discipline');
+
+                Message::create([
+                    'thread_id' => $thread->id,
+                    'user_id' => $systemUser->id,
+                    'body' => implode("\n", $lines),
+                    'kind' => MessageKind::System,
+                ]);
+            }
+
+            // User's appeal message
             Message::create([
                 'thread_id' => $thread->id,
                 'user_id' => $lockedUser->id,
@@ -75,11 +105,10 @@ new class extends Component {
             ]);
 
             $activityDesc = $lockedUser->brig_type?->isParental()
-                ? 'Staff contact submitted: '.$thread->subject
-                : 'Brig appeal submitted: '.$thread->subject;
-            \App\Actions\RecordActivity::handle($thread, 'ticket_opened', $activityDesc);
+                ? 'Staff contact discussion started: '.$thread->subject
+                : 'Brig appeal discussion started: '.$thread->subject;
+            \App\Actions\RecordActivity::run($thread, 'topic_created', $activityDesc);
 
-            // Set a 7-day lockout to prevent appeal spam
             $lockedUser->next_appeal_available_at = now()->addDays(7);
             $lockedUser->save();
         });
@@ -89,15 +118,17 @@ new class extends Component {
             return;
         }
 
-        // Fetch quartermasters outside the transaction — read doesn't need to extend the row lock
-        $quartermasters = User::where('staff_department', StaffDepartment::Quartermaster)
-            ->whereNotNull('staff_rank')
-            ->get();
-
-        // Notify Quartermaster staff outside the transaction so failures don't roll back DB changes
+        // Notify all staff participants outside the transaction
         try {
             $notificationService = app(TicketNotificationService::class);
-            $notificationService->sendToMany($quartermasters, new NewTicketNotification($thread));
+            $participants = $thread->participants()
+                ->where('user_id', '!=', $user->id)
+                ->with('user')
+                ->get();
+
+            foreach ($participants as $participant) {
+                $notificationService->send($participant->user, new NewTopicNotification($thread));
+            }
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Failed to send brig appeal notifications', ['error' => $e->getMessage()]);
         }
@@ -231,10 +262,10 @@ new class extends Component {
     <div class="space-y-6">
         @if($user->brig_type?->isParental())
             <flux:heading size="lg">Contact Staff</flux:heading>
-            <flux:text variant="subtle">Send a message to the Quartermaster team. Be respectful and honest. Staff will review your message and respond via ticket.</flux:text>
+            <flux:text variant="subtle">Send a message to the staff team. Be respectful and honest. Staff will review your message and respond in the discussion.</flux:text>
         @else
             <flux:heading size="lg">Submit Brig Appeal</flux:heading>
-            <flux:text variant="subtle">Explain your situation to the Quartermaster. Be respectful and honest. Staff will review your appeal and respond via ticket.</flux:text>
+            <flux:text variant="subtle">Explain your situation to the staff team. Be respectful and honest. Staff will review your appeal and respond in the discussion.</flux:text>
         @endif
 
         <flux:field>

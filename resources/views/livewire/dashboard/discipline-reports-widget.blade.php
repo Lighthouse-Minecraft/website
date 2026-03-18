@@ -122,7 +122,7 @@ new class extends Component {
 
     {{-- Recent Reports --}}
     @if($this->recentReports->isEmpty())
-        <flux:text variant="subtle" class="py-2">No reports yet.</flux:text>
+        <flux:text variant="subtle" class="py-2">No reports in the last 7 days.</flux:text>
     @else
         <div class="space-y-2">
             @foreach($this->recentReports as $report)
