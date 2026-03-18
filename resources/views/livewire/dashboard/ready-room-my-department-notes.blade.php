@@ -49,18 +49,18 @@ new class extends Component {
             @if($note['meeting'] && $note['content'])
                 <flux:heading class="mb-4">{{ $note['department'] }} Meeting Notes from {{ \Carbon\Carbon::parse($note['meeting']->day)->format('M j, Y') }} Staff Meeting</flux:heading>
                 <flux:text>{!! nl2br(e($note['content'])) !!}</flux:text>
-                <div class="mt-4">
-                    <flux:button variant="subtle" size="sm" wire:click="$parent.$set('tab', 'meeting-minutes')">View Full Minutes</flux:button>
-                </div>
             @elseif($note['meeting'])
                 <flux:heading class="mb-2">{{ $note['department'] }} Meeting Notes from {{ \Carbon\Carbon::parse($note['meeting']->day)->format('M j, Y') }} Staff Meeting</flux:heading>
                 <flux:text variant="subtle" class="text-sm">No {{ $note['department'] }} notes were recorded for this meeting.</flux:text>
-                <div class="mt-4">
-                    <flux:button variant="subtle" size="sm" wire:click="$parent.$set('tab', 'meeting-minutes')">View Full Minutes</flux:button>
-                </div>
             @else
                 <flux:heading class="mb-2">{{ $note['department'] }} Meeting Notes</flux:heading>
                 <flux:text variant="subtle" class="text-sm">No completed staff meetings found.</flux:text>
+            @endif
+
+            @if($note['meeting'])
+                <div class="mt-4">
+                    <flux:button variant="subtle" size="sm" wire:click="$parent.$set('tab', 'meeting-minutes')">View Full Minutes</flux:button>
+                </div>
             @endif
         </flux:card>
     @endif

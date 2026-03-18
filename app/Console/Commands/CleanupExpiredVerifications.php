@@ -31,7 +31,7 @@ class CleanupExpiredVerifications extends Command
     public function handle(): int
     {
         $this->handleExpiredVerifications();
-        $this->retryCancelledAccounts();
+        $this->retryCancellingAccounts();
 
         return Command::SUCCESS;
     }
@@ -79,7 +79,7 @@ class CleanupExpiredVerifications extends Command
      * On success, transitions the account to 'cancelled' (final state) so it
      * exits the retry pool permanently.
      */
-    private function retryCancelledAccounts(): void
+    private function retryCancellingAccounts(): void
     {
         $cancellingAccounts = MinecraftAccount::cancelling()
             ->where('updated_at', '<', now()->subMinutes(5))
