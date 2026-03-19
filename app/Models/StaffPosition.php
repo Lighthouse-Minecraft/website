@@ -24,6 +24,7 @@ class StaffPosition extends Model
         'user_id',
         'sort_order',
         'accepting_applications',
+        'has_all_roles_at',
     ];
 
     protected function casts(): array
