@@ -35,7 +35,7 @@ The ACP is organized into four top-level categories:
 | **CMS Pages** | Create and edit static pages like the rules, donation page, and other content. |
 | **Announcements** | Create, schedule, publish, and expire community announcements. |
 | **Meetings** | View, create, and manage meetings. Start, end, and finalize meetings. |
-| **Staff Positions** | Create, edit, and organize staff positions by department. Assign and unassign users. |
+| **Staff Positions** | Create, edit, and organize staff positions by department. Assign users and manage [[books/staff-handbook/administration/roles-and-permissions/managing-position-roles|position roles]]. |
 | **Board Members** | Manage the Board of Directors listing. |
 
 ### Logs
@@ -51,7 +51,7 @@ The ACP is organized into four top-level categories:
 
 | Tab | What It Does |
 |---|---|
-| **Roles** | Manage user roles (Admin, Meeting Secretary, Page Editor, etc.). |
+| **Roles** | Create and edit permission role definitions (name, color, icon, description). See [[books/staff-handbook/administration/roles-and-permissions/role-reference|Role Reference]] for what each role does. |
 | **Report Categories** | Manage discipline report categories (Language, Harassment, etc.). |
 | **Prayer Nations** | Manage the prayer tracking country list. |
 | **Application Questions** | Create, edit, and manage the questions shown to staff applicants. See [[books/staff-handbook/administration/staff-applications/managing-application-questions|Managing Application Questions]]. |

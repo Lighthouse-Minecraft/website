@@ -1,0 +1,76 @@
+---
+title: "Role Reference"
+visibility: staff
+order: 2
+summary: "Complete list of every permission role and what it unlocks."
+---
+
+## Overview
+
+There are 15 permission roles in the system. Each one unlocks specific features or actions. Your position may have some, all, or none of these -- it depends on what your role on the team requires.
+
+## Permission Roles
+
+### Moderator
+
+Gives you moderator powers in Discussions. You can view flagged messages and lock topics.
+
+### Brig Warden
+
+Lets you handle brig appeals and release users from the Brig.
+
+### Manage Membership Level
+
+Lets you promote and demote community members through the membership levels (Stowaway, Traveler, Resident, Citizen). This includes reviewing new Stowaway users and processing promotions.
+
+### Manage Discipline Reports
+
+Lets you create and edit discipline reports. You can view all reports and update drafts.
+
+### Publish Discipline Reports
+
+Lets you publish and finalize discipline reports. This is separate from creating them -- you need both this role and **Manage Discipline Reports** if you're handling the full reporting process.
+
+### Meeting Secretary
+
+Lets you manage non-staff-meeting meetings. You can create meetings, add notes, and manage the meeting lifecycle.
+
+### Attend Staff Meeting
+
+Gives you read-only access to staff meeting notes and agendas.
+
+### Manage Staff Meeting
+
+Gives you write access to staff meetings. You can create, edit, and manage staff meeting content.
+
+### Page Editor
+
+Lets you create and edit static content pages on the website (like the rules page, donation page, etc.).
+
+### Edit Docs
+
+Lets you edit documentation and handbook pages in the Library.
+
+### Manage Community Stories
+
+Lets you manage community questions and review member responses. You can approve, edit, or remove responses.
+
+### Manage Site Config
+
+Lets you change site configuration settings and manage the questions shown on staff applications.
+
+### View Logs
+
+Gives you access to system logs: the Minecraft command log, Discord API log, activity log, and discipline report log.
+
+### View All Ready Rooms
+
+Lets you see every department's tab in the Ready Room, not just your own. Without this role, you can only see your own department's tab (unless you're an Officer, who can see all tabs by default).
+
+### View Command Dashboard
+
+Gives you access to the Command department's dashboard.
+
+## Admin Access
+
+**Admin** isn't a role -- it's a separate status. Admins automatically pass every permission check on the site, including all 15 roles listed above plus full access to every policy-protected action. Admin status is managed separately and can only be granted through internal tools.
