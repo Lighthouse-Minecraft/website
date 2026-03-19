@@ -15,11 +15,6 @@ class AnnouncementPolicy
             return true;
         }
 
-        if ($user->isInDepartment(StaffDepartment::Command)
-            && $user->isAtLeastRank(StaffRank::Officer)) {
-            return true;
-        }
-
         return null;
     }
 

@@ -10,9 +10,7 @@ class UserPolicy
 {
     public function before(User $user, string $ability): ?bool
     {
-        if (
-            $user->isAdmin() || ($user->isInDepartment(StaffDepartment::Command) && $user->isAtLeastRank(StaffRank::Officer))
-        ) {
+        if ($user->isAdmin()) {
             return true;
         }
 

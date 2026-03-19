@@ -2,8 +2,6 @@
 
 namespace App\Policies;
 
-use App\Enums\StaffDepartment;
-use App\Enums\StaffRank;
 use App\Models\StaffPosition;
 use App\Models\User;
 
@@ -11,7 +9,7 @@ class StaffPositionPolicy
 {
     public function before(User $user, string $ability): ?bool
     {
-        if ($user->isAdmin() || ($user->isInDepartment(StaffDepartment::Command) && $user->isAtLeastRank(StaffRank::Officer))) {
+        if ($user->isAdmin()) {
             return true;
         }
 

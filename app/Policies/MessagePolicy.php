@@ -3,7 +3,6 @@
 namespace App\Policies;
 
 use App\Enums\MessageKind;
-use App\Enums\StaffDepartment;
 use App\Enums\StaffRank;
 use App\Models\Message;
 use App\Models\User;
@@ -12,8 +11,7 @@ class MessagePolicy
 {
     public function before(User $user, string $ability): ?bool
     {
-        // Admin and Command Officers can do everything
-        if ($user->isAdmin() || ($user->isInDepartment(StaffDepartment::Command) && $user->isAtLeastRank(StaffRank::Officer))) {
+        if ($user->isAdmin()) {
             return true;
         }
 

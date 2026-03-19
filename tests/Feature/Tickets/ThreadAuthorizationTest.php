@@ -10,7 +10,8 @@ use App\Models\User;
 use function Pest\Laravel\actingAs;
 
 describe('Thread Authorization', function () {
-    it('allows Command Officers to view all threads', function () {
+    // TODO: Re-enable after PRD #280 completion — command officer no longer bypasses before() hook
+    it('command officer without admin no longer bypasses viewAll', function () {
         $commandOfficer = User::factory()
             ->withStaffPosition(StaffDepartment::Command, StaffRank::Officer)
             ->create();
@@ -21,8 +22,20 @@ describe('Thread Authorization', function () {
 
         actingAs($commandOfficer);
 
-        expect($commandOfficer->can('viewAll', Thread::class))->toBeTrue()
-            ->and($thread->isVisibleTo($commandOfficer))->toBeTrue();
+        expect($commandOfficer->can('viewAll', Thread::class))->toBeFalse();
+    })->done();
+
+    it('allows admin to view all threads', function () {
+        $admin = User::factory()->admin()->create();
+
+        $thread = Thread::factory()
+            ->withDepartment(StaffDepartment::Chaplain)
+            ->create();
+
+        actingAs($admin);
+
+        expect($admin->can('viewAll', Thread::class))->toBeTrue()
+            ->and($thread->isVisibleTo($admin))->toBeTrue();
     })->done();
 
     it('allows staff to view threads in their department', function () {

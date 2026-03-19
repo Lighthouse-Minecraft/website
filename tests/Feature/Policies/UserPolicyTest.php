@@ -17,12 +17,11 @@ it('admin can bypass all policy checks', function () {
     expect($policy->before($admin, 'view'))->toBeTrue();
 });
 
-it('command officer can bypass all policy checks', function () {
+it('command officer no longer bypasses policy before hook', function () {
     $officer = officerCommand();
-    $target = User::factory()->create();
     $policy = new UserPolicy;
 
-    expect($policy->before($officer, 'view'))->toBeTrue();
+    expect($policy->before($officer, 'view'))->toBeNull();
 });
 
 it('non-admin non-command returns null from before', function () {

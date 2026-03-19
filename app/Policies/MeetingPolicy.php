@@ -3,7 +3,6 @@
 namespace App\Policies;
 
 use App\Enums\MembershipLevel;
-use App\Enums\StaffDepartment;
 use App\Enums\StaffRank;
 use App\Models\Meeting;
 use App\Models\User;
@@ -12,7 +11,7 @@ class MeetingPolicy
 {
     public function before(User $user, string $ability): ?bool
     {
-        if ($user->isAdmin() || ($user->isInDepartment(StaffDepartment::Command) && $user->isAtLeastRank(StaffRank::Officer))) {
+        if ($user->isAdmin()) {
             return true;
         }
 
