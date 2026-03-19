@@ -1,9 +1,8 @@
 ---
 name: write-staff-docs
 description: Write staff-facing documentation pages for the Lighthouse Staff Handbook. Takes a feature/topic name and produces clear, practical handbook pages by researching the codebase and technical docs.
-argument-hint: [feature-or-topic-name]
+argument-hint: "feature-or-topic-name"
 user-invocable: true
-allowed-tools: Read, Grep, Glob, Bash, Write, Edit, Agent
 ---
 
 # Staff Documentation Writer
