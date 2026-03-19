@@ -2,6 +2,7 @@
 
 use App\Enums\StaffDepartment;
 use App\Enums\StaffRank;
+use App\Models\Role;
 use App\Models\StaffPosition;
 use Flux\Flux;
 use Illuminate\Validation\Rule;
@@ -29,11 +30,20 @@ new class extends Component {
     public bool $editAcceptingApplications = false;
     public ?int $editId = null;
 
+    // Role management
+    public ?int $rolePositionId = null;
+    public ?int $selectedRoleId = null;
+
     public function getPositionsProperty()
     {
         $this->authorize('viewAny', StaffPosition::class);
 
-        return StaffPosition::with('user')->ordered()->get();
+        return StaffPosition::with(['user', 'roles'])->ordered()->get();
+    }
+
+    public function getAllRolesProperty()
+    {
+        return Role::orderBy('name')->get();
     }
 
     public function createPosition(): void
@@ -126,6 +136,68 @@ new class extends Component {
         $position->delete();
         Flux::toast('Staff position deleted.', 'Deleted', variant: 'success');
     }
+
+    public function openRolesModal(int $positionId): void
+    {
+        $position = StaffPosition::findOrFail($positionId);
+        $this->authorize('update', $position);
+
+        $this->rolePositionId = $positionId;
+        $this->selectedRoleId = null;
+        Flux::modal('manage-roles-modal')->show();
+    }
+
+    public function addRoleToPosition(): void
+    {
+        if (! $this->rolePositionId || ! $this->selectedRoleId) {
+            return;
+        }
+
+        $position = StaffPosition::findOrFail($this->rolePositionId);
+        $this->authorize('update', $position);
+
+        $position->roles()->syncWithoutDetaching([$this->selectedRoleId]);
+        $this->selectedRoleId = null;
+
+        Flux::toast('Role assigned to position.', 'Added', variant: 'success');
+    }
+
+    public function removeRoleFromPosition(int $roleId): void
+    {
+        if (! $this->rolePositionId) {
+            return;
+        }
+
+        $position = StaffPosition::findOrFail($this->rolePositionId);
+        $this->authorize('update', $position);
+
+        $position->roles()->detach($roleId);
+
+        Flux::toast('Role removed from position.', 'Removed', variant: 'success');
+    }
+
+    public function toggleAllowAll(int $positionId): void
+    {
+        $position = StaffPosition::findOrFail($positionId);
+        $this->authorize('update', $position);
+
+        if ($position->has_all_roles_at) {
+            $position->update(['has_all_roles_at' => null]);
+            Flux::toast('Allow All disabled for this position.', 'Updated', variant: 'success');
+        } else {
+            $position->update(['has_all_roles_at' => now()]);
+            Flux::toast('Allow All enabled for this position.', 'Updated', variant: 'success');
+        }
+    }
+
+    public function getRolePositionProperty(): ?StaffPosition
+    {
+        if (! $this->rolePositionId) {
+            return null;
+        }
+
+        return StaffPosition::with('roles')->find($this->rolePositionId);
+    }
 }; ?>
 
 <div class="space-y-6">
@@ -137,6 +209,7 @@ new class extends Component {
             <flux:table.column>Title</flux:table.column>
             <flux:table.column>Department</flux:table.column>
             <flux:table.column>Rank</flux:table.column>
+            <flux:table.column>Roles</flux:table.column>
             <flux:table.column>Assigned To</flux:table.column>
             <flux:table.column>Apps</flux:table.column>
             <flux:table.column></flux:table.column>
@@ -149,6 +222,19 @@ new class extends Component {
                     <flux:table.cell>{{ $position->department->label() }}</flux:table.cell>
                     <flux:table.cell>
                         <flux:badge size="sm" color="{{ $position->rank->color() }}">{{ $position->rank->label() }}</flux:badge>
+                    </flux:table.cell>
+                    <flux:table.cell>
+                        @if($position->has_all_roles_at)
+                            <flux:badge size="sm" color="amber" icon="star">Allow All</flux:badge>
+                        @elseif($position->roles->isNotEmpty())
+                            <div class="flex flex-wrap gap-1">
+                                @foreach($position->roles as $role)
+                                    <flux:badge size="sm" color="{{ $role->color }}" icon="{{ $role->icon }}">{{ $role->name }}</flux:badge>
+                                @endforeach
+                            </div>
+                        @else
+                            <flux:text variant="subtle" class="text-sm">None</flux:text>
+                        @endif
                     </flux:table.cell>
                     <flux:table.cell>
                         @if($position->isFilled())
@@ -166,6 +252,7 @@ new class extends Component {
                     </flux:table.cell>
                     <flux:table.cell>
                         <div class="flex gap-1">
+                            <flux:button size="sm" icon="shield-check" wire:click="openRolesModal({{ $position->id }})">Roles</flux:button>
                             <flux:modal.trigger wire:click="openEditModal({{ $position->id }})" name="edit-position-modal">
                                 <flux:button size="sm" icon="pencil-square">Edit</flux:button>
                             </flux:modal.trigger>
@@ -242,5 +329,68 @@ new class extends Component {
                 <flux:button type="submit" variant="primary">Save Changes</flux:button>
             </div>
         </form>
+    </flux:modal>
+
+    {{-- Manage Roles Modal --}}
+    <flux:modal name="manage-roles-modal" class="w-full lg:w-1/2 space-y-6">
+        @if($this->rolePosition)
+            <flux:heading size="lg">Manage Roles: {{ $this->rolePosition->title }}</flux:heading>
+
+            {{-- Allow All Toggle --}}
+            <div class="flex items-center justify-between p-3 rounded-lg border border-zinc-200 dark:border-zinc-700">
+                <div>
+                    <flux:heading size="sm">Allow All Roles</flux:heading>
+                    <flux:text variant="subtle" class="text-sm">Grant all roles to this position without assigning them individually.</flux:text>
+                </div>
+                <flux:button
+                    wire:click="toggleAllowAll({{ $this->rolePosition->id }})"
+                    size="sm"
+                    variant="{{ $this->rolePosition->has_all_roles_at ? 'danger' : 'primary' }}"
+                >
+                    {{ $this->rolePosition->has_all_roles_at ? 'Disable' : 'Enable' }}
+                </flux:button>
+            </div>
+
+            @if($this->rolePosition->has_all_roles_at)
+                <flux:text variant="subtle">This position has Allow All enabled. Individual role assignments are not needed.</flux:text>
+            @else
+                {{-- Current Roles --}}
+                <div>
+                    <flux:heading size="sm" class="mb-2">Assigned Roles</flux:heading>
+                    @if($this->rolePosition->roles->isNotEmpty())
+                        <div class="flex flex-wrap gap-2">
+                            @foreach($this->rolePosition->roles as $role)
+                                <div wire:key="assigned-role-{{ $role->id }}" class="flex items-center gap-1">
+                                    <flux:badge size="sm" color="{{ $role->color }}" icon="{{ $role->icon }}">{{ $role->name }}</flux:badge>
+                                    <flux:button size="xs" variant="ghost" icon="x-mark" wire:click="removeRoleFromPosition({{ $role->id }})" class="hover:!text-red-600 dark:hover:!text-red-400" />
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <flux:text variant="subtle" class="text-sm">No roles assigned yet.</flux:text>
+                    @endif
+                </div>
+
+                {{-- Add Role --}}
+                <div>
+                    <flux:heading size="sm" class="mb-2">Add Role</flux:heading>
+                    <div class="flex gap-2">
+                        <flux:select wire:model="selectedRoleId" class="flex-1">
+                            <flux:select.option value="">Select a role...</flux:select.option>
+                            @foreach($this->allRoles as $role)
+                                @if(! $this->rolePosition->roles->contains('id', $role->id))
+                                    <flux:select.option value="{{ $role->id }}">{{ $role->name }}</flux:select.option>
+                                @endif
+                            @endforeach
+                        </flux:select>
+                        <flux:button wire:click="addRoleToPosition" variant="primary" size="sm" icon="plus">Add</flux:button>
+                    </div>
+                </div>
+            @endif
+
+            <div class="flex justify-end">
+                <flux:button variant="ghost" x-on:click="$flux.modal('manage-roles-modal').close()">Done</flux:button>
+            </div>
+        @endif
     </flux:modal>
 </div>
