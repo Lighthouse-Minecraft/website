@@ -18,21 +18,21 @@ class BoardMemberPolicy
 
     public function viewAny(User $user): bool
     {
-        return false;
+        return $user->hasRole('Manage Site Config');
     }
 
     public function create(User $user): bool
     {
-        return false;
+        return $user->hasRole('Manage Site Config');
     }
 
     public function update(User $user, BoardMember $boardMember): bool
     {
-        return false;
+        return $user->hasRole('Manage Site Config');
     }
 
     public function delete(User $user, BoardMember $boardMember): bool
     {
-        return false;
+        return $user->hasRole('Manage Site Config');
     }
 }

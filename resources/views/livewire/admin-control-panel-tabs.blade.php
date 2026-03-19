@@ -56,8 +56,6 @@ new class extends Component {
             $user->can('viewAny', \App\Models\Page::class)
             || $user->can('viewAny', \App\Models\Announcement::class)
             || $user->can('viewAny', \App\Models\Meeting::class)
-            || $user->can('viewAny', \App\Models\StaffPosition::class)
-            || $user->can('viewAny', \App\Models\BoardMember::class)
             || $user->can('manage-community-stories')
             || $user->can('manage-application-questions')
         );
@@ -84,6 +82,8 @@ new class extends Component {
             || $user->can('viewAny', \App\Models\Role::class)
             || $user->can('viewAny', \App\Models\ReportCategory::class)
             || $user->can('viewAny', \App\Models\PrayerCountry::class)
+            || $user->can('viewAny', \App\Models\StaffPosition::class)
+            || $user->can('viewAny', \App\Models\BoardMember::class)
         );
     }
 
@@ -102,8 +102,6 @@ new class extends Component {
                 $user?->can('viewAny', \App\Models\Page::class) => 'page-manager',
                 $user?->can('viewAny', \App\Models\Announcement::class) => 'announcement-manager',
                 $user?->can('viewAny', \App\Models\Meeting::class) => 'meeting-manager',
-                $user?->can('viewAny', \App\Models\StaffPosition::class) => 'staff-position-manager',
-                $user?->can('viewAny', \App\Models\BoardMember::class) => 'board-member-manager',
                 $user?->can('manage-community-stories') => 'community-questions',
                 $user?->can('manage-application-questions') => 'application-questions',
                 default => 'page-manager',
@@ -120,6 +118,8 @@ new class extends Component {
                 $user?->can('viewAny', \App\Models\Role::class) => 'role-manager',
                 $user?->can('viewAny', \App\Models\ReportCategory::class) => 'report-category-manager',
                 $user?->can('viewAny', \App\Models\PrayerCountry::class) => 'prayer-manager',
+                $user?->can('viewAny', \App\Models\StaffPosition::class) => 'staff-position-manager',
+                $user?->can('viewAny', \App\Models\BoardMember::class) => 'board-member-manager',
                 default => 'role-manager',
             },
             default => 'user-manager',
@@ -190,12 +190,6 @@ new class extends Component {
                 @can('viewAny', \App\Models\Meeting::class)
                     <flux:tab name="meeting-manager">Meetings</flux:tab>
                 @endcan
-                @can('viewAny', \App\Models\StaffPosition::class)
-                    <flux:tab name="staff-position-manager">Staff Positions</flux:tab>
-                @endcan
-                @can('viewAny', \App\Models\BoardMember::class)
-                    <flux:tab name="board-member-manager">Board Members</flux:tab>
-                @endcan
                 @can('manage-community-stories')
                     <flux:tab name="community-questions">Community Questions</flux:tab>
                 @endcan
@@ -217,16 +211,6 @@ new class extends Component {
             <flux:tab.panel name="meeting-manager">
                 @can('viewAny', \App\Models\Meeting::class)
                     <livewire:meetings.list />
-                @endcan
-            </flux:tab.panel>
-            <flux:tab.panel name="staff-position-manager">
-                @can('viewAny', \App\Models\StaffPosition::class)
-                    <livewire:admin-manage-staff-positions-page />
-                @endcan
-            </flux:tab.panel>
-            <flux:tab.panel name="board-member-manager">
-                @can('viewAny', \App\Models\BoardMember::class)
-                    <livewire:admin-manage-board-members-page />
                 @endcan
             </flux:tab.panel>
             <flux:tab.panel name="community-questions">
@@ -299,6 +283,12 @@ new class extends Component {
                 @can('viewAny', \App\Models\PrayerCountry::class)
                     <flux:tab name="prayer-manager">Prayer Nations</flux:tab>
                 @endcan
+                @can('viewAny', \App\Models\StaffPosition::class)
+                    <flux:tab name="staff-position-manager">Staff Positions</flux:tab>
+                @endcan
+                @can('viewAny', \App\Models\BoardMember::class)
+                    <flux:tab name="board-member-manager">Board Members</flux:tab>
+                @endcan
             </flux:tabs>
 
             <flux:tab.panel name="site-settings">
@@ -319,6 +309,16 @@ new class extends Component {
             <flux:tab.panel name="prayer-manager">
                 @can('viewAny', \App\Models\PrayerCountry::class)
                     <livewire:prayer.manage-months />
+                @endcan
+            </flux:tab.panel>
+            <flux:tab.panel name="staff-position-manager">
+                @can('viewAny', \App\Models\StaffPosition::class)
+                    <livewire:admin-manage-staff-positions-page />
+                @endcan
+            </flux:tab.panel>
+            <flux:tab.panel name="board-member-manager">
+                @can('viewAny', \App\Models\BoardMember::class)
+                    <livewire:admin-manage-board-members-page />
                 @endcan
             </flux:tab.panel>
         </flux:tab.group>
