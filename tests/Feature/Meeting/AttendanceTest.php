@@ -10,7 +10,7 @@ use function Pest\Laravel\get;
 use function Pest\Livewire\livewire;
 
 beforeEach(function () {
-    $this->admin = User::factory()->create([
+    $this->admin = User::factory()->withRole('Manage Staff Meeting')->create([
         'staff_rank' => StaffRank::Officer,
         'staff_department' => StaffDepartment::Command,
         'staff_title' => 'Test Admin',
@@ -54,13 +54,13 @@ test('seeds all staff as absent when meeting starts', function () {
 
     $attendees = $pendingMeeting->fresh()->attendees;
 
-    // All staff (JrCrew+) should have records
-    expect($attendees)->toHaveCount(4); // admin, officer, crewMember, jrCrew
+    // All staff (CrewMember+) should have records
+    expect($attendees)->toHaveCount(3); // admin, officer, crewMember
     expect($attendees->pluck('id')->toArray())
         ->toContain($this->admin->id)
         ->toContain($this->officer->id)
         ->toContain($this->crewMember->id)
-        ->toContain($this->jrCrew->id)
+        ->not->toContain($this->jrCrew->id)
         ->not->toContain($this->nonStaff->id);
 });
 
@@ -228,12 +228,12 @@ test('only authorized users can toggle attendance', function () {
         ->assertForbidden();
 });
 
-test('meeting secretary can manage attendees', function () {
+test('user with Manage Staff Meeting role can manage attendees', function () {
     $secretary = User::factory()
-        ->withRole('Meeting Secretary')
+        ->withRole('Manage Staff Meeting')
         ->create([
             'staff_rank' => StaffRank::CrewMember,
-            'staff_title' => 'Meeting Secretary',
+            'staff_title' => 'Meeting Manager',
         ]);
 
     $this->meeting->attendees()->attach($this->officer->id, [
