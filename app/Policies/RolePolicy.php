@@ -21,7 +21,7 @@ class RolePolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->isAdmin();
+        return $user->hasRole('Manage Site Config');
     }
 
     /**
@@ -43,7 +43,7 @@ class RolePolicy
     /**
      * Determine whether the user can update the model.
      */
-    public function update(User $user, Role $role): bool
+    public function update(User $user, ?Role $role = null): bool
     {
         return $user->isAdmin();
     }

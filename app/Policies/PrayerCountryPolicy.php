@@ -24,7 +24,7 @@ class PrayerCountryPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->isInDepartment(StaffDepartment::Chaplain) && $user->isAtLeastRank(StaffRank::Officer);
+        return $user->hasRole('Manage Site Config');
     }
 
     public function viewPrayer(User $user): bool

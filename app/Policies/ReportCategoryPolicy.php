@@ -2,7 +2,6 @@
 
 namespace App\Policies;
 
-use App\Enums\StaffRank;
 use App\Models\ReportCategory;
 use App\Models\User;
 
@@ -23,17 +22,17 @@ class ReportCategoryPolicy
 
     public function viewAny(User $user): bool
     {
-        return $user->isAtLeastRank(StaffRank::Officer);
+        return $user->hasRole('Manage Site Config');
     }
 
     public function create(User $user): bool
     {
-        return $user->isAtLeastRank(StaffRank::Officer);
+        return $user->hasRole('Manage Site Config');
     }
 
     public function update(User $user, ReportCategory $category): bool
     {
-        return $user->isAtLeastRank(StaffRank::Officer);
+        return $user->hasRole('Manage Site Config');
     }
 
     public function delete(User $user, ReportCategory $category): bool

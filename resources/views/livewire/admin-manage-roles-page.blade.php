@@ -153,7 +153,7 @@ new class extends Component {
 
         <form wire:submit.prevent="updateRole">
             <div class="space-y-6">
-                <flux:input id="role-name" label="Role Name" wire:model.defer="updateRoleName" required />
+                <flux:input id="role-name" label="Role Name" wire:model.defer="updateRoleName" readonly disabled />
                 <flux:input id="role-color" label="Color" wire:model.defer="updateRoleColor" />
                 <flux:input id="role-icon" label="Icon" wire:model.defer="updateRoleIcon" description="Heroicons icon name" />
                 <flux:textarea id="role-description" label="Description" wire:model.defer="updateRoleDescription" required />
