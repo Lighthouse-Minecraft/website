@@ -5,21 +5,20 @@ namespace App\Actions;
 use App\Models\User;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class PromoteUserToAdmin
+class RevokeUserAdmin
 {
     use AsAction;
 
     public function handle(User $user): bool
     {
-        if ($user->isAdmin()) {
+        if (! $user->isAdmin()) {
             return true;
         }
 
-        $user->admin_granted_at = now();
-        $user->promoted_at = now();
+        $user->admin_granted_at = null;
         $user->save();
 
-        RecordActivity::run($user, 'user_promoted_to_admin', 'Promoted to Admin role.');
+        RecordActivity::run($user, 'user_admin_revoked', 'Admin role revoked.');
 
         return true;
     }

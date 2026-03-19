@@ -104,6 +104,7 @@ class User extends Authenticatable // implements MustVerifyEmail
             'parent_allows_minecraft' => 'boolean',
             'parent_allows_discord' => 'boolean',
             'is_board_member' => 'boolean',
+            'admin_granted_at' => 'datetime',
         ];
     }
 
@@ -294,22 +295,31 @@ class User extends Authenticatable // implements MustVerifyEmail
         return $this->children()->exists();
     }
 
-    public function roles(): BelongsToMany
-    {
-        return $this->belongsToMany(Role::class);
-    }
-
-    /**
-     * Check if the user has the Admin role.
-     */
     public function isAdmin(): bool
     {
-        return $this->roles()->get()->contains('name', 'Admin');
+        return $this->admin_granted_at !== null;
     }
 
     public function hasRole(string $roleName): bool
     {
-        return $this->roles()->get()->contains('name', $roleName);
+        // Admin override — admins have all roles
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        // No staff position means no roles
+        $position = $this->staffPosition;
+        if (! $position) {
+            return false;
+        }
+
+        // Position with "allow all" override
+        if ($position->has_all_roles_at !== null) {
+            return true;
+        }
+
+        // Check position's assigned roles
+        return $position->roles()->where('name', $roleName)->exists();
     }
 
     public function isAtLeastLevel(MembershipLevel $level): bool
