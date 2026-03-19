@@ -74,25 +74,21 @@ test('user without View Logs role is denied activity log gate', function () {
     expect($user->can('view-activity-log'))->toBeFalse();
 });
 
-test('any officer can viewAny minecraft accounts', function () {
-    $user = User::factory()
-        ->withStaffPosition(StaffDepartment::Steward, StaffRank::Officer)
-        ->create();
+test('user with User Manager role can viewAny minecraft accounts', function () {
+    $user = User::factory()->withRole('User Manager')->create();
 
     expect($user->can('viewAny', MinecraftAccount::class))->toBeTrue();
 });
 
-test('any officer can viewAny discord accounts', function () {
-    $user = User::factory()
-        ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::Officer)
-        ->create();
+test('user with User Manager role can viewAny discord accounts', function () {
+    $user = User::factory()->withRole('User Manager')->create();
 
     expect($user->can('viewAny', DiscordAccount::class))->toBeTrue();
 });
 
-test('crew member from non-engineering dept cannot viewAny minecraft accounts', function () {
+test('officer without User Manager role cannot viewAny minecraft accounts', function () {
     $user = User::factory()
-        ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+        ->withStaffPosition(StaffDepartment::Steward, StaffRank::Officer)
         ->create();
 
     expect($user->can('viewAny', MinecraftAccount::class))->toBeFalse();

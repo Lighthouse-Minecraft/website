@@ -85,12 +85,21 @@ describe('Admin Control Panel Tabs Component', function () {
 
         $this->actingAs($user);
 
-        // Officer without roles sees Users (via UserPolicy) and Content, but not Logs or Config (now role-based)
+        // Officer without roles sees Content only, not Users/Logs/Config (now role-based)
         livewire('admin-control-panel-tabs')
-            ->assertSee('Users')
+            ->assertDontSee('Users')
             ->assertSee('Content')
             ->assertDontSee('Logs')
             ->assertDontSee('Config');
+    });
+
+    it('shows users category for user with User Manager role', function () {
+        $user = User::factory()->withRole('User Manager')->create();
+
+        $this->actingAs($user);
+
+        livewire('admin-control-panel-tabs')
+            ->assertSee('Users');
     });
 
     it('shows config category for user with Manage Site Config role', function () {

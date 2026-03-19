@@ -90,6 +90,12 @@ return new class extends Migration
                 'icon' => 'building-office',
             ],
             [
+                'name' => 'User Manager',
+                'description' => 'View and edit users, manage MC and Discord accounts in the ACP',
+                'color' => 'lime',
+                'icon' => 'users',
+            ],
+            [
                 'name' => 'View Command Dashboard',
                 'description' => 'Access the Command dashboard',
                 'color' => 'indigo',
@@ -129,6 +135,7 @@ return new class extends Migration
             'Publish Discipline Reports',
             'Manage Site Config',
             'View Logs',
+            'User Manager',
             'View All Ready Rooms',
             'View Command Dashboard',
         ])->delete();

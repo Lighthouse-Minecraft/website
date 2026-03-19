@@ -19,15 +19,16 @@ $expectedRoles = [
     ['name' => 'Publish Discipline Reports', 'description' => 'Publish and finalize discipline reports', 'color' => 'red', 'icon' => 'clipboard-document-check'],
     ['name' => 'Manage Site Config', 'description' => 'Manage site configuration and application questions', 'color' => 'slate', 'icon' => 'cog-6-tooth'],
     ['name' => 'View Logs', 'description' => 'Access MC command log, Discord API log, and activity log', 'color' => 'zinc', 'icon' => 'document-magnifying-glass'],
+    ['name' => 'User Manager', 'description' => 'View and edit users, manage MC and Discord accounts in the ACP', 'color' => 'lime', 'icon' => 'users'],
     ['name' => 'View All Ready Rooms', 'description' => 'See all department ready rooms', 'color' => 'teal', 'icon' => 'building-office'],
     ['name' => 'View Command Dashboard', 'description' => 'Access the Command dashboard', 'color' => 'indigo', 'icon' => 'chart-bar'],
 ];
 
-it('seeds exactly 14 permission roles', function () {
-    expect(Role::count())->toBeGreaterThanOrEqual(14);
+it('seeds exactly 15 permission roles', function () {
+    expect(Role::count())->toBeGreaterThanOrEqual(15);
 });
 
-it('seeds all 14 roles with correct attributes', function () use ($expectedRoles) {
+it('seeds all 15 roles with correct attributes', function () use ($expectedRoles) {
     foreach ($expectedRoles as $expected) {
         $role = Role::where('name', $expected['name'])->first();
 
@@ -38,7 +39,7 @@ it('seeds all 14 roles with correct attributes', function () use ($expectedRoles
     }
 });
 
-it('has all 14 role names matching the PRD specification', function () use ($expectedRoles) {
+it('has all 15 role names matching the PRD specification', function () use ($expectedRoles) {
     $expectedNames = collect($expectedRoles)->pluck('name')->sort()->values();
     $actualNames = Role::whereIn('name', $expectedNames)->pluck('name')->sort()->values();
 
