@@ -34,6 +34,23 @@ it('sets status to approved with background check and conditions', function () {
         ->and($application->reviewer_notes)->toContain('Good candidate');
 });
 
+it('assigns the applicant to the staff position with synced fields', function () {
+    $reviewer = User::factory()->create();
+    $user = User::factory()->create();
+    $position = StaffPosition::factory()->officer()->create(['accepting_applications' => true]);
+    $application = StaffApplication::factory()->backgroundCheck()->for($user)->for($position, 'staffPosition')->create();
+
+    ApproveApplication::run($application, $reviewer, BackgroundCheckStatus::Passed);
+
+    $position->refresh();
+    $user->refresh();
+
+    expect($position->user_id)->toBe($user->id)
+        ->and($user->staff_title)->toBe($position->title)
+        ->and($user->staff_department)->toBe($position->department)
+        ->and($user->staff_rank)->toBe($position->rank);
+});
+
 it('records activity log', function () {
     $reviewer = User::factory()->create();
     $user = User::factory()->create();
