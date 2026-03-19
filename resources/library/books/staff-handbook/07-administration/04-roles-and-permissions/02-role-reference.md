@@ -31,13 +31,9 @@ Lets you create and edit discipline reports. You can view all reports and update
 
 Lets you publish and finalize discipline reports. This is separate from creating them -- you need both this role and **Manage Discipline Reports** if you're handling the full reporting process.
 
-### Meeting Secretary
-
-Lets you manage non-staff-meeting meetings. You can create meetings, add notes, and manage the meeting lifecycle.
-
 ### Manage Staff Meeting
 
-Gives you write access to staff meetings. You can create, edit, and manage staff meeting content.
+Full meeting management access. You can create meetings, start/stop them, set the agenda, manage attendees, and edit all note sections (not just your own department). Officers without this role can only edit notes for their own department.
 
 ### Page Editor
 

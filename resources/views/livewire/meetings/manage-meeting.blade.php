@@ -34,7 +34,7 @@ new class extends Component {
     #[\Livewire\Attributes\Computed]
     public function staffByDepartment()
     {
-        return User::where('staff_rank', '>=', StaffRank::JrCrew->value)
+        return User::where('staff_rank', '>=', StaffRank::CrewMember->value)
             ->whereNotNull('staff_department')
             ->orderBy('name')
             ->get()

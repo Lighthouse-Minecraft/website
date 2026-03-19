@@ -42,12 +42,6 @@ return new class extends Migration
                 'icon' => 'arrow-trending-up',
             ],
             [
-                'name' => 'Meeting Secretary',
-                'description' => 'Manage non-staff-meeting meetings',
-                'color' => 'amber',
-                'icon' => 'inbox-arrow-down',
-            ],
-            [
                 'name' => 'Manage Staff Meeting',
                 'description' => 'Write access to staff meetings',
                 'color' => 'blue',
@@ -128,7 +122,6 @@ return new class extends Migration
             'Moderator',
             'Brig Warden',
             'Manage Membership Level',
-            'Meeting Secretary',
             'Manage Staff Meeting',
             'Manage Community Stories',
             'Manage Discipline Reports',

@@ -37,7 +37,7 @@ class MeetingNotePolicy
 
         // Officers can edit their own department's notes
         if ($user->isAtLeastRank(StaffRank::Officer) && $user->staff_department !== null) {
-            return $meetingNote->section_key === $user->staff_department;
+            return $meetingNote->section_key === $user->staff_department->value;
         }
 
         return false;

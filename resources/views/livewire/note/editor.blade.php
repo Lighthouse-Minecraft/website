@@ -53,7 +53,10 @@ new class extends Component {
     }
 
     public function CreateNote() {
-        $this->authorize('create', App\Models\MeetingNote::class);
+        // Check update permission against a temporary note with this section_key
+        // to enforce department-based restrictions
+        $tempNote = new MeetingNote(['section_key' => $this->section_key]);
+        $this->authorize('update', $tempNote);
 
         // Make sure the note wasn't already created
         $this->LookupNote();
@@ -190,6 +193,13 @@ new class extends Component {
         $this->syncLockState();
     }
 
+    public function getCanEditSectionProperty(): bool
+    {
+        $tempNote = new MeetingNote(['section_key' => $this->section_key]);
+
+        return auth()->user()->can('update', $tempNote);
+    }
+
     private function syncLockState(): void {
         $lockerId = $this->note->locked_by;
 
@@ -226,12 +236,10 @@ new class extends Component {
 
             @if(! $this->noteExists)
                 <div class="w-full text-center">
-                    @can('create', App\Models\MeetingNote::class)
-                        <flux:modal.trigger name="create-note-modal">
-                            @php $buttonLabel = ($section_key == 'agenda') ? 'Create Agenda' : 'Create ' . ucfirst($section_key) . ' Note'; @endphp
-                            <flux:button size="xs" wire:click="CreateNote">{{ $buttonLabel }}</flux:button>
-                        </flux:modal.trigger>
-                    @endcan
+                    @if($this->canEditSection)
+                        @php $buttonLabel = ($section_key == 'agenda') ? 'Create Agenda' : 'Create ' . ucfirst($section_key) . ' Note'; @endphp
+                        <flux:button size="xs" wire:click="CreateNote">{{ $buttonLabel }}</flux:button>
+                    @endif
                 </div>
             @else
 

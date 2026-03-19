@@ -23,7 +23,7 @@ class MeetingPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->isAtLeastRank(StaffRank::CrewMember) || $user->hasRole('Meeting Secretary');
+        return $user->isAtLeastRank(StaffRank::CrewMember);
     }
 
     /**
@@ -31,22 +31,22 @@ class MeetingPolicy
      */
     public function view(User $user, Meeting $meeting): bool
     {
-        return $user->isAtLeastRank(StaffRank::CrewMember) || $user->hasRole('Meeting Secretary');
+        return $user->isAtLeastRank(StaffRank::CrewMember);
     }
 
     public function attend(User $user, Meeting $meeting): bool
     {
-        return $user->isAtLeastRank(StaffRank::CrewMember) || $user->hasRole('Meeting Secretary');
+        return $user->isAtLeastRank(StaffRank::CrewMember);
     }
 
     public function viewAnyPrivate(User $user): bool
     {
-        return $user->isAtLeastRank(StaffRank::Officer) || $user->hasRole('Meeting Secretary');
+        return $user->isAtLeastRank(StaffRank::CrewMember);
     }
 
     public function viewAnyPublic(User $user): bool
     {
-        return $user->isAtLeastLevel(MembershipLevel::Resident) || $user->hasRole('Meeting Secretary');
+        return $user->isAtLeastLevel(MembershipLevel::Resident);
     }
 
     /**
@@ -54,15 +54,7 @@ class MeetingPolicy
      */
     public function create(User $user): bool
     {
-        if ($user->isAtLeastRank(StaffRank::Officer)) {
-            return true;
-        }
-
-        if ($user->hasRole('Meeting Secretary')) {
-            return true;
-        }
-
-        return false;
+        return $user->hasRole('Manage Staff Meeting');
     }
 
     /**
@@ -70,15 +62,7 @@ class MeetingPolicy
      */
     public function update(User $user, Meeting $meeting): bool
     {
-        if ($user->isAtLeastRank(StaffRank::Officer)) {
-            return true;
-        }
-
-        if ($user->hasRole('Meeting Secretary')) {
-            return true;
-        }
-
-        return false;
+        return $user->hasRole('Manage Staff Meeting');
     }
 
     /**

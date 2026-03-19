@@ -44,8 +44,8 @@ class Meeting extends Model
 
         $starterId = $starterId ?? Auth::id();
 
-        // Seed attendance records for all active staff
-        $staffUserIds = User::where('staff_rank', '>=', StaffRank::JrCrew->value)
+        // Seed attendance records for CrewMember+ staff
+        $staffUserIds = User::where('staff_rank', '>=', StaffRank::CrewMember->value)
             ->pluck('id');
 
         $now = now();

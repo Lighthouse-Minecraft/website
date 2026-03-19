@@ -33,10 +33,9 @@ Meetings can also be **Cancelled**.
 
 ## Who Can Manage Meetings
 
-- **Officers** and **Admins** can create, start, end, and finalize meetings
-- Users with the **Meeting Secretary** role can also manage meetings (this lets a non-Officer handle meeting logistics)
-- All staff (Jr Crew and above) can attend meetings and submit check-in reports
-- Crew Members and above can collaborate on meeting notes
+- Users with the **Manage Staff Meeting** role can create, start, end, and finalize meetings, manage attendees, and edit all note sections
+- **Officers** can edit meeting notes for their own department's section
+- **Crew Members** and above can view meetings, attend, and submit check-in reports
 
 ## Where to Find Meetings
 
