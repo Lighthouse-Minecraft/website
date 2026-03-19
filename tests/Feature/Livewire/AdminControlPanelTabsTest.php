@@ -3,6 +3,7 @@
 use App\Enums\StaffDepartment;
 use App\Enums\StaffRank;
 use App\Models\Role;
+use App\Models\StaffPosition;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -147,8 +148,9 @@ describe('Admin Control Panel Tabs Component', function () {
             'staff_rank' => StaffRank::None,
         ]);
 
+        $position = StaffPosition::factory()->assignedTo($user->id)->create();
         $pageEditorRole = Role::firstOrCreate(['name' => 'Page Editor']);
-        $user->roles()->attach($pageEditorRole);
+        $position->roles()->attach($pageEditorRole);
 
         $this->actingAs($user);
 
