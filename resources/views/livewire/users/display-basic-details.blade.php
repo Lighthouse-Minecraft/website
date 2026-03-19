@@ -787,6 +787,27 @@ new class extends Component {
                         @endif
                     </div>
 
+                    @if(Auth::user()->isAtLeastRank(\App\Enums\StaffRank::JrCrew) || Auth::user()->isAdmin())
+                        @php
+                            $position = $user->staffPosition->load('roles');
+                        @endphp
+                        @if($position->has_all_roles_at)
+                            <div>
+                                <flux:heading size="sm" class="mb-1">Roles</flux:heading>
+                                <flux:badge size="sm" color="amber" icon="star">Allow All</flux:badge>
+                            </div>
+                        @elseif($position->roles->isNotEmpty())
+                            <div>
+                                <flux:heading size="sm" class="mb-1">Roles</flux:heading>
+                                <div class="flex flex-wrap gap-1">
+                                    @foreach($position->roles as $role)
+                                        <flux:badge size="sm" color="{{ $role->color }}" icon="{{ $role->icon }}">{{ $role->name }}</flux:badge>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+                    @endif
+
                     @if(! $user->isJrCrew() && $user->staff_bio)
                         <div>
                             <flux:heading size="sm" class="mb-1">About</flux:heading>
