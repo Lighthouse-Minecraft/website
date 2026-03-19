@@ -30,6 +30,12 @@ return new class extends Migration
                 'icon' => 'lock-closed',
             ],
             [
+                'name' => 'Announcement Editor',
+                'description' => 'Create, edit, and delete announcements',
+                'color' => 'cyan',
+                'icon' => 'megaphone',
+            ],
+            [
                 'name' => 'Manage Membership Level',
                 'description' => 'Promote and demote users through membership levels',
                 'color' => 'emerald',
@@ -111,6 +117,7 @@ return new class extends Migration
     public function down(): void
     {
         DB::table('roles')->whereIn('name', [
+            'Announcement Editor',
             'Page Editor',
             'Moderator',
             'Brig Warden',

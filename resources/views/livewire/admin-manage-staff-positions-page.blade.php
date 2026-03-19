@@ -178,8 +178,8 @@ new class extends Component {
 
     public function toggleAllowAll(int $positionId): void
     {
+        abort_unless(auth()->user()->isAdmin(), 403, 'Only admins can toggle Allow All.');
         $position = StaffPosition::findOrFail($positionId);
-        $this->authorize('update', $position);
 
         if ($position->has_all_roles_at) {
             $position->update(['has_all_roles_at' => null]);
@@ -376,20 +376,22 @@ new class extends Component {
         @if($this->rolePosition)
             <flux:heading size="lg">Manage Roles: {{ $this->rolePosition->title }}</flux:heading>
 
-            {{-- Allow All Toggle --}}
-            <div class="flex items-center justify-between p-3 rounded-lg border border-zinc-200 dark:border-zinc-700">
-                <div>
-                    <flux:heading size="sm">Allow All Roles</flux:heading>
-                    <flux:text variant="subtle" class="text-sm">Grant all roles to this position without assigning them individually.</flux:text>
+            {{-- Allow All Toggle (Admin only) --}}
+            @if(auth()->user()->isAdmin())
+                <div class="flex items-center justify-between p-3 rounded-lg border border-zinc-200 dark:border-zinc-700">
+                    <div>
+                        <flux:heading size="sm">Allow All Roles</flux:heading>
+                        <flux:text variant="subtle" class="text-sm">Grant all roles to this position without assigning them individually.</flux:text>
+                    </div>
+                    <flux:button
+                        wire:click="toggleAllowAll({{ $this->rolePosition->id }})"
+                        size="sm"
+                        variant="{{ $this->rolePosition->has_all_roles_at ? 'danger' : 'primary' }}"
+                    >
+                        {{ $this->rolePosition->has_all_roles_at ? 'Disable' : 'Enable' }}
+                    </flux:button>
                 </div>
-                <flux:button
-                    wire:click="toggleAllowAll({{ $this->rolePosition->id }})"
-                    size="sm"
-                    variant="{{ $this->rolePosition->has_all_roles_at ? 'danger' : 'primary' }}"
-                >
-                    {{ $this->rolePosition->has_all_roles_at ? 'Disable' : 'Enable' }}
-                </flux:button>
-            </div>
+            @endif
 
             @if($this->rolePosition->has_all_roles_at)
                 <flux:text variant="subtle">This position has Allow All enabled. Individual role assignments are not needed.</flux:text>

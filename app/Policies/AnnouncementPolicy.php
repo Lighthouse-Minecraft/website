@@ -2,8 +2,6 @@
 
 namespace App\Policies;
 
-use App\Enums\StaffDepartment;
-use App\Enums\StaffRank;
 use App\Models\Announcement;
 use App\Models\User;
 
@@ -39,14 +37,7 @@ class AnnouncementPolicy
      */
     public function create(User $user): bool
     {
-        return
-            $user->hasRole('Announcement Editor')
-            || $user->isAtLeastRank(StaffRank::Officer)
-            || ($user->isAtLeastRank(StaffRank::CrewMember)
-                && ($user->isInDepartment(StaffDepartment::Engineer)
-                    || $user->isInDepartment(StaffDepartment::Steward)
-                )
-            );
+        return $user->hasRole('Announcement Editor');
     }
 
     /**
@@ -54,14 +45,7 @@ class AnnouncementPolicy
      */
     public function update(User $user, Announcement $announcement): bool
     {
-        return
-            $user->hasRole('Announcement Editor')
-            || $user->isAtLeastRank(StaffRank::Officer)
-            || ($user->isAtLeastRank(StaffRank::CrewMember)
-                && ($user->isInDepartment(StaffDepartment::Engineer)
-                    || $user->isInDepartment(StaffDepartment::Steward)
-                )
-            );
+        return $user->hasRole('Announcement Editor');
     }
 
     public function acknowledge(User $user, Announcement $announcement): bool
@@ -74,12 +58,6 @@ class AnnouncementPolicy
      */
     public function delete(User $user, Announcement $announcement): bool
     {
-        return
-            $user->hasRole('Announcement Editor')
-            || ($user->isAtLeastRank(StaffRank::Officer)
-                && ($user->isInDepartment(StaffDepartment::Engineer)
-                    || $user->isInDepartment(StaffDepartment::Steward)
-                )
-            );
+        return $user->hasRole('Announcement Editor');
     }
 }
