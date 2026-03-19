@@ -54,6 +54,7 @@ The ACP is organized into four top-level categories:
 | **Roles** | Manage user roles (Admin, Meeting Secretary, Page Editor, etc.). |
 | **Report Categories** | Manage discipline report categories (Language, Harassment, etc.). |
 | **Prayer Nations** | Manage the prayer tracking country list. |
+| **Application Questions** | Create, edit, and manage the questions shown to staff applicants. See [[books/staff-handbook/administration/staff-applications/managing-application-questions|Managing Application Questions]]. |
 
 ## Important Notes
 
