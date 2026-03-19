@@ -100,7 +100,7 @@ class SubmitApplication
                     ->get();
 
                 // Also add admins
-                $admins = User::whereHas('roles', fn ($q) => $q->where('name', 'Admin'))
+                $admins = User::whereNotNull('admin_granted_at')
                     ->where('id', '!=', $applicant->id)
                     ->where('id', '!=', $systemUser->id)
                     ->get();
@@ -128,7 +128,7 @@ class SubmitApplication
                     $sub->where('staff_department', StaffDepartment::Command)
                         ->where('staff_rank', '>=', StaffRank::Officer->value);
                 })
-                    ->orWhereHas('roles', fn ($r) => $r->where('name', 'Admin'));
+                    ->orWhereNotNull('admin_granted_at');
             })
                 ->where('id', '!=', $applicant->id)
                 ->get();

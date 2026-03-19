@@ -94,7 +94,7 @@ new class extends Component {
         $sortDirection = in_array($this->sortDirection, ['asc', 'desc'], true) ? $this->sortDirection : 'desc';
 
         return Announcement::orderBy($sortBy, $sortDirection)
-            ->with(['author.roles', 'author.minecraftAccounts', 'author.discordAccounts'])
+            ->with(['author.minecraftAccounts', 'author.discordAccounts'])
             ->paginate(10);
     }
 
