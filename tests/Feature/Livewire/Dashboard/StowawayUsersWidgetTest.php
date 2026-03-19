@@ -113,17 +113,11 @@ describe('Stowaway Users Widget', function () {
 });
 
 describe('Stowaway Users Widget - Permissions', function () {
-    it('can be seen by quartermaster staff', function () {
-        $user = User::factory()->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::JrCrew, 'Jr Quartermaster')->create();
-        loginAs($user);
-
-        get('dashboard')
-            ->assertSee('Stowaway Users')
-            ->assertSeeLivewire('dashboard.stowaway-users-widget');
-    });
-
-    it('can be seen by command staff', function () {
-        $user = User::factory()->withStaffPosition(StaffDepartment::Command, StaffRank::JrCrew, 'Jr Command')->create();
+    it('can be seen by user with Manage Membership Level role', function () {
+        $user = User::factory()
+            ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::JrCrew, 'Jr Quartermaster')
+            ->withRole('Manage Membership Level')
+            ->create();
         loginAs($user);
 
         get('dashboard')
@@ -139,7 +133,7 @@ describe('Stowaway Users Widget - Permissions', function () {
             ->assertDontSeeLivewire('dashboard.stowaway-users-widget');
     })->with('memberAll');
 
-    it('cannot be viewed by other department staff', function () {
+    it('cannot be viewed by staff without Manage Membership Level role', function () {
         $user = User::factory()->withStaffPosition(StaffDepartment::Engineer, StaffRank::Officer, 'Engineer Officer')->create();
         loginAs($user);
 
@@ -148,24 +142,11 @@ describe('Stowaway Users Widget - Permissions', function () {
             ->assertDontSeeLivewire('dashboard.stowaway-users-widget');
     });
 
-    it('allows quartermaster staff to promote stowaway users', function () {
-        $user = User::factory()->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::CrewMember, 'Quartermaster Crew')->create();
-        loginAs($user);
-        $member = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create();
-
-        livewire('dashboard.stowaway-users-widget')
-            ->set('selectedUser', $member)
-            ->call('promoteToTraveler')
-            ->assertOk();
-
-        $this->assertDatabaseHas('users', [
-            'id' => $member->id,
-            'membership_level' => MembershipLevel::Traveler,
-        ]);
-    });
-
-    it('allows command staff to promote stowaway users', function () {
-        $user = User::factory()->withStaffPosition(StaffDepartment::Command, StaffRank::CrewMember, 'Command Crew')->create();
+    it('allows user with Manage Membership Level role to promote stowaway users', function () {
+        $user = User::factory()
+            ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::CrewMember, 'Quartermaster Crew')
+            ->withRole('Manage Membership Level')
+            ->create();
         loginAs($user);
         $member = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create();
 

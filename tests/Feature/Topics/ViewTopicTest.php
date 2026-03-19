@@ -86,8 +86,11 @@ describe('View Topic Component', function () {
             ->assertSee('This topic is locked');
     });
 
-    it('allows officers to lock and unlock topic', function () {
-        $officer = officerQuartermaster();
+    it('allows users with Moderator role to lock and unlock topic', function () {
+        $officer = User::factory()
+            ->withStaffPosition(\App\Enums\StaffDepartment::Quartermaster, \App\Enums\StaffRank::Officer)
+            ->withRole('Moderator')
+            ->create();
         $thread = Thread::factory()->topic()->create();
         $thread->addParticipant($officer);
 

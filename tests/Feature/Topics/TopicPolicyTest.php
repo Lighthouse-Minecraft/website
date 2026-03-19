@@ -106,15 +106,23 @@ describe('reply policy with locking', function () {
 });
 
 describe('lock-topic gate', function () {
-    it('allows officers to lock topics', function () {
-        $officer = officerQuartermaster();
+    it('allows user with Moderator role to lock topics', function () {
+        $user = User::factory()->withRole('Moderator')->create();
 
-        $this->actingAs($officer);
+        $this->actingAs($user);
 
         expect(Gate::allows('lock-topic'))->toBeTrue();
     });
 
-    it('denies crew from locking topics', function () {
+    it('allows admin to lock topics', function () {
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin);
+
+        expect(Gate::allows('lock-topic'))->toBeTrue();
+    });
+
+    it('denies user without Moderator role from locking topics', function () {
         $crew = crewQuartermaster();
 
         $this->actingAs($crew);
