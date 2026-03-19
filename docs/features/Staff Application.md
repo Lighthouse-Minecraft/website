@@ -494,7 +494,7 @@ Key concepts:
 2. Validates no pending application exists for this user/position combo (`RuntimeException` if duplicate)
 3. Creates `StaffApplication` with `Submitted` status and applicant snapshot data (age, membership level, member since, report/commendation counts)
 4. Creates `StaffApplicationAnswer` records for each question/answer pair
-5. Creates a staff-only review discussion thread via `CreateTopic::run()` titled "Staff Application Review: {name} for {position}"
+5. Creates a staff-only review discussion thread via `CreateTopic::run()` titled "[STAFF ONLY] Application Review: {name} for {position}"
 6. Adds Command Officers, department staff, and Admins as thread participants
 7. Updates application with `staff_review_thread_id`
 8. Logs activity: `RecordActivity::run($application, 'application_submitted', ...)`
@@ -673,7 +673,7 @@ Not directly applicable. Notifications are routed through the shared `TicketNoti
 
 ### Submitting an Application
 
-```
+```text
 User clicks "Apply" on staff directory page
   -> GET /applications/apply/{staffPosition} (middleware: auth)
     -> apply.blade.php::mount()
@@ -701,7 +701,7 @@ User clicks "Apply" on staff directory page
 
 ### Reviewing an Application (Staff)
 
-```
+```text
 Staff member clicks "Review" in review list
   -> GET /admin/applications/{staffApplication} (middleware: auth, can:review-staff-applications)
     -> review-detail.blade.php::mount()
@@ -716,7 +716,7 @@ Staff member clicks "Review" in review list
 
 ### Approving an Application
 
-```
+```text
 Reviewer clicks "Approve Application" button (BackgroundCheck status)
   -> Modal opens: approve-modal
   -> Reviewer selects final BG check status, enters conditions/notes
@@ -735,7 +735,7 @@ Reviewer clicks "Approve Application" button (BackgroundCheck status)
 
 ### Withdrawing an Application
 
-```
+```text
 Applicant clicks "Withdraw Application" on show page
   -> wire:confirm "Are you sure?"
   -> show.blade.php::withdraw()
@@ -750,7 +750,7 @@ Applicant clicks "Withdraw Application" on show page
 
 ### Scheduling an Interview
 
-```
+```text
 Reviewer clicks "Schedule Interview" (UnderReview status)
   -> Modal opens: schedule-interview-modal
   -> Reviewer enters optional notes
