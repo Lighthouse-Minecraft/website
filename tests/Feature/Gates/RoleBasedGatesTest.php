@@ -197,7 +197,7 @@ it('grants all log gates to user with View Logs role', function () {
         ->and($user->can('view-discipline-report-log'))->toBeTrue();
 });
 
-it('denies all log gates without View Logs role', function () {
+it('denies log gates without View Logs role', function () {
     $user = User::factory()
         ->withStaffPosition(StaffDepartment::Engineer, StaffRank::Officer)
         ->create();
@@ -206,6 +206,15 @@ it('denies all log gates without View Logs role', function () {
         ->and($user->can('view-discord-api-log'))->toBeFalse()
         ->and($user->can('view-activity-log'))->toBeFalse()
         ->and($user->can('view-discipline-report-log'))->toBeFalse();
+});
+
+it('grants view-discipline-report-log to user with Manage Discipline Reports role', function () {
+    $user = User::factory()->withRole('Manage Discipline Reports')->create();
+
+    expect($user->can('view-discipline-report-log'))->toBeTrue()
+        ->and($user->can('view-mc-command-log'))->toBeFalse()
+        ->and($user->can('view-discord-api-log'))->toBeFalse()
+        ->and($user->can('view-activity-log'))->toBeFalse();
 });
 
 it('grants all log gates to admin', function () {
