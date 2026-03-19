@@ -283,16 +283,16 @@ it('denies view-command-dashboard without role', function () {
 
 // == edit-docs == //
 
-it('grants edit-docs to user with Edit Docs role', function () {
-    $user = User::factory()->withRole('Edit Docs')->create();
+it('grants edit-docs in local environment', function () {
+    app()->detectEnvironment(fn () => 'local');
+    $user = User::factory()->create();
 
     expect($user->can('edit-docs'))->toBeTrue();
 });
 
-it('denies edit-docs without role', function () {
-    $user = User::factory()
-        ->withStaffPosition(StaffDepartment::Command, StaffRank::Officer)
-        ->create();
+it('denies edit-docs in production environment', function () {
+    app()->detectEnvironment(fn () => 'production');
+    $user = User::factory()->admin()->create();
 
     expect($user->can('edit-docs'))->toBeFalse();
 });
@@ -512,7 +512,6 @@ it('grants all role-based gates to user with allow-all position', function () {
         ->and($user->can('publish-discipline-reports'))->toBeTrue()
         ->and($user->can('manage-site-config'))->toBeTrue()
         ->and($user->can('view-command-dashboard'))->toBeTrue()
-        ->and($user->can('edit-docs'))->toBeTrue()
         ->and($user->can('lock-topic'))->toBeTrue()
         ->and($user->can('manage-community-stories'))->toBeTrue()
         ->and($user->can('manage-application-questions'))->toBeTrue();
@@ -534,7 +533,6 @@ it('grants all role-based gates to admin user', function () {
         ->and($user->can('publish-discipline-reports'))->toBeTrue()
         ->and($user->can('manage-site-config'))->toBeTrue()
         ->and($user->can('view-command-dashboard'))->toBeTrue()
-        ->and($user->can('edit-docs'))->toBeTrue()
         ->and($user->can('lock-topic'))->toBeTrue()
         ->and($user->can('manage-community-stories'))->toBeTrue()
         ->and($user->can('manage-application-questions'))->toBeTrue()

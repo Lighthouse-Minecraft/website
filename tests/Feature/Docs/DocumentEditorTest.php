@@ -58,13 +58,13 @@ it('requires authentication for editor', function () {
         ->assertRedirect();
 });
 
-it('requires edit-docs gate for editor', function () {
-    app()->detectEnvironment(fn () => 'local');
-    $user = User::factory()->create();
+it('denies editor access in non-local environment', function () {
+    app()->detectEnvironment(fn () => 'production');
+    $user = User::factory()->admin()->create();
     loginAs($user);
 
     $this->get('/library/editor')
-        ->assertForbidden();
+        ->assertNotFound();
 });
 
 it('saves edited front matter and body', function () {

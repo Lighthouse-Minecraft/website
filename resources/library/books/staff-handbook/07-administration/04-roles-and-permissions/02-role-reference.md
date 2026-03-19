@@ -35,10 +35,6 @@ Lets you publish and finalize discipline reports. This is separate from creating
 
 Lets you manage non-staff-meeting meetings. You can create meetings, add notes, and manage the meeting lifecycle.
 
-### Attend Staff Meeting
-
-Gives you read-only access to staff meeting notes and agendas.
-
 ### Manage Staff Meeting
 
 Gives you write access to staff meetings. You can create, edit, and manage staff meeting content.
@@ -46,10 +42,6 @@ Gives you write access to staff meetings. You can create, edit, and manage staff
 ### Page Editor
 
 Lets you create and edit static content pages on the website (like the rules page, donation page, etc.).
-
-### Edit Docs
-
-Lets you edit documentation and handbook pages in the Library.
 
 ### Manage Community Stories
 

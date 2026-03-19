@@ -42,22 +42,10 @@ return new class extends Migration
                 'icon' => 'inbox-arrow-down',
             ],
             [
-                'name' => 'Attend Staff Meeting',
-                'description' => 'Read-only access to staff meetings',
-                'color' => 'sky',
-                'icon' => 'eye',
-            ],
-            [
                 'name' => 'Manage Staff Meeting',
                 'description' => 'Write access to staff meetings',
                 'color' => 'blue',
                 'icon' => 'pencil-square',
-            ],
-            [
-                'name' => 'Edit Docs',
-                'description' => 'Edit documentation and handbook pages',
-                'color' => 'violet',
-                'icon' => 'document-text',
             ],
             [
                 'name' => 'Manage Community Stories',
@@ -128,9 +116,7 @@ return new class extends Migration
             'Brig Warden',
             'Manage Membership Level',
             'Meeting Secretary',
-            'Attend Staff Meeting',
             'Manage Staff Meeting',
-            'Edit Docs',
             'Manage Community Stories',
             'Manage Discipline Reports',
             'Publish Discipline Reports',

@@ -229,9 +229,7 @@ Methods: `label()`, `discordRoleId()`, `minecraftRank()`
 | Brig Warden | Handle brig appeals, release users from the brig | orange | lock-closed |
 | Manage Membership Level | Promote and demote users through membership levels | emerald | arrow-trending-up |
 | Meeting Secretary | Manage non-staff-meeting meetings | amber | inbox-arrow-down |
-| Attend Staff Meeting | Read-only access to staff meetings | sky | eye |
 | Manage Staff Meeting | Write access to staff meetings | blue | pencil-square |
-| Edit Docs | Edit documentation and handbook pages | violet | document-text |
 | Manage Community Stories | Manage community questions and responses | pink | chat-bubble-left-right |
 | Manage Discipline Reports | Create and manage discipline reports | yellow | clipboard-document-list |
 | Publish Discipline Reports | Publish and finalize discipline reports | red | clipboard-document-check |

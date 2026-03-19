@@ -198,6 +198,17 @@ new class extends Component {
 
         return StaffPosition::with('roles')->find($this->rolePositionId);
     }
+
+    public function getUnassignedRolesProperty()
+    {
+        $assignedRoleIds = StaffPosition::whereNull('has_all_roles_at')
+            ->with('roles')
+            ->get()
+            ->flatMap(fn ($p) => $p->roles->pluck('id'))
+            ->unique();
+
+        return Role::whereNotIn('id', $assignedRoleIds)->orderBy('name')->get();
+    }
 }; ?>
 
 <div class="space-y-6">
@@ -266,7 +277,10 @@ new class extends Component {
         </flux:table.rows>
     </flux:table>
 
-    <div class="w-full text-right">
+    <div class="w-full flex justify-end gap-2">
+        <flux:modal.trigger name="check-role-usage-modal">
+            <flux:button variant="ghost" icon="clipboard-document-check">Check Role Usage</flux:button>
+        </flux:modal.trigger>
         <flux:modal.trigger name="create-position-modal">
             <flux:button variant="primary">Create Position</flux:button>
         </flux:modal.trigger>
@@ -329,6 +343,32 @@ new class extends Component {
                 <flux:button type="submit" variant="primary">Save Changes</flux:button>
             </div>
         </form>
+    </flux:modal>
+
+    {{-- Check Role Usage Modal --}}
+    <flux:modal name="check-role-usage-modal" class="w-full lg:w-1/2 space-y-6">
+        <flux:heading size="lg">Role Usage Check</flux:heading>
+
+        @if($this->unassignedRoles->isEmpty())
+            <div class="flex items-center gap-2 p-3 rounded-lg border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20">
+                <flux:icon name="check-circle" variant="solid" class="text-emerald-500" />
+                <flux:text>All roles are assigned to at least one position.</flux:text>
+            </div>
+        @else
+            <flux:text variant="subtle">The following roles have not been assigned to any staff position:</flux:text>
+            <div class="flex flex-wrap gap-2">
+                @foreach($this->unassignedRoles as $role)
+                    <flux:badge size="sm" color="{{ $role->color }}" icon="{{ $role->icon }}">{{ $role->name }}</flux:badge>
+                @endforeach
+            </div>
+            <flux:text variant="subtle" class="text-sm">
+                {{ $this->unassignedRoles->count() }} of {{ $this->allRoles->count() }} roles are unassigned.
+            </flux:text>
+        @endif
+
+        <div class="flex justify-end">
+            <flux:button variant="ghost" x-on:click="$flux.modal('check-role-usage-modal').close()">Close</flux:button>
+        </div>
     </flux:modal>
 
     {{-- Manage Roles Modal --}}
