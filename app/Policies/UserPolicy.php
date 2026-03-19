@@ -34,7 +34,7 @@ class UserPolicy
 
     public function viewActivityLog(User $user, User $model): bool
     {
-        return $user->id == $model->id || $user->hasRole('User Manager');
+        return $user->hasRole('User Manager');
     }
 
     public function viewPii(User $user, User $model): bool

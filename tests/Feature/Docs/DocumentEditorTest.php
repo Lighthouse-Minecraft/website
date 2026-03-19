@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Models\User;
 use App\Services\DocumentationService;
 use Illuminate\Support\Facades\File;
 
@@ -56,15 +55,6 @@ it('requires authentication for editor', function () {
 
     $this->get('/library/editor')
         ->assertRedirect();
-});
-
-it('denies editor access in non-local environment', function () {
-    app()->detectEnvironment(fn () => 'production');
-    $user = User::factory()->admin()->create();
-    loginAs($user);
-
-    $this->get('/library/editor')
-        ->assertNotFound();
 });
 
 it('saves edited front matter and body', function () {

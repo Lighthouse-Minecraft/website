@@ -182,10 +182,12 @@ new class extends Component {
         $position = StaffPosition::findOrFail($positionId);
 
         if ($position->has_all_roles_at) {
-            $position->update(['has_all_roles_at' => null]);
+            $position->has_all_roles_at = null;
+            $position->save();
             Flux::toast('Allow All disabled for this position.', 'Updated', variant: 'success');
         } else {
-            $position->update(['has_all_roles_at' => now()]);
+            $position->has_all_roles_at = now();
+            $position->save();
             Flux::toast('Allow All enabled for this position.', 'Updated', variant: 'success');
         }
     }

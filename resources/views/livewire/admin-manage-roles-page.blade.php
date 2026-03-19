@@ -107,14 +107,12 @@ new class extends Component {
         $this->authorize('update', $role);
 
         $this->validate([
-            'updateRoleName' => 'required|string|max:255',
             'updateRoleColor' => 'required|string|max:50',
             'updateRoleDescription' => 'nullable|string|max:500',
             'updateRoleIcon' => ['nullable', 'string', 'max:50', 'in:' . implode(',', $this->allowedIcons)],
         ]);
 
         $role->update([
-            'name' => $this->updateRoleName,
             'color' => $this->updateRoleColor,
             'description' => $this->updateRoleDescription,
             'icon' => $this->updateRoleIcon,

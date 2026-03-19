@@ -40,6 +40,7 @@ return new class extends Migration
         Schema::create('role_staff_position', function (Blueprint $table) {
             $table->foreignId('role_id')->constrained()->onDelete('cascade');
             $table->foreignId('staff_position_id')->constrained()->onDelete('cascade');
+            $table->unique(['role_id', 'staff_position_id']);
             $table->timestamps();
         });
 

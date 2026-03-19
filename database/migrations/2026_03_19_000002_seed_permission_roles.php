@@ -98,16 +98,25 @@ return new class extends Migration
         ];
 
         foreach ($roles as $role) {
-            DB::table('roles')->updateOrInsert(
-                ['name' => $role['name']],
-                [
+            $exists = DB::table('roles')->where('name', $role['name'])->exists();
+
+            if ($exists) {
+                DB::table('roles')->where('name', $role['name'])->update([
+                    'description' => $role['description'],
+                    'color' => $role['color'],
+                    'icon' => $role['icon'],
+                    'updated_at' => now(),
+                ]);
+            } else {
+                DB::table('roles')->insert([
+                    'name' => $role['name'],
                     'description' => $role['description'],
                     'color' => $role['color'],
                     'icon' => $role['icon'],
                     'created_at' => now(),
                     'updated_at' => now(),
-                ]
-            );
+                ]);
+            }
         }
     }
 

@@ -7,9 +7,17 @@ summary: "Complete list of every permission role and what it unlocks."
 
 ## Overview
 
-There are 15 permission roles in the system. Each one unlocks specific features or actions. Your position may have some, all, or none of these -- it depends on what your role on the team requires.
+Each permission role unlocks specific features or actions. Your position may have some, all, or none of these -- it depends on what your role on the team requires.
 
 ## Permission Roles
+
+### Announcement Editor
+
+Lets you create, edit, and delete community announcements.
+
+### User Manager
+
+Gives you access to view and edit user accounts in the ACP, including managing Minecraft and Discord accounts.
 
 ### Moderator
 
@@ -61,4 +69,4 @@ Gives you access to the Command department's dashboard.
 
 ## Admin Access
 
-**Admin** isn't a role -- it's a separate status. Admins automatically pass every permission check on the site, including all 15 roles listed above plus full access to every policy-protected action. Admin status is managed separately and can only be granted through internal tools.
+**Admin** isn't a role -- it's a separate status. Admins automatically pass every permission check on the site, including all roles listed above plus full access to every policy-protected action. Admin status is managed separately and can only be granted through internal tools.

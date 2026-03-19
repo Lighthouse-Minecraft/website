@@ -3,8 +3,6 @@
 namespace App\Policies;
 
 use App\Enums\MembershipLevel;
-use App\Enums\StaffDepartment;
-use App\Enums\StaffRank;
 use App\Models\PrayerCountry;
 use App\Models\User;
 
@@ -37,7 +35,7 @@ class PrayerCountryPolicy
      */
     public function create(User $user): bool
     {
-        return $user->isInDepartment(StaffDepartment::Chaplain) && $user->isAtLeastRank(StaffRank::Officer);
+        return $user->hasRole('Manage Site Config');
     }
 
     /**
@@ -45,6 +43,6 @@ class PrayerCountryPolicy
      */
     public function update(User $user, PrayerCountry $prayerCountry): bool
     {
-        return $user->isInDepartment(StaffDepartment::Chaplain) && $user->isAtLeastRank(StaffRank::Officer);
+        return $user->hasRole('Manage Site Config');
     }
 }

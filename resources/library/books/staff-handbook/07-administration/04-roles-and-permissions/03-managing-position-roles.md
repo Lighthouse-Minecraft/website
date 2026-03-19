@@ -42,7 +42,7 @@ The role is removed immediately. The person holding the position loses that perm
 
 ## Using Allow All
 
-Some leadership positions need access to everything. Instead of assigning all 15 roles individually, you can enable **Allow All**.
+Some leadership positions need access to everything. Instead of assigning every role individually, you can enable **Allow All**.
 
 1. Open the **Manage Roles** modal for the position
 2. At the top, find the **Allow All Roles** toggle

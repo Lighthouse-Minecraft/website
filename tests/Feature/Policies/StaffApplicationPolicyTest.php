@@ -14,8 +14,7 @@ it('allows admin to review applications', function () {
     expect($admin->can('viewAny', StaffApplication::class))->toBeTrue();
 });
 
-// TODO: Re-enable after PRD #280 completion — command officer no longer bypasses before() hook
-it('command officer can view applications via crew member rank check', function () {
+it('command officer can view applications via officer rank check', function () {
     $officer = officerCommand();
 
     expect($officer->can('viewAny', StaffApplication::class))->toBeTrue();
