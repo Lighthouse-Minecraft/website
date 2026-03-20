@@ -179,3 +179,64 @@ it('denies upload to users without manage-blog gate', function () {
     \Livewire\Livewire::test('blog.editor')
         ->assertForbidden();
 });
+
+// === Image Gallery ===
+
+it('displays the image gallery with existing images', function () {
+    $author = User::factory()->withRole('Blog Author')->create();
+    loginAs($author);
+
+    $image1 = BlogImage::factory()->create(['title' => 'Sunset Photo']);
+    $image2 = BlogImage::factory()->create(['title' => 'Mountain View']);
+
+    \Livewire\Livewire::test('blog.editor')
+        ->assertSee('Browse Images')
+        ->assertSee('Sunset Photo')
+        ->assertSee('Mountain View');
+});
+
+it('filters gallery images by title search', function () {
+    $author = User::factory()->withRole('Blog Author')->create();
+    loginAs($author);
+
+    BlogImage::factory()->create(['title' => 'Sunset Photo']);
+    BlogImage::factory()->create(['title' => 'Mountain View']);
+
+    \Livewire\Livewire::test('blog.editor')
+        ->set('gallerySearch', 'Sunset')
+        ->assertSee('Sunset Photo')
+        ->assertDontSee('Mountain View');
+});
+
+it('shows empty state when no gallery images match search', function () {
+    $author = User::factory()->withRole('Blog Author')->create();
+    loginAs($author);
+
+    BlogImage::factory()->create(['title' => 'Sunset Photo']);
+
+    \Livewire\Livewire::test('blog.editor')
+        ->set('gallerySearch', 'Nonexistent')
+        ->assertSee('No images match your search.');
+});
+
+it('inserts gallery image tag into post body', function () {
+    $author = User::factory()->withRole('Blog Author')->create();
+    loginAs($author);
+
+    $image = BlogImage::factory()->create(['title' => 'Test Image']);
+
+    \Livewire\Livewire::test('blog.editor')
+        ->set('postBody', 'Some content here')
+        ->call('insertGalleryImage', $image->id)
+        ->assertSet('postBody', "Some content here\n\n{{image:{$image->id}}}\n");
+});
+
+it('denies gallery image insertion to users without manage-blog gate', function () {
+    $user = User::factory()->create();
+    loginAs($user);
+
+    $image = BlogImage::factory()->create();
+
+    \Livewire\Livewire::test('blog.editor')
+        ->assertForbidden();
+});

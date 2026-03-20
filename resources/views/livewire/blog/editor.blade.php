@@ -5,6 +5,7 @@ use App\Actions\UpdateBlogPost;
 use App\Actions\UploadBlogImage;
 use App\Enums\CommunityResponseStatus;
 use App\Models\BlogCategory;
+use App\Models\BlogImage;
 use App\Models\BlogPost;
 use App\Models\BlogTag;
 use App\Models\CommunityQuestion;
@@ -39,6 +40,9 @@ new class extends Component {
     public $blogImageFile = null;
     public string $blogImageTitle = '';
     public string $blogImageAltText = '';
+
+    // Image gallery
+    public string $gallerySearch = '';
 
     // Community story integration
     public ?int $postCommunityQuestionId = null;
@@ -216,6 +220,17 @@ new class extends Component {
         Flux::toast('Image uploaded and inserted into post body.', 'Uploaded', variant: 'success');
     }
 
+    public function insertGalleryImage(int $imageId): void
+    {
+        $this->authorize('manage-blog');
+
+        $image = BlogImage::findOrFail($imageId);
+
+        $this->postBody = rtrim($this->postBody) . "\n\n{{image:{$image->id}}}\n";
+
+        Flux::toast("Image \"{$image->title}\" inserted.", 'Inserted', variant: 'success');
+    }
+
     public function removeHeroImage(): void
     {
         $this->heroImage = null;
@@ -252,11 +267,17 @@ new class extends Component {
                 ->get();
         }
 
+        $galleryQuery = BlogImage::orderBy('created_at', 'desc');
+        if ($this->gallerySearch !== '') {
+            $galleryQuery->where('title', 'like', '%' . $this->gallerySearch . '%');
+        }
+
         return [
             'categories' => BlogCategory::orderBy('name')->get(),
             'tags' => BlogTag::orderBy('name')->get(),
             'communityQuestions' => $communityQuestions,
             'availableResponses' => $availableResponses,
+            'galleryImages' => $galleryQuery->get(),
             'maxImageSizeLabel' => ((int) SiteConfig::getValue('max_image_size_kb', '2048')) >= 1024
                 ? round((int) SiteConfig::getValue('max_image_size_kb', '2048') / 1024) . 'MB'
                 : SiteConfig::getValue('max_image_size_kb', '2048') . 'KB',
@@ -295,11 +316,16 @@ new class extends Component {
                 <flux:error name="postBody" />
             </flux:field>
 
-            {{-- Upload Image Button --}}
-            <div>
+            {{-- Image Buttons --}}
+            <div class="flex gap-2">
                 <flux:modal.trigger name="blog-image-upload-modal">
                     <flux:button variant="ghost" size="sm" icon="photo">
                         Upload Image
+                    </flux:button>
+                </flux:modal.trigger>
+                <flux:modal.trigger name="blog-image-gallery-modal">
+                    <flux:button variant="ghost" size="sm" icon="rectangle-stack">
+                        Browse Images
                     </flux:button>
                 </flux:modal.trigger>
             </div>
@@ -554,6 +580,38 @@ new class extends Component {
         <div class="flex justify-end gap-3">
             <flux:button variant="ghost" x-on:click="$flux.modal('blog-image-upload-modal').close()">Cancel</flux:button>
             <flux:button wire:click="uploadBlogImage" variant="primary" icon="arrow-up-tray">Upload & Insert</flux:button>
+        </div>
+    </flux:modal>
+
+    {{-- Blog Image Gallery Modal --}}
+    <flux:modal name="blog-image-gallery-modal" class="w-full lg:w-3/4 space-y-6">
+        <flux:heading size="lg">Browse Images</flux:heading>
+
+        <flux:field>
+            <flux:input wire:model.live.debounce.300ms="gallerySearch" type="text" placeholder="Search images by title..." icon="magnifying-glass" />
+        </flux:field>
+
+        @if($galleryImages->isEmpty())
+            <flux:text variant="subtle">
+                {{ $gallerySearch ? 'No images match your search.' : 'No images have been uploaded yet.' }}
+            </flux:text>
+        @else
+            <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 max-h-[60vh] overflow-y-auto">
+                @foreach($galleryImages as $galleryImage)
+                    <div wire:key="gallery-image-{{ $galleryImage->id }}" class="flex flex-col rounded-lg border border-zinc-200 p-2 dark:border-zinc-700">
+                        <img src="{{ $galleryImage->url() }}" alt="{{ $galleryImage->alt_text }}" class="mb-2 h-24 w-full rounded object-cover" />
+                        <p class="text-sm font-medium truncate" title="{{ $galleryImage->title }}">{{ $galleryImage->title }}</p>
+                        <p class="text-xs text-zinc-500 truncate" title="{{ $galleryImage->alt_text }}">{{ $galleryImage->alt_text }}</p>
+                        <flux:button wire:click="insertGalleryImage({{ $galleryImage->id }})" variant="primary" size="sm" icon="plus" class="mt-2">
+                            Insert
+                        </flux:button>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+
+        <div class="flex justify-end">
+            <flux:button variant="ghost" x-on:click="$flux.modal('blog-image-gallery-modal').close()">Close</flux:button>
         </div>
     </flux:modal>
 
