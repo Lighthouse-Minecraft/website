@@ -235,11 +235,17 @@ new class extends Component {
 
                 <flux:field>
                     <flux:label>Tags</flux:label>
-                    <flux:select wire:model="postTagIds" multiple>
+                    <div class="flex flex-wrap gap-2 mt-1">
                         @foreach($tags as $tag)
-                            <option value="{{ $tag->id }}">{{ $tag->name }}</option>
+                            <label wire:key="tag-select-{{ $tag->id }}" class="cursor-pointer">
+                                <input type="checkbox" wire:model="postTagIds" value="{{ $tag->id }}" class="hidden peer" />
+                                <flux:badge class="peer-checked:!bg-accent peer-checked:!text-white" variant="outline">{{ $tag->name }}</flux:badge>
+                            </label>
                         @endforeach
-                    </flux:select>
+                        @if($tags->isEmpty())
+                            <flux:text variant="subtle">No tags available. Create tags in Blog Management.</flux:text>
+                        @endif
+                    </div>
                 </flux:field>
             </div>
 

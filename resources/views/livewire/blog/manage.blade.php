@@ -431,12 +431,12 @@ new class extends Component {
                         <flux:heading size="md">Tags</flux:heading>
                     </div>
 
-                    <div class="mb-4 flex gap-2">
+                    <form wire:submit="createTag" class="mb-4 flex gap-2">
                         <flux:input wire:model="newTagName" type="text" placeholder="New tag name..." class="flex-1" />
-                        <flux:button wire:click="createTag" variant="primary" size="sm" icon="plus">
+                        <flux:button type="submit" variant="primary" size="sm" icon="plus">
                             Add
                         </flux:button>
-                    </div>
+                    </form>
 
                     <div class="flex flex-wrap gap-2">
                         @forelse($tags as $tag)
