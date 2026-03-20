@@ -26,6 +26,9 @@ use Livewire\WithPagination;
 new class extends Component {
     use WithFileUploads, WithPagination;
 
+    // Tabs
+    public string $activeTab = 'posts';
+
     // Filters
     public string $statusFilter = '';
     public string $search = '';
@@ -453,9 +456,7 @@ new class extends Component {
         </div>
     </div>
 
-    @php $activeTab = $activeTab ?? 'posts'; @endphp
-
-    <div x-data="{ tab: @entangle('activeTab').live ?? 'posts' }">
+    <div x-data="{ tab: @entangle('activeTab').live }">
         <div class="mb-4 flex gap-2">
             <flux:button variant="ghost" x-on:click="tab = 'posts'" x-bind:class="tab === 'posts' ? 'font-bold' : ''">
                 Posts
