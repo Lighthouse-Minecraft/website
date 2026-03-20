@@ -38,6 +38,10 @@ class UpdateBlogPost
             $updateData['category_id'] = $data['category_id'];
         }
 
+        if (array_key_exists('community_question_id', $data)) {
+            $updateData['community_question_id'] = $data['community_question_id'];
+        }
+
         if ($post->isPublished() && ! empty($updateData)) {
             $updateData['is_edited'] = true;
         }
@@ -46,6 +50,14 @@ class UpdateBlogPost
 
         if (isset($data['tag_ids'])) {
             $post->tags()->sync($data['tag_ids']);
+        }
+
+        if (isset($data['community_response_ids'])) {
+            $syncData = [];
+            foreach ($data['community_response_ids'] as $index => $responseId) {
+                $syncData[$responseId] = ['sort_order' => $index];
+            }
+            $post->communityResponses()->sync($syncData);
         }
 
         RecordActivity::run($post, 'blog_post_updated', "Blog post \"{$post->title}\" updated.");

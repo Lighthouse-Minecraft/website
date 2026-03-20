@@ -25,10 +25,19 @@ class CreateBlogPost
             'status' => BlogPostStatus::Draft,
             'author_id' => $author->id,
             'category_id' => $data['category_id'] ?? null,
+            'community_question_id' => $data['community_question_id'] ?? null,
         ]);
 
         if (! empty($data['tag_ids'])) {
             $post->tags()->sync($data['tag_ids']);
+        }
+
+        if (! empty($data['community_response_ids'])) {
+            $syncData = [];
+            foreach ($data['community_response_ids'] as $index => $responseId) {
+                $syncData[$responseId] = ['sort_order' => $index];
+            }
+            $post->communityResponses()->sync($syncData);
         }
 
         RecordActivity::run($post, 'blog_post_created', "Blog post \"{$post->title}\" created by {$author->name}.");

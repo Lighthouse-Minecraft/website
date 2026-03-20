@@ -33,10 +33,7 @@ new class extends Component {
         }
 
         $this->post = $post;
-        $this->renderedBody = Str::markdown($post->body, [
-            'html_input' => 'strip',
-            'allow_unsafe_links' => false,
-        ]);
+        $this->renderedBody = $post->renderBody();
     }
 
     public function with(): array

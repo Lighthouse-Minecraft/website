@@ -7,9 +7,12 @@ use App\Actions\DeleteBlogPost;
 use App\Actions\SubmitBlogPostForReview;
 use App\Actions\UpdateBlogPost;
 use App\Enums\BlogPostStatus;
+use App\Enums\CommunityResponseStatus;
 use App\Models\BlogCategory;
 use App\Models\BlogPost;
 use App\Models\BlogTag;
+use App\Models\CommunityQuestion;
+use App\Models\CommunityResponse;
 use App\Models\SiteConfig;
 use Carbon\Carbon;
 use Flux\Flux;
@@ -48,6 +51,10 @@ new class extends Component {
     // Tag management
     public string $newTagName = '';
 
+    // Community story integration
+    public ?int $postCommunityQuestionId = null;
+    public array $postCommunityResponseIds = [];
+
     // Preview
     public string $previewHtml = '';
 
@@ -80,7 +87,7 @@ new class extends Component {
 
     public function openEditPostModal(int $postId): void
     {
-        $post = BlogPost::with('tags')->findOrFail($postId);
+        $post = BlogPost::with(['tags', 'communityResponses'])->findOrFail($postId);
         $this->authorize('update', $post);
 
         $this->editingPostId = $post->id;
@@ -89,6 +96,8 @@ new class extends Component {
         $this->postCategoryId = $post->category_id;
         $this->postTagIds = $post->tags->pluck('id')->toArray();
         $this->postMetaDescription = $post->meta_description ?? '';
+        $this->postCommunityQuestionId = $post->community_question_id;
+        $this->postCommunityResponseIds = $post->communityResponses->pluck('id')->toArray();
         $this->heroImage = null;
         $this->ogImage = null;
         $this->existingHeroImageUrl = $post->heroImageUrl();
@@ -125,6 +134,8 @@ new class extends Component {
             'category_id' => $this->postCategoryId,
             'tag_ids' => $this->postTagIds,
             'meta_description' => $this->postMetaDescription ?: null,
+            'community_question_id' => $this->postCommunityQuestionId ?: null,
+            'community_response_ids' => $this->postCommunityResponseIds,
         ];
 
         if ($this->editingPostId) {
@@ -172,10 +183,8 @@ new class extends Component {
 
     public function openPreviewModal(): void
     {
-        $this->previewHtml = Str::markdown($this->postBody, [
-            'html_input' => 'strip',
-            'allow_unsafe_links' => false,
-        ]);
+        $tempPost = new BlogPost(['body' => $this->postBody]);
+        $this->previewHtml = $tempPost->renderBody();
         Flux::modal('preview-modal')->show();
     }
 
@@ -362,6 +371,8 @@ new class extends Component {
         $this->postCategoryId = null;
         $this->postTagIds = [];
         $this->postMetaDescription = '';
+        $this->postCommunityQuestionId = null;
+        $this->postCommunityResponseIds = [];
         $this->heroImage = null;
         $this->ogImage = null;
         $this->existingHeroImageUrl = null;
@@ -374,6 +385,11 @@ new class extends Component {
         $this->categoryName = '';
         $this->categorySlug = '';
         $this->categoryIncludeInSitemap = true;
+    }
+
+    public function updatedPostCommunityQuestionId(): void
+    {
+        $this->postCommunityResponseIds = [];
     }
 
     public function removeHeroImage(): void
@@ -399,11 +415,24 @@ new class extends Component {
             $query->where('title', 'like', '%' . $this->search . '%');
         }
 
+        $communityQuestions = CommunityQuestion::orderBy('question_text')->get();
+        $availableResponses = collect();
+
+        if ($this->postCommunityQuestionId) {
+            $availableResponses = CommunityResponse::with('user')
+                ->where('community_question_id', $this->postCommunityQuestionId)
+                ->where('status', CommunityResponseStatus::Approved)
+                ->orderBy('created_at')
+                ->get();
+        }
+
         return [
             'posts' => $query->paginate(15),
             'categories' => BlogCategory::orderBy('name')->get(),
             'tags' => BlogTag::orderBy('name')->get(),
             'statuses' => BlogPostStatus::cases(),
+            'communityQuestions' => $communityQuestions,
+            'availableResponses' => $availableResponses,
             'maxImageSizeLabel' => ((int) SiteConfig::getValue('max_image_size_kb', '2048')) >= 1024
                 ? round((int) SiteConfig::getValue('max_image_size_kb', '2048') / 1024) . 'MB'
                 : SiteConfig::getValue('max_image_size_kb', '2048') . 'KB',
@@ -649,6 +678,42 @@ new class extends Component {
                 <flux:textarea wire:model="postMetaDescription" rows="2" placeholder="A brief description for search engines..." />
                 <flux:error name="postMetaDescription" />
             </flux:field>
+
+            {{-- Community Story Integration --}}
+            <flux:card class="bg-zinc-50 dark:bg-zinc-800/50">
+                <flux:heading size="sm" class="mb-3">Community Stories</flux:heading>
+                <flux:description class="mb-3">Optionally link a Community Question and select approved responses to feature. Use <code>@{{story:ID}}</code> in the body to place story cards.</flux:description>
+
+                <flux:field>
+                    <flux:label>Community Question</flux:label>
+                    <flux:select wire:model.live="postCommunityQuestionId">
+                        <option value="">None</option>
+                        @foreach($communityQuestions as $cq)
+                            <option value="{{ $cq->id }}">{{ $cq->question_text }}</option>
+                        @endforeach
+                    </flux:select>
+                </flux:field>
+
+                @if($postCommunityQuestionId && $availableResponses->count())
+                    <div class="mt-3">
+                        <flux:label class="mb-2">Select Responses to Feature</flux:label>
+                        <div class="max-h-60 space-y-2 overflow-y-auto rounded border border-zinc-200 p-2 dark:border-zinc-700">
+                            @foreach($availableResponses as $cr)
+                                <label wire:key="cr-{{ $cr->id }}" class="flex cursor-pointer items-start gap-2 rounded p-2 hover:bg-zinc-100 dark:hover:bg-zinc-700">
+                                    <input type="checkbox" wire:model="postCommunityResponseIds" value="{{ $cr->id }}" class="mt-1 rounded" />
+                                    <div class="flex-1">
+                                        <span class="text-sm font-medium">{{ $cr->user->name }}</span>
+                                        <span class="text-xs text-zinc-500"> (ID: {{ $cr->id }})</span>
+                                        <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-400">{{ Str::limit($cr->body, 120) }}</p>
+                                    </div>
+                                </label>
+                            @endforeach
+                        </div>
+                    </div>
+                @elseif($postCommunityQuestionId)
+                    <flux:text variant="subtle" class="mt-3">No approved responses for this question.</flux:text>
+                @endif
+            </flux:card>
 
             <div class="grid gap-4 sm:grid-cols-2">
                 <div>
