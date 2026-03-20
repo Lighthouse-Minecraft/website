@@ -239,6 +239,7 @@ new class extends Component {
             <div class="grid gap-4 sm:grid-cols-2">
                 <flux:field>
                     <flux:label>Category</flux:label>
+                    <flux:description>A category is required for the URL to work properly. Posts without a category will use "uncategorized" in the URL.</flux:description>
                     <flux:select wire:model="postCategoryId">
                         <option value="">No Category</option>
                         @foreach($categories as $category)
