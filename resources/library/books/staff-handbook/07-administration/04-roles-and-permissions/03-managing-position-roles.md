@@ -12,7 +12,7 @@ Roles are assigned to **staff positions**, not to individual people. When you as
 ## Who Can Do This
 
 - **Admins** -- full access to assign and remove roles on any position
-- **Manage Site Config** Role -- Can manage all position's roles except their own.
+- **Manage Site Config** Role -- Can manage all positions' roles except their own.
 
 ## Where to Find It
 
