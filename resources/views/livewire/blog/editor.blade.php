@@ -61,6 +61,20 @@ new class extends Component {
         }
     }
 
+    public function updatedHeroImage(): void
+    {
+        $this->validateOnly('heroImage', [
+            'heroImage' => 'nullable|mimes:jpg,jpeg,png,gif,webp|max:' . SiteConfig::getValue('max_image_size_kb', '2048'),
+        ]);
+    }
+
+    public function updatedOgImage(): void
+    {
+        $this->validateOnly('ogImage', [
+            'ogImage' => 'nullable|mimes:jpg,jpeg,png,gif,webp|max:' . SiteConfig::getValue('max_image_size_kb', '2048'),
+        ]);
+    }
+
     public function savePost(): void
     {
         $this->validate([
