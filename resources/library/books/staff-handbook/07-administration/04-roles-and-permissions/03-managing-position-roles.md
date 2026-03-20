@@ -1,24 +1,23 @@
 ---
-title: "Managing Position Roles"
-visibility: officer
+title: 'Managing Position Roles'
+visibility: staff
 order: 3
-summary: "How to assign and remove roles on staff positions."
+summary: 'How to assign and remove roles on staff positions.'
 ---
 
 ## Overview
 
 Roles are assigned to **staff positions**, not to individual people. When you assign a role to a position, whoever holds that position gets the permission. If the person leaves and someone new fills the position, the new person automatically gets the same roles.
 
-Only **Admins** can manage roles on positions.
-
 ## Who Can Do This
 
 - **Admins** -- full access to assign and remove roles on any position
+- **Manage Site Config** Role -- Can manage all position's roles except their own.
 
 ## Where to Find It
 
-1. Go to the [Admin Control Panel]({{url:/acp}})
-2. Open the **Staff Positions** tab under the Content section
+1. Go to the [Admin Control Panel]({{url:/acp}}) and select the **Config** category
+2. Open the **Staff Positions** tab
 3. Find the position you want to manage in the table
 4. Click the **Roles** button on that row
 
@@ -42,7 +41,7 @@ The role is removed immediately. The person holding the position loses that perm
 
 ## Using Allow All
 
-Some leadership positions need access to everything. Instead of assigning every role individually, you can enable **Allow All**.
+Some leadership positions need access to everything. Instead of assigning every role individually, you can enable **Allow All**. This can only be managed by a user with the **Admin** permission.
 
 1. Open the **Manage Roles** modal for the position
 2. At the top, find the **Allow All Roles** toggle

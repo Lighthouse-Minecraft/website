@@ -1,8 +1,8 @@
 ---
-title: "Role Reference"
+title: 'Role Reference'
 visibility: staff
 order: 2
-summary: "Complete list of every permission role and what it unlocks."
+summary: 'Complete list of every permission role and what it unlocks.'
 ---
 
 ## Overview
@@ -33,7 +33,7 @@ Lets you promote and demote community members through the membership levels (Sto
 
 ### Manage Discipline Reports
 
-Lets you create and edit discipline reports. You can view all reports and update drafts.
+Lets you create and edit discipline reports. You can view all reports in the ACP and update drafts.
 
 ### Publish Discipline Reports
 
@@ -61,7 +61,7 @@ Gives you access to system logs: the Minecraft command log, Discord API log, act
 
 ### View All Ready Rooms
 
-Lets you see every department's tab in the Ready Room, not just your own. Without this role, you can only see your own department's tab (unless you're an Officer, who can see all tabs by default).
+Lets you see every department's tab in the Ready Room, not just your own. Without this role, you can only see your own department's tab.
 
 ### View Command Dashboard
 
@@ -69,4 +69,4 @@ Gives you access to the Command department's dashboard.
 
 ## Admin Access
 
-**Admin** isn't a role -- it's a separate status. Admins automatically pass every permission check on the site, including all roles listed above plus full access to every policy-protected action. Admin status is managed separately and can only be granted through internal tools.
+**Admin** isn't a role -- it's a separate status. Admins automatically pass every permission check on the site, including all roles listed above plus full access to every policy-protected action. Admin status is managed separately and can only be granted through console access to the web server.
