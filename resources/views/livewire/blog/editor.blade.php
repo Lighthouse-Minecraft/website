@@ -249,31 +249,20 @@ new class extends Component {
 
                 <flux:field>
                     <flux:label>Tags</flux:label>
-                    @php $selectedTags = $tags->whereIn('id', $postTagIds); @endphp
-                    @if($selectedTags->isNotEmpty())
-                        <div class="flex flex-wrap gap-2 mt-1">
-                            @foreach($selectedTags as $tag)
-                                <div wire:key="selected-tag-{{ $tag->id }}" class="flex items-center gap-1">
-                                    <flux:badge size="sm">{{ $tag->name }}</flux:badge>
-                                    <flux:button size="xs" variant="ghost" icon="x-mark" wire:click="removeTag({{ $tag->id }})" class="hover:!text-red-600 dark:hover:!text-red-400" />
-                                </div>
-                            @endforeach
-                        </div>
-                    @endif
-                    @php $unselectedTags = $tags->whereNotIn('id', $postTagIds); @endphp
-                    @if($unselectedTags->isNotEmpty())
-                        <div class="flex gap-2 mt-2">
-                            <flux:select wire:model="selectedTagId" class="flex-1">
-                                <flux:select.option value="">Select a tag...</flux:select.option>
-                                @foreach($unselectedTags as $tag)
-                                    <flux:select.option value="{{ $tag->id }}">{{ $tag->name }}</flux:select.option>
-                                @endforeach
-                            </flux:select>
-                            <flux:button wire:click="addTag" variant="primary" size="sm" icon="plus">Add</flux:button>
-                        </div>
-                    @elseif($tags->isEmpty())
-                        <flux:text variant="subtle" class="mt-1">No tags available. Create tags in Blog Management.</flux:text>
-                    @endif
+                    <div class="flex flex-wrap items-center gap-2 mt-1">
+                        @php $selectedTags = $tags->filter(fn ($t) => in_array($t->id, $postTagIds)); @endphp
+                        @foreach($selectedTags as $tag)
+                            <div wire:key="selected-tag-{{ $tag->id }}" class="flex items-center gap-1">
+                                <flux:badge size="sm">{{ $tag->name }}</flux:badge>
+                                <flux:button size="xs" variant="ghost" icon="x-mark" wire:click="removeTag({{ $tag->id }})" class="hover:!text-red-600 dark:hover:!text-red-400" />
+                            </div>
+                        @endforeach
+                        <flux:modal.trigger name="tag-picker-modal">
+                            <flux:button variant="ghost" size="sm" icon="plus">
+                                {{ $selectedTags->isEmpty() ? 'Add Tags' : 'Add' }}
+                            </flux:button>
+                        </flux:modal.trigger>
+                    </div>
                 </flux:field>
             </div>
 
@@ -382,6 +371,54 @@ new class extends Component {
             {{ $editingPost ? 'Update Post' : 'Create Post' }}
         </flux:button>
     </div>
+
+    {{-- Tag Picker Modal --}}
+    <flux:modal name="tag-picker-modal" class="w-full lg:w-1/2 space-y-6">
+        <flux:heading size="lg">Manage Tags</flux:heading>
+
+        {{-- Assigned Tags --}}
+        <div>
+            <flux:heading size="sm" class="mb-2">Assigned Tags</flux:heading>
+            @php $selectedTags = $tags->filter(fn ($t) => in_array($t->id, $postTagIds)); @endphp
+            @if($selectedTags->isNotEmpty())
+                <div class="flex flex-wrap gap-2">
+                    @foreach($selectedTags as $tag)
+                        <div wire:key="modal-tag-{{ $tag->id }}" class="flex items-center gap-1">
+                            <flux:badge size="sm">{{ $tag->name }}</flux:badge>
+                            <flux:button size="xs" variant="ghost" icon="x-mark" wire:click="removeTag({{ $tag->id }})" class="hover:!text-red-600 dark:hover:!text-red-400" />
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <flux:text variant="subtle" class="text-sm">No tags assigned yet.</flux:text>
+            @endif
+        </div>
+
+        {{-- Add Tag --}}
+        @php $unselectedTags = $tags->reject(fn ($t) => in_array($t->id, $postTagIds)); @endphp
+        @if($unselectedTags->isNotEmpty())
+            <div>
+                <flux:heading size="sm" class="mb-2">Add Tag</flux:heading>
+                <div class="flex gap-2">
+                    <flux:select wire:model="selectedTagId" class="flex-1">
+                        <flux:select.option value="">Select a tag...</flux:select.option>
+                        @foreach($unselectedTags as $tag)
+                            <flux:select.option value="{{ $tag->id }}">{{ $tag->name }}</flux:select.option>
+                        @endforeach
+                    </flux:select>
+                    <flux:button wire:click="addTag" variant="primary" size="sm" icon="plus">Add</flux:button>
+                </div>
+            </div>
+        @elseif($tags->isNotEmpty())
+            <flux:text variant="subtle">All tags have been assigned.</flux:text>
+        @else
+            <flux:text variant="subtle">No tags available. Create tags in Blog Management.</flux:text>
+        @endif
+
+        <div class="flex justify-end">
+            <flux:button variant="ghost" x-on:click="$flux.modal('tag-picker-modal').close()">Done</flux:button>
+        </div>
+    </flux:modal>
 
     {{-- Preview Modal --}}
     <flux:modal name="preview-modal" class="w-full lg:w-3/4 max-h-[90vh] overflow-y-auto">
