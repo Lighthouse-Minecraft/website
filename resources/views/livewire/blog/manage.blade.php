@@ -353,13 +353,25 @@ new class extends Component {
                         @forelse($posts as $post)
                             <flux:table.row wire:key="post-{{ $post->id }}">
                                 <flux:table.cell>
-                                    {{ $post->title }}
+                                    @if($post->isPublished())
+                                        <flux:link href="{{ $post->url() }}" wire:navigate>{{ $post->title }}</flux:link>
+                                    @else
+                                        {{ $post->title }}
+                                    @endif
                                     @if($post->is_edited)
                                         <flux:badge variant="warning" size="sm">Edited</flux:badge>
                                     @endif
                                 </flux:table.cell>
-                                <flux:table.cell>{{ $post->author->name }}</flux:table.cell>
-                                <flux:table.cell>{{ $post->category?->name ?? '—' }}</flux:table.cell>
+                                <flux:table.cell>
+                                    <flux:link href="{{ route('blog.author', $post->author->slug) }}" wire:navigate>{{ $post->author->name }}</flux:link>
+                                </flux:table.cell>
+                                <flux:table.cell>
+                                    @if($post->category)
+                                        <flux:link href="{{ route('blog.category', $post->category->slug) }}" wire:navigate>{{ $post->category->name }}</flux:link>
+                                    @else
+                                        —
+                                    @endif
+                                </flux:table.cell>
                                 <flux:table.cell>
                                     <flux:badge :variant="$post->status->color()">{{ $post->status->label() }}</flux:badge>
                                 </flux:table.cell>
@@ -372,16 +384,18 @@ new class extends Component {
                                                 Edit
                                             </flux:button>
                                         @endcan
-                                        @can('submitForReview', $post)
-                                            <flux:button wire:click="submitForReview({{ $post->id }})" wire:confirm="Submit this post for review?" variant="ghost" size="sm" icon="paper-airplane">
-                                                Submit
-                                            </flux:button>
-                                        @endcan
-                                        @can('approve', $post)
-                                            <flux:button wire:click="openApproveModal({{ $post->id }})" variant="ghost" size="sm" icon="check-circle">
-                                                Approve
-                                            </flux:button>
-                                        @endcan
+                                        @if(! $post->isPublished())
+                                            @can('submitForReview', $post)
+                                                <flux:button wire:click="submitForReview({{ $post->id }})" wire:confirm="Submit this post for review?" variant="ghost" size="sm" icon="paper-airplane">
+                                                    Submit
+                                                </flux:button>
+                                            @endcan
+                                            @can('approve', $post)
+                                                <flux:button wire:click="openApproveModal({{ $post->id }})" variant="ghost" size="sm" icon="check-circle">
+                                                    Approve
+                                                </flux:button>
+                                            @endcan
+                                        @endif
                                         @can('archive', $post)
                                             <flux:button wire:click="archivePost({{ $post->id }})" wire:confirm="Archive this post?" variant="ghost" size="sm" icon="archive-box">
                                                 Archive
