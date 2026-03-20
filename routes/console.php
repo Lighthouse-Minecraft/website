@@ -54,3 +54,7 @@ Schedule::command('community:process-schedule')
 Schedule::command('messages:purge-images')
     ->dailyAt('04:00')
     ->runInBackground();
+
+// Publish scheduled blog posts
+Schedule::job(new \App\Jobs\PublishScheduledPosts)
+    ->everyMinute();

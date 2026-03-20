@@ -27,6 +27,23 @@ class BlogPostPolicy
         return $user->hasRole('Blog Author');
     }
 
+    public function submitForReview(User $user, BlogPost $post): bool
+    {
+        return $user->hasRole('Blog Author') && $post->author_id === $user->id && $post->isDraft();
+    }
+
+    public function approve(User $user, BlogPost $post): bool
+    {
+        return $user->hasRole('Blog Author')
+            && $post->author_id !== $user->id
+            && $post->status === \App\Enums\BlogPostStatus::InReview;
+    }
+
+    public function archive(User $user, BlogPost $post): bool
+    {
+        return $user->hasRole('Blog Author') && $post->isPublished();
+    }
+
     public function delete(User $user, BlogPost $post): bool
     {
         if ($user->isAdmin()) {

@@ -10,6 +10,11 @@
             <flux:button href="{{ route('tickets.index') }}" wire:navigate icon="inbox">
                 View Tickets
             </flux:button>
+            @can('manage-blog')
+                <flux:button href="{{ route('blog.manage') }}" wire:navigate icon="pencil-square">
+                    Blog Management
+                </flux:button>
+            @endcan
         </div>
     </div>
 

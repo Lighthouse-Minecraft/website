@@ -1,13 +1,17 @@
 <?php
 
+use App\Actions\ApproveBlogPost;
+use App\Actions\ArchiveBlogPost;
 use App\Actions\CreateBlogPost;
 use App\Actions\DeleteBlogPost;
+use App\Actions\SubmitBlogPostForReview;
 use App\Actions\UpdateBlogPost;
 use App\Enums\BlogPostStatus;
 use App\Models\BlogCategory;
 use App\Models\BlogPost;
 use App\Models\BlogTag;
 use App\Models\SiteConfig;
+use Carbon\Carbon;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -46,6 +50,11 @@ new class extends Component {
 
     // Preview
     public string $previewHtml = '';
+
+    // Approval modal
+    public ?int $approvingPostId = null;
+    public string $approveScheduledAt = '';
+    public bool $approvePublishImmediately = true;
 
     public function mount(): void
     {
@@ -168,6 +177,62 @@ new class extends Component {
             'allow_unsafe_links' => false,
         ]);
         Flux::modal('preview-modal')->show();
+    }
+
+    // Status transitions
+
+    public function submitForReview(int $postId): void
+    {
+        $post = BlogPost::findOrFail($postId);
+        $this->authorize('submitForReview', $post);
+
+        SubmitBlogPostForReview::run($post, Auth::user());
+        Flux::toast('Post submitted for review.', 'Submitted', variant: 'success');
+    }
+
+    public function openApproveModal(int $postId): void
+    {
+        $post = BlogPost::findOrFail($postId);
+        $this->authorize('approve', $post);
+
+        $this->approvingPostId = $post->id;
+        $this->approvePublishImmediately = true;
+        $this->approveScheduledAt = '';
+        Flux::modal('approve-modal')->show();
+    }
+
+    public function approvePost(): void
+    {
+        $post = BlogPost::findOrFail($this->approvingPostId);
+        $this->authorize('approve', $post);
+
+        $scheduledAt = null;
+
+        if (! $this->approvePublishImmediately) {
+            $this->validate([
+                'approveScheduledAt' => 'required|date|after:now',
+            ]);
+
+            $userTimezone = Auth::user()->timezone ?? 'UTC';
+            $scheduledAt = Carbon::parse($this->approveScheduledAt, $userTimezone)->utc();
+        }
+
+        ApproveBlogPost::run($post, Auth::user(), $scheduledAt);
+
+        Flux::modal('approve-modal')->close();
+        $this->approvingPostId = null;
+
+        $message = $scheduledAt ? 'Post approved and scheduled.' : 'Post approved and published.';
+        Flux::toast($message, 'Approved', variant: 'success');
+    }
+
+    public function archivePost(int $postId): void
+    {
+        $post = BlogPost::findOrFail($postId);
+        $this->authorize('archive', $post);
+
+        ArchiveBlogPost::run($post);
+        Flux::toast('Post archived.', 'Archived', variant: 'success');
     }
 
     // Category management
@@ -390,6 +455,7 @@ new class extends Component {
                         <flux:table.column>Author</flux:table.column>
                         <flux:table.column>Category</flux:table.column>
                         <flux:table.column>Status</flux:table.column>
+                        <flux:table.column>Scheduled</flux:table.column>
                         <flux:table.column>Created</flux:table.column>
                         <flux:table.column>Actions</flux:table.column>
                     </flux:table.columns>
@@ -407,12 +473,28 @@ new class extends Component {
                                 <flux:table.cell>
                                     <flux:badge :variant="$post->status->color()">{{ $post->status->label() }}</flux:badge>
                                 </flux:table.cell>
+                                <flux:table.cell>{{ $post->scheduled_at?->format('M j, Y g:ia') ?? '—' }}</flux:table.cell>
                                 <flux:table.cell>{{ $post->created_at->format('M j, Y') }}</flux:table.cell>
                                 <flux:table.cell>
-                                    <div class="flex gap-1">
+                                    <div class="flex flex-wrap gap-1">
                                         @can('update', $post)
                                             <flux:button wire:click="openEditPostModal({{ $post->id }})" variant="ghost" size="sm" icon="pencil-square">
                                                 Edit
+                                            </flux:button>
+                                        @endcan
+                                        @can('submitForReview', $post)
+                                            <flux:button wire:click="submitForReview({{ $post->id }})" wire:confirm="Submit this post for review?" variant="ghost" size="sm" icon="paper-airplane">
+                                                Submit
+                                            </flux:button>
+                                        @endcan
+                                        @can('approve', $post)
+                                            <flux:button wire:click="openApproveModal({{ $post->id }})" variant="ghost" size="sm" icon="check-circle">
+                                                Approve
+                                            </flux:button>
+                                        @endcan
+                                        @can('archive', $post)
+                                            <flux:button wire:click="archivePost({{ $post->id }})" wire:confirm="Archive this post?" variant="ghost" size="sm" icon="archive-box">
+                                                Archive
                                             </flux:button>
                                         @endcan
                                         @can('delete', $post)
@@ -425,7 +507,7 @@ new class extends Component {
                             </flux:table.row>
                         @empty
                             <flux:table.row>
-                                <flux:table.cell colspan="6">
+                                <flux:table.cell colspan="7">
                                     <flux:text variant="subtle" class="text-center">No blog posts found.</flux:text>
                                 </flux:table.cell>
                             </flux:table.row>
@@ -640,6 +722,35 @@ new class extends Component {
             <div class="flex justify-end pt-4">
                 <flux:button variant="ghost" x-on:click="$flux.modal('preview-modal').close()">
                     Close
+                </flux:button>
+            </div>
+        </div>
+    </flux:modal>
+
+    {{-- Approve Modal --}}
+    <flux:modal name="approve-modal" class="w-full lg:w-1/2">
+        <div class="space-y-4">
+            <flux:heading size="lg">Approve Blog Post</flux:heading>
+
+            <flux:field>
+                <flux:checkbox wire:model.live="approvePublishImmediately" label="Publish immediately" />
+            </flux:field>
+
+            @if(! $approvePublishImmediately)
+                <flux:field>
+                    <flux:label>Schedule publication <span class="text-red-500">*</span></flux:label>
+                    <flux:description>Date and time in your timezone ({{ Auth::user()->timezone ?? 'UTC' }}).</flux:description>
+                    <flux:input wire:model="approveScheduledAt" type="datetime-local" />
+                    <flux:error name="approveScheduledAt" />
+                </flux:field>
+            @endif
+
+            <div class="flex justify-end gap-2 pt-4">
+                <flux:button variant="ghost" x-on:click="$flux.modal('approve-modal').close()">
+                    Cancel
+                </flux:button>
+                <flux:button wire:click="approvePost" variant="primary">
+                    Approve
                 </flux:button>
             </div>
         </div>
