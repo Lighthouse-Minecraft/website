@@ -3,8 +3,6 @@
 namespace App\Policies;
 
 use App\Enums\MinecraftAccountStatus;
-use App\Enums\StaffDepartment;
-use App\Enums\StaffRank;
 use App\Models\MinecraftAccount;
 use App\Models\User;
 
@@ -15,7 +13,7 @@ class MinecraftAccountPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->isAdmin() || $user->isAtLeastRank(StaffRank::Officer);
+        return $user->hasRole('User Manager');
     }
 
     /**
@@ -74,9 +72,7 @@ class MinecraftAccountPolicy
      */
     public function viewUuid(User $user, MinecraftAccount $minecraftAccount): bool
     {
-        return $user->isAdmin()
-            || $user->isInDepartment(StaffDepartment::Engineer)
-            || $user->isAtLeastRank(StaffRank::Officer);
+        return $user->hasRole('User Manager');
     }
 
     /**
@@ -93,10 +89,7 @@ class MinecraftAccountPolicy
     public function revoke(User $user, MinecraftAccount $minecraftAccount): bool
     {
         return $minecraftAccount->status === MinecraftAccountStatus::Active
-            && ($user->isAdmin()
-                || ($user->isAtLeastRank(StaffRank::Officer)
-                    && ($user->isInDepartment(StaffDepartment::Engineer)
-                        || $user->isInDepartment(StaffDepartment::Command))));
+            && $user->hasRole('User Manager');
     }
 
     /**

@@ -37,7 +37,7 @@ it('does not duplicate questions if already exist', function () {
 });
 
 it('allows adding questions while meeting is pending', function () {
-    $user = User::factory()->create(['staff_rank' => StaffRank::Officer]);
+    $user = User::factory()->withRole('Manage Staff Meeting')->create(['staff_rank' => StaffRank::Officer]);
     $meeting = Meeting::factory()->create([
         'type' => MeetingType::StaffMeeting,
         'status' => MeetingStatus::Pending,
@@ -54,7 +54,7 @@ it('allows adding questions while meeting is pending', function () {
 });
 
 it('allows removing questions', function () {
-    $user = User::factory()->create(['staff_rank' => StaffRank::Officer]);
+    $user = User::factory()->withRole('Manage Staff Meeting')->create(['staff_rank' => StaffRank::Officer]);
     $meeting = Meeting::factory()->create([
         'type' => MeetingType::StaffMeeting,
         'status' => MeetingStatus::Pending,

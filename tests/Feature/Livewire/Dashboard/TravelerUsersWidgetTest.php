@@ -163,17 +163,17 @@ describe('Traveler Users Widget', function () {
         $response->assertSeeLivewire('dashboard.traveler-users-widget');
     });
 
-    it('is visible to authorized department staff', function (StaffDepartment $department) {
-        $user = User::factory()->withStaffPosition($department, StaffRank::JrCrew, "Jr {$department->value}")->create();
+    it('is visible to user with Manage Membership Level role', function () {
+        $user = User::factory()
+            ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::JrCrew, 'Jr Quartermaster')
+            ->withRole('Manage Membership Level')
+            ->create();
         $this->actingAs($user);
 
         $response = get(route('dashboard'));
 
         $response->assertSeeLivewire('dashboard.traveler-users-widget');
-    })->with([
-        'quartermaster' => StaffDepartment::Quartermaster,
-        'command' => StaffDepartment::Command,
-    ]);
+    });
 
     it('is not visible to regular users', function () {
         $user = User::factory()->create();
@@ -184,7 +184,7 @@ describe('Traveler Users Widget', function () {
         $response->assertDontSeeLivewire('dashboard.traveler-users-widget');
     });
 
-    it('is not visible to other department staff', function () {
+    it('is not visible to staff without Manage Membership Level role', function () {
         $user = User::factory()->withStaffPosition(StaffDepartment::Engineer, StaffRank::Officer, 'Engineer Officer')->create();
         $this->actingAs($user);
 

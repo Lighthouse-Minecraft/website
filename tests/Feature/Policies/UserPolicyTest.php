@@ -17,12 +17,11 @@ it('admin can bypass all policy checks', function () {
     expect($policy->before($admin, 'view'))->toBeTrue();
 });
 
-it('command officer can bypass all policy checks', function () {
+it('command officer no longer bypasses policy before hook', function () {
     $officer = officerCommand();
-    $target = User::factory()->create();
     $policy = new UserPolicy;
 
-    expect($policy->before($officer, 'view'))->toBeTrue();
+    expect($policy->before($officer, 'view'))->toBeNull();
 });
 
 it('non-admin non-command returns null from before', function () {
@@ -39,9 +38,9 @@ it('admin can view any users', function () {
     expect($admin->can('viewAny', User::class))->toBeTrue();
 });
 
-it('quartermaster officer can view any users', function () {
-    $officer = officerQuartermaster();
-    expect($officer->can('viewAny', User::class))->toBeTrue();
+it('user with User Manager role can view any users', function () {
+    $user = User::factory()->withRole('User Manager')->create();
+    expect($user->can('viewAny', User::class))->toBeTrue();
 });
 
 it('regular user cannot view any users', function () {
@@ -84,16 +83,10 @@ it('admin can view PII', function () {
     expect($admin->can('viewPii', $target))->toBeTrue();
 });
 
-it('command staff can view PII', function () {
-    $staff = crewCommand();
+it('user with User Manager role can view PII', function () {
+    $user = User::factory()->withRole('User Manager')->create();
     $target = User::factory()->create();
-    expect($staff->can('viewPii', $target))->toBeTrue();
-});
-
-it('quartermaster staff can view PII', function () {
-    $staff = crewQuartermaster();
-    $target = User::factory()->create();
-    expect($staff->can('viewPii', $target))->toBeTrue();
+    expect($user->can('viewPii', $target))->toBeTrue();
 });
 
 it('regular user cannot view PII', function () {
@@ -109,16 +102,16 @@ it('user can update themselves', function () {
     expect($user->can('update', $user))->toBeTrue();
 });
 
-it('quartermaster officer can update other users', function () {
-    $officer = officerQuartermaster();
+it('user with User Manager role can update other users', function () {
+    $user = User::factory()->withRole('User Manager')->create();
     $target = User::factory()->create();
-    expect($officer->can('update', $target))->toBeTrue();
+    expect($user->can('update', $target))->toBeTrue();
 });
 
-it('regular crew member cannot update other users', function () {
-    $crew = crewQuartermaster();
+it('officer without User Manager role cannot update other users', function () {
+    $officer = officerQuartermaster();
     $target = User::factory()->create();
-    expect($crew->can('update', $target))->toBeFalse();
+    expect($officer->can('update', $target))->toBeFalse();
 });
 
 // === create / delete / restore / forceDelete ===

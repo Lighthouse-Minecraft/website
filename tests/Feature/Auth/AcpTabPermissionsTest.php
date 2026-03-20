@@ -8,55 +8,49 @@ use App\Models\DiscordAccount;
 use App\Models\MinecraftAccount;
 use App\Models\User;
 
-test('engineering jr crew can pass view-mc-command-log gate', function () {
+test('user with View Logs role can pass view-mc-command-log gate', function () {
     $user = User::factory()
-        ->withStaffPosition(StaffDepartment::Engineer, StaffRank::JrCrew)
+        ->withRole('View Logs')
         ->create();
 
     expect($user->can('view-mc-command-log'))->toBeTrue();
 });
 
-test('engineering jr crew can pass view-activity-log gate', function () {
+test('user with View Logs role can pass view-activity-log gate', function () {
     $user = User::factory()
-        ->withStaffPosition(StaffDepartment::Engineer, StaffRank::JrCrew)
+        ->withRole('View Logs')
         ->create();
 
     expect($user->can('view-activity-log'))->toBeTrue();
 });
 
-test('any officer can pass view-mc-command-log gate', function () {
+test('user with View Logs role can pass view-discord-api-log gate', function () {
     $user = User::factory()
-        ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::Officer)
+        ->withRole('View Logs')
         ->create();
+
+    expect($user->can('view-discord-api-log'))->toBeTrue();
+});
+
+test('admin can pass view-mc-command-log gate', function () {
+    $user = User::factory()->admin()->create();
 
     expect($user->can('view-mc-command-log'))->toBeTrue();
 });
 
-test('any officer can pass view-activity-log gate', function () {
-    $user = User::factory()
-        ->withStaffPosition(StaffDepartment::Steward, StaffRank::Officer)
-        ->create();
+test('admin can pass view-activity-log gate', function () {
+    $user = User::factory()->admin()->create();
 
     expect($user->can('view-activity-log'))->toBeTrue();
 });
 
-test('engineering jr crew can pass view-discord-api-log gate', function () {
-    $user = User::factory()
-        ->withStaffPosition(StaffDepartment::Engineer, StaffRank::JrCrew)
-        ->create();
+test('admin can pass view-discord-api-log gate', function () {
+    $user = User::factory()->admin()->create();
 
     expect($user->can('view-discord-api-log'))->toBeTrue();
 });
 
-test('any officer can pass view-discord-api-log gate', function () {
-    $user = User::factory()
-        ->withStaffPosition(StaffDepartment::Steward, StaffRank::Officer)
-        ->create();
-
-    expect($user->can('view-discord-api-log'))->toBeTrue();
-});
-
-test('non-engineering non-officer is denied discord api log gate', function () {
+test('user without View Logs role is denied discord api log gate', function () {
     $user = User::factory()
         ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
         ->create();
@@ -64,7 +58,7 @@ test('non-engineering non-officer is denied discord api log gate', function () {
     expect($user->can('view-discord-api-log'))->toBeFalse();
 });
 
-test('non-engineering non-officer is denied mc command log gate', function () {
+test('user without View Logs role is denied mc command log gate', function () {
     $user = User::factory()
         ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
         ->create();
@@ -72,7 +66,7 @@ test('non-engineering non-officer is denied mc command log gate', function () {
     expect($user->can('view-mc-command-log'))->toBeFalse();
 });
 
-test('non-engineering non-officer is denied activity log gate', function () {
+test('user without View Logs role is denied activity log gate', function () {
     $user = User::factory()
         ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::JrCrew)
         ->create();
@@ -80,25 +74,21 @@ test('non-engineering non-officer is denied activity log gate', function () {
     expect($user->can('view-activity-log'))->toBeFalse();
 });
 
-test('any officer can viewAny minecraft accounts', function () {
-    $user = User::factory()
-        ->withStaffPosition(StaffDepartment::Steward, StaffRank::Officer)
-        ->create();
+test('user with User Manager role can viewAny minecraft accounts', function () {
+    $user = User::factory()->withRole('User Manager')->create();
 
     expect($user->can('viewAny', MinecraftAccount::class))->toBeTrue();
 });
 
-test('any officer can viewAny discord accounts', function () {
-    $user = User::factory()
-        ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::Officer)
-        ->create();
+test('user with User Manager role can viewAny discord accounts', function () {
+    $user = User::factory()->withRole('User Manager')->create();
 
     expect($user->can('viewAny', DiscordAccount::class))->toBeTrue();
 });
 
-test('crew member from non-engineering dept cannot viewAny minecraft accounts', function () {
+test('officer without User Manager role cannot viewAny minecraft accounts', function () {
     $user = User::factory()
-        ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+        ->withStaffPosition(StaffDepartment::Steward, StaffRank::Officer)
         ->create();
 
     expect($user->can('viewAny', MinecraftAccount::class))->toBeFalse();

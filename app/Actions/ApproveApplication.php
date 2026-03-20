@@ -46,7 +46,7 @@ class ApproveApplication
 
             // Auto-assign the applicant to the staff position
             if ($application->staffPosition) {
-                $application->staffPosition->update(['user_id' => $application->user_id]);
+                AssignStaffPosition::run($application->staffPosition, $application->user);
             }
 
             // Close related discussions with system messages

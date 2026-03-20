@@ -1,37 +1,38 @@
-# Codex Compatibility Guide
+# Agent Implementation Guide
 
-How OpenAI Codex (and similar code-completion agents) should operate in this repository.
+How AI agents should operate in this repository when implementing features.
 
 ---
 
 ## How You Will Typically Be Invoked
 
-You will usually receive a **pre-approved handoff plan** written by Claude Code.
-The plan file is in `ai/plans/YYYY-MM-DD-feature-name.md`.
+You will usually receive a **GitHub issue number** from a PRD breakdown.
+The issue contains acceptance criteria, blocked-by references, and links to a parent PRD.
 
-**Your job is to execute the plan exactly as written — not to redesign or extend it.**
+**Your job is to implement the issue exactly as specified — not to redesign or extend it.**
 
-### Startup Sequence (Plan-Based)
+### Startup Sequence (Issue-Based)
 
 1. Read `CLAUDE.md`.
 2. Read `ai/CONVENTIONS.md` — all code patterns you must follow.
 3. Read `ai/ARCHITECTURE.md` — where things live.
-4. Read the plan file you were given.
-5. Start at **Step 1** of the plan. Do not skip ahead.
-6. After each step: run `./vendor/bin/pest`. Fix failures before moving on.
-7. After completing a step, output a brief status: "Step N complete. Tests pass. Moving to Step N+1."
+4. Read the GitHub issue (`gh issue view <number>`).
+5. Read the parent PRD issue for broader context.
+6. Explore the codebase to understand existing patterns relevant to the work.
+7. Work through the acceptance criteria in order.
+8. After each logical unit: run `./vendor/bin/pest`. Fix failures before moving on.
 
-### If Something in the Plan Is Unclear
+### If Something in the Issue Is Unclear
 
 - Do not guess. Stop and ask.
-- Do not substitute a different pattern — the plan was written for this codebase.
-- Do not add anything not in the plan.
+- Do not substitute a different pattern — the issue was written for this codebase.
+- Do not add anything not in the issue's acceptance criteria.
 
 ---
 
-## Before Generating Any Code (No Plan Provided)
+## Before Generating Any Code (No Issue Provided)
 
-If you have not been given a plan file:
+If you have not been given a GitHub issue:
 
 1. Read `CLAUDE.md` — the mandatory "read first" file.
 2. Read `ai/ARCHITECTURE.md` — understand domain modules and data flow.
@@ -137,7 +138,7 @@ it('does the thing', function () {
 
 ---
 
-## Things Codex Must NOT Do
+## Things Agents Must NOT Do
 
 - Do not add Laravel Controllers for interactive UI pages.
   Use Volt components — they co-locate logic and template in one file for cleaner, easier-to-maintain code.

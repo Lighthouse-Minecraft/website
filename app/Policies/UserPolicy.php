@@ -2,7 +2,6 @@
 
 namespace App\Policies;
 
-use App\Enums\StaffDepartment;
 use App\Enums\StaffRank;
 use App\Models\User;
 
@@ -10,9 +9,7 @@ class UserPolicy
 {
     public function before(User $user, string $ability): ?bool
     {
-        if (
-            $user->isAdmin() || ($user->isInDepartment(StaffDepartment::Command) && $user->isAtLeastRank(StaffRank::Officer))
-        ) {
+        if ($user->isAdmin()) {
             return true;
         }
 
@@ -24,7 +21,7 @@ class UserPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->isAtLeastRank(StaffRank::Officer);
+        return $user->hasRole('User Manager');
     }
 
     /**
@@ -37,15 +34,12 @@ class UserPolicy
 
     public function viewActivityLog(User $user, User $model): bool
     {
-        return $user->id == $model->id || $user->isInDepartment(StaffDepartment::Quartermaster) || $user->isAtLeastRank(StaffRank::Officer);
+        return $user->hasRole('User Manager');
     }
 
     public function viewPii(User $user, User $model): bool
     {
-        // Admin, Command Staff, and Quartermaster can view PII
-        return $user->isAdmin()
-            || $user->isInDepartment(StaffDepartment::Command)
-            || $user->isInDepartment(StaffDepartment::Quartermaster);
+        return $user->hasRole('User Manager');
     }
 
     public function viewStaffPhone(User $user, User $model): bool
@@ -69,7 +63,7 @@ class UserPolicy
      */
     public function update(User $user, User $model): bool
     {
-        return ($user->isInDepartment(StaffDepartment::Quartermaster) && $user->isAtLeastRank(StaffRank::Officer)) || $user->id == $model->id;
+        return $user->hasRole('User Manager') || $user->id == $model->id;
     }
 
     public function updateStaffPosition(User $user, User $model): bool

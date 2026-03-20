@@ -114,24 +114,17 @@ it('admin can revoke a minecraft account', function () {
     expect($admin->can('revoke', $account))->toBeTrue();
 });
 
-it('engineer officer can revoke a minecraft account', function () {
+it('user with User Manager role can revoke a minecraft account', function () {
+    $user = User::factory()->withRole('User Manager')->create();
+    loginAs($user);
+    $owner = User::factory()->create();
+    $account = MinecraftAccount::factory()->active()->create(['user_id' => $owner->id]);
+
+    expect($user->can('revoke', $account))->toBeTrue();
+});
+
+it('officer without User Manager role cannot revoke a minecraft account', function () {
     $officer = officerEngineer();
-    $owner = User::factory()->create();
-    $account = MinecraftAccount::factory()->active()->create(['user_id' => $owner->id]);
-
-    expect($officer->can('revoke', $account))->toBeTrue();
-});
-
-it('command officer can revoke a minecraft account', function () {
-    $officer = officerCommand();
-    $owner = User::factory()->create();
-    $account = MinecraftAccount::factory()->active()->create(['user_id' => $owner->id]);
-
-    expect($officer->can('revoke', $account))->toBeTrue();
-});
-
-it('steward officer cannot revoke a minecraft account', function () {
-    $officer = officerSteward();
     $owner = User::factory()->create();
     $account = MinecraftAccount::factory()->active()->create(['user_id' => $owner->id]);
 
@@ -187,18 +180,12 @@ it('admin can view uuid', function () {
     expect($admin->can('viewUuid', $account))->toBeTrue();
 });
 
-it('engineer crew member can view uuid', function () {
-    $crew = crewEngineer();
+it('user with User Manager role can view uuid', function () {
+    $user = User::factory()->withRole('User Manager')->create();
+    loginAs($user);
     $account = MinecraftAccount::factory()->create();
 
-    expect($crew->can('viewUuid', $account))->toBeTrue();
-});
-
-it('officer in any department can view uuid', function () {
-    $officer = officerSteward();
-    $account = MinecraftAccount::factory()->create();
-
-    expect($officer->can('viewUuid', $account))->toBeTrue();
+    expect($user->can('viewUuid', $account))->toBeTrue();
 });
 
 it('regular user cannot view uuid', function () {

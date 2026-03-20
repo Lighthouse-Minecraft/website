@@ -14,7 +14,7 @@ it('allows admin to review applications', function () {
     expect($admin->can('viewAny', StaffApplication::class))->toBeTrue();
 });
 
-it('allows command officer to review applications', function () {
+it('command officer can view applications via officer rank check', function () {
     $officer = officerCommand();
 
     expect($officer->can('viewAny', StaffApplication::class))->toBeTrue();

@@ -1,8 +1,10 @@
 <?php
 
 use App\Enums\StaffDepartment;
+use App\Enums\StaffRank;
 use App\Models\Meeting;
 use App\Models\Task;
+use App\Models\User;
 
 use function Pest\Laravel\get;
 
@@ -71,8 +73,12 @@ describe('Department Page - Departments', function () {
             ->assertSee('Steward');
     })->done();
 
-    // Only Officers can view all of the departments
-    it('allows Officers to view all departments', function ($user) {
+    // Users with View All Ready Rooms role can view all departments
+    it('allows users with View All Ready Rooms role to view all departments', function () {
+        $user = User::factory()
+            ->withStaffPosition(StaffDepartment::Command, StaffRank::JrCrew)
+            ->withRole('View All Ready Rooms')
+            ->create();
         loginAs($user);
 
         get(route('ready-room.index'))
@@ -81,7 +87,30 @@ describe('Department Page - Departments', function () {
             ->assertSee('Engineer')
             ->assertSee('Quartermaster')
             ->assertSee('Steward');
-    })->with('officers')->done();
+    })->done();
+
+    // Admins can view all departments
+    it('allows admins to view all departments', function () {
+        loginAsAdmin();
+
+        get(route('ready-room.index'))
+            ->assertSee('Command')
+            ->assertSee('Chaplain')
+            ->assertSee('Engineer')
+            ->assertSee('Quartermaster')
+            ->assertSee('Steward');
+    })->done();
+
+    // Officers without View All Ready Rooms role can only view their own department
+    it('limits officers without View All Ready Rooms role to their department', function () {
+        $user = officerChaplain();
+        loginAs($user);
+
+        get(route('ready-room.index'))
+            ->assertSee('Chaplain')
+            ->assertDontSee('Command Tasks')
+            ->assertStatus(200);
+    })->done();
 
     // JrCrew and Crew Members can only view their department
     it('allows JrCrew and Crew Members to view their department', function ($user) {

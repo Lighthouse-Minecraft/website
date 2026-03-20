@@ -2,8 +2,6 @@
 
 namespace App\Policies;
 
-use App\Enums\StaffDepartment;
-use App\Enums\StaffRank;
 use App\Models\CommunityQuestion;
 use App\Models\User;
 
@@ -16,11 +14,7 @@ class CommunityQuestionPolicy
             return null;
         }
 
-        if ($user->hasRole('Admin')) {
-            return true;
-        }
-
-        if ($user->isAtLeastRank(StaffRank::Officer) && $user->isInDepartment(StaffDepartment::Command)) {
+        if ($user->isAdmin()) {
             return true;
         }
 

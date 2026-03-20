@@ -2,8 +2,6 @@
 
 namespace App\Policies;
 
-use App\Enums\StaffDepartment;
-use App\Enums\StaffRank;
 use App\Models\Role;
 use App\Models\User;
 
@@ -11,7 +9,7 @@ class RolePolicy
 {
     public function before(User $user, string $ability): ?bool
     {
-        if ($user->isAdmin() || ($user->isInDepartment(StaffDepartment::Command) && $user->isAtLeastRank(StaffRank::Officer))) {
+        if ($user->isAdmin()) {
             return true;
         }
 
@@ -23,7 +21,7 @@ class RolePolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->isAdmin();
+        return $user->hasRole('Manage Site Config');
     }
 
     /**
@@ -45,7 +43,7 @@ class RolePolicy
     /**
      * Determine whether the user can update the model.
      */
-    public function update(User $user, Role $role): bool
+    public function update(User $user, ?Role $role = null): bool
     {
         return $user->isAdmin();
     }

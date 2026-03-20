@@ -97,7 +97,7 @@ class UpdateApplicationStatus
             ->where('id', '!=', $applicant->id)
             ->get();
 
-        $admins = User::whereHas('roles', fn ($q) => $q->where('name', 'Admin'))
+        $admins = User::whereNotNull('admin_granted_at')
             ->where('id', '!=', $reviewer->id)
             ->where('id', '!=', $applicant->id)
             ->get();

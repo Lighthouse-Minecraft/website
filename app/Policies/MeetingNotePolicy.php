@@ -22,7 +22,8 @@ class MeetingNotePolicy
      */
     public function create(User $user): bool
     {
-        return $user->isAtLeastRank(StaffRank::Officer) || $user->hasRole('Meeting Secretary');
+        return $user->hasRole('Manage Staff Meeting')
+            || $user->isAtLeastRank(StaffRank::Officer);
     }
 
     /**
@@ -30,7 +31,16 @@ class MeetingNotePolicy
      */
     public function update(User $user, MeetingNote $meetingNote): bool
     {
-        return $user->isAtLeastRank(StaffRank::Officer) || $user->hasRole('Meeting Secretary');
+        if ($user->hasRole('Manage Staff Meeting')) {
+            return true;
+        }
+
+        // Officers can edit their own department's notes
+        if ($user->isAtLeastRank(StaffRank::Officer) && $user->staff_department !== null) {
+            return $meetingNote->section_key === $user->staff_department->value;
+        }
+
+        return false;
     }
 
     public function updateSave(User $user, MeetingNote $meetingNote): bool

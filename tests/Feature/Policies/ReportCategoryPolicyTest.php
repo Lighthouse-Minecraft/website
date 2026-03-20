@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Models\ReportCategory;
+use App\Models\User;
 
 uses()->group('discipline-reports', 'policies');
 
@@ -13,9 +14,9 @@ it('allows authorized roles to manage report categories', function (Closure $cre
         ->and($user->can('create', ReportCategory::class))->toBe($canManage);
 })->with([
     'admin' => [fn () => loginAsAdmin(), true],
-    'command officer' => [fn () => tap(officerCommand(), fn ($u) => loginAs($u)), true],
-    'quartermaster officer' => [fn () => tap(officerQuartermaster(), fn ($u) => loginAs($u)), true],
-    'crew' => [fn () => tap(crewQuartermaster(), fn ($u) => loginAs($u)), false],
+    'Manage Site Config role' => [fn () => tap(User::factory()->withRole('Manage Site Config')->create(), fn ($u) => loginAs($u)), true],
+    'officer without role' => [fn () => tap(officerCommand(), fn ($u) => loginAs($u)), false],
+    'crew without role' => [fn () => tap(crewQuartermaster(), fn ($u) => loginAs($u)), false],
 ]);
 
 it('prevents deletion of report categories', function () {

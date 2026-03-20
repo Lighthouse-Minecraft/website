@@ -18,7 +18,8 @@ it('allows admin to perform any action', function () {
         ->and($admin->can('publish', $report))->toBeTrue();
 });
 
-it('allows command officer to perform any action', function () {
+// TODO: Re-enable after PRD #280 completion — command officer no longer bypasses before() hook
+it('command officer without roles can view and create but not publish', function () {
     $officer = officerCommand();
     loginAs($officer);
     $report = DisciplineReport::factory()->create();
@@ -27,7 +28,7 @@ it('allows command officer to perform any action', function () {
         ->and($officer->can('view', $report))->toBeTrue()
         ->and($officer->can('create', DisciplineReport::class))->toBeTrue()
         ->and($officer->can('update', $report))->toBeTrue()
-        ->and($officer->can('publish', $report))->toBeTrue();
+        ->and($officer->can('publish', $report))->toBeFalse();
 });
 
 it('allows jr crew to view any reports', function () {
@@ -68,12 +69,12 @@ it('prevents updating a published report', function () {
     expect($creator->can('update', $report))->toBeFalse();
 });
 
-it('allows officer to publish a draft report', function () {
-    $officer = officerQuartermaster();
-    loginAs($officer);
+it('allows user with Publish Discipline Reports role to publish a draft report', function () {
+    $user = User::factory()->withRole('Publish Discipline Reports')->create();
+    loginAs($user);
     $report = DisciplineReport::factory()->create();
 
-    expect($officer->can('publish', $report))->toBeTrue();
+    expect($user->can('publish', $report))->toBeTrue();
 });
 
 it('prevents non-officer from publishing', function () {

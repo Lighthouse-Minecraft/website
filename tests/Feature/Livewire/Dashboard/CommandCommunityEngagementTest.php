@@ -126,8 +126,11 @@ describe('Community Engagement Widget', function () {
 });
 
 describe('Community Engagement Widget - Permissions', function () {
-    it('is visible to command department staff on the dashboard', function () {
-        $user = crewCommand();
+    it('is visible to user with View Command Dashboard role on the dashboard', function () {
+        $user = User::factory()
+            ->withStaffPosition(\App\Enums\StaffDepartment::Command, \App\Enums\StaffRank::CrewMember)
+            ->withRole('View Command Dashboard')
+            ->create();
         loginAs($user);
 
         get('dashboard')
@@ -143,17 +146,8 @@ describe('Community Engagement Widget - Permissions', function () {
             ->assertSeeLivewire('dashboard.command-community-engagement');
     });
 
-    it('is visible to command department jr crew', function () {
-        $user = jrCrewCommand();
-        loginAs($user);
-
-        get('dashboard')
-            ->assertSee('Command Staff')
-            ->assertSeeLivewire('dashboard.command-community-engagement');
-    });
-
-    it('is not visible to non-command officers', function () {
-        $user = officerChaplain();
+    it('is not visible to command staff without View Command Dashboard role', function () {
+        $user = crewCommand();
         loginAs($user);
 
         get('dashboard')

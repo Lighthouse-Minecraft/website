@@ -23,6 +23,8 @@ There are five departments. Each one covers a different area of community operat
 
 Each department has its own tab in the Ready Room where you can see department-specific tasks and information, including department-specific meeting notes from the recent Staff Meetings.
 
+Beyond departments and ranks, your position also carries **permission roles** that control what features you can access on the site. See [[books/staff-handbook/administration/roles-and-permissions/how-roles-work|How Roles Work]] for details.
+
 ## Ranks
 
 There are three staff ranks, each with increasing levels of access and responsibility.

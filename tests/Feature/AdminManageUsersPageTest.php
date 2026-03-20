@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Models\Role;
 use App\Models\User;
 use Livewire\Volt\Volt;
 
@@ -50,7 +49,6 @@ test('user can sort by name', function () {
 
 test('user can edit another user when authorized', function () {
     $user = User::factory()->create(['name' => 'Original Name']);
-    $role = Role::factory()->create();
 
     $this->actingAs($this->admin);
 
@@ -59,7 +57,6 @@ test('user can edit another user when authorized', function () {
         ->assertSet('editUserId', $user->id)
         ->assertSet('editUserData.name', 'Original Name')
         ->set('editUserData.name', 'Updated Name')
-        ->set('editUserRoles', [$role->id])
         ->call('saveUser')
         ->assertHasNoErrors();
 

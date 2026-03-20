@@ -29,43 +29,53 @@ See `/ai/ARCHITECTURE.md` for full details.
 
 ---
 
-## Modes of Operation
+## Workflow
 
-### PLAN MODE — Claude Code Only (Handoff to Codex)
-Use PLAN MODE before writing any code for a feature that:
-- touches more than 2 files, OR
-- involves a migration, OR
-- changes authorization/policies, OR
-- requires a new Action or Notification class
+### PRD-Driven Development
 
-**In PLAN MODE you must:**
-1. Read all relevant existing files first.
-2. Ask whatever clarifying questions are needed to produce a complete, unambiguous plan.
-3. Write a self-contained handoff plan to `ai/plans/YYYY-MM-DD-feature-name.md`
-   following the format in `/ai/PLAN_TEMPLATE.md`.
-4. Get explicit approval before switching to BUILD MODE or handing off to Codex.
+All non-trivial features follow this pipeline:
 
-**To invoke planning only (no implementation):**
-> "Plan the [feature] feature. Generate a handoff plan. Do not write any code."
+| Phase | Skill | Output |
+|---|---|---|
+| Requirements | `/write-a-prd` | GitHub issue with full PRD |
+| Breakdown | `/prd-to-issues` | Vertical-slice GitHub issues (AFK/HITL) |
+| Full Implementation | `/work-prd <number>` | All issues implemented, PR to staging |
+| Single Issue | `/work-issue <number>` | One issue implemented on a branch |
 
-### BUILD MODE
-Only enter BUILD MODE after a plan is approved. Then:
-- Implement exactly what was planned, no scope creep.
-- Run tests after each logical unit of work.
-- Mark each task complete as you finish it.
+### Branching Model
 
----
+- **PRD branch**: `prd/<short-prd-name>` — created from `staging`, all issue work merges here.
+- **Issue branch**: `prd/<short-prd-name>/<issue-short-name>` — created from the PRD branch.
+- **Standalone branch**: `<descriptive-name>` — for quick fixes or single issues without a PRD.
+- When all issues are complete, a PR is created from the PRD branch → `staging`.
 
-## Required Workflow for Feature Work
+### Issue Tracking
 
-1. **Branch** — checkout `staging`, pull, create a new descriptive branch.
-2. **Read** relevant existing files (don't guess at patterns).
-3. **Ask** all questions needed to fully understand requirements before planning.
-4. **Plan** — write to `ai/plans/YYYY-MM-DD-name.md`, commit the plan file, get approval.
-5. **Build** one task at a time.
+- All commits reference their GitHub issue number (e.g., `feat: add admin flag #281`).
+- The final commit for an issue includes `Closes #<number>` in the message.
+- Issues are labeled `in-progress` when work starts.
+- A comment is added to the issue when work begins (agent name, branch).
+- Before starting an issue, check for `in-progress` label to avoid collisions with other agents (e.g., Codex).
+
+### Working a GitHub Issue
+
+When implementing a GitHub issue (via `/work-issue` or manually):
+
+1. **Check** the issue for `in-progress` label — skip if claimed by another agent.
+2. **Label** the issue as `in-progress` and add a comment noting the branch.
+3. **Read** the GitHub issue and its parent PRD for full context.
+4. **Read** relevant existing files (don't guess at patterns).
+5. **Build** one task at a time, following acceptance criteria.
 6. **Test** with `./vendor/bin/pest` after each task.
-7. **Commit** each logical unit. **Never push** — that's the user's step.
+7. **Commit** each logical unit with issue number reference. **Never push** — that's the user's step.
 8. **Never** scatter authorization checks in Blade — use policies/gates only.
+
+### Quick Fixes & Small Tasks
+
+For tasks that don't warrant a PRD (bug fixes, small tweaks, single-file changes):
+- Read the relevant code first.
+- Implement, test, commit.
+- No PRD or issue needed.
 
 ---
 
@@ -90,11 +100,8 @@ Full details in `/ai/CONVENTIONS.md`.
 |---|---|
 | Architecture | `/ai/ARCHITECTURE.md` |
 | Naming & patterns | `/ai/CONVENTIONS.md` |
-| Planning a feature | `/ai/FEATURE_PLANNING_PROTOCOL.md` |
-| Handoff plan format | `/ai/PLAN_TEMPLATE.md` |
-| Approved plans | `/ai/plans/` |
-| Git/PR + split workflow | `/ai/AGENT_WORKFLOW.md` |
-| Codex guidance | `/ai/CODEX_COMPAT.md` |
+| Git/commit/test workflow | `/ai/AGENT_WORKFLOW.md` |
+| Agent implementation guide | `/ai/AGENT_IMPLEMENTATION_GUIDE.md` |
 | Authorization gates | `app/Providers/AuthServiceProvider.php` |
 | User model | `app/Models/User.php` |
 | Action example | `app/Actions/PromoteUser.php` |
