@@ -11,12 +11,15 @@ use App\Models\BlogTag;
 use Carbon\Carbon;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Models\SiteConfig;
 use Livewire\Volt\Component;
+use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 
 new class extends Component {
-    use WithPagination;
+    use WithFileUploads, WithPagination;
 
     // Tabs
     public string $activeTab = 'posts';
@@ -29,6 +32,9 @@ new class extends Component {
     public ?int $editingCategoryId = null;
     public string $categoryName = '';
     public string $categorySlug = '';
+    public string $categoryContent = '';
+    public $categoryHeroImage = null;
+    public ?string $existingCategoryHeroImageUrl = null;
     public bool $categoryIncludeInSitemap = true;
 
     // Tag management
@@ -135,6 +141,9 @@ new class extends Component {
         $this->editingCategoryId = $category->id;
         $this->categoryName = $category->name;
         $this->categorySlug = $category->slug;
+        $this->categoryContent = $category->content ?? '';
+        $this->categoryHeroImage = null;
+        $this->existingCategoryHeroImageUrl = $category->heroImageUrl();
         $this->categoryIncludeInSitemap = $category->include_in_sitemap;
         Flux::modal('category-form-modal')->show();
     }
@@ -143,9 +152,13 @@ new class extends Component {
     {
         $this->authorize('manage-blog');
 
+        $maxImageSize = SiteConfig::getValue('max_image_size_kb', '2048');
+
         $rules = [
             'categoryName' => 'required|string|max:100',
             'categorySlug' => 'required|string|max:100',
+            'categoryContent' => 'nullable|string|max:10000',
+            'categoryHeroImage' => 'nullable|mimes:jpg,jpeg,png,gif,webp|max:' . $maxImageSize,
             'categoryIncludeInSitemap' => 'boolean',
         ];
 
@@ -157,18 +170,37 @@ new class extends Component {
 
         $this->validate($rules);
 
+        $heroImagePath = null;
+
+        if ($this->categoryHeroImage) {
+            $heroImagePath = $this->categoryHeroImage->store('blog/category-hero', config('filesystems.public_disk'));
+        }
+
         if ($this->editingCategoryId) {
             $category = BlogCategory::findOrFail($this->editingCategoryId);
-            $category->update([
+
+            $data = [
                 'name' => $this->categoryName,
                 'slug' => Str::slug($this->categorySlug),
+                'content' => $this->categoryContent ?: null,
                 'include_in_sitemap' => $this->categoryIncludeInSitemap,
-            ]);
+            ];
+
+            if ($heroImagePath) {
+                if ($category->hero_image_path) {
+                    Storage::disk(config('filesystems.public_disk'))->delete($category->hero_image_path);
+                }
+                $data['hero_image_path'] = $heroImagePath;
+            }
+
+            $category->update($data);
             Flux::toast('Category updated.', 'Updated', variant: 'success');
         } else {
             BlogCategory::create([
                 'name' => $this->categoryName,
                 'slug' => Str::slug($this->categorySlug),
+                'content' => $this->categoryContent ?: null,
+                'hero_image_path' => $heroImagePath,
                 'include_in_sitemap' => $this->categoryIncludeInSitemap,
             ]);
             Flux::toast('Category created.', 'Created', variant: 'success');
@@ -243,6 +275,9 @@ new class extends Component {
         $this->editingCategoryId = null;
         $this->categoryName = '';
         $this->categorySlug = '';
+        $this->categoryContent = '';
+        $this->categoryHeroImage = null;
+        $this->existingCategoryHeroImageUrl = null;
         $this->categoryIncludeInSitemap = true;
     }
 
@@ -498,6 +533,33 @@ new class extends Component {
                 <flux:input wire:model="categorySlug" type="text" placeholder="category-slug" />
                 <flux:error name="categorySlug" />
             </flux:field>
+
+            <flux:field>
+                <flux:label>Content (Markdown)</flux:label>
+                <flux:description>Optional content displayed on the category page.</flux:description>
+                <flux:textarea wire:model="categoryContent" rows="6" placeholder="Describe this category..." />
+                <flux:error name="categoryContent" />
+            </flux:field>
+
+            <div>
+                <flux:label class="mb-2">Hero Image</flux:label>
+                <flux:file-upload wire:model="categoryHeroImage">
+                    <flux:file-upload.dropzone
+                        heading="Category hero image"
+                        text="JPG, PNG, GIF, WEBP"
+                    />
+                </flux:file-upload>
+                @if($categoryHeroImage)
+                    <div class="mt-2">
+                        <img src="{{ $categoryHeroImage->temporaryUrl() }}" alt="Preview" class="w-full max-w-xs rounded-lg" />
+                    </div>
+                @elseif($existingCategoryHeroImageUrl)
+                    <div class="mt-2">
+                        <img src="{{ $existingCategoryHeroImageUrl }}" alt="Current hero image" class="w-full max-w-xs rounded-lg" />
+                    </div>
+                @endif
+                <flux:error name="categoryHeroImage" />
+            </div>
 
             <flux:field>
                 <flux:checkbox wire:model="categoryIncludeInSitemap" label="Include in sitemap" />
