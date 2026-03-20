@@ -12,17 +12,15 @@ use function Pest\Laravel\actingAs;
 
 uses()->group('parent-portal', 'profile');
 
-it('shows age badge for staff viewing profile', function () {
+it('shows age badge for user with Manage Membership Level role viewing profile', function () {
     $child = User::factory()->minor()->create([
         'date_of_birth' => now()->subYears(10)->format('Y-m-d'),
     ]);
 
-    $admin = User::factory()->create([
-        'membership_level' => MembershipLevel::Citizen,
-        'staff_department' => StaffDepartment::Command,
-        'staff_rank' => StaffRank::Officer,
-    ]);
-    actingAs($admin);
+    $staff = User::factory()
+        ->withRole('Manage Membership Level')
+        ->create(['membership_level' => MembershipLevel::Citizen]);
+    actingAs($staff);
 
     Livewire\Volt\Volt::test('users.display-basic-details', ['user' => $child])
         ->assertSee('Age 10');
@@ -45,12 +43,10 @@ it('shows red badge for under-13', function () {
         'date_of_birth' => now()->subYears(10)->format('Y-m-d'),
     ]);
 
-    $admin = User::factory()->create([
-        'membership_level' => MembershipLevel::Citizen,
-        'staff_department' => StaffDepartment::Command,
-        'staff_rank' => StaffRank::Officer,
-    ]);
-    actingAs($admin);
+    $staff = User::factory()
+        ->withRole('Manage Membership Level')
+        ->create(['membership_level' => MembershipLevel::Citizen]);
+    actingAs($staff);
 
     Livewire\Volt\Volt::test('users.display-basic-details', ['user' => $child])
         ->assertSee('Age 10');
@@ -61,12 +57,10 @@ it('shows blue badge for 13-16', function () {
         'date_of_birth' => now()->subYears(14)->format('Y-m-d'),
     ]);
 
-    $admin = User::factory()->create([
-        'membership_level' => MembershipLevel::Citizen,
-        'staff_department' => StaffDepartment::Command,
-        'staff_rank' => StaffRank::Officer,
-    ]);
-    actingAs($admin);
+    $staff = User::factory()
+        ->withRole('Manage Membership Level')
+        ->create(['membership_level' => MembershipLevel::Citizen]);
+    actingAs($staff);
 
     Livewire\Volt\Volt::test('users.display-basic-details', ['user' => $teen])
         ->assertSee('Age 14');
@@ -77,28 +71,27 @@ it('shows gray badge for adult', function () {
         'date_of_birth' => now()->subYears(25)->format('Y-m-d'),
     ]);
 
-    $admin = User::factory()->create([
-        'membership_level' => MembershipLevel::Citizen,
-        'staff_department' => StaffDepartment::Command,
-        'staff_rank' => StaffRank::Officer,
-    ]);
-    actingAs($admin);
+    $staff = User::factory()
+        ->withRole('Manage Membership Level')
+        ->create(['membership_level' => MembershipLevel::Citizen]);
+    actingAs($staff);
 
     Livewire\Volt\Volt::test('users.display-basic-details', ['user' => $adult])
         ->assertSee('Age 25');
 });
 
-it('shows parent portal link for officers on parent profile', function () {
+it('shows parent portal link for user with Manage Membership Level role on parent profile', function () {
     $parent = User::factory()->adult()->create();
     $child = User::factory()->minor()->create();
     ParentChildLink::create(['parent_user_id' => $parent->id, 'child_user_id' => $child->id]);
 
-    $officer = User::factory()->create([
-        'membership_level' => MembershipLevel::Citizen,
-        'staff_department' => StaffDepartment::Command,
-        'staff_rank' => StaffRank::Officer,
-    ]);
-    actingAs($officer);
+    $staff = User::factory()
+        ->withRole('Manage Membership Level')
+        ->create([
+            'membership_level' => MembershipLevel::Citizen,
+            'staff_rank' => StaffRank::Officer,
+        ]);
+    actingAs($staff);
 
     Livewire\Volt\Volt::test('users.display-basic-details', ['user' => $parent])
         ->assertSee('View Parent Portal');

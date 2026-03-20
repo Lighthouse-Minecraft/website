@@ -466,6 +466,14 @@ new class extends Component {
                 </div>
                 <flux:text>Member Rank: {{ $user->membership_level->label() }}</flux:text>
                 <flux:text>Joined on {{ $user->created_at->format('F j, Y') }}</flux:text>
+                @can('manage-stowaway-users')
+                    @if($user->registration_answer)
+                        <div class="flex items-center gap-2">
+                            <flux:text>Registration Question</flux:text>
+                            <flux:button size="xs" variant="ghost" icon="magnifying-glass" x-on:click="$flux.modal('profile-registration-question-modal').show()" />
+                        </div>
+                    @endif
+                @endcan
             </div>
 
             @canany(['update', 'manage-stowaway-users'], $user)
@@ -787,6 +795,27 @@ new class extends Component {
                         @endif
                     </div>
 
+                    @if(Auth::user()->isAtLeastRank(\App\Enums\StaffRank::JrCrew) || Auth::user()->isAdmin())
+                        @php
+                            $position = $user->staffPosition->load('roles');
+                        @endphp
+                        @if($position->has_all_roles_at)
+                            <div>
+                                <flux:heading size="sm" class="mb-1">Roles</flux:heading>
+                                <flux:badge size="sm" color="amber" icon="star">Allow All</flux:badge>
+                            </div>
+                        @elseif($position->roles->isNotEmpty())
+                            <div>
+                                <flux:heading size="sm" class="mb-1">Roles</flux:heading>
+                                <div class="flex flex-wrap gap-1">
+                                    @foreach($position->roles as $role)
+                                        <flux:badge size="sm" color="{{ $role->color }}" icon="{{ $role->icon }}">{{ $role->name }}</flux:badge>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+                    @endif
+
                     @if(! $user->isJrCrew() && $user->staff_bio)
                         <div>
                             <flux:heading size="sm" class="mb-1">About</flux:heading>
@@ -972,6 +1001,31 @@ new class extends Component {
             <flux:button variant="danger" wire:click="forceDeleteMinecraftAccount">Delete Permanently</flux:button>
         </div>
     </flux:modal>
+
+    {{-- Registration Question Modal --}}
+    @can('manage-stowaway-users')
+        @if($user->registration_answer)
+            <flux:modal name="profile-registration-question-modal" class="w-full md:w-1/2 xl:w-1/3">
+                <div class="space-y-4">
+                    <flux:heading size="lg">Registration Question</flux:heading>
+
+                    <div>
+                        <flux:text variant="subtle" class="font-medium text-sm">Question Asked</flux:text>
+                        <flux:text class="italic">{{ $user->registration_question_text ?? 'N/A' }}</flux:text>
+                    </div>
+
+                    <div>
+                        <flux:text variant="subtle" class="font-medium text-sm">Response</flux:text>
+                        <flux:text>{{ $user->registration_answer }}</flux:text>
+                    </div>
+
+                    <div class="flex justify-end">
+                        <flux:button variant="ghost" x-on:click="$flux.modal('profile-registration-question-modal').close()">Close</flux:button>
+                    </div>
+                </div>
+            </flux:modal>
+        @endif
+    @endcan
 
     {{-- Revoke Minecraft account confirmation modal --}}
     <flux:modal name="confirm-revoke-mc-account" class="min-w-[22rem] space-y-6">

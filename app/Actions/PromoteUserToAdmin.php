@@ -9,21 +9,13 @@ class PromoteUserToAdmin
 {
     use AsAction;
 
-    public function handle(User $user)
+    public function handle(User $user): bool
     {
-
-        if ($user->roles()->where('name', 'Admin')->exists()) {
-            // User is already an Admin
+        if ($user->isAdmin()) {
             return true;
         }
 
-        $adminRole = \App\Models\Role::where('name', 'Admin')->first();
-        if (! $adminRole) {
-
-            return false;
-        }
-
-        $user->roles()->attach($adminRole->id);
+        $user->admin_granted_at = now();
         $user->promoted_at = now();
         $user->save();
 

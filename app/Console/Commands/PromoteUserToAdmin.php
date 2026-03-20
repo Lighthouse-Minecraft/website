@@ -35,19 +35,13 @@ class PromoteUserToAdmin extends Command
             return 1;
         }
 
-        if ($user->roles()->where('name', 'Admin')->exists()) {
+        if ($user->isAdmin()) {
             $this->info("User {$user->email} is already an Admin.");
 
             return 0;
         }
 
-        $success = \App\Actions\PromoteUserToAdmin::run($user);
-
-        if (! $success) {
-            $this->error('Admin role not found.');
-
-            return 1;
-        }
+        \App\Actions\PromoteUserToAdmin::run($user);
 
         $this->info("User {$user->email} has been promoted to Admin.");
 

@@ -1,9 +1,8 @@
 ---
 name: document-feature
 description: Generate comprehensive technical documentation for a single feature of the Lighthouse Website. Use when you need to document, audit, or understand a feature end-to-end.
-argument-hint: [feature-name]
+argument-hint: "feature-name"
 user-invocable: true
-allowed-tools: Read, Grep, Glob, Bash, Write
 ---
 
 # Feature Documentation Generator
@@ -491,6 +490,10 @@ Complete list of every file involved in this feature:
 Write the completed documentation to: `docs/features/$ARGUMENTS.md`
 
 The Write tool will create intermediate directories automatically.
+
+If a document already exists at this path, this is an **update** — the previous version will be
+overwritten with the current state of the codebase. This is intentional: the document always
+reflects the latest reality.
 
 ---
 

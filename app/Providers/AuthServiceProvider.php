@@ -49,14 +49,14 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         $canManageUsers = function ($user) {
-            return $user->hasRole('Admin') || ($user->isAtLeastRank(StaffRank::JrCrew) && ($user->isInDepartment(StaffDepartment::Quartermaster) || $user->isInDepartment(StaffDepartment::Command)));
+            return $user->hasRole('Manage Membership Level');
         };
 
         Gate::define('manage-stowaway-users', $canManageUsers);
         Gate::define('manage-traveler-users', $canManageUsers);
 
         Gate::define('release-from-brig', function ($user) {
-            return $user->hasRole('Admin') || ($user->isAtLeastRank(StaffRank::Officer) && ($user->isInDepartment(StaffDepartment::Quartermaster) || $user->isInDepartment(StaffDepartment::Command)));
+            return $user->hasRole('Brig Warden');
         });
 
         Gate::define('view-ready-room', function ($user) {
@@ -64,23 +64,23 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('view-ready-room-command', function ($user) {
-            return $user->hasRole('Admin') || $user->isAtLeastRank(StaffRank::Officer) || ($user->isAtLeastRank(StaffRank::JrCrew) && $user->isInDepartment(StaffDepartment::Command));
+            return $user->isInDepartment(StaffDepartment::Command) || $user->hasRole('View All Ready Rooms');
         });
 
         Gate::define('view-ready-room-chaplain', function ($user) {
-            return $user->hasRole('Admin') || $user->isAtLeastRank(StaffRank::Officer) || ($user->isAtLeastRank(StaffRank::JrCrew) && $user->isInDepartment(StaffDepartment::Chaplain));
+            return $user->isInDepartment(StaffDepartment::Chaplain) || $user->hasRole('View All Ready Rooms');
         });
 
         Gate::define('view-ready-room-engineer', function ($user) {
-            return $user->hasRole('Admin') || $user->isAtLeastRank(StaffRank::Officer) || ($user->isAtLeastRank(StaffRank::JrCrew) && $user->isInDepartment(StaffDepartment::Engineer));
+            return $user->isInDepartment(StaffDepartment::Engineer) || $user->hasRole('View All Ready Rooms');
         });
 
         Gate::define('view-ready-room-quartermaster', function ($user) {
-            return $user->hasRole('Admin') || $user->isAtLeastRank(StaffRank::Officer) || ($user->isAtLeastRank(StaffRank::JrCrew) && $user->isInDepartment(StaffDepartment::Quartermaster));
+            return $user->isInDepartment(StaffDepartment::Quartermaster) || $user->hasRole('View All Ready Rooms');
         });
 
         Gate::define('view-ready-room-steward', function ($user) {
-            return $user->hasRole('Admin') || $user->isAtLeastRank(StaffRank::Officer) || ($user->isAtLeastRank(StaffRank::JrCrew) && $user->isInDepartment(StaffDepartment::Steward));
+            return $user->isInDepartment(StaffDepartment::Steward) || $user->hasRole('View All Ready Rooms');
         });
 
         Gate::define('link-discord', function ($user) {
@@ -96,22 +96,19 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('view-acp', function ($user) {
-            return $user->isAdmin()
-                || $user->isAtLeastRank(StaffRank::CrewMember)
-                || $user->hasRole('Page Editor')
-                || $user->isInDepartment(StaffDepartment::Engineer);
+            return $user->isAdmin() || $user->isAtLeastRank(StaffRank::JrCrew);
         });
 
         $canViewLogs = function ($user) {
-            return $user->isAdmin()
-                || $user->isAtLeastRank(StaffRank::Officer)
-                || $user->isInDepartment(StaffDepartment::Engineer);
+            return $user->hasRole('View Logs');
         };
 
         Gate::define('view-mc-command-log', $canViewLogs);
         Gate::define('view-discord-api-log', $canViewLogs);
         Gate::define('view-activity-log', $canViewLogs);
-        Gate::define('view-discipline-report-log', $canViewLogs);
+        Gate::define('view-discipline-report-log', function ($user) use ($canViewLogs) {
+            return $canViewLogs($user) || $user->hasRole('Manage Discipline Reports');
+        });
 
         Gate::define('edit-staff-bio', function ($user) {
             return $user->isAtLeastRank(StaffRank::CrewMember) || $user->is_board_member;
@@ -129,19 +126,19 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('manage-discipline-reports', function ($user) {
-            return $user->hasRole('Admin') || $user->isAtLeastRank(StaffRank::JrCrew);
+            return $user->hasRole('Manage Discipline Reports');
         });
 
         Gate::define('publish-discipline-reports', function ($user) {
-            return $user->hasRole('Admin') || $user->isAtLeastRank(StaffRank::Officer);
+            return $user->hasRole('Publish Discipline Reports');
         });
 
         Gate::define('manage-site-config', function ($user) {
-            return $user->hasRole('Admin') || $user->isAtLeastRank(StaffRank::Officer);
+            return $user->hasRole('Manage Site Config');
         });
 
         Gate::define('view-command-dashboard', function ($user) {
-            return $user->isAdmin() || $user->isInDepartment(StaffDepartment::Command);
+            return $user->hasRole('View Command Dashboard');
         });
 
         // Documentation visibility gates
@@ -166,11 +163,11 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('edit-docs', function ($user) {
-            return $user->hasRole('Admin') || $user->isAtLeastRank(StaffRank::Officer);
+            return app()->environment('local');
         });
 
         Gate::define('lock-topic', function ($user) {
-            return $user->hasRole('Admin') || $user->isAtLeastRank(StaffRank::Officer);
+            return $user->hasRole('Moderator');
         });
 
         // Community Questions & Stories
@@ -187,18 +184,31 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('manage-community-stories', function ($user) {
-            return $user->hasRole('Admin')
-                || ($user->isAtLeastRank(StaffRank::Officer) && $user->isInDepartment(StaffDepartment::Command))
-                || ($user->isAtLeastRank(StaffRank::JrCrew) && $user->isInDepartment(StaffDepartment::Chaplain));
+            return $user->hasRole('Manage Community Stories');
         });
 
         // Staff Applications
-        $canManageApplications = function ($user) {
-            return $user->hasRole('Admin')
-                || ($user->isInDepartment(StaffDepartment::Command) && $user->isAtLeastRank(StaffRank::Officer));
-        };
+        Gate::define('review-staff-applications', function ($user, $application = null) {
+            if ($user->isAdmin() || $user->isAtLeastRank(StaffRank::Officer)) {
+                return true;
+            }
 
-        Gate::define('review-staff-applications', $canManageApplications);
-        Gate::define('manage-application-questions', $canManageApplications);
+            if ($user->isAtLeastRank(StaffRank::JrCrew)) {
+                // When no application is provided (route middleware), allow access to the list
+                if ($application === null) {
+                    return true;
+                }
+
+                // When an application is provided, check department match
+                return $application->staffPosition
+                    && $user->staff_department === $application->staffPosition->department;
+            }
+
+            return false;
+        });
+
+        Gate::define('manage-application-questions', function ($user) {
+            return $user->hasRole('Manage Site Config');
+        });
     }
 }

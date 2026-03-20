@@ -114,10 +114,10 @@
         </div>
     </div>
 
-    @canany(['manage-stowaway-users', 'manage-traveler-users'])
+    @can('view-ready-room')
         <div class="w-full bg-zinc-900 p-4 rounded-lg mb-6">
             <div class="flex mb-4">
-                <flux:heading>User Management</flux:heading>
+                <flux:heading>Staff Dashboard</flux:heading>
                 <flux:spacer />
             </div>
 
@@ -130,12 +130,12 @@
                     <livewire:dashboard.traveler-users-widget />
                 @endcan
 
-                @can('manage-discipline-reports')
+                @canany(['manage-discipline-reports', 'publish-discipline-reports'])
                     <livewire:dashboard.discipline-reports-widget />
-                @endcan
+                @endcanany
             </div>
         </div>
-    @endcanany
+    @endcan
 
     @can('view-command-dashboard')
         <div class="w-full bg-zinc-900 p-4 rounded-lg mb-6">

@@ -1,9 +1,8 @@
 ---
 name: write-user-docs
 description: Write user-facing documentation pages for the Lighthouse User Handbook. Takes a feature name and produces friendly, accurate handbook pages by researching the codebase and technical docs.
-argument-hint: [feature-name]
+argument-hint: "feature-name"
 user-invocable: true
-allowed-tools: Read, Grep, Glob, Bash, Write, Edit, Agent
 ---
 
 # User Documentation Writer

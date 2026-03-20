@@ -15,10 +15,11 @@ it('allows admin to view any staff positions', function () {
     expect($admin->can('viewAny', StaffPosition::class))->toBeTrue();
 });
 
-it('allows command officer to view any staff positions', function () {
+// TODO: Re-enable after PRD #280 completion — command officer no longer bypasses before() hook
+it('command officer no longer bypasses staff position policy', function () {
     $officer = User::factory()->withStaffPosition(StaffDepartment::Command, StaffRank::Officer)->create();
 
-    expect($officer->can('viewAny', StaffPosition::class))->toBeTrue();
+    expect($officer->can('viewAny', StaffPosition::class))->toBeFalse();
 });
 
 it('denies regular user from viewing staff positions', function () {

@@ -6,6 +6,7 @@ use App\Enums\MembershipLevel;
 use App\Enums\StaffDepartment;
 use App\Enums\StaffRank;
 use App\Models\Role;
+use App\Models\StaffPosition;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -56,17 +57,18 @@ class UserFactory extends Factory
 
     public function admin(): self
     {
-        return $this->afterCreating(function ($user) {
-            $role = \App\Models\Role::firstOrCreate(['name' => 'Admin']);
-            $user->roles()->attach($role);
-        });
+        return $this->state(fn (array $attributes) => [
+            'admin_granted_at' => now(),
+        ]);
     }
 
     public function withRole(string $roleName): self
     {
         return $this->afterCreating(function ($user) use ($roleName) {
             $role = Role::firstOrCreate(['name' => $roleName]);
-            $user->roles()->attach($role);
+            $position = $user->staffPosition ?? StaffPosition::factory()->assignedTo($user->id)->create();
+            $position->roles()->syncWithoutDetaching([$role->id]);
+            $user->unsetRelation('staffPosition');
         });
     }
 

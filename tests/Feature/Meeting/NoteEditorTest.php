@@ -1,5 +1,7 @@
 <?php
 
+use App\Enums\StaffDepartment;
+use App\Enums\StaffRank;
 use App\Models\Meeting;
 use App\Models\MeetingNote;
 use App\Models\User;
@@ -12,6 +14,29 @@ beforeEach(function () {
     $this->meeting = Meeting::factory()->create();
     Config::set('lighthouse.meeting_note_unlock_mins', 15);
 });
+
+dataset('officersWithMeetingRole', [
+    'Officer Command' => fn () => User::factory()
+        ->withStaffPosition(StaffDepartment::Command, StaffRank::Officer, 'Test Command Officer')
+        ->withRole('Manage Staff Meeting')
+        ->create(),
+    'Officer Chaplain' => fn () => User::factory()
+        ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::Officer, 'Test Chaplain Officer')
+        ->withRole('Manage Staff Meeting')
+        ->create(),
+    'Officer Engineer' => fn () => User::factory()
+        ->withStaffPosition(StaffDepartment::Engineer, StaffRank::Officer, 'Test Engineer Officer')
+        ->withRole('Manage Staff Meeting')
+        ->create(),
+    'Officer Quartermaster' => fn () => User::factory()
+        ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::Officer, 'Test Quartermaster Officer')
+        ->withRole('Manage Staff Meeting')
+        ->create(),
+    'Officer Steward' => fn () => User::factory()
+        ->withStaffPosition(StaffDepartment::Steward, StaffRank::Officer, 'Test Steward Officer')
+        ->withRole('Manage Staff Meeting')
+        ->create(),
+]);
 
 describe('Note Editor - Create Note', function () {
     it('shows a Create Note button if the note does not exist', function () {
@@ -272,7 +297,7 @@ describe('Note Editor - Permissions for Editing', function () {
         livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
             ->call('EditNote')
             ->assertOk();
-    })->with('officers')->done();
+    })->with('officersWithMeetingRole')->done();
 
     it('denies Jr Crew for note editors EditNote method', function (User $user) {
         loginAs($user);
@@ -300,7 +325,7 @@ describe('Note Editor - Permissions for Editing', function () {
         livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
             ->assertSeeText('Edit Agenda')
             ->assertOk();
-    })->with('officers')->done();
+    })->with('officersWithMeetingRole')->done();
 
     it('hides the edit button from staff who are not allowed to edit the note', function ($user) {
         loginAs($user);
@@ -331,7 +356,7 @@ describe('Note Editor - Permissions for Creating', function () {
         livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
             ->assertSeeText('Create Agenda')
             ->assertOk();
-    })->with('officers')->done();
+    })->with('officersWithMeetingRole')->done();
 
     it('hides the create button from Jr Staff', function ($user) {
         loginAs($user);
@@ -358,7 +383,7 @@ describe('Note Editor - Permissions for Creating', function () {
         livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
             ->call('CreateNote')
             ->assertOk();
-    })->with('officers')->done();
+    })->with('officersWithMeetingRole')->done();
 
     it('denies access from Jr Crew to the CreateNote method', function ($user) {
         loginAs($user);
@@ -388,7 +413,7 @@ describe('Note Editor - Permissions for Saving', function () {
         livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
             ->call('SaveNote')
             ->assertOk();
-    })->with('officers')->done();
+    })->with('officersWithMeetingRole')->done();
 
     it('denies Jr Crew access to the SaveNote method', function ($user) {
         loginAs($user);
@@ -435,7 +460,7 @@ describe('Note Editor - Permissions for Locking and Unlocking', function () {
         livewire('note.editor', ['meeting' => $this->meeting, 'section_key' => 'agenda'])
             ->call('UnlockNote')
             ->assertOk();
-    })->with('officers')->done();
+    })->with('officersWithMeetingRole')->done();
 
     it('denies Jr Crew access to the UnlockNote method', function ($user) {
         loginAs($user);

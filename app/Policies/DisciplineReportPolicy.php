@@ -2,7 +2,6 @@
 
 namespace App\Policies;
 
-use App\Enums\StaffDepartment;
 use App\Enums\StaffRank;
 use App\Models\DisciplineReport;
 use App\Models\User;
@@ -15,11 +14,7 @@ class DisciplineReportPolicy
             return null;
         }
 
-        if ($user->hasRole('Admin')) {
-            return true;
-        }
-
-        if ($user->isAtLeastRank(StaffRank::Officer) && $user->isInDepartment(StaffDepartment::Command)) {
+        if ($user->isAdmin()) {
             return true;
         }
 
@@ -28,11 +23,15 @@ class DisciplineReportPolicy
 
     public function viewAny(User $user): bool
     {
-        return $user->isAtLeastRank(StaffRank::JrCrew);
+        return $user->hasRole('Manage Discipline Reports') || $user->isAtLeastRank(StaffRank::JrCrew);
     }
 
     public function view(User $user, DisciplineReport $report): bool
     {
+        if ($user->hasRole('Manage Discipline Reports')) {
+            return true;
+        }
+
         if ($user->isAtLeastRank(StaffRank::JrCrew)) {
             return true;
         }
@@ -50,13 +49,17 @@ class DisciplineReportPolicy
 
     public function create(User $user): bool
     {
-        return $user->isAtLeastRank(StaffRank::JrCrew);
+        return $user->hasRole('Manage Discipline Reports') || $user->isAtLeastRank(StaffRank::JrCrew);
     }
 
     public function update(User $user, DisciplineReport $report): bool
     {
         if (! $report->isDraft()) {
             return false;
+        }
+
+        if ($user->hasRole('Manage Discipline Reports')) {
+            return true;
         }
 
         return $user->id === $report->reporter_user_id
@@ -69,7 +72,7 @@ class DisciplineReportPolicy
             return false;
         }
 
-        if (! $user->hasRole('Admin') && ! $user->isAtLeastRank(StaffRank::Officer)) {
+        if (! $user->hasRole('Publish Discipline Reports')) {
             return false;
         }
 

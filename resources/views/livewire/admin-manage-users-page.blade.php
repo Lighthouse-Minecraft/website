@@ -3,7 +3,6 @@
 use App\Enums\StaffDepartment;
 use App\Enums\StaffRank;
 use App\Models\User;
-use App\Models\Role;
 use Livewire\Volt\Component;
 use Illuminate\Support\Facades\Validator;
 use Livewire\WithPagination;
@@ -28,14 +27,6 @@ new class extends Component {
         'date_of_birth' => '',
         'parent_email' => '',
     ];
-    public array $editUserRoles = [];
-    public $allRoles;
-
-    public function mount()
-    {
-        $this->allRoles = Role::all();
-    }
-
     public function openEditModal($userId)
     {
         $user = User::findOrFail($userId);
@@ -47,7 +38,6 @@ new class extends Component {
             'date_of_birth' => $user->date_of_birth?->format('Y-m-d') ?? '',
             'parent_email' => $user->parent_email ?? '',
         ];
-        $this->editUserRoles = $user->roles->pluck('id')->toArray();
     }
 
     /**
@@ -82,13 +72,13 @@ new class extends Component {
     }
 
     /**
-     * Get a paginated list of users with their roles, filtered, sorted, and paginated based on the component state.
+     * Get a paginated list of users filtered, sorted, and paginated based on the component state.
      *
-     * The result is eager-loaded with the `roles` relation, optionally filtered by the `filterBrig` value
+     * Optionally filtered by the `filterBrig` value
      * (`'in_brig'` to include only users with `in_brig = true`, `'not_brig'` to include only `in_brig = false`),
      * ordered by `sortBy` and `sortDirection` when `sortBy` is set, and paginated using `perPage`.
      *
-     * @return \Illuminate\Pagination\LengthAwarePaginator<PersistentModel> A paginator of User models with the `roles` relation loaded.
+     * @return \Illuminate\Pagination\LengthAwarePaginator<PersistentModel> A paginator of User models.
      */
     #[\Livewire\Attributes\Computed]
     public function users()
@@ -117,7 +107,6 @@ new class extends Component {
                     ->where('discipline_reports.status', 'published')
                     ->where('discipline_reports.published_at', '>=', $cutoff),
             ])
-            ->with('roles')
             ->when(trim($this->search) !== '', function ($q) {
                 $term = mb_strtolower(trim($this->search));
                 $q->where(fn ($q) =>
@@ -151,9 +140,7 @@ new class extends Component {
     }
 
     /**
-     * Validate the edit form, apply admin-role safeguards, persist user changes, and close the edit modal.
-     *
-     * Validates name, email, and selected role IDs; prevents non-admins from adding or removing the "Admin" role on the target user; updates the user record and synced roles, resets the edit state, closes the modal, and displays a success toast.
+     * Validate the edit form, persist user changes, and close the edit modal.
      *
      * @throws \Illuminate\Validation\ValidationException If validation fails.
      * @throws \Illuminate\Database\Eloquent\ModelNotFoundException If the target user cannot be found.
@@ -165,33 +152,15 @@ new class extends Component {
             'email' => $this->editUserData['email'],
             'date_of_birth' => $this->editUserData['date_of_birth'] ?: null,
             'parent_email' => $this->editUserData['parent_email'] ?: null,
-            'editUserRoles' => $this->editUserRoles,
         ], [
             'name' => 'required|string|max:255',
             'email' => 'required|email',
             'date_of_birth' => 'nullable|date|before:today',
             'parent_email' => 'nullable|email',
-            'editUserRoles.*' => 'exists:roles,id',
         ])->validate();
 
-        $user = User::with('roles')->findOrFail($this->editUserId);
+        $user = User::findOrFail($this->editUserId);
         $this->authorize('update', $user);
-
-        // Prevent non-admins from adding/removing the Admin role
-        $adminRoleId = \App\Models\Role::where('name', 'Admin')->value('id');
-        $currentUser = auth()->user();
-
-        if (!$currentUser->isAdmin()) {
-            $hasAdminRole = $user->roles->contains('id', $adminRoleId);
-
-            if ($hasAdminRole && !in_array($adminRoleId, $this->editUserRoles)) {
-                $this->editUserRoles[] = $adminRoleId;
-            }
-
-            if (!$hasAdminRole && in_array($adminRoleId, $this->editUserRoles)) {
-                $this->editUserRoles = array_diff($this->editUserRoles, [$adminRoleId]);
-            }
-        }
 
         $updateData = $this->editUserData;
         $updateData['date_of_birth'] = $updateData['date_of_birth'] ?: null;
@@ -200,7 +169,6 @@ new class extends Component {
         // (AgeLock, ParentalPending) are not automatically re-evaluated here.
         // Use the scheduled ProcessAgeTransitions command for automated transitions.
         $user->update($updateData);
-        $user->roles()->sync($this->editUserRoles);
 
         if ($updateData['parent_email']) {
             LinkParentByEmail::run($user);
@@ -234,7 +202,7 @@ new class extends Component {
             <flux:table.column sortable :sorted="$sortBy === 'in_brig'" :direction="$sortDirection" wire:click="sort('in_brig')">Brig</flux:table.column>
             <flux:table.column sortable :sorted="$sortBy === 'risk_score'" :direction="$sortDirection" wire:click="sort('risk_score')">Risk Score</flux:table.column>
             <flux:table.column>Staff Title</flux:table.column>
-            <flux:table.column>Roles</flux:table.column>
+            <flux:table.column>Admin</flux:table.column>
             <flux:table.column>Actions</flux:table.column>
         </flux:table.columns>
 
@@ -261,9 +229,9 @@ new class extends Component {
                     </flux:table.cell>
                     <flux:table.cell class="whitespace-nowrap">{{ $user->staff_title }}</flux:table.cell>
                     <flux:table.cell class="whitespace-nowrap">
-                        @foreach ($user->roles as $role)
-                            <flux:badge size="xs" color="{{ $role->color }}" icon="{{  $role->icon }}" variant="pill">{{ $role->name }}</flux:badge>
-                        @endforeach
+                        @if($user->isAdmin())
+                            <flux:badge size="xs" color="red" icon="shield-check" variant="pill">Admin</flux:badge>
+                        @endif
                     </flux:table.cell>
 
                     <flux:table.cell>
@@ -289,14 +257,6 @@ new class extends Component {
                         <flux:input label="Email" type="email" wire:model.defer="editUserData.email" required />
                         <flux:input label="Date of Birth" type="date" wire:model.defer="editUserData.date_of_birth" />
                         <flux:input label="Parent Email" type="email" wire:model.defer="editUserData.parent_email" placeholder="Optional" />
-
-                        <flux:checkbox.group wire:model.defer="editUserRoles">
-                            @foreach($allRoles as $role)
-                                @if ($role->name != 'Guest')
-                                    <flux:checkbox value="{{ $role->id }}" label="{{ $role->name }}" />
-                                @endif
-                            @endforeach
-                        </flux:checkbox.group>
 
                         <div class="flex">
                             <flux:spacer />

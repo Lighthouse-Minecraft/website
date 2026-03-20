@@ -5,6 +5,8 @@ declare(strict_types=1);
 use App\Enums\ReportLocation;
 use App\Enums\ReportSeverity;
 use App\Enums\ReportStatus;
+use App\Enums\StaffDepartment;
+use App\Enums\StaffRank;
 use App\Models\DisciplineReport;
 use App\Models\User;
 use Livewire\Volt\Volt;
@@ -100,9 +102,12 @@ it('allows staff to create a report via modal', function () {
     ]);
 });
 
-it('allows officer to publish a draft report', function () {
-    $officer = officerCommand();
-    loginAs($officer);
+it('allows user with Publish Discipline Reports role to publish a draft report', function () {
+    $publisher = User::factory()
+        ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::Officer)
+        ->withRole('Publish Discipline Reports')
+        ->create();
+    loginAs($publisher);
     $subject = User::factory()->create();
     $report = DisciplineReport::factory()->forSubject($subject)->create();
 

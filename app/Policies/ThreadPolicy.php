@@ -18,8 +18,8 @@ class ThreadPolicy
             return null;
         }
 
-        // Admin and Command Officers can do everything else
-        if ($user->isAdmin() || ($user->isInDepartment(StaffDepartment::Command) && $user->isAtLeastRank(StaffRank::Officer))) {
+        // Admin can do everything else
+        if ($user->isAdmin()) {
             return true;
         }
 
@@ -49,8 +49,8 @@ class ThreadPolicy
      */
     public function viewFlagged(User $user): bool
     {
-        // Quartermaster can view flagged tickets
-        return $user->isInDepartment(StaffDepartment::Quartermaster) && $user->isAtLeastRank(StaffRank::CrewMember);
+        return $user->hasRole('Moderator')
+            || ($user->isInDepartment(StaffDepartment::Quartermaster) && $user->isAtLeastRank(StaffRank::CrewMember));
     }
 
     /**
@@ -92,8 +92,8 @@ class ThreadPolicy
             return false;
         }
 
-        // Admin and Command Officers can create topics on any published report
-        if ($user->isAdmin() || ($user->isInDepartment(StaffDepartment::Command) && $user->isAtLeastRank(StaffRank::Officer))) {
+        // Admin can create topics on any published report
+        if ($user->isAdmin()) {
             return true;
         }
 
@@ -132,8 +132,8 @@ class ThreadPolicy
             return false;
         }
 
-        // Admin and Command Officers can reply to any unlocked thread
-        if ($user->isAdmin() || ($user->isInDepartment(StaffDepartment::Command) && $user->isAtLeastRank(StaffRank::Officer))) {
+        // Admin can reply to any unlocked thread
+        if ($user->isAdmin()) {
             return true;
         }
 
