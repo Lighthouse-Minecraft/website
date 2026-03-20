@@ -15,7 +15,7 @@ new class extends Component {
     public string $renderedBody = '';
     public string $commentBody = '';
 
-    public function mount(string $slug): void
+    public function mount(string $categorySlug, string $slug): void
     {
         $post = BlogPost::withTrashed()
             ->with(['author', 'category', 'tags'])
@@ -88,7 +88,7 @@ new class extends Component {
     public function with(): array
     {
         $jsonLd = null;
-        $canonicalUrl = route('blog.show', $this->post->slug);
+        $canonicalUrl = $this->post->url();
 
         if (! $this->isTrashed) {
             $jsonLd = [

@@ -12,7 +12,8 @@ class BlogSitemapController extends Controller
 {
     public function __invoke(): Response
     {
-        $posts = BlogPost::where('status', BlogPostStatus::Published)
+        $posts = BlogPost::with('category')
+            ->where('status', BlogPostStatus::Published)
             ->orderBy('published_at', 'desc')
             ->get();
 

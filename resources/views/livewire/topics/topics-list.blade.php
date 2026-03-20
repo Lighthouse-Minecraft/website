@@ -171,7 +171,7 @@ new class extends Component
                                 </div>
                                 @if($comment->thread->topicable)
                                     <div class="mb-2 text-xs text-zinc-500">
-                                        On: <a href="{{ route('blog.show', $comment->thread->topicable->slug) }}" class="text-blue-600 dark:text-blue-400 hover:underline" target="_blank">{{ $comment->thread->topicable->title }}</a>
+                                        On: <a href="{{ $comment->thread->topicable->url() }}" class="text-blue-600 dark:text-blue-400 hover:underline" target="_blank">{{ $comment->thread->topicable->title }}</a>
                                     </div>
                                 @endif
                                 <div class="prose prose-sm dark:prose-invert max-w-none mb-3">

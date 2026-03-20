@@ -102,13 +102,13 @@ new class extends Component {
                     <article wire:key="blog-post-{{ $post->id }}" class="mb-8">
                         <flux:card>
                             @if($post->heroImageUrl())
-                                <a href="{{ route('blog.show', $post->slug) }}" wire:navigate>
+                                <a href="{{ $post->url() }}" wire:navigate>
                                     <img src="{{ $post->heroImageUrl() }}" alt="{{ $post->title }}" class="mb-4 w-full rounded-lg object-cover" style="max-height: 300px;" />
                                 </a>
                             @endif
 
                             <flux:heading size="lg">
-                                <a href="{{ route('blog.show', $post->slug) }}" class="hover:underline" wire:navigate>
+                                <a href="{{ $post->url() }}" class="hover:underline" wire:navigate>
                                     {{ $post->title }}
                                 </a>
                             </flux:heading>
@@ -144,7 +144,7 @@ new class extends Component {
                             @endif
 
                             <div class="mt-4">
-                                <flux:link href="{{ route('blog.show', $post->slug) }}" wire:navigate>
+                                <flux:link href="{{ $post->url() }}" wire:navigate>
                                     Read more &rarr;
                                 </flux:link>
                             </div>

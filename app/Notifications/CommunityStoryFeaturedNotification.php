@@ -48,7 +48,7 @@ class CommunityStoryFeaturedNotification extends Notification implements ShouldQ
 
     public function toMail(object $notifiable): MailMessage
     {
-        $blogUrl = route('blog.show', $this->post->slug);
+        $blogUrl = $this->post->url();
 
         return (new MailMessage)
             ->subject("Your Story Was Featured: {$this->post->title}")
@@ -62,7 +62,7 @@ class CommunityStoryFeaturedNotification extends Notification implements ShouldQ
         return [
             'title' => 'Your Story Was Featured!',
             'message' => "Your community story was featured in \"{$this->post->title}\".",
-            'url' => route('blog.show', $this->post->slug),
+            'url' => $this->post->url(),
         ];
     }
 }

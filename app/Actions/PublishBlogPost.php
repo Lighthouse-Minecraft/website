@@ -53,7 +53,7 @@ class PublishBlogPost
             return;
         }
 
-        $blogUrl = route('blog.show', $post->slug);
+        $blogUrl = $post->url();
         $service = app(TicketNotificationService::class);
 
         foreach ($responses as $response) {

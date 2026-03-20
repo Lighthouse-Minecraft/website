@@ -83,7 +83,7 @@ new class extends Component {
                     </flux:table.cell>
                     <flux:table.cell>
                         @if($comment->thread?->topicable)
-                            <flux:link href="{{ route('blog.show', $comment->thread->topicable->slug) }}" wire:navigate>
+                            <flux:link href="{{ $comment->thread->topicable->url() }}" wire:navigate>
                                 {{ Str::limit($comment->thread->topicable->title, 40) }}
                             </flux:link>
                         @else

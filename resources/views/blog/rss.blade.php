@@ -12,8 +12,8 @@
         @foreach($posts as $post)
             <item>
                 <title>{{ htmlspecialchars($post->title, ENT_XML1, 'UTF-8') }}</title>
-                <link>{{ route('blog.show', $post->slug) }}</link>
-                <guid isPermaLink="true">{{ route('blog.show', $post->slug) }}</guid>
+                <link>{{ $post->url() }}</link>
+                <guid isPermaLink="true">{{ $post->url() }}</guid>
                 <pubDate>{{ $post->published_at->toRfc2822String() }}</pubDate>
                 <author>{{ htmlspecialchars($post->author->name, ENT_XML1, 'UTF-8') }}</author>
                 @if($post->category)

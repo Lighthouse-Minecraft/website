@@ -49,7 +49,7 @@ class BlogPostPublishedNotification extends Notification implements ShouldQueue
         return (new MailMessage)
             ->subject("New Blog Post: {$this->post->title}")
             ->line("A new blog post has been published: \"{$this->post->title}\" by {$this->post->author->name}.")
-            ->action('Read Post', route('blog.show', $this->post->slug));
+            ->action('Read Post', $this->post->url());
     }
 
     public function toPushover(object $notifiable): array
@@ -57,7 +57,7 @@ class BlogPostPublishedNotification extends Notification implements ShouldQueue
         return [
             'title' => 'New Blog Post Published',
             'message' => "\"{$this->post->title}\" by {$this->post->author->name}.",
-            'url' => route('blog.show', $this->post->slug),
+            'url' => $this->post->url(),
         ];
     }
 }

@@ -7,7 +7,7 @@
     </url>
     @foreach($posts as $post)
         <url>
-            <loc>{{ route('blog.show', $post->slug) }}</loc>
+            <loc>{{ $post->url() }}</loc>
             <lastmod>{{ $post->updated_at->toW3cString() }}</lastmod>
             <changefreq>weekly</changefreq>
             <priority>0.7</priority>

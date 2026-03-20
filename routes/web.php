@@ -148,13 +148,12 @@ Route::post('/api/minecraft/verify', function (\Illuminate\Http\Request $request
 
 // Blog Public Routes (no auth)
 Volt::route('/blog', 'blog.index')->name('blog.index');
-Volt::route('/blog/category/{categorySlug}', 'blog.index')->name('blog.category');
 Volt::route('/blog/tag/{tagSlug}', 'blog.index')->name('blog.tag');
 Volt::route('/blog/author/{authorSlug}', 'blog.index')->name('blog.author');
 Route::get('/blog/rss', \App\Http\Controllers\BlogRssController::class)->name('blog.rss');
 Route::get('/blog/sitemap.xml', \App\Http\Controllers\BlogSitemapController::class)->name('blog.sitemap');
 
-// Blog Management
+// Blog Management (must come before {categorySlug} wildcard)
 Volt::route('/blog/manage', 'blog.manage')
     ->name('blog.manage')
     ->middleware(['auth', 'can:manage-blog']);
@@ -165,7 +164,9 @@ Volt::route('/blog/{post}/edit', 'blog.editor')
     ->name('blog.edit')
     ->middleware(['auth', 'can:manage-blog']);
 
-Volt::route('/blog/{slug}', 'blog.show')->name('blog.show');
+// Category and post pages (category wildcard must come after management routes)
+Volt::route('/blog/{categorySlug}', 'blog.category')->name('blog.category');
+Volt::route('/blog/{categorySlug}/{slug}', 'blog.show')->name('blog.show');
 
 require __DIR__.'/auth.php';
 
