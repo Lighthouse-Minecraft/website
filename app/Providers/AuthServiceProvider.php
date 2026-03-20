@@ -27,6 +27,7 @@ class AuthServiceProvider extends ServiceProvider
         \App\Models\CommunityQuestion::class => \App\Policies\CommunityQuestionPolicy::class,
         \App\Models\CommunityResponse::class => \App\Policies\CommunityResponsePolicy::class,
         \App\Models\StaffApplication::class => \App\Policies\StaffApplicationPolicy::class,
+        \App\Models\BlogPost::class => \App\Policies\BlogPostPolicy::class,
     ];
 
     /**
@@ -213,6 +214,10 @@ class AuthServiceProvider extends ServiceProvider
 
         Gate::define('manage-application-questions', function ($user) {
             return $user->hasRole('Manage Site Config');
+        });
+
+        Gate::define('manage-blog', function ($user) {
+            return $user->hasRole('Blog Author');
         });
     }
 }

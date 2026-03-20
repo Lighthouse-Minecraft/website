@@ -1,0 +1,55 @@
+<?php
+
+namespace App\Actions;
+
+use App\Models\BlogPost;
+use Lorisleiva\Actions\Concerns\AsAction;
+
+class UpdateBlogPost
+{
+    use AsAction;
+
+    public function handle(BlogPost $post, array $data): BlogPost
+    {
+        $updateData = [];
+
+        if (isset($data['title']) && $data['title'] !== $post->title) {
+            $updateData['title'] = $data['title'];
+            $updateData['slug'] = GenerateBlogPostSlug::run($data['title'], $post->id);
+        }
+
+        if (array_key_exists('body', $data)) {
+            $updateData['body'] = $data['body'];
+        }
+
+        if (array_key_exists('hero_image_path', $data)) {
+            $updateData['hero_image_path'] = $data['hero_image_path'];
+        }
+
+        if (array_key_exists('meta_description', $data)) {
+            $updateData['meta_description'] = $data['meta_description'];
+        }
+
+        if (array_key_exists('og_image_path', $data)) {
+            $updateData['og_image_path'] = $data['og_image_path'];
+        }
+
+        if (array_key_exists('category_id', $data)) {
+            $updateData['category_id'] = $data['category_id'];
+        }
+
+        if ($post->isPublished() && ! empty($updateData)) {
+            $updateData['is_edited'] = true;
+        }
+
+        $post->update($updateData);
+
+        if (isset($data['tag_ids'])) {
+            $post->tags()->sync($data['tag_ids']);
+        }
+
+        RecordActivity::run($post, 'blog_post_updated', "Blog post \"{$post->title}\" updated.");
+
+        return $post->fresh();
+    }
+}
