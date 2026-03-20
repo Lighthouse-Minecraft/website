@@ -63,8 +63,7 @@ new class extends Component {
     }
 }; ?>
 
-<x-layouts.app>
-    <div class="mx-auto max-w-5xl px-4 py-8">
+<div class="mx-auto max-w-5xl px-4 py-8">
         <div class="mb-6 flex items-center justify-between">
             <div>
                 <flux:heading size="xl">
@@ -178,5 +177,4 @@ new class extends Component {
                 </flux:card>
             </div>
         </div>
-    </div>
-</x-layouts.app>
+</div>

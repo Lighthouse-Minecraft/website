@@ -128,7 +128,7 @@ new class extends Component {
     }
 }; ?>
 
-<x-layouts.app>
+<div>
     @if(! $isTrashed)
         @push('meta')
             @if($post->meta_description)
@@ -309,4 +309,4 @@ new class extends Component {
             </div>
         @endif
     </div>
-</x-layouts.app>
+</div>

@@ -440,7 +440,7 @@ new class extends Component {
     }
 }; ?>
 
-<x-layouts.app>
+<div>
     <div class="mb-6 flex items-center justify-between">
         <flux:heading size="xl">Blog Management</flux:heading>
         <div class="flex gap-2">
@@ -852,4 +852,4 @@ new class extends Component {
             </div>
         </div>
     </flux:modal>
-</x-layouts.app>
+</div>
