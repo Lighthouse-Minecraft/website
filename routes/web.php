@@ -146,6 +146,11 @@ Route::post('/api/minecraft/verify', function (\Illuminate\Http\Request $request
     return response()->json($result);
 })->middleware('throttle:30,1');
 
+// Blog Management
+Volt::route('/blog/manage', 'blog.manage')
+    ->name('blog.manage')
+    ->middleware(['auth', 'can:manage-blog']);
+
 require __DIR__.'/auth.php';
 
 Volt::route('/staff', 'staff.page')->name('staff.index');
