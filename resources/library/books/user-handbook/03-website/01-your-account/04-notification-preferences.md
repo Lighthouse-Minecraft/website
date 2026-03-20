@@ -38,6 +38,7 @@ Each notification type can be independently toggled for each channel, so you can
 | **Ticket Updates** | New tickets, replies, and status changes on your support tickets |
 | **Account Updates** | Promotions, and other account-related changes |
 | **Announcements** | New community announcements |
+| **Blog Posts** | Notifications when new blog posts are published |
 
 ## Setting Up Pushover
 
