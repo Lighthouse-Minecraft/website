@@ -72,16 +72,15 @@ it('does not show Family card for user with no family links', function () {
         ->assertDontSee('Family');
 });
 
-it('shows Parent Portal link in Family card for user with Manage Membership Level role viewing parent profile', function () {
+it('shows Parent Portal link in Family card for user with User Manager role viewing parent profile', function () {
     $parent = User::factory()->adult()->create();
     $child = User::factory()->minor()->create();
     ParentChildLink::factory()->create(['parent_user_id' => $parent->id, 'child_user_id' => $child->id]);
 
     $staff = User::factory()
-        ->withRole('Manage Membership Level')
+        ->withRole('User Manager')
         ->create([
             'membership_level' => MembershipLevel::Citizen,
-            'staff_rank' => StaffRank::Officer,
         ]);
     actingAs($staff);
 
