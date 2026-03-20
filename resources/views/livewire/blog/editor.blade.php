@@ -2,6 +2,7 @@
 
 use App\Actions\CreateBlogPost;
 use App\Actions\UpdateBlogPost;
+use App\Actions\UploadBlogImage;
 use App\Enums\CommunityResponseStatus;
 use App\Models\BlogCategory;
 use App\Models\BlogPost;
@@ -33,6 +34,11 @@ new class extends Component {
     public $inlineImage = null;
     public ?string $existingHeroImageUrl = null;
     public ?string $existingOgImageUrl = null;
+
+    // Blog image upload modal
+    public $blogImageFile = null;
+    public string $blogImageTitle = '';
+    public string $blogImageAltText = '';
 
     // Community story integration
     public ?int $postCommunityQuestionId = null;
@@ -176,6 +182,40 @@ new class extends Component {
         Flux::toast('Image inserted into post body.', 'Uploaded', variant: 'success');
     }
 
+    public function updatedBlogImageFile(): void
+    {
+        $this->validateOnly('blogImageFile', [
+            'blogImageFile' => 'nullable|mimes:jpg,jpeg,png,gif,webp|max:' . SiteConfig::getValue('max_image_size_kb', '2048'),
+        ]);
+    }
+
+    public function uploadBlogImage(): void
+    {
+        $this->authorize('manage-blog');
+
+        $this->validate([
+            'blogImageFile' => 'required|mimes:jpg,jpeg,png,gif,webp|max:' . SiteConfig::getValue('max_image_size_kb', '2048'),
+            'blogImageTitle' => 'required|string|max:255',
+            'blogImageAltText' => 'required|string|max:255',
+        ]);
+
+        $image = UploadBlogImage::run(
+            Auth::user(),
+            $this->blogImageFile,
+            $this->blogImageTitle,
+            $this->blogImageAltText,
+        );
+
+        $this->postBody = rtrim($this->postBody) . "\n\n{{image:{$image->id}}}\n";
+
+        $this->blogImageFile = null;
+        $this->blogImageTitle = '';
+        $this->blogImageAltText = '';
+
+        Flux::modal('blog-image-upload-modal')->close();
+        Flux::toast('Image uploaded and inserted into post body.', 'Uploaded', variant: 'success');
+    }
+
     public function removeHeroImage(): void
     {
         $this->heroImage = null;
@@ -255,10 +295,19 @@ new class extends Component {
                 <flux:error name="postBody" />
             </flux:field>
 
-            {{-- Inline Image Upload --}}
+            {{-- Upload Image Button --}}
+            <div>
+                <flux:modal.trigger name="blog-image-upload-modal">
+                    <flux:button variant="ghost" size="sm" icon="photo">
+                        Upload Image
+                    </flux:button>
+                </flux:modal.trigger>
+            </div>
+
+            {{-- Inline Image Upload (legacy) --}}
             <div class="rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-800/50">
-                <flux:label class="mb-1">Insert Image</flux:label>
-                <flux:description class="mb-2">Upload an image to insert into the post body.</flux:description>
+                <flux:label class="mb-1">Insert Image (Raw URL)</flux:label>
+                <flux:description class="mb-2">Upload an image to insert as a raw markdown URL into the post body.</flux:description>
                 <flux:file-upload wire:model="inlineImage">
                     <flux:file-upload.dropzone
                         heading="Drop an image here"
@@ -464,6 +513,47 @@ new class extends Component {
 
         <div class="flex justify-end">
             <flux:button variant="ghost" x-on:click="$flux.modal('tag-picker-modal').close()">Done</flux:button>
+        </div>
+    </flux:modal>
+
+    {{-- Blog Image Upload Modal --}}
+    <flux:modal name="blog-image-upload-modal" class="w-full lg:w-1/2 space-y-6">
+        <flux:heading size="lg">Upload Image</flux:heading>
+
+        <flux:field>
+            <flux:label>Title <span class="text-red-500">*</span></flux:label>
+            <flux:description>A short name for this image to help you find it later. Example: 'Summer Festival Group Photo'</flux:description>
+            <flux:input wire:model="blogImageTitle" type="text" placeholder="Image title..." />
+            <flux:error name="blogImageTitle" />
+        </flux:field>
+
+        <flux:field>
+            <flux:label>Alt Text <span class="text-red-500">*</span></flux:label>
+            <flux:description>Describe what the image shows for screen readers and SEO. Example: 'Players gathered around the fountain at spawn during the summer festival'</flux:description>
+            <flux:input wire:model="blogImageAltText" type="text" placeholder="Describe the image..." />
+            <flux:error name="blogImageAltText" />
+        </flux:field>
+
+        <flux:field>
+            <flux:label>Image File <span class="text-red-500">*</span></flux:label>
+            <flux:file-upload wire:model="blogImageFile">
+                <flux:file-upload.dropzone
+                    heading="Drop an image here"
+                    :text="'JPG, PNG, GIF, WEBP up to ' . $maxImageSizeLabel"
+                />
+            </flux:file-upload>
+            @if($blogImageFile)
+                <div class="mt-3 flex items-center gap-3">
+                    <img src="{{ $blogImageFile->temporaryUrl() }}" alt="Preview" class="h-16 w-16 rounded object-cover" />
+                    <span class="text-sm text-zinc-600 dark:text-zinc-400">{{ $blogImageFile->getClientOriginalName() }}</span>
+                </div>
+            @endif
+            <flux:error name="blogImageFile" />
+        </flux:field>
+
+        <div class="flex justify-end gap-3">
+            <flux:button variant="ghost" x-on:click="$flux.modal('blog-image-upload-modal').close()">Cancel</flux:button>
+            <flux:button wire:click="uploadBlogImage" variant="primary" icon="arrow-up-tray">Upload & Insert</flux:button>
         </div>
     </flux:modal>
 
