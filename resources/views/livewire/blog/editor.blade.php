@@ -13,7 +13,6 @@ use App\Models\CommunityResponse;
 use App\Models\SiteConfig;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Livewire\Volt\Component;
 use Livewire\WithFileUploads;
@@ -30,11 +29,20 @@ new class extends Component {
     public array $postTagIds = [];
     public ?int $selectedTagId = null;
     public string $postMetaDescription = '';
-    public $heroImage = null;
-    public $ogImage = null;
     public $inlineImage = null;
-    public ?string $existingHeroImageUrl = null;
-    public ?string $existingOgImageUrl = null;
+
+    // Hero/OG image picker
+    public ?int $heroImageId = null;
+    public ?int $ogImageId = null;
+    public string $heroImagePickerSearch = '';
+    public string $ogImagePickerSearch = '';
+    public string $heroImagePickerContext = '';
+    public $heroImageUploadFile = null;
+    public string $heroImageUploadTitle = '';
+    public string $heroImageUploadAltText = '';
+    public $ogImageUploadFile = null;
+    public string $ogImageUploadTitle = '';
+    public string $ogImageUploadAltText = '';
 
     // Blog image upload modal
     public $blogImageFile = null;
@@ -66,25 +74,11 @@ new class extends Component {
             $this->postMetaDescription = $this->editingPost->meta_description ?? '';
             $this->postCommunityQuestionId = $this->editingPost->community_question_id;
             $this->postCommunityResponseIds = $this->editingPost->communityResponses->pluck('id')->toArray();
-            $this->existingHeroImageUrl = $this->editingPost->heroImageUrl();
-            $this->existingOgImageUrl = $this->editingPost->ogImageUrl();
+            $this->heroImageId = $this->editingPost->hero_image_id;
+            $this->ogImageId = $this->editingPost->og_image_id;
         } else {
             $this->authorize('create', BlogPost::class);
         }
-    }
-
-    public function updatedHeroImage(): void
-    {
-        $this->validateOnly('heroImage', [
-            'heroImage' => 'nullable|mimes:jpg,jpeg,png,gif,webp|max:' . SiteConfig::getValue('max_image_size_kb', '2048'),
-        ]);
-    }
-
-    public function updatedOgImage(): void
-    {
-        $this->validateOnly('ogImage', [
-            'ogImage' => 'nullable|mimes:jpg,jpeg,png,gif,webp|max:' . SiteConfig::getValue('max_image_size_kb', '2048'),
-        ]);
     }
 
     public function savePost(): void
@@ -94,20 +88,9 @@ new class extends Component {
             'postBody' => 'required|string|min:10',
             'postCategoryId' => 'nullable|exists:blog_categories,id',
             'postMetaDescription' => 'nullable|string|max:160',
-            'heroImage' => 'nullable|mimes:jpg,jpeg,png,gif,webp|max:' . SiteConfig::getValue('max_image_size_kb', '2048'),
-            'ogImage' => 'nullable|mimes:jpg,jpeg,png,gif,webp|max:' . SiteConfig::getValue('max_image_size_kb', '2048'),
+            'heroImageId' => 'nullable|exists:blog_images,id',
+            'ogImageId' => 'nullable|exists:blog_images,id',
         ]);
-
-        $heroImagePath = null;
-        $ogImagePath = null;
-
-        if ($this->heroImage) {
-            $heroImagePath = $this->heroImage->store('blog/hero', config('filesystems.public_disk'));
-        }
-
-        if ($this->ogImage) {
-            $ogImagePath = $this->ogImage->store('blog/og', config('filesystems.public_disk'));
-        }
 
         $data = [
             'title' => $this->postTitle,
@@ -115,6 +98,8 @@ new class extends Component {
             'category_id' => $this->postCategoryId,
             'tag_ids' => $this->postTagIds,
             'meta_description' => $this->postMetaDescription ?: null,
+            'hero_image_id' => $this->heroImageId,
+            'og_image_id' => $this->ogImageId,
             'community_question_id' => $this->postCommunityQuestionId ?: null,
             'community_response_ids' => $this->postCommunityResponseIds,
         ];
@@ -122,27 +107,10 @@ new class extends Component {
         if ($this->editingPost) {
             $this->authorize('update', $this->editingPost);
 
-            if ($heroImagePath) {
-                if ($this->editingPost->hero_image_path) {
-                    Storage::disk(config('filesystems.public_disk'))->delete($this->editingPost->hero_image_path);
-                }
-                $data['hero_image_path'] = $heroImagePath;
-            }
-
-            if ($ogImagePath) {
-                if ($this->editingPost->og_image_path) {
-                    Storage::disk(config('filesystems.public_disk'))->delete($this->editingPost->og_image_path);
-                }
-                $data['og_image_path'] = $ogImagePath;
-            }
-
             UpdateBlogPost::run($this->editingPost, $data);
             Flux::toast('Post updated successfully.', 'Updated', variant: 'success');
         } else {
             $this->authorize('create', BlogPost::class);
-
-            $data['hero_image_path'] = $heroImagePath;
-            $data['og_image_path'] = $ogImagePath;
 
             $this->editingPost = CreateBlogPost::run(Auth::user(), $data);
             Flux::toast('Post created successfully.', 'Created', variant: 'success');
@@ -231,14 +199,96 @@ new class extends Component {
         Flux::toast("Image \"{$image->title}\" inserted.", 'Inserted', variant: 'success');
     }
 
+    public function selectHeroImage(int $imageId): void
+    {
+        $this->authorize('manage-blog');
+        $this->heroImageId = $imageId;
+        Flux::modal('hero-image-picker-modal')->close();
+        Flux::toast('Hero image selected.', 'Selected', variant: 'success');
+    }
+
     public function removeHeroImage(): void
     {
-        $this->heroImage = null;
+        $this->heroImageId = null;
+    }
+
+    public function updatedHeroImageUploadFile(): void
+    {
+        $this->validateOnly('heroImageUploadFile', [
+            'heroImageUploadFile' => 'nullable|mimes:jpg,jpeg,png,gif,webp|max:' . SiteConfig::getValue('max_image_size_kb', '2048'),
+        ]);
+    }
+
+    public function uploadHeroImage(): void
+    {
+        $this->authorize('manage-blog');
+
+        $this->validate([
+            'heroImageUploadFile' => 'required|mimes:jpg,jpeg,png,gif,webp|max:' . SiteConfig::getValue('max_image_size_kb', '2048'),
+            'heroImageUploadTitle' => 'required|string|max:255',
+            'heroImageUploadAltText' => 'required|string|max:255',
+        ]);
+
+        $image = UploadBlogImage::run(
+            Auth::user(),
+            $this->heroImageUploadFile,
+            $this->heroImageUploadTitle,
+            $this->heroImageUploadAltText,
+        );
+
+        $this->heroImageId = $image->id;
+        $this->heroImageUploadFile = null;
+        $this->heroImageUploadTitle = '';
+        $this->heroImageUploadAltText = '';
+
+        Flux::modal('hero-image-picker-modal')->close();
+        Flux::toast('Hero image uploaded and selected.', 'Uploaded', variant: 'success');
+    }
+
+    public function selectOgImage(int $imageId): void
+    {
+        $this->authorize('manage-blog');
+        $this->ogImageId = $imageId;
+        Flux::modal('og-image-picker-modal')->close();
+        Flux::toast('OG image selected.', 'Selected', variant: 'success');
     }
 
     public function removeOgImage(): void
     {
-        $this->ogImage = null;
+        $this->ogImageId = null;
+    }
+
+    public function updatedOgImageUploadFile(): void
+    {
+        $this->validateOnly('ogImageUploadFile', [
+            'ogImageUploadFile' => 'nullable|mimes:jpg,jpeg,png,gif,webp|max:' . SiteConfig::getValue('max_image_size_kb', '2048'),
+        ]);
+    }
+
+    public function uploadOgImage(): void
+    {
+        $this->authorize('manage-blog');
+
+        $this->validate([
+            'ogImageUploadFile' => 'required|mimes:jpg,jpeg,png,gif,webp|max:' . SiteConfig::getValue('max_image_size_kb', '2048'),
+            'ogImageUploadTitle' => 'required|string|max:255',
+            'ogImageUploadAltText' => 'required|string|max:255',
+        ]);
+
+        $image = UploadBlogImage::run(
+            Auth::user(),
+            $this->ogImageUploadFile,
+            $this->ogImageUploadTitle,
+            $this->ogImageUploadAltText,
+        );
+
+        $this->ogImageId = $image->id;
+        $this->ogImageUploadFile = null;
+        $this->ogImageUploadTitle = '';
+        $this->ogImageUploadAltText = '';
+
+        Flux::modal('og-image-picker-modal')->close();
+        Flux::toast('OG image uploaded and selected.', 'Uploaded', variant: 'success');
     }
 
     public function addTag(): void
@@ -272,12 +322,26 @@ new class extends Component {
             $galleryQuery->where('title', 'like', '%' . $this->gallerySearch . '%');
         }
 
+        $heroPickerQuery = BlogImage::orderBy('created_at', 'desc');
+        if ($this->heroImagePickerSearch !== '') {
+            $heroPickerQuery->where('title', 'like', '%' . $this->heroImagePickerSearch . '%');
+        }
+
+        $ogPickerQuery = BlogImage::orderBy('created_at', 'desc');
+        if ($this->ogImagePickerSearch !== '') {
+            $ogPickerQuery->where('title', 'like', '%' . $this->ogImagePickerSearch . '%');
+        }
+
         return [
             'categories' => BlogCategory::orderBy('name')->get(),
             'tags' => BlogTag::orderBy('name')->get(),
             'communityQuestions' => $communityQuestions,
             'availableResponses' => $availableResponses,
             'galleryImages' => $galleryQuery->get(),
+            'heroPickerImages' => $heroPickerQuery->get(),
+            'ogPickerImages' => $ogPickerQuery->get(),
+            'selectedHeroImage' => $this->heroImageId ? BlogImage::find($this->heroImageId) : null,
+            'selectedOgImage' => $this->ogImageId ? BlogImage::find($this->ogImageId) : null,
             'maxImageSizeLabel' => ((int) SiteConfig::getValue('max_image_size_kb', '2048')) >= 1024
                 ? round((int) SiteConfig::getValue('max_image_size_kb', '2048') / 1024) . 'MB'
                 : SiteConfig::getValue('max_image_size_kb', '2048') . 'KB',
@@ -400,51 +464,49 @@ new class extends Component {
     <flux:card>
         <flux:heading size="md" class="mb-4">Images</flux:heading>
         <div class="grid gap-6 sm:grid-cols-2">
+            {{-- Hero Image Picker --}}
             <div>
-                <flux:file-upload wire:model="heroImage" label="Hero Image">
-                    <flux:file-upload.dropzone
-                        heading="Hero image"
-                        :text="'JPG, PNG, GIF, WEBP up to ' . $maxImageSizeLabel"
-                    />
-                </flux:file-upload>
-                @if($heroImage)
-                    <flux:file-item
-                        :heading="$heroImage->getClientOriginalName()"
-                        :image="$heroImage->temporaryUrl()"
-                        :size="$heroImage->getSize()"
-                    >
-                        <x-slot name="actions">
-                            <flux:file-item.remove wire:click="removeHeroImage" />
-                        </x-slot>
-                    </flux:file-item>
-                @elseif($existingHeroImageUrl)
-                    <div class="mt-2">
-                        <img src="{{ $existingHeroImageUrl }}" alt="Current hero image" class="w-full max-w-xs rounded-lg" />
+                <flux:label class="mb-2">Hero Image</flux:label>
+                @if($selectedHeroImage)
+                    <div class="rounded-lg border border-zinc-200 p-3 dark:border-zinc-700">
+                        <img src="{{ $selectedHeroImage->url() }}" alt="{{ $selectedHeroImage->alt_text }}" class="mb-2 w-full max-w-xs rounded-lg object-cover" />
+                        <p class="text-sm font-medium">{{ $selectedHeroImage->title }}</p>
+                        <div class="mt-2 flex gap-2">
+                            <flux:modal.trigger name="hero-image-picker-modal">
+                                <flux:button variant="ghost" size="sm" icon="arrow-path">Change</flux:button>
+                            </flux:modal.trigger>
+                            <flux:button wire:click="removeHeroImage" variant="ghost" size="sm" icon="x-mark" class="hover:!text-red-600 dark:hover:!text-red-400">Remove</flux:button>
+                        </div>
                     </div>
+                @else
+                    <flux:modal.trigger name="hero-image-picker-modal">
+                        <flux:button variant="ghost" icon="photo" class="w-full justify-center border border-dashed border-zinc-300 py-8 dark:border-zinc-600">
+                            Select Hero Image
+                        </flux:button>
+                    </flux:modal.trigger>
                 @endif
             </div>
 
+            {{-- OG Image Picker --}}
             <div>
-                <flux:file-upload wire:model="ogImage" label="OG Image">
-                    <flux:file-upload.dropzone
-                        heading="Open Graph image"
-                        :text="'JPG, PNG, GIF, WEBP up to ' . $maxImageSizeLabel"
-                    />
-                </flux:file-upload>
-                @if($ogImage)
-                    <flux:file-item
-                        :heading="$ogImage->getClientOriginalName()"
-                        :image="$ogImage->temporaryUrl()"
-                        :size="$ogImage->getSize()"
-                    >
-                        <x-slot name="actions">
-                            <flux:file-item.remove wire:click="removeOgImage" />
-                        </x-slot>
-                    </flux:file-item>
-                @elseif($existingOgImageUrl)
-                    <div class="mt-2">
-                        <img src="{{ $existingOgImageUrl }}" alt="Current OG image" class="w-full max-w-xs rounded-lg" />
+                <flux:label class="mb-2">OG Image (Social Sharing)</flux:label>
+                @if($selectedOgImage)
+                    <div class="rounded-lg border border-zinc-200 p-3 dark:border-zinc-700">
+                        <img src="{{ $selectedOgImage->url() }}" alt="{{ $selectedOgImage->alt_text }}" class="mb-2 w-full max-w-xs rounded-lg object-cover" />
+                        <p class="text-sm font-medium">{{ $selectedOgImage->title }}</p>
+                        <div class="mt-2 flex gap-2">
+                            <flux:modal.trigger name="og-image-picker-modal">
+                                <flux:button variant="ghost" size="sm" icon="arrow-path">Change</flux:button>
+                            </flux:modal.trigger>
+                            <flux:button wire:click="removeOgImage" variant="ghost" size="sm" icon="x-mark" class="hover:!text-red-600 dark:hover:!text-red-400">Remove</flux:button>
+                        </div>
                     </div>
+                @else
+                    <flux:modal.trigger name="og-image-picker-modal">
+                        <flux:button variant="ghost" icon="share" class="w-full justify-center border border-dashed border-zinc-300 py-8 dark:border-zinc-600">
+                            Select OG Image
+                        </flux:button>
+                    </flux:modal.trigger>
                 @endif
             </div>
         </div>
@@ -612,6 +674,154 @@ new class extends Component {
 
         <div class="flex justify-end">
             <flux:button variant="ghost" x-on:click="$flux.modal('blog-image-gallery-modal').close()">Close</flux:button>
+        </div>
+    </flux:modal>
+
+    {{-- Hero Image Picker Modal --}}
+    <flux:modal name="hero-image-picker-modal" class="w-full lg:w-3/4 space-y-6">
+        <flux:heading size="lg">Select Hero Image</flux:heading>
+
+        <flux:field>
+            <flux:input wire:model.live.debounce.300ms="heroImagePickerSearch" type="text" placeholder="Search images by title..." icon="magnifying-glass" />
+        </flux:field>
+
+        @if($heroPickerImages->isEmpty())
+            <flux:text variant="subtle">
+                {{ $heroImagePickerSearch ? 'No images match your search.' : 'No images have been uploaded yet. Upload one below.' }}
+            </flux:text>
+        @else
+            <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 max-h-[40vh] overflow-y-auto">
+                @foreach($heroPickerImages as $pickerImage)
+                    <div wire:key="hero-picker-{{ $pickerImage->id }}" class="flex flex-col rounded-lg border border-zinc-200 p-2 dark:border-zinc-700 {{ $heroImageId === $pickerImage->id ? 'ring-2 ring-blue-500' : '' }}">
+                        <img src="{{ $pickerImage->url() }}" alt="{{ $pickerImage->alt_text }}" class="mb-2 h-24 w-full rounded object-cover" />
+                        <p class="text-sm font-medium truncate" title="{{ $pickerImage->title }}">{{ $pickerImage->title }}</p>
+                        <p class="text-xs text-zinc-500 truncate" title="{{ $pickerImage->alt_text }}">{{ $pickerImage->alt_text }}</p>
+                        <flux:button wire:click="selectHeroImage({{ $pickerImage->id }})" variant="primary" size="sm" icon="check" class="mt-2">
+                            Select
+                        </flux:button>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+
+        {{-- Upload New Hero Image --}}
+        <div class="border-t border-zinc-200 pt-4 dark:border-zinc-700">
+            <flux:heading size="sm" class="mb-3">Or Upload New Image</flux:heading>
+
+            <div class="space-y-3">
+                <flux:field>
+                    <flux:label>Title <span class="text-red-500">*</span></flux:label>
+                    <flux:description>A short name for this image to help you find it later.</flux:description>
+                    <flux:input wire:model="heroImageUploadTitle" type="text" placeholder="Image title..." />
+                    <flux:error name="heroImageUploadTitle" />
+                </flux:field>
+
+                <flux:field>
+                    <flux:label>Alt Text <span class="text-red-500">*</span></flux:label>
+                    <flux:description>Describe what the image shows for screen readers and SEO.</flux:description>
+                    <flux:input wire:model="heroImageUploadAltText" type="text" placeholder="Describe the image..." />
+                    <flux:error name="heroImageUploadAltText" />
+                </flux:field>
+
+                <flux:field>
+                    <flux:label>Image File <span class="text-red-500">*</span></flux:label>
+                    <flux:file-upload wire:model="heroImageUploadFile">
+                        <flux:file-upload.dropzone
+                            heading="Drop an image here"
+                            :text="'JPG, PNG, GIF, WEBP up to ' . $maxImageSizeLabel"
+                        />
+                    </flux:file-upload>
+                    @if($heroImageUploadFile)
+                        <div class="mt-3 flex items-center gap-3">
+                            <img src="{{ $heroImageUploadFile->temporaryUrl() }}" alt="Preview" class="h-16 w-16 rounded object-cover" />
+                            <span class="text-sm text-zinc-600 dark:text-zinc-400">{{ $heroImageUploadFile->getClientOriginalName() }}</span>
+                        </div>
+                    @endif
+                    <flux:error name="heroImageUploadFile" />
+                </flux:field>
+
+                <div class="flex justify-end">
+                    <flux:button wire:click="uploadHeroImage" variant="primary" size="sm" icon="arrow-up-tray">Upload & Select</flux:button>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-end">
+            <flux:button variant="ghost" x-on:click="$flux.modal('hero-image-picker-modal').close()">Cancel</flux:button>
+        </div>
+    </flux:modal>
+
+    {{-- OG Image Picker Modal --}}
+    <flux:modal name="og-image-picker-modal" class="w-full lg:w-3/4 space-y-6">
+        <flux:heading size="lg">Select OG Image</flux:heading>
+
+        <flux:field>
+            <flux:input wire:model.live.debounce.300ms="ogImagePickerSearch" type="text" placeholder="Search images by title..." icon="magnifying-glass" />
+        </flux:field>
+
+        @if($ogPickerImages->isEmpty())
+            <flux:text variant="subtle">
+                {{ $ogImagePickerSearch ? 'No images match your search.' : 'No images have been uploaded yet. Upload one below.' }}
+            </flux:text>
+        @else
+            <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 max-h-[40vh] overflow-y-auto">
+                @foreach($ogPickerImages as $pickerImage)
+                    <div wire:key="og-picker-{{ $pickerImage->id }}" class="flex flex-col rounded-lg border border-zinc-200 p-2 dark:border-zinc-700 {{ $ogImageId === $pickerImage->id ? 'ring-2 ring-blue-500' : '' }}">
+                        <img src="{{ $pickerImage->url() }}" alt="{{ $pickerImage->alt_text }}" class="mb-2 h-24 w-full rounded object-cover" />
+                        <p class="text-sm font-medium truncate" title="{{ $pickerImage->title }}">{{ $pickerImage->title }}</p>
+                        <p class="text-xs text-zinc-500 truncate" title="{{ $pickerImage->alt_text }}">{{ $pickerImage->alt_text }}</p>
+                        <flux:button wire:click="selectOgImage({{ $pickerImage->id }})" variant="primary" size="sm" icon="check" class="mt-2">
+                            Select
+                        </flux:button>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+
+        {{-- Upload New OG Image --}}
+        <div class="border-t border-zinc-200 pt-4 dark:border-zinc-700">
+            <flux:heading size="sm" class="mb-3">Or Upload New Image</flux:heading>
+
+            <div class="space-y-3">
+                <flux:field>
+                    <flux:label>Title <span class="text-red-500">*</span></flux:label>
+                    <flux:description>A short name for this image to help you find it later.</flux:description>
+                    <flux:input wire:model="ogImageUploadTitle" type="text" placeholder="Image title..." />
+                    <flux:error name="ogImageUploadTitle" />
+                </flux:field>
+
+                <flux:field>
+                    <flux:label>Alt Text <span class="text-red-500">*</span></flux:label>
+                    <flux:description>Describe what the image shows for screen readers and SEO.</flux:description>
+                    <flux:input wire:model="ogImageUploadAltText" type="text" placeholder="Describe the image..." />
+                    <flux:error name="ogImageUploadAltText" />
+                </flux:field>
+
+                <flux:field>
+                    <flux:label>Image File <span class="text-red-500">*</span></flux:label>
+                    <flux:file-upload wire:model="ogImageUploadFile">
+                        <flux:file-upload.dropzone
+                            heading="Drop an image here"
+                            :text="'JPG, PNG, GIF, WEBP up to ' . $maxImageSizeLabel"
+                        />
+                    </flux:file-upload>
+                    @if($ogImageUploadFile)
+                        <div class="mt-3 flex items-center gap-3">
+                            <img src="{{ $ogImageUploadFile->temporaryUrl() }}" alt="Preview" class="h-16 w-16 rounded object-cover" />
+                            <span class="text-sm text-zinc-600 dark:text-zinc-400">{{ $ogImageUploadFile->getClientOriginalName() }}</span>
+                        </div>
+                    @endif
+                    <flux:error name="ogImageUploadFile" />
+                </flux:field>
+
+                <div class="flex justify-end">
+                    <flux:button wire:click="uploadOgImage" variant="primary" size="sm" icon="arrow-up-tray">Upload & Select</flux:button>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-end">
+            <flux:button variant="ghost" x-on:click="$flux.modal('og-image-picker-modal').close()">Cancel</flux:button>
         </div>
     </flux:modal>
 

@@ -202,10 +202,13 @@ it('filters gallery images by title search', function () {
     BlogImage::factory()->create(['title' => 'Sunset Photo']);
     BlogImage::factory()->create(['title' => 'Mountain View']);
 
-    \Livewire\Livewire::test('blog.editor')
+    $component = \Livewire\Livewire::test('blog.editor')
         ->set('gallerySearch', 'Sunset')
-        ->assertSee('Sunset Photo')
-        ->assertDontSee('Mountain View');
+        ->assertSee('Sunset Photo');
+
+    $galleryImages = $component->viewData('galleryImages');
+    expect($galleryImages)->toHaveCount(1)
+        ->and($galleryImages->first()->title)->toBe('Sunset Photo');
 });
 
 it('shows empty state when no gallery images match search', function () {
