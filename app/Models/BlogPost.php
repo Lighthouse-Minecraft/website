@@ -19,9 +19,9 @@ class BlogPost extends Model
         'title',
         'slug',
         'body',
-        'hero_image_path',
+        'hero_image_id',
         'meta_description',
-        'og_image_path',
+        'og_image_id',
         'status',
         'scheduled_at',
         'published_at',
@@ -64,6 +64,16 @@ class BlogPost extends Model
     public function commentThread(): MorphOne
     {
         return $this->morphOne(Thread::class, 'topicable');
+    }
+
+    public function heroImage(): BelongsTo
+    {
+        return $this->belongsTo(BlogImage::class, 'hero_image_id');
+    }
+
+    public function ogImage(): BelongsTo
+    {
+        return $this->belongsTo(BlogImage::class, 'og_image_id');
     }
 
     public function images(): BelongsToMany
@@ -145,19 +155,19 @@ class BlogPost extends Model
 
     public function heroImageUrl(): ?string
     {
-        if (! $this->hero_image_path) {
+        if (! $this->hero_image_id) {
             return null;
         }
 
-        return \App\Services\StorageService::publicUrl($this->hero_image_path);
+        return $this->heroImage?->url();
     }
 
     public function ogImageUrl(): ?string
     {
-        if (! $this->og_image_path) {
+        if (! $this->og_image_id) {
             return null;
         }
 
-        return \App\Services\StorageService::publicUrl($this->og_image_path);
+        return $this->ogImage?->url();
     }
 }

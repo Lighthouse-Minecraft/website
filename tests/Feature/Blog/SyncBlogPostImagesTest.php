@@ -170,18 +170,49 @@ it('does not set unreferenced_at if image is still referenced by another post', 
 
 // === hero_image_id and og_image_id counted as references ===
 
-it('counts hero_image_id as a reference if the column exists on the post', function () {
+it('counts hero_image_id as a reference', function () {
     $image = BlogImage::factory()->create(['unreferenced_at' => now()->subDays(5)]);
 
-    $post = BlogPost::factory()->create(['body' => 'No image tags']);
+    $post = BlogPost::factory()->create([
+        'body' => 'No image tags',
+        'hero_image_id' => $image->id,
+    ]);
 
-    // Simulate hero_image_id being set (even though column doesn't exist yet,
-    // the action checks via null coalescing)
-    // For now, since the column doesn't exist, hero_image_id won't be present
-    // and the action gracefully skips it.
     SyncBlogPostImages::run($post);
 
-    expect($post->fresh()->images)->toHaveCount(0);
+    expect($post->fresh()->images)->toHaveCount(1)
+        ->and($post->fresh()->images->first()->id)->toBe($image->id)
+        ->and($image->fresh()->unreferenced_at)->toBeNull();
+});
+
+it('counts og_image_id as a reference', function () {
+    $image = BlogImage::factory()->create(['unreferenced_at' => now()->subDays(5)]);
+
+    $post = BlogPost::factory()->create([
+        'body' => 'No image tags',
+        'og_image_id' => $image->id,
+    ]);
+
+    SyncBlogPostImages::run($post);
+
+    expect($post->fresh()->images)->toHaveCount(1)
+        ->and($post->fresh()->images->first()->id)->toBe($image->id)
+        ->and($image->fresh()->unreferenced_at)->toBeNull();
+});
+
+it('counts both hero_image_id and og_image_id as references', function () {
+    $heroImage = BlogImage::factory()->create();
+    $ogImage = BlogImage::factory()->create();
+
+    $post = BlogPost::factory()->create([
+        'body' => 'No image tags',
+        'hero_image_id' => $heroImage->id,
+        'og_image_id' => $ogImage->id,
+    ]);
+
+    SyncBlogPostImages::run($post);
+
+    expect($post->fresh()->images)->toHaveCount(2);
 });
 
 // === Integration with CreateBlogPost ===

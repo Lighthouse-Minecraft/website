@@ -22,16 +22,16 @@ class UpdateBlogPost
             $updateData['body'] = $data['body'];
         }
 
-        if (array_key_exists('hero_image_path', $data)) {
-            $updateData['hero_image_path'] = $data['hero_image_path'];
+        if (array_key_exists('hero_image_id', $data)) {
+            $updateData['hero_image_id'] = $data['hero_image_id'];
         }
 
         if (array_key_exists('meta_description', $data)) {
             $updateData['meta_description'] = $data['meta_description'];
         }
 
-        if (array_key_exists('og_image_path', $data)) {
-            $updateData['og_image_path'] = $data['og_image_path'];
+        if (array_key_exists('og_image_id', $data)) {
+            $updateData['og_image_id'] = $data['og_image_id'];
         }
 
         if (array_key_exists('category_id', $data)) {

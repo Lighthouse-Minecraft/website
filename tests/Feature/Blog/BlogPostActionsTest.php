@@ -97,18 +97,20 @@ it('creates a blog post with category and tags', function () {
 
 it('creates a blog post with meta description and images', function () {
     $author = User::factory()->create();
+    $heroImage = \App\Models\BlogImage::factory()->create();
+    $ogImage = \App\Models\BlogImage::factory()->create();
 
     $post = CreateBlogPost::run($author, [
         'title' => 'SEO Post',
         'body' => 'Body content.',
         'meta_description' => 'A great post about things.',
-        'hero_image_path' => 'blog/hero/test.jpg',
-        'og_image_path' => 'blog/og/test.jpg',
+        'hero_image_id' => $heroImage->id,
+        'og_image_id' => $ogImage->id,
     ]);
 
     expect($post->meta_description)->toBe('A great post about things.')
-        ->and($post->hero_image_path)->toBe('blog/hero/test.jpg')
-        ->and($post->og_image_path)->toBe('blog/og/test.jpg');
+        ->and($post->hero_image_id)->toBe($heroImage->id)
+        ->and($post->og_image_id)->toBe($ogImage->id);
 });
 
 it('records activity when creating a blog post', function () {
