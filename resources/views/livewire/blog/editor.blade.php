@@ -26,6 +26,7 @@ new class extends Component {
     public string $postBody = '';
     public ?int $postCategoryId = null;
     public array $postTagIds = [];
+    public ?int $selectedTagId = null;
     public string $postMetaDescription = '';
     public $heroImage = null;
     public $ogImage = null;
@@ -161,6 +162,19 @@ new class extends Component {
         $this->ogImage = null;
     }
 
+    public function addTag(): void
+    {
+        if ($this->selectedTagId && ! in_array($this->selectedTagId, $this->postTagIds)) {
+            $this->postTagIds[] = $this->selectedTagId;
+        }
+        $this->selectedTagId = null;
+    }
+
+    public function removeTag(int $tagId): void
+    {
+        $this->postTagIds = array_values(array_filter($this->postTagIds, fn ($id) => $id !== $tagId));
+    }
+
     public function with(): array
     {
         $communityQuestions = CommunityQuestion::orderBy('question_text')->get();
@@ -235,17 +249,31 @@ new class extends Component {
 
                 <flux:field>
                     <flux:label>Tags</flux:label>
-                    <div class="flex flex-wrap gap-2 mt-1">
-                        @foreach($tags as $tag)
-                            <label wire:key="tag-select-{{ $tag->id }}" class="cursor-pointer">
-                                <input type="checkbox" wire:model="postTagIds" value="{{ $tag->id }}" class="hidden peer" />
-                                <flux:badge class="peer-checked:!bg-accent peer-checked:!text-white" variant="outline">{{ $tag->name }}</flux:badge>
-                            </label>
-                        @endforeach
-                        @if($tags->isEmpty())
-                            <flux:text variant="subtle">No tags available. Create tags in Blog Management.</flux:text>
-                        @endif
-                    </div>
+                    @php $selectedTags = $tags->whereIn('id', $postTagIds); @endphp
+                    @if($selectedTags->isNotEmpty())
+                        <div class="flex flex-wrap gap-2 mt-1">
+                            @foreach($selectedTags as $tag)
+                                <div wire:key="selected-tag-{{ $tag->id }}" class="flex items-center gap-1">
+                                    <flux:badge size="sm">{{ $tag->name }}</flux:badge>
+                                    <flux:button size="xs" variant="ghost" icon="x-mark" wire:click="removeTag({{ $tag->id }})" class="hover:!text-red-600 dark:hover:!text-red-400" />
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                    @php $unselectedTags = $tags->whereNotIn('id', $postTagIds); @endphp
+                    @if($unselectedTags->isNotEmpty())
+                        <div class="flex gap-2 mt-2">
+                            <flux:select wire:model="selectedTagId" class="flex-1">
+                                <flux:select.option value="">Select a tag...</flux:select.option>
+                                @foreach($unselectedTags as $tag)
+                                    <flux:select.option value="{{ $tag->id }}">{{ $tag->name }}</flux:select.option>
+                                @endforeach
+                            </flux:select>
+                            <flux:button wire:click="addTag" variant="primary" size="sm" icon="plus">Add</flux:button>
+                        </div>
+                    @elseif($tags->isEmpty())
+                        <flux:text variant="subtle" class="mt-1">No tags available. Create tags in Blog Management.</flux:text>
+                    @endif
                 </flux:field>
             </div>
 
