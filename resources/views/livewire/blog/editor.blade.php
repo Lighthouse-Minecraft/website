@@ -30,6 +30,7 @@ new class extends Component {
     public string $postMetaDescription = '';
     public $heroImage = null;
     public $ogImage = null;
+    public $inlineImage = null;
     public ?string $existingHeroImageUrl = null;
     public ?string $existingOgImageUrl = null;
 
@@ -152,6 +153,29 @@ new class extends Component {
         $this->postCommunityResponseIds = [];
     }
 
+    public function updatedInlineImage(): void
+    {
+        $this->validateOnly('inlineImage', [
+            'inlineImage' => 'nullable|mimes:jpg,jpeg,png,gif,webp|max:' . SiteConfig::getValue('max_image_size_kb', '2048'),
+        ]);
+    }
+
+    public function uploadInlineImage(): void
+    {
+        $this->validate([
+            'inlineImage' => 'required|mimes:jpg,jpeg,png,gif,webp|max:' . SiteConfig::getValue('max_image_size_kb', '2048'),
+        ]);
+
+        $path = $this->inlineImage->store('blog/inline', config('filesystems.public_disk'));
+        $url = \App\Services\StorageService::publicUrl($path);
+        $filename = $this->inlineImage->getClientOriginalName();
+
+        $this->postBody = rtrim($this->postBody) . "\n\n![{$filename}]({$url})\n";
+
+        $this->inlineImage = null;
+        Flux::toast('Image inserted into post body.', 'Uploaded', variant: 'success');
+    }
+
     public function removeHeroImage(): void
     {
         $this->heroImage = null;
@@ -230,6 +254,28 @@ new class extends Component {
                 <flux:textarea wire:model="postBody" rows="20" placeholder="Write your post in markdown..." />
                 <flux:error name="postBody" />
             </flux:field>
+
+            {{-- Inline Image Upload --}}
+            <div class="rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-800/50">
+                <flux:label class="mb-1">Insert Image</flux:label>
+                <flux:description class="mb-2">Upload an image to insert into the post body.</flux:description>
+                <flux:file-upload wire:model="inlineImage">
+                    <flux:file-upload.dropzone
+                        heading="Drop an image here"
+                        :text="'JPG, PNG, GIF, WEBP up to ' . $maxImageSizeLabel"
+                    />
+                </flux:file-upload>
+                @if($inlineImage)
+                    <div class="mt-3 flex items-center gap-3">
+                        <img src="{{ $inlineImage->temporaryUrl() }}" alt="Preview" class="h-16 w-16 rounded object-cover" />
+                        <span class="text-sm text-zinc-600 dark:text-zinc-400">{{ $inlineImage->getClientOriginalName() }}</span>
+                        <flux:button wire:click="uploadInlineImage" variant="primary" size="sm" icon="arrow-up-tray">
+                            Insert into Post
+                        </flux:button>
+                    </div>
+                @endif
+                <flux:error name="inlineImage" />
+            </div>
         </div>
     </flux:card>
 
