@@ -46,7 +46,7 @@ new class extends Component {
 
         return DiscordAccount::query()
             ->join('users', 'discord_accounts.user_id', '=', 'users.id')
-            ->select('discord_accounts.*', 'users.name as user_name')
+            ->select('discord_accounts.*', 'users.name as user_name', 'users.slug as user_slug')
             ->when(trim($this->search) !== '', fn ($q) => $q->where(function ($q) {
                 $term = mb_strtolower(trim($this->search));
                 $q->whereRaw('LOWER(discord_accounts.username) like ?', ["%{$term}%"])
@@ -85,7 +85,7 @@ new class extends Component {
                     <flux:table.cell class="whitespace-nowrap">{{ $account->global_name ?? '—' }}</flux:table.cell>
 
                     <flux:table.cell class="whitespace-nowrap">
-                        <flux:link href="{{ route('profile.show', $account->user_id) }}">{{ $account->user_name }}</flux:link>
+                        <flux:link href="{{ route('profile.show', $account->user_slug) }}">{{ $account->user_name }}</flux:link>
                     </flux:table.cell>
 
                     <flux:table.cell class="whitespace-nowrap">

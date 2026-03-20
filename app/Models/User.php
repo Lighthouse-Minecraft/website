@@ -28,6 +28,7 @@ class User extends Authenticatable // implements MustVerifyEmail
      */
     protected $fillable = [
         'name',
+        'slug',
         'email',
         'password',
         'rules_accepted_at',
@@ -106,6 +107,26 @@ class User extends Authenticatable // implements MustVerifyEmail
             'is_board_member' => 'boolean',
             'admin_granted_at' => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (User $user) {
+            if (empty($user->slug)) {
+                $user->slug = \App\Actions\GenerateUserSlug::run($user->name);
+            }
+        });
+
+        static::updating(function (User $user) {
+            if ($user->isDirty('name')) {
+                $user->slug = \App\Actions\GenerateUserSlug::run($user->name, $user->id);
+            }
+        });
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
     }
 
     /**

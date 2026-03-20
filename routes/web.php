@@ -45,7 +45,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('auth/discord/callback', [DiscordAuthController::class, 'callback'])->name('auth.discord.callback');
 });
 
-Route::get('/profile/{user}', [UserController::class, 'show'])
+Route::get('/profile/{user:slug}', [UserController::class, 'show'])
     ->name('profile.show')
     ->middleware(['auth', 'can:view,user']);
 
