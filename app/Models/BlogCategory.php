@@ -13,6 +13,8 @@ class BlogCategory extends Model
     protected $fillable = [
         'name',
         'slug',
+        'content',
+        'hero_image_path',
         'include_in_sitemap',
     ];
 
@@ -26,5 +28,14 @@ class BlogCategory extends Model
     public function posts(): HasMany
     {
         return $this->hasMany(BlogPost::class, 'category_id');
+    }
+
+    public function heroImageUrl(): ?string
+    {
+        if (! $this->hero_image_path) {
+            return null;
+        }
+
+        return \App\Services\StorageService::publicUrl($this->hero_image_path);
     }
 }

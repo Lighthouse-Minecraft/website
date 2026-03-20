@@ -17,6 +17,8 @@ class BlogCategoryFactory extends Factory
         return [
             'name' => ucwords($name),
             'slug' => Str::slug($name),
+            'content' => $this->faker->optional()->paragraph(),
+            'hero_image_path' => null,
             'include_in_sitemap' => true,
         ];
     }

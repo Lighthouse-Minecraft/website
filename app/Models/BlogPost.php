@@ -73,6 +73,11 @@ class BlogPost extends Model
             ->orderBy('sort_order');
     }
 
+    public function url(): string
+    {
+        return route('blog.show', [$this->category->slug ?? 'uncategorized', $this->slug]);
+    }
+
     public function renderBody(): string
     {
         $html = Str::markdown($this->body, [
