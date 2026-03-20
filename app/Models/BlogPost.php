@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
@@ -58,6 +59,11 @@ class BlogPost extends Model
     public function communityQuestion(): BelongsTo
     {
         return $this->belongsTo(CommunityQuestion::class, 'community_question_id');
+    }
+
+    public function commentThread(): MorphOne
+    {
+        return $this->morphOne(Thread::class, 'topicable');
     }
 
     public function communityResponses(): BelongsToMany

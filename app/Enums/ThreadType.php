@@ -8,6 +8,7 @@ enum ThreadType: string
     case DirectMessage = 'dm';
     case Forum = 'forum';
     case Topic = 'topic';
+    case BlogComment = 'blog_comment';
 
     public function label(): string
     {
@@ -16,6 +17,7 @@ enum ThreadType: string
             self::DirectMessage => 'Direct Message',
             self::Forum => 'Forum',
             self::Topic => 'Topic',
+            self::BlogComment => 'Blog Comment',
         };
     }
 }

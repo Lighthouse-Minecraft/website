@@ -88,6 +88,7 @@ class User extends Authenticatable // implements MustVerifyEmail
             'email_digest_frequency' => EmailDigestFrequency::class,
             'rules_accepted_at' => 'datetime',
             'promoted_at' => 'datetime',
+            'resident_since' => 'datetime',
             'last_prayed_at' => 'datetime',
             'last_notification_read_at' => 'datetime',
             'last_login_at' => 'datetime',

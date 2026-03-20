@@ -19,11 +19,13 @@ class Message extends Model
         'kind',
         'image_path',
         'image_was_purged',
+        'is_pending_moderation',
     ];
 
     protected $casts = [
         'kind' => MessageKind::class,
         'image_was_purged' => 'boolean',
+        'is_pending_moderation' => 'boolean',
     ];
 
     public function imageUrl(): ?string
