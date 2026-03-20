@@ -1,14 +1,19 @@
 <?php
 
+use App\Actions\PostBlogComment;
 use App\Enums\BlogPostStatus;
+use App\Enums\MessageKind;
 use App\Models\BlogPost;
+use Flux\Flux;
 use Illuminate\Support\Str;
+use Livewire\Attributes\Computed;
 use Livewire\Volt\Component;
 
 new class extends Component {
     public BlogPost $post;
     public bool $isTrashed = false;
     public string $renderedBody = '';
+    public string $commentBody = '';
 
     public function mount(string $slug): void
     {
@@ -34,6 +39,50 @@ new class extends Component {
 
         $this->post = $post;
         $this->renderedBody = $post->renderBody();
+    }
+
+    #[Computed]
+    public function comments()
+    {
+        $thread = $this->post->commentThread;
+
+        if (! $thread) {
+            return collect();
+        }
+
+        return $thread->messages()
+            ->where('kind', MessageKind::Message)
+            ->where('is_pending_moderation', false)
+            ->with(['user.minecraftAccounts', 'user.discordAccounts'])
+            ->orderBy('created_at')
+            ->get();
+    }
+
+    #[Computed]
+    public function canComment(): bool
+    {
+        return auth()->check() && auth()->user()->can('post-blog-comment');
+    }
+
+    public function postComment(): void
+    {
+        $this->authorize('post-blog-comment');
+
+        $this->validate([
+            'commentBody' => 'required|string|min:3|max:5000',
+        ]);
+
+        $message = PostBlogComment::run($this->post, auth()->user(), $this->commentBody);
+
+        $this->commentBody = '';
+
+        if ($message->is_pending_moderation) {
+            Flux::toast('Your comment has been submitted for moderation.', 'Submitted', variant: 'success');
+        } else {
+            Flux::toast('Comment posted!', 'Success', variant: 'success');
+        }
+
+        unset($this->comments);
     }
 
     public function with(): array
@@ -210,6 +259,54 @@ new class extends Component {
                     </div>
                 </div>
             </article>
+
+            {{-- Comments Section --}}
+            <div class="mt-10 border-t border-zinc-200 pt-8 dark:border-zinc-700">
+                <flux:heading size="lg" class="mb-6">Comments ({{ $this->comments->count() }})</flux:heading>
+
+                @if($this->comments->isNotEmpty())
+                    <div class="space-y-6">
+                        @foreach($this->comments as $comment)
+                            <div wire:key="comment-{{ $comment->id }}" class="flex gap-3">
+                                <flux:avatar size="sm" :src="$comment->user->avatarUrl()" :initials="$comment->user->initials()" class="shrink-0 mt-1" />
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-baseline gap-2">
+                                        <span class="font-semibold text-sm text-zinc-900 dark:text-zinc-100">{{ $comment->user->name }}</span>
+                                        <span class="text-xs text-zinc-400 dark:text-zinc-500">{{ $comment->created_at->diffForHumans() }}</span>
+                                    </div>
+                                    <div class="mt-1 prose prose-sm dark:prose-invert max-w-none">
+                                        {!! Str::markdown($comment->body, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <flux:text variant="subtle">No comments yet. Be the first to share your thoughts!</flux:text>
+                @endif
+
+                {{-- Comment Form --}}
+                @if($this->canComment)
+                    <div class="mt-8">
+                        <form wire:submit="postComment">
+                            <flux:field>
+                                <flux:label>Leave a comment</flux:label>
+                                <flux:textarea wire:model="commentBody" rows="3" placeholder="Share your thoughts..." />
+                                <flux:error name="commentBody" />
+                            </flux:field>
+                            <div class="mt-3">
+                                <flux:button type="submit" variant="primary" size="sm">Post Comment</flux:button>
+                            </div>
+                        </form>
+                    </div>
+                @elseif(! auth()->check())
+                    <div class="mt-8 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 p-4 text-center">
+                        <flux:text variant="subtle">
+                            <a href="{{ route('login') }}" class="text-blue-600 dark:text-blue-400 hover:underline">Log in</a> to leave a comment.
+                        </flux:text>
+                    </div>
+                @endif
+            </div>
         @endif
     </div>
 </x-layouts.app>

@@ -1,7 +1,12 @@
 <?php
 
+use App\Actions\ApproveBlogComment;
+use App\Actions\RejectBlogComment;
+use App\Enums\MessageKind;
 use App\Enums\ThreadType;
+use App\Models\Message;
 use App\Models\Thread;
+use Flux\Flux;
 use Livewire\Attributes\Computed;
 use Livewire\Volt\Component;
 
@@ -18,6 +23,12 @@ new class extends Component
     }
 
     #[Computed]
+    public function canModerateComments(): bool
+    {
+        return auth()->user()->can('moderate-blog-comments');
+    }
+
+    #[Computed]
     public function flaggedTopics()
     {
         if (! $this->canViewFlagged) {
@@ -28,6 +39,21 @@ new class extends Component
             ->where('has_open_flags', true)
             ->with(['createdBy'])
             ->orderByDesc('last_message_at')
+            ->get();
+    }
+
+    #[Computed]
+    public function pendingComments()
+    {
+        if (! $this->canModerateComments) {
+            return collect();
+        }
+
+        return Message::where('is_pending_moderation', true)
+            ->where('kind', MessageKind::Message)
+            ->whereHas('thread', fn ($q) => $q->where('type', ThreadType::BlogComment))
+            ->with(['user.minecraftAccounts', 'user.discordAccounts', 'thread.topicable'])
+            ->orderBy('created_at')
             ->get();
     }
 
@@ -73,6 +99,28 @@ new class extends Component
 
         return $thread->last_message_at > $participant->last_read_at;
     }
+
+    public function approveComment(int $messageId): void
+    {
+        $this->authorize('moderate-blog-comments');
+
+        $message = Message::findOrFail($messageId);
+        ApproveBlogComment::run($message, auth()->user());
+
+        Flux::toast('Comment approved.', 'Approved', variant: 'success');
+        unset($this->pendingComments);
+    }
+
+    public function rejectComment(int $messageId): void
+    {
+        $this->authorize('moderate-blog-comments');
+
+        $message = Message::findOrFail($messageId);
+        RejectBlogComment::run($message, auth()->user());
+
+        Flux::toast('Comment rejected.', 'Rejected', variant: 'success');
+        unset($this->pendingComments);
+    }
 }; ?>
 
 <div>
@@ -85,21 +133,67 @@ new class extends Component
         </flux:tooltip>
     </div>
 
-    @if($this->canViewFlagged)
-        <div class="flex items-center gap-2 mb-4">
-            <flux:button wire:click="$set('filter', 'active')" :variant="$filter === 'active' ? 'primary' : 'ghost'" size="sm">
-                My Discussions
-            </flux:button>
+    <div class="flex items-center gap-2 mb-4">
+        <flux:button wire:click="$set('filter', 'active')" :variant="$filter === 'active' ? 'primary' : 'ghost'" size="sm">
+            My Discussions
+        </flux:button>
+        @if($this->canViewFlagged)
             <flux:button wire:click="$set('filter', 'flagged')" :variant="$filter === 'flagged' ? 'danger' : 'ghost'" size="sm">
                 Flagged
                 @if($this->flaggedTopics->count() > 0)
                     <flux:badge color="red" size="sm">{{ $this->flaggedTopics->count() }}</flux:badge>
                 @endif
             </flux:button>
-        </div>
-    @endif
+        @endif
+        @if($this->canModerateComments)
+            <flux:button wire:click="$set('filter', 'moderation')" :variant="$filter === 'moderation' ? 'primary' : 'ghost'" size="sm">
+                Moderation Queue
+                @if($this->pendingComments->count() > 0)
+                    <flux:badge color="amber" size="sm">{{ $this->pendingComments->count() }}</flux:badge>
+                @endif
+            </flux:button>
+        @endif
+    </div>
 
-    @if($filter === 'flagged' && $this->canViewFlagged)
+    @if($filter === 'moderation' && $this->canModerateComments)
+        {{-- Moderation Queue --}}
+        @if($this->pendingComments->isNotEmpty())
+            <div class="space-y-4">
+                @foreach($this->pendingComments as $comment)
+                    <flux:card wire:key="pending-{{ $comment->id }}">
+                        <div class="flex items-start gap-3">
+                            <flux:avatar size="sm" :src="$comment->user->avatarUrl()" :initials="$comment->user->initials()" class="shrink-0 mt-1" />
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-baseline gap-2 mb-1">
+                                    <span class="font-semibold text-sm">{{ $comment->user->name }}</span>
+                                    <flux:badge size="sm">{{ $comment->user->membership_level->label() }}</flux:badge>
+                                    <span class="text-xs text-zinc-400">{{ $comment->created_at->diffForHumans() }}</span>
+                                </div>
+                                @if($comment->thread->topicable)
+                                    <div class="mb-2 text-xs text-zinc-500">
+                                        On: <a href="{{ route('blog.show', $comment->thread->topicable->slug) }}" class="text-blue-600 dark:text-blue-400 hover:underline" target="_blank">{{ $comment->thread->topicable->title }}</a>
+                                    </div>
+                                @endif
+                                <div class="prose prose-sm dark:prose-invert max-w-none mb-3">
+                                    {!! Str::markdown($comment->body, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
+                                </div>
+                                <div class="flex gap-2">
+                                    <flux:button wire:click="approveComment({{ $comment->id }})" variant="primary" size="sm">Approve</flux:button>
+                                    <flux:button wire:click="rejectComment({{ $comment->id }})" variant="danger" size="sm">Reject</flux:button>
+                                </div>
+                            </div>
+                        </div>
+                    </flux:card>
+                @endforeach
+            </div>
+        @else
+            <div class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-8 text-center text-zinc-500 dark:text-zinc-400">
+                <flux:heading size="lg" class="text-zinc-500 dark:text-zinc-400">No Pending Comments</flux:heading>
+                <flux:text class="mt-2">There are no blog comments awaiting moderation.</flux:text>
+            </div>
+        @endif
+
+    @elseif($filter === 'flagged' && $this->canViewFlagged)
         {{-- Flagged Discussions --}}
         @if($this->flaggedTopics->isNotEmpty())
             <div class="rounded-lg border border-red-200 dark:border-red-800 divide-y divide-red-200 dark:divide-red-800">
