@@ -55,6 +55,10 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('manage-stowaway-users', $canManageUsers);
         Gate::define('manage-traveler-users', $canManageUsers);
 
+        Gate::define('put-in-brig', function ($user) {
+            return $user->hasRole('Brig Warden');
+        });
+
         Gate::define('release-from-brig', function ($user) {
             return $user->hasRole('Brig Warden');
         });

@@ -83,13 +83,18 @@ it('admin can view PII', function () {
     expect($admin->can('viewPii', $target))->toBeTrue();
 });
 
-it('user with User Manager role can view PII', function () {
-    $user = User::factory()->withRole('User Manager')->create();
+it('user with View PII role can view PII of others', function () {
+    $user = User::factory()->withRole('View PII')->create();
     $target = User::factory()->create();
     expect($user->can('viewPii', $target))->toBeTrue();
 });
 
-it('regular user cannot view PII', function () {
+it('user can view their own PII', function () {
+    $user = membershipTraveler();
+    expect($user->can('viewPii', $user))->toBeTrue();
+});
+
+it('regular user cannot view PII of others', function () {
     $user = membershipTraveler();
     $target = User::factory()->create();
     expect($user->can('viewPii', $target))->toBeFalse();
