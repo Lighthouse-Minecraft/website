@@ -30,7 +30,7 @@ it('replaces a valid story marker with a styled blockquote card', function () {
 
     expect($rendered)->toContain('<blockquote')
         ->and($rendered)->toContain('This is my community story.')
-        ->and($rendered)->toContain($response->user->name);
+        ->and($rendered)->toContain(e($response->user->name));
 });
 
 it('renders nothing for an invalid story ID', function () {
@@ -93,7 +93,7 @@ it('displays the response author avatar in the story card when available', funct
 
     // Either an img tag or a fallback initial div should be present
     expect($rendered)->toContain('<blockquote')
-        ->and($rendered)->toContain($response->user->name);
+        ->and($rendered)->toContain(e($response->user->name));
 });
 
 it('gracefully handles a mix of valid and invalid story markers', function () {
