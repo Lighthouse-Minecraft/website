@@ -259,11 +259,11 @@ new class extends Component {
      *
      * Resets brigActionReason to an empty string and brigActionDays to null, then displays
      * the profile-put-in-brig-modal. No action is taken if the current user lacks the
-     * 'manage-stowaway-users' permission.
+     * 'put-in-brig' permission.
      */
     public function openPutInBrigModal(): void
     {
-        if (! Auth::user()->can('manage-stowaway-users')) {
+        if (! Auth::user()->can('put-in-brig')) {
             return;
         }
         $this->brigActionReason = '';
@@ -274,7 +274,7 @@ new class extends Component {
     /**
      * Place the component's user into the Brig with a reason and optional duration.
      *
-     * Requires the current user to have the `manage-stowaway-users` permission.
+     * Requires the current user to have the `put-in-brig` permission.
      * Validates `brigActionReason` (required, at least 5 characters) and
      * `brigActionDays` (optional integer between 1 and 365). When valid, schedules
      * an expiration if days are provided, executes the brig placement, refreshes
@@ -282,7 +282,7 @@ new class extends Component {
      */
     public function confirmPutInBrig(): void
     {
-        if (! Auth::user()->can('manage-stowaway-users')) {
+        if (! Auth::user()->can('put-in-brig')) {
             return;
         }
 
@@ -454,7 +454,7 @@ new class extends Component {
                     @if($user->parents->isNotEmpty())
                         <flux:badge color="purple" size="sm">Child Account</flux:badge>
                     @endif
-                    @can('manage-stowaway-users')
+                    @can('viewPii', $user)
                         @if($user->date_of_birth)
                             @php
                                 $age = \Carbon\Carbon::parse($user->date_of_birth)->age;
@@ -476,7 +476,7 @@ new class extends Component {
                 @endcan
             </div>
 
-            @canany(['update', 'manage-stowaway-users'], $user)
+            @canany(['update', 'manage-stowaway-users', 'put-in-brig', 'release-from-brig'], $user)
                 <div class="pt-3 mt-auto">
                     <flux:dropdown position="bottom" align="start">
                         <flux:button variant="primary" icon="ellipsis-vertical" size="sm">Actions</flux:button>
@@ -495,13 +495,15 @@ new class extends Component {
                                 @endif
                             @endcan
 
-                            @can('manage-stowaway-users')
+                            @can('put-in-brig')
                                 @if(! $user->isInBrig() && ! $user->staffPosition && $user->id !== Auth::id())
                                     <flux:menu.item icon="lock-closed" wire:click="openPutInBrigModal">
                                         Put in Brig
                                     </flux:menu.item>
                                 @endif
+                            @endcan
 
+                            @can('manage-stowaway-users')
                                 @if(! $user->isInBrig() && ($this->nextMembershipLevel !== null || $this->previousMembershipLevel !== null))
                                     <flux:menu.separator />
                                 @endif
@@ -676,8 +678,8 @@ new class extends Component {
                     @endif
                 </div>
 
-                @can('manage-stowaway-users')
-                    @if($user->children->isNotEmpty() && Auth::user()->isAtLeastRank(\App\Enums\StaffRank::Officer))
+                @can('viewAny', \App\Models\User::class)
+                    @if($user->children->isNotEmpty())
                         <div class="pt-3 mt-auto">
                             <flux:link href="{{ route('parent-portal.show', $user) }}" class="text-sm">
                                 View Parent Portal

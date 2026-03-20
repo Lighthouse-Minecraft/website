@@ -90,6 +90,12 @@ return new class extends Migration
                 'icon' => 'users',
             ],
             [
+                'name' => 'View PII',
+                'description' => 'View personally identifiable information such as email addresses and dates of birth',
+                'color' => 'amber',
+                'icon' => 'eye',
+            ],
+            [
                 'name' => 'View Command Dashboard',
                 'description' => 'Access the Command dashboard',
                 'color' => 'indigo',
@@ -138,6 +144,7 @@ return new class extends Migration
             'Manage Site Config',
             'View Logs',
             'User Manager',
+            'View PII',
             'View All Ready Rooms',
             'View Command Dashboard',
         ])->delete();

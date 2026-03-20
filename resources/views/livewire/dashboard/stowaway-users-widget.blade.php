@@ -85,12 +85,12 @@ new class extends Component {
     /**
      * Open the Brig reason modal and initialize brig input fields.
      *
-     * Ensures the caller is authorized to manage stowaway users, resets the
+     * Ensures the caller is authorized to put users in the brig, resets the
      * brigReason and brigDays properties, and displays the "brig-reason-modal".
      */
     public function openBrigModal()
     {
-        $this->authorize('manage-stowaway-users');
+        $this->authorize('put-in-brig');
         $this->brigReason = '';
         $this->brigDays = null;
         Flux::modal('brig-reason-modal')->show();
@@ -100,7 +100,7 @@ new class extends Component {
      * Place the currently selected stowaway user in the Brig after validating input and authorization.
      *
      * If no user is selected this method returns immediately. It requires the caller to be authorized
-     * for 'manage-stowaway-users' and validates that `brigReason` is at least 5 characters and that
+     * for 'put-in-brig' and validates that `brigReason` is at least 5 characters and that
      * `brigDays`, if provided, is an integer between 1 and 365. If `brigDays` is provided an expiration
      * datetime is computed; otherwise the Brig placement is indefinite.
      *
@@ -115,7 +115,7 @@ new class extends Component {
             return;
         }
 
-        $this->authorize('manage-stowaway-users');
+        $this->authorize('put-in-brig');
 
         $this->validate([
             'brigReason' => 'required|string|min:5',
@@ -271,8 +271,8 @@ new class extends Component {
                         Create Ticket
                     </flux:button>
 
-                    @can('manage-stowaway-users')
-                        <div class="flex gap-2">
+                    <div class="flex gap-2">
+                        @can('put-in-brig')
                             <flux:button
                                 wire:click="openBrigModal"
                                 variant="danger"
@@ -280,15 +280,17 @@ new class extends Component {
                             >
                                 Put in Brig
                             </flux:button>
+                        @endcan
 
+                        @can('manage-stowaway-users')
                             <flux:button
                                 wire:click="promoteToTraveler"
                                 variant="primary"
                             >
                                 Promote to Traveler
                             </flux:button>
-                        </div>
-                    @endcan
+                        @endcan
+                    </div>
                 </div>
             </div>
         </flux:modal>
