@@ -66,6 +66,12 @@ class BlogPost extends Model
         return $this->morphOne(Thread::class, 'topicable');
     }
 
+    public function images(): BelongsToMany
+    {
+        return $this->belongsToMany(BlogImage::class, 'blog_image_post')
+            ->withPivot('created_at');
+    }
+
     public function communityResponses(): BelongsToMany
     {
         return $this->belongsToMany(CommunityResponse::class, 'blog_post_community_response')

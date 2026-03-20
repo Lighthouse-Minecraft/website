@@ -40,6 +40,8 @@ class CreateBlogPost
             $post->communityResponses()->sync($syncData);
         }
 
+        SyncBlogPostImages::run($post);
+
         RecordActivity::run($post, 'blog_post_created', "Blog post \"{$post->title}\" created by {$author->name}.");
 
         return $post;

@@ -12,6 +12,9 @@ class DeleteBlogPost
 
     public function handle(BlogPost $post): void
     {
+        // Sync images with empty body to release all references before deleting
+        SyncBlogPostImages::run($post, '');
+
         RecordActivity::run($post, 'blog_post_deleted', "Blog post \"{$post->title}\" soft-deleted.");
 
         // Close the comment thread if it exists

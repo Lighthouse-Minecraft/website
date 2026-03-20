@@ -60,6 +60,8 @@ class UpdateBlogPost
             $post->communityResponses()->sync($syncData);
         }
 
+        SyncBlogPostImages::run($post);
+
         RecordActivity::run($post, 'blog_post_updated', "Blog post \"{$post->title}\" updated.");
 
         return $post->fresh();
