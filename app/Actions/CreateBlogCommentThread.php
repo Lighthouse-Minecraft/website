@@ -15,8 +15,9 @@ class CreateBlogCommentThread
     public function handle(BlogPost $post): Thread
     {
         // Don't create duplicate threads
-        if ($post->commentThread) {
-            return $post->commentThread;
+        $existing = $post->commentThread()->first();
+        if ($existing) {
+            return $existing;
         }
 
         $thread = Thread::create([
