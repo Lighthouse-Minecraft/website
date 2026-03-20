@@ -1,8 +1,8 @@
 ---
-title: "How Roles Work"
+title: 'How Roles Work'
 visibility: staff
 order: 1
-summary: "Understand how permission roles control what you can do on the site."
+summary: 'Understand how permission roles control what you can do on the site.'
 ---
 
 ## Overview
@@ -18,7 +18,7 @@ There are four ways someone can have a particular permission:
 1. **Admin status** -- Admins automatically have every permission on the site. Admin access is granted separately from staff positions.
 2. **Allow All** -- Some positions are marked with **Allow All**, which grants every role at once without listing them individually. This is typically used for senior leadership positions.
 3. **Position roles** -- Your position has specific roles assigned to it. These are the individual permissions you'll see listed on your profile.
-4. **Rank and department** -- A few features (like accessing the Admin Control Panel or viewing your department's Ready Room tab) are based on your rank or department rather than roles.
+4. **Rank and department** -- A few features (like accessing the Admin Control Panel or viewing your department's Ready Room tab) are based on your rank or department rather than roles. Usage of this permission style is limited to only things that apply to all Officers or all staff.
 
 ## Where to See Your Roles
 
