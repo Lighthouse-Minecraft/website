@@ -46,9 +46,9 @@ it('paginates the blog index', function () {
     $this->get(route('blog.index'))->assertOk();
 });
 
-// === Blog Index Filtering ===
+// === Category Page ===
 
-it('filters posts by category', function () {
+it('filters posts by category on the category page', function () {
     $category = BlogCategory::factory()->create(['slug' => 'news']);
     $inCategory = BlogPost::factory()->published()->create([
         'title' => 'In Category',
@@ -65,6 +65,30 @@ it('filters posts by category', function () {
 it('returns 404 for non-existent category slug', function () {
     $this->get(route('blog.category', 'nonexistent'))->assertNotFound();
 });
+
+it('displays category content as markdown on category page', function () {
+    $category = BlogCategory::factory()->create([
+        'slug' => 'with-content',
+        'content' => 'This is **bold** category content.',
+    ]);
+
+    $response = $this->get(route('blog.category', 'with-content'));
+    $response->assertOk()
+        ->assertSee('<strong>bold</strong>', false);
+});
+
+it('displays category name as heading on category page', function () {
+    $category = BlogCategory::factory()->create([
+        'name' => 'Special Category',
+        'slug' => 'special',
+    ]);
+
+    $response = $this->get(route('blog.category', 'special'));
+    $response->assertOk()
+        ->assertSee('Special Category');
+});
+
+// === Blog Index Filtering (Tag/Author) ===
 
 it('filters posts by tag', function () {
     $tag = BlogTag::factory()->create(['slug' => 'laravel']);
@@ -111,7 +135,7 @@ it('returns 200 for a published blog post', function () {
         'body' => 'This is the **body** of my post.',
     ]);
 
-    $response = $this->get(route('blog.show', 'my-great-post'));
+    $response = $this->get($post->url());
     $response->assertOk()
         ->assertSee('My Great Post')
         ->assertSee('This is the');
@@ -123,13 +147,13 @@ it('renders markdown in the post body', function () {
         'body' => 'This is **bold** text.',
     ]);
 
-    $response = $this->get(route('blog.show', 'markdown-test'));
+    $response = $this->get($post->url());
     $response->assertOk()
         ->assertSee('<strong>bold</strong>', false);
 });
 
 it('returns 404 for a non-existent post slug', function () {
-    $this->get(route('blog.show', 'nonexistent-slug'))->assertNotFound();
+    $this->get(route('blog.show', ['uncategorized', 'nonexistent-slug']))->assertNotFound();
 });
 
 it('returns 404 for a draft post', function () {
@@ -138,16 +162,17 @@ it('returns 404 for a draft post', function () {
         'status' => BlogPostStatus::Draft,
     ]);
 
-    $this->get(route('blog.show', 'draft-post'))->assertNotFound();
+    $this->get($post->url())->assertNotFound();
 });
 
 it('shows removed message for soft-deleted posts', function () {
     $post = BlogPost::factory()->published()->create([
         'slug' => 'deleted-post',
     ]);
+    $url = $post->url();
     $post->delete();
 
-    $response = $this->get(route('blog.show', 'deleted-post'));
+    $response = $this->get($url);
     $response->assertOk()
         ->assertSee('This post has been removed');
 });
@@ -159,7 +184,7 @@ it('displays author name linked to author page', function () {
         'author_id' => $author->id,
     ]);
 
-    $response = $this->get(route('blog.show', 'author-link-test'));
+    $response = $this->get($post->url());
     $response->assertOk()
         ->assertSee('Blog Writer')
         ->assertSee(route('blog.author', 'blog-writer'));
@@ -172,7 +197,7 @@ it('displays category on the post page', function () {
         'category_id' => $category->id,
     ]);
 
-    $response = $this->get(route('blog.show', 'category-display-test'));
+    $response = $this->get($post->url());
     $response->assertOk()->assertSee('Tutorials');
 });
 
@@ -181,7 +206,7 @@ it('displays tags on the post page', function () {
     $post = BlogPost::factory()->published()->create(['slug' => 'tag-display-test']);
     $post->tags()->attach($tag);
 
-    $response = $this->get(route('blog.show', 'tag-display-test'));
+    $response = $this->get($post->url());
     $response->assertOk()->assertSee('PHP');
 });
 
@@ -193,7 +218,7 @@ it('includes meta description on post pages', function () {
         'meta_description' => 'A brief SEO description for testing purposes.',
     ]);
 
-    $response = $this->get(route('blog.show', 'seo-test'));
+    $response = $this->get($post->url());
     $response->assertOk()
         ->assertSee('<meta name="description" content="A brief SEO description for testing purposes."', false);
 });
@@ -205,7 +230,7 @@ it('includes Open Graph tags on post pages', function () {
         'meta_description' => 'OG description.',
     ]);
 
-    $response = $this->get(route('blog.show', 'og-test'));
+    $response = $this->get($post->url());
     $response->assertOk()
         ->assertSee('og:type', false)
         ->assertSee('og:title', false)
@@ -220,7 +245,7 @@ it('includes Twitter Card tags on post pages', function () {
         'meta_description' => 'Twitter description.',
     ]);
 
-    $response = $this->get(route('blog.show', 'twitter-test'));
+    $response = $this->get($post->url());
     $response->assertOk()
         ->assertSee('twitter:card', false)
         ->assertSee('twitter:title', false)
@@ -233,7 +258,7 @@ it('includes JSON-LD Article structured data on post pages', function () {
         'title' => 'JSON-LD Test Post',
     ]);
 
-    $response = $this->get(route('blog.show', 'jsonld-test'));
+    $response = $this->get($post->url());
     $response->assertOk()
         ->assertSee('application/ld+json', false)
         ->assertSee('"@type": "Article"', false);
@@ -244,7 +269,7 @@ it('includes JSON-LD Article structured data on post pages', function () {
 it('displays social sharing buttons on post pages', function () {
     $post = BlogPost::factory()->published()->create(['slug' => 'share-test']);
 
-    $response = $this->get(route('blog.show', 'share-test'));
+    $response = $this->get($post->url());
     $response->assertOk()
         ->assertSee('Share this post')
         ->assertSee('twitter.com/intent/tweet', false)
@@ -266,7 +291,7 @@ it('returns valid RSS XML at the rss route', function () {
         ->assertHeader('Content-Type', 'application/rss+xml; charset=UTF-8')
         ->assertSee('<rss version="2.0"', false)
         ->assertSee('RSS Test Post')
-        ->assertSee(route('blog.show', 'rss-test-post'));
+        ->assertSee($post->url());
 });
 
 it('only includes published posts in the rss feed', function () {
@@ -302,7 +327,7 @@ it('returns valid sitemap XML', function () {
     $response->assertOk()
         ->assertHeader('Content-Type', 'application/xml; charset=UTF-8')
         ->assertSee('<urlset', false)
-        ->assertSee(route('blog.show', 'sitemap-post'));
+        ->assertSee($post->url());
 });
 
 it('includes published posts in the sitemap', function () {
@@ -311,8 +336,8 @@ it('includes published posts in the sitemap', function () {
 
     $response = $this->get(route('blog.sitemap'));
     $response->assertOk()
-        ->assertSee(route('blog.show', 'sitemap-published'))
-        ->assertDontSee(route('blog.show', 'sitemap-draft'));
+        ->assertSee($published->url())
+        ->assertDontSee($draft->url());
 });
 
 it('includes categories with include_in_sitemap flag', function () {
@@ -349,7 +374,7 @@ it('allows unauthenticated access to all public blog routes', function () {
     $post->tags()->attach($tag);
 
     $this->get(route('blog.index'))->assertOk();
-    $this->get(route('blog.show', 'test-post'))->assertOk();
+    $this->get($post->url())->assertOk();
     $this->get(route('blog.category', 'test-cat'))->assertOk();
     $this->get(route('blog.tag', 'test-tag'))->assertOk();
     $this->get(route('blog.author', 'test-author'))->assertOk();

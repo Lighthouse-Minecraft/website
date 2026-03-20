@@ -192,7 +192,7 @@ it('updates featured_in_blog_url on community responses when post is published',
 
     PublishBlogPost::run($post);
 
-    expect($response->fresh()->featured_in_blog_url)->toBe(route('blog.show', $post->slug));
+    expect($response->fresh()->featured_in_blog_url)->toBe($post->fresh()->url());
 });
 
 it('updates featured_in_blog_url when approved for immediate publish', function () {
@@ -210,7 +210,7 @@ it('updates featured_in_blog_url when approved for immediate publish', function 
 
     ApproveBlogPost::run($post, $reviewer);
 
-    expect($response->fresh()->featured_in_blog_url)->toBe(route('blog.show', $post->slug));
+    expect($response->fresh()->featured_in_blog_url)->toBe($post->fresh()->url());
 });
 
 it('does not update featured_in_blog_url when scheduled for later', function () {
@@ -317,7 +317,7 @@ it('renders story cards on the public blog post page', function () {
     ]);
     $post->communityResponses()->sync([$response->id => ['sort_order' => 0]]);
 
-    $this->get(route('blog.show', $post->slug))
+    $this->get($post->url())
         ->assertOk()
         ->assertSee('My awesome community story for the blog.')
         ->assertSee($response->user->name);
@@ -328,7 +328,7 @@ it('gracefully handles invalid story markers on the public page', function () {
         'body' => "Some content\n\n{{story:99999}}\n\nMore content",
     ]);
 
-    $this->get(route('blog.show', $post->slug))
+    $this->get($post->url())
         ->assertOk()
         ->assertSee('Some content')
         ->assertSee('More content')
