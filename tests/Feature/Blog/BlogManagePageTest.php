@@ -39,11 +39,11 @@ it('displays existing posts in the list', function () {
     $this->get(route('blog.manage'))->assertSee('Test Blog Post Title');
 });
 
-it('creates a blog post via the component', function () {
+it('creates a blog post via the editor page', function () {
     $author = User::factory()->withRole('Blog Author')->create();
     loginAs($author);
 
-    Volt::test('blog.manage')
+    Volt::test('blog.editor')
         ->set('postTitle', 'New Livewire Post')
         ->set('postBody', 'This is the body of the new post with enough content.')
         ->call('savePost');
@@ -52,6 +52,18 @@ it('creates a blog post via the component', function () {
         'title' => 'New Livewire Post',
         'author_id' => $author->id,
     ]);
+});
+
+it('edits a blog post via the editor page', function () {
+    $author = User::factory()->withRole('Blog Author')->create();
+    loginAs($author);
+    $post = BlogPost::factory()->create(['author_id' => $author->id, 'title' => 'Original Title']);
+
+    Volt::test('blog.editor', ['post' => $post->id])
+        ->set('postTitle', 'Updated Title')
+        ->call('savePost');
+
+    expect($post->fresh()->title)->toBe('Updated Title');
 });
 
 it('creates a category via the component', function () {
@@ -154,11 +166,11 @@ it('searches posts by title', function () {
         ->assertDontSee('Other Post');
 });
 
-it('opens preview modal with rendered markdown', function () {
+it('opens preview modal with rendered markdown on editor page', function () {
     $author = User::factory()->withRole('Blog Author')->create();
     loginAs($author);
 
-    Volt::test('blog.manage')
+    Volt::test('blog.editor')
         ->set('postTitle', 'Preview Test')
         ->set('postBody', '**Bold text** and *italic*')
         ->call('openPreviewModal')

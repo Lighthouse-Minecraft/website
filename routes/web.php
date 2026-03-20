@@ -158,6 +158,12 @@ Route::get('/blog/sitemap.xml', \App\Http\Controllers\BlogSitemapController::cla
 Volt::route('/blog/manage', 'blog.manage')
     ->name('blog.manage')
     ->middleware(['auth', 'can:manage-blog']);
+Volt::route('/blog/create', 'blog.editor')
+    ->name('blog.create')
+    ->middleware(['auth', 'can:manage-blog']);
+Volt::route('/blog/{post}/edit', 'blog.editor')
+    ->name('blog.edit')
+    ->middleware(['auth', 'can:manage-blog']);
 
 Volt::route('/blog/{slug}', 'blog.show')->name('blog.show');
 
