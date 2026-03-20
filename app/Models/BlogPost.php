@@ -85,6 +85,20 @@ class BlogPost extends Model
             'allow_unsafe_links' => false,
         ]);
 
+        $html = preg_replace_callback('/\{\{image:(\d+)(?:\|([^}]+))?\}\}/', function ($matches) {
+            $imageId = (int) $matches[1];
+            $image = BlogImage::find($imageId);
+
+            if (! $image) {
+                return '';
+            }
+
+            $altText = isset($matches[2]) ? e(trim($matches[2])) : e($image->alt_text);
+            $url = e($image->url());
+
+            return '<img src="'.$url.'" alt="'.$altText.'" class="rounded-lg" />';
+        }, $html);
+
         $html = preg_replace_callback('/\{\{story:(\d+)\}\}/', function ($matches) {
             $responseId = (int) $matches[1];
             $response = CommunityResponse::with('user')->find($responseId);
