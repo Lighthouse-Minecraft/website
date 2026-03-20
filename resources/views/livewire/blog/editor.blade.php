@@ -259,7 +259,7 @@ new class extends Component {
                         @endforeach
                         <flux:modal.trigger name="tag-picker-modal">
                             <flux:button size="sm" icon="plus">
-                                {{ $selectedTags->isEmpty() ? 'Add Tags' : 'Add' }}
+                                Add Tags
                             </flux:button>
                         </flux:modal.trigger>
                     </div>
