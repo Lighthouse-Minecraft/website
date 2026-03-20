@@ -36,6 +36,16 @@ class StaffPositionPolicy
         return $user->hasRole('Manage Site Config');
     }
 
+    public function manageRoles(User $user, StaffPosition $position): bool
+    {
+        // Users cannot manage roles on their own position (to prevent self-escalation)
+        if ($user->staffPosition && $user->staffPosition->id === $position->id) {
+            return false;
+        }
+
+        return $user->hasRole('Manage Site Config');
+    }
+
     public function assign(User $user, StaffPosition $position): bool
     {
         return $user->hasRole('Manage Site Config');

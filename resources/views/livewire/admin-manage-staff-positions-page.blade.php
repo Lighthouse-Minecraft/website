@@ -140,7 +140,7 @@ new class extends Component {
     public function openRolesModal(int $positionId): void
     {
         $position = StaffPosition::findOrFail($positionId);
-        $this->authorize('update', $position);
+        $this->authorize('manageRoles', $position);
 
         $this->rolePositionId = $positionId;
         $this->selectedRoleId = null;
@@ -154,7 +154,7 @@ new class extends Component {
         }
 
         $position = StaffPosition::findOrFail($this->rolePositionId);
-        $this->authorize('update', $position);
+        $this->authorize('manageRoles', $position);
 
         $position->roles()->syncWithoutDetaching([$this->selectedRoleId]);
         $this->selectedRoleId = null;
@@ -169,7 +169,7 @@ new class extends Component {
         }
 
         $position = StaffPosition::findOrFail($this->rolePositionId);
-        $this->authorize('update', $position);
+        $this->authorize('manageRoles', $position);
 
         $position->roles()->detach($roleId);
 
@@ -265,7 +265,9 @@ new class extends Component {
                     </flux:table.cell>
                     <flux:table.cell>
                         <div class="flex gap-1">
-                            <flux:button size="sm" icon="shield-check" wire:click="openRolesModal({{ $position->id }})">Roles</flux:button>
+                            @can('manageRoles', $position)
+                                <flux:button size="sm" icon="shield-check" wire:click="openRolesModal({{ $position->id }})">Roles</flux:button>
+                            @endcan
                             <flux:modal.trigger wire:click="openEditModal({{ $position->id }})" name="edit-position-modal">
                                 <flux:button size="sm" icon="pencil-square">Edit</flux:button>
                             </flux:modal.trigger>
