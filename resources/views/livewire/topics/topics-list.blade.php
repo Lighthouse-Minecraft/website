@@ -36,7 +36,8 @@ new class extends Component
         }
 
         return Thread::where('type', ThreadType::Topic)
-            ->where('has_open_flags', true)
+            ->where('subtype', \App\Enums\ThreadSubtype::ModerationFlag)
+            ->where('is_locked', false)
             ->with(['createdBy'])
             ->orderByDesc('last_message_at')
             ->get();
@@ -139,7 +140,7 @@ new class extends Component
         </flux:button>
         @if($this->canViewFlagged)
             <flux:button wire:click="$set('filter', 'flagged')" :variant="$filter === 'flagged' ? 'danger' : 'ghost'" size="sm">
-                Flagged
+                Flagged Messages
                 @if($this->flaggedTopics->count() > 0)
                     <flux:badge color="red" size="sm">{{ $this->flaggedTopics->count() }}</flux:badge>
                 @endif
@@ -194,7 +195,7 @@ new class extends Component
         @endif
 
     @elseif($filter === 'flagged' && $this->canViewFlagged)
-        {{-- Flagged Discussions --}}
+        {{-- Flagged Messages --}}
         @if($this->flaggedTopics->isNotEmpty())
             <div class="rounded-lg border border-red-200 dark:border-red-800 divide-y divide-red-200 dark:divide-red-800">
                 @foreach($this->flaggedTopics as $topic)
@@ -211,9 +212,11 @@ new class extends Component
                                     <flux:heading size="sm">{{ $topic->subject }}</flux:heading>
                                 </div>
                                 <div class="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-                                    <span>Started by {{ $topic->createdBy?->name ?? 'Unknown' }}</span>
-                                    <span class="mx-2">&bull;</span>
                                     <span>{{ $topic->created_at->diffForHumans() }}</span>
+                                    @if($topic->last_message_at)
+                                        <span class="mx-2">&bull;</span>
+                                        <span>Last activity {{ $topic->last_message_at->diffForHumans() }}</span>
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -222,8 +225,8 @@ new class extends Component
             </div>
         @else
             <div class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-8 text-center text-zinc-500 dark:text-zinc-400">
-                <flux:heading size="lg" class="text-zinc-500 dark:text-zinc-400">No Flagged Discussions</flux:heading>
-                <flux:text class="mt-2">There are no discussions with open flags.</flux:text>
+                <flux:heading size="lg" class="text-zinc-500 dark:text-zinc-400">No Flagged Messages</flux:heading>
+                <flux:text class="mt-2">There are no flagged messages awaiting review.</flux:text>
             </div>
         @endif
     @else
