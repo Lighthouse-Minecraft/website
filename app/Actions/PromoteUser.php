@@ -47,6 +47,11 @@ class PromoteUser
 
         $user->membership_level = $nextLevel;
         $user->promoted_at = now();
+
+        if ($nextLevel === MembershipLevel::Resident) {
+            $user->resident_since = now();
+        }
+
         $user->save();
 
         RecordActivity::run($user, 'user_promoted', "Promoted from {$current->label()} to {$nextLevel->label()}.");

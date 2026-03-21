@@ -4,7 +4,6 @@ namespace App\Actions;
 
 use App\Enums\MessageFlagStatus;
 use App\Enums\MessageKind;
-use App\Enums\StaffDepartment;
 use App\Enums\ThreadStatus;
 use App\Enums\ThreadSubtype;
 use App\Enums\ThreadType;
@@ -23,7 +22,9 @@ class FlagMessage
 
     public function handle(Message $message, User $flaggingUser, string $note): MessageFlag
     {
-        return DB::transaction(function () use ($message, $flaggingUser, $note) {
+        $moderators = collect();
+
+        $flag = DB::transaction(function () use ($message, $flaggingUser, $note, &$moderators) {
             $thread = $message->thread;
 
             // Create the flag record
@@ -43,58 +44,70 @@ class FlagMessage
 
             $systemUser = User::where('email', 'system@lighthouse.local')->firstOrFail();
 
-            // Create Quartermaster moderation flag ticket
-            $reviewTicket = Thread::create([
-                'type' => ThreadType::Ticket,
+            // Create a flag review discussion topic
+            $reviewTopic = Thread::create([
+                'type' => ThreadType::Topic,
                 'subtype' => ThreadSubtype::ModerationFlag,
-                'department' => StaffDepartment::Quartermaster,
                 'subject' => 'Flag Review: '.$thread->subject,
                 'status' => ThreadStatus::Open,
                 'created_by_user_id' => $systemUser->id,
+                'last_message_at' => now(),
             ]);
 
-            // Create system message in review ticket with flag details
-            // Escape user-provided content to prevent XSS when rendered as Markdown
-            $originalUrl = $thread->type === ThreadType::Topic
-                ? "/discussions/{$thread->id}"
-                : "/tickets/{$thread->id}";
-            $originalLabel = $thread->type === ThreadType::Topic ? 'Original Discussion' : 'Original Ticket';
+            // Create system message with flag details
+            $originalUrl = match ($thread->type) {
+                ThreadType::Topic => "/discussions/{$thread->id}",
+                ThreadType::BlogComment => $thread->topicable?->url() ?? "/discussions/{$thread->id}",
+                default => "/tickets/{$thread->id}",
+            };
+            $originalLabel = match ($thread->type) {
+                ThreadType::Topic => 'Original Discussion',
+                ThreadType::BlogComment => 'Blog Post',
+                default => 'Original Ticket',
+            };
 
             $flagDetails = "**Flagged Message Review Request**\n\n";
-            $flagDetails .= "\n**{$originalLabel}:** [".e($thread->subject)."]({$originalUrl})\n\n";
+            $flagDetails .= "**{$originalLabel}:** [".e($thread->subject)."]({$originalUrl})\n\n";
             $flagDetails .= "**Flagged Message ID:** {$message->id}\n\n";
             $flagDetails .= '**Flagged By:** ['.e($flaggingUser->name)."](/profile/{$flaggingUser->id})\n\n";
             $flagDetails .= '**Timestamp:** '.now()->format('M j, Y g:i A')."\n\n";
             $flagDetails .= "**Reason for Flag:**\n\n".e($note)."\n\n";
-            $flagDetails .= "\n**Original Message:**\n\n> ".str_replace("\n", "\n> ", e($message->body));
+            $flagDetails .= "**Original Message:**\n\n> ".str_replace("\n", "\n> ", e($message->body));
 
             Message::create([
-                'thread_id' => $reviewTicket->id,
+                'thread_id' => $reviewTopic->id,
                 'user_id' => $systemUser->id,
                 'body' => $flagDetails,
                 'kind' => MessageKind::System,
             ]);
 
-            // Link the flag to the review ticket
-            $flag->update(['flag_review_ticket_id' => $reviewTicket->id]);
+            // Link the flag to the review discussion
+            $flag->update(['flag_review_ticket_id' => $reviewTopic->id]);
 
-            // Add the flagging user as a participant so they can follow the resolution
-            $reviewTicket->addParticipant($flaggingUser);
+            // Add the flagging user as a participant
+            $reviewTopic->addParticipant($flaggingUser);
+
+            // Add all users who can view flagged content as participants
+            $moderators = User::whereNotNull('staff_rank')
+                ->get()
+                ->filter(fn (User $u) => $u->can('viewFlagged', Thread::class));
+
+            foreach ($moderators as $moderator) {
+                $reviewTopic->addParticipant($moderator);
+            }
 
             // Record activity
             RecordActivity::run($thread, 'message_flagged', "Message flagged by {$flaggingUser->name}");
 
-            // Notify Quartermaster staff
-            $quartermasterStaff = User::where('staff_department', StaffDepartment::Quartermaster)
-                ->whereNotNull('staff_rank')
-                ->get();
-
-            $notificationService = app(TicketNotificationService::class);
-            foreach ($quartermasterStaff as $staff) {
-                $notificationService->send($staff, new MessageFlaggedNotification($flag));
-            }
-
             return $flag;
         });
+
+        // Notify moderators after transaction commits
+        $notificationService = app(TicketNotificationService::class);
+        foreach ($moderators as $moderator) {
+            $notificationService->send($moderator, new MessageFlaggedNotification($flag));
+        }
+
+        return $flag;
     }
 }

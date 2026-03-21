@@ -101,6 +101,7 @@ class TicketNotificationService
             'account' => ['email' => true, 'pushover' => false, 'discord' => false],
             'staff_alerts' => ['email' => true, 'pushover' => false, 'discord' => false],
             'announcements' => ['email' => true, 'pushover' => false, 'discord' => false],
+            'blog' => ['email' => true, 'pushover' => false, 'discord' => false],
             default => ['email' => true, 'pushover' => false, 'discord' => false],
         };
     }

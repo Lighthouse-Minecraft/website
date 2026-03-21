@@ -42,6 +42,13 @@ new class extends Component
 
     public bool $notify_staff_alerts_discord = false;
 
+    // Notification preferences — Blog
+    public bool $notify_blog_email = true;
+
+    public bool $notify_blog_pushover = false;
+
+    public bool $notify_blog_discord = false;
+
     public function mount(): void
     {
         $user = Auth::user();
@@ -67,6 +74,10 @@ new class extends Component
         $this->notify_staff_alerts_email = $preferences['staff_alerts']['email'] ?? true;
         $this->notify_staff_alerts_pushover = $preferences['staff_alerts']['pushover'] ?? false;
         $this->notify_staff_alerts_discord = $preferences['staff_alerts']['discord'] ?? false;
+
+        $this->notify_blog_email = $preferences['blog']['email'] ?? true;
+        $this->notify_blog_pushover = $preferences['blog']['pushover'] ?? false;
+        $this->notify_blog_discord = $preferences['blog']['discord'] ?? false;
     }
 
     public function updateNotificationSettings(): void
@@ -88,6 +99,9 @@ new class extends Component
             'notify_staff_alerts_email' => ['boolean'],
             'notify_staff_alerts_pushover' => ['boolean'],
             'notify_staff_alerts_discord' => ['boolean'],
+            'notify_blog_email' => ['boolean'],
+            'notify_blog_pushover' => ['boolean'],
+            'notify_blog_discord' => ['boolean'],
         ]);
 
         $user->pushover_key = $validated['pushover_key'];
@@ -114,6 +128,11 @@ new class extends Component
             'email' => $validated['notify_staff_alerts_email'],
             'pushover' => $validated['notify_staff_alerts_pushover'],
             'discord' => $validated['notify_staff_alerts_discord'],
+        ];
+        $preferences['blog'] = [
+            'email' => $validated['notify_blog_email'],
+            'pushover' => $validated['notify_blog_pushover'],
+            'discord' => $validated['notify_blog_discord'],
         ];
         $user->notification_preferences = $preferences;
 
@@ -236,6 +255,32 @@ new class extends Component
                         @else
                             <flux:tooltip content="Link a Discord account in Settings to enable">
                                 <flux:switch wire:model="notify_announcements_discord" label="Discord DM" disabled />
+                            </flux:tooltip>
+                        @endif
+                    </div>
+                </div>
+
+                <div class="border border-zinc-200 dark:border-zinc-700 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <div>
+                            <div class="font-medium text-sm text-zinc-900 dark:text-white">Blog Posts</div>
+                            <div class="text-xs text-zinc-600 dark:text-zinc-400">New blog post notifications</div>
+                        </div>
+                    </div>
+                    <div class="flex gap-6">
+                        <flux:switch wire:model="notify_blog_email" label="Email" />
+                        @if($pushover_key)
+                            <flux:switch wire:model="notify_blog_pushover" label="Pushover" />
+                        @else
+                            <flux:tooltip content="Add your Pushover key above to enable">
+                                <flux:switch wire:model="notify_blog_pushover" label="Pushover" disabled />
+                            </flux:tooltip>
+                        @endif
+                        @if(auth()->user()->hasDiscordLinked())
+                            <flux:switch wire:model="notify_blog_discord" label="Discord DM" />
+                        @else
+                            <flux:tooltip content="Link a Discord account in Settings to enable">
+                                <flux:switch wire:model="notify_blog_discord" label="Discord DM" disabled />
                             </flux:tooltip>
                         @endif
                     </div>

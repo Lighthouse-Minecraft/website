@@ -114,7 +114,7 @@ new class extends Component {
 
         return MinecraftAccount::query()
             ->join('users', 'minecraft_accounts.user_id', '=', 'users.id')
-            ->select('minecraft_accounts.*', 'users.name as user_name')
+            ->select('minecraft_accounts.*', 'users.name as user_name', 'users.slug as user_slug')
             ->when(trim($this->search) !== '', fn ($q) => $q->where(function ($q) {
                 $term = mb_strtolower(trim($this->search));
                 $q->whereRaw('LOWER(minecraft_accounts.username) like ?', ["%{$term}%"])
@@ -155,7 +155,7 @@ new class extends Component {
                     </flux:table.cell>
 
                     <flux:table.cell class="whitespace-nowrap">
-                        <flux:link href="{{ route('profile.show', $account->user_id) }}">{{ $account->user_name }}</flux:link>
+                        <flux:link href="{{ route('profile.show', $account->user_slug) }}">{{ $account->user_name }}</flux:link>
                     </flux:table.cell>
 
                     <flux:table.cell class="whitespace-nowrap">

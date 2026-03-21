@@ -11,7 +11,7 @@ enum MessageFlagStatus: string
     {
         return match ($this) {
             self::New => 'New',
-            self::Acknowledged => 'Acknowledged',
+            self::Acknowledged => 'Dismissed',
         };
     }
 }

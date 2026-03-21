@@ -93,7 +93,7 @@ describe('Discussion Flagging', function () {
 
         $reviewTicket = Thread::find($flag->flag_review_ticket_id);
         expect($reviewTicket)->not->toBeNull()
-            ->and($reviewTicket->type)->toBe(ThreadType::Ticket);
+            ->and($reviewTicket->type)->toBe(ThreadType::Topic);
     });
 
     it('allows Quartermaster staff to view flagged discussion', function () {

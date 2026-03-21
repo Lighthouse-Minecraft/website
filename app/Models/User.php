@@ -28,6 +28,7 @@ class User extends Authenticatable // implements MustVerifyEmail
      */
     protected $fillable = [
         'name',
+        'slug',
         'email',
         'password',
         'rules_accepted_at',
@@ -87,6 +88,7 @@ class User extends Authenticatable // implements MustVerifyEmail
             'email_digest_frequency' => EmailDigestFrequency::class,
             'rules_accepted_at' => 'datetime',
             'promoted_at' => 'datetime',
+            'resident_since' => 'datetime',
             'last_prayed_at' => 'datetime',
             'last_notification_read_at' => 'datetime',
             'last_login_at' => 'datetime',
@@ -106,6 +108,26 @@ class User extends Authenticatable // implements MustVerifyEmail
             'is_board_member' => 'boolean',
             'admin_granted_at' => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (User $user) {
+            if (empty($user->slug)) {
+                $user->slug = \App\Actions\GenerateUserSlug::run($user->name);
+            }
+        });
+
+        static::updating(function (User $user) {
+            if ($user->isDirty('name')) {
+                $user->slug = \App\Actions\GenerateUserSlug::run($user->name, $user->id);
+            }
+        });
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
     }
 
     /**
@@ -419,6 +441,11 @@ class User extends Authenticatable // implements MustVerifyEmail
     public function communityResponses(): HasMany
     {
         return $this->hasMany(CommunityResponse::class);
+    }
+
+    public function blogPosts(): HasMany
+    {
+        return $this->hasMany(BlogPost::class, 'author_id');
     }
 
     public function questionSuggestions(): HasMany
