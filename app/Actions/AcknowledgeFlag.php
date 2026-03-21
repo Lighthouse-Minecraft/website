@@ -36,7 +36,7 @@ class AcknowledgeFlag
         RecordActivity::run(
             $thread,
             'flag_acknowledged',
-            "Flag acknowledged by {$reviewer->name}{$notesPreview}"
+            "Flag dismissed by {$reviewer->name}{$notesPreview}"
         );
     }
 }

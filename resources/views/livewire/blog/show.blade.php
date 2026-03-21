@@ -26,6 +26,7 @@ new class extends Component {
     public string $flagReason = '';
     public ?int $acknowledgingFlagId = null;
     public string $staffNotes = '';
+    public ?int $deletingMessageId = null;
 
     public function mount(string $categorySlug, string $slug): void
     {
@@ -163,7 +164,7 @@ new class extends Component {
         unset($this->comments);
     }
 
-    public function openAcknowledgeModal(int $flagId): void
+    public function openDismissModal(int $flagId): void
     {
         if (! $this->canViewFlagged) {
             abort(403);
@@ -172,10 +173,10 @@ new class extends Component {
         $this->acknowledgingFlagId = $flagId;
         $this->staffNotes = '';
 
-        Flux::modal('acknowledge-flag')->show();
+        Flux::modal('dismiss-flag')->show();
     }
 
-    public function acknowledgeFlag(): void
+    public function dismissFlag(): void
     {
         if (! $this->canViewFlagged) {
             abort(403);
@@ -188,19 +189,27 @@ new class extends Component {
         $this->acknowledgingFlagId = null;
         $this->staffNotes = '';
 
-        Flux::modal('acknowledge-flag')->close();
-        Flux::toast('Flag acknowledged successfully!', variant: 'success');
+        Flux::modal('dismiss-flag')->close();
+        Flux::toast('Flag dismissed.', variant: 'success');
 
         unset($this->comments);
     }
 
-    public function deleteMessage(int $messageId): void
+    public function confirmDeleteMessage(int $messageId): void
     {
-        $message = Message::withTrashed()->findOrFail($messageId);
+        $this->deletingMessageId = $messageId;
+        Flux::modal('confirm-delete-message')->show();
+    }
+
+    public function deleteMessage(): void
+    {
+        $message = Message::withTrashed()->findOrFail($this->deletingMessageId);
         $this->authorize('delete', $message);
 
         DeleteMessage::run($message, auth()->user());
 
+        $this->deletingMessageId = null;
+        Flux::modal('confirm-delete-message')->close();
         Flux::toast('Comment deleted.', variant: 'success');
 
         unset($this->comments);
@@ -419,7 +428,7 @@ new class extends Component {
                                                 </flux:button>
                                             @endif
                                             @can('delete', $comment)
-                                                <flux:button wire:click="deleteMessage({{ $comment->id }})" wire:confirm="Delete this comment? It will be hidden from regular users." variant="ghost" size="xs" class="!p-0.5 text-red-500 hover:text-red-700" aria-label="Delete comment">
+                                                <flux:button wire:click="confirmDeleteMessage({{ $comment->id }})" variant="ghost" size="xs" class="!p-0.5 text-red-500 hover:text-red-700" aria-label="Delete comment">
                                                     <flux:icon.trash class="size-3.5" />
                                                 </flux:button>
                                             @endcan
@@ -482,12 +491,12 @@ new class extends Component {
         </flux:modal>
     @endauth
 
-    {{-- Acknowledge Flag Modal (staff only) --}}
+    {{-- Dismiss Flag Modal (staff only) --}}
     @if($this->canViewFlagged)
-        <flux:modal name="acknowledge-flag" class="space-y-6">
+        <flux:modal name="dismiss-flag" class="space-y-6">
             <div>
-                <flux:heading size="lg">Acknowledge Flag</flux:heading>
-                <flux:subheading>Add notes about your review of this flag (optional)</flux:subheading>
+                <flux:heading size="lg">Dismiss Flag</flux:heading>
+                <flux:subheading>Add notes about why this flag is being dismissed (optional)</flux:subheading>
             </div>
 
             <flux:field>
@@ -496,7 +505,21 @@ new class extends Component {
             </flux:field>
 
             <div class="flex justify-end">
-                <flux:button wire:click="acknowledgeFlag" variant="primary">Acknowledge Flag</flux:button>
+                <flux:button wire:click="dismissFlag" variant="primary">Dismiss Flag</flux:button>
+            </div>
+        </flux:modal>
+
+        {{-- Delete Message Confirmation Modal --}}
+        <flux:modal name="confirm-delete-message" class="w-full md:w-96">
+            <div class="space-y-4">
+                <flux:heading size="lg">Delete Comment</flux:heading>
+                <p class="text-sm text-zinc-600 dark:text-zinc-400">Are you sure you want to delete this comment? It will be hidden from regular users but remain visible to moderators.</p>
+                <div class="flex justify-end gap-2 pt-4">
+                    <flux:modal.close>
+                        <flux:button variant="ghost">Cancel</flux:button>
+                    </flux:modal.close>
+                    <flux:button wire:click="deleteMessage" variant="danger" icon="trash">Delete</flux:button>
+                </div>
             </div>
         </flux:modal>
     @endif
