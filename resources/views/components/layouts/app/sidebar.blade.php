@@ -68,6 +68,7 @@
                 </flux:navlist.group>
 
                 <flux:navlist.group heading="Community" class="grid">
+                    <flux:navlist.item icon="pencil-square" :href="route('blog.index')" :current="request()->routeIs('blog.*') && !request()->routeIs('blog.manage')" wire:navigate>Blog</flux:navlist.item>
                     <flux:navlist.item icon="user-group" :href="route('staff.index')" :current="request()->routeIs('staff.index')" wire:navigate>Our Team</flux:navlist.item>
                     <flux:navlist.item icon="newspaper" :href="route('community-updates.index')" :current="request()->routeIs('community-updates.index')" wire:navigate>Community Updates</flux:navlist.item>
                     @can('view-community-stories')

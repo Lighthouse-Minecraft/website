@@ -49,4 +49,16 @@ class MessagePolicy
 
         return $message->thread->participants()->where('user_id', $user->id)->exists();
     }
+
+    /**
+     * Determine whether the user can delete (soft-delete) a message
+     */
+    public function delete(User $user, Message $message): bool
+    {
+        if ($message->kind === MessageKind::System) {
+            return false;
+        }
+
+        return $user->hasRole('Moderator');
+    }
 }

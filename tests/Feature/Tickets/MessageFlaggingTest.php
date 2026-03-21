@@ -8,6 +8,7 @@ use App\Enums\MessageFlagStatus;
 use App\Enums\StaffDepartment;
 use App\Enums\StaffRank;
 use App\Enums\ThreadSubtype;
+use App\Enums\ThreadType;
 use App\Models\Message;
 use App\Models\MessageFlag;
 use App\Models\Thread;
@@ -93,7 +94,7 @@ describe('Message Flagging Workflow', function () {
             ->and($thread->has_open_flags)->toBeTrue();
     })->done();
 
-    it('creates moderation ticket for Quartermaster when message is flagged', function () {
+    it('creates moderation discussion topic when message is flagged', function () {
         $author = User::factory()->create();
         $flagger = User::factory()->create();
 
@@ -108,11 +109,11 @@ describe('Message Flagging Workflow', function () {
 
         expect($flag->flag_review_ticket_id)->not->toBeNull();
 
-        $reviewTicket = Thread::find($flag->flag_review_ticket_id);
+        $reviewTopic = Thread::find($flag->flag_review_ticket_id);
 
-        expect($reviewTicket)->not->toBeNull()
-            ->and($reviewTicket->subtype)->toBe(ThreadSubtype::ModerationFlag)
-            ->and($reviewTicket->department)->toBe(StaffDepartment::Quartermaster);
+        expect($reviewTopic)->not->toBeNull()
+            ->and($reviewTopic->type)->toBe(ThreadType::Topic)
+            ->and($reviewTopic->subtype)->toBe(ThreadSubtype::ModerationFlag);
     })->done();
 
     it('sends notification to Quartermaster staff when message is flagged', function () {

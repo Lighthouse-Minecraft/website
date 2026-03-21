@@ -45,7 +45,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('auth/discord/callback', [DiscordAuthController::class, 'callback'])->name('auth.discord.callback');
 });
 
-Route::get('/profile/{user}', [UserController::class, 'show'])
+Route::get('/profile/{user:slug}', [UserController::class, 'show'])
     ->name('profile.show')
     ->middleware(['auth', 'can:view,user']);
 
@@ -145,6 +145,28 @@ Route::post('/api/minecraft/verify', function (\Illuminate\Http\Request $request
 
     return response()->json($result);
 })->middleware('throttle:30,1');
+
+// Blog Public Routes (no auth)
+Volt::route('/blog', 'blog.index')->name('blog.index');
+Volt::route('/blog/tag/{tagSlug}', 'blog.index')->name('blog.tag');
+Volt::route('/blog/author/{authorSlug}', 'blog.index')->name('blog.author');
+Route::get('/blog/rss', \App\Http\Controllers\BlogRssController::class)->name('blog.rss');
+Route::get('/blog/sitemap.xml', \App\Http\Controllers\BlogSitemapController::class)->name('blog.sitemap');
+
+// Blog Management (must come before {categorySlug} wildcard)
+Volt::route('/blog/manage', 'blog.manage')
+    ->name('blog.manage')
+    ->middleware(['auth', 'can:manage-blog']);
+Volt::route('/blog/create', 'blog.editor')
+    ->name('blog.create')
+    ->middleware(['auth', 'can:manage-blog']);
+Volt::route('/blog/{post}/edit', 'blog.editor')
+    ->name('blog.edit')
+    ->middleware(['auth', 'can:manage-blog']);
+
+// Category and post pages (category wildcard must come after management routes)
+Volt::route('/blog/{categorySlug}', 'blog.category')->name('blog.category');
+Volt::route('/blog/{categorySlug}/{slug}', 'blog.show')->name('blog.show');
 
 require __DIR__.'/auth.php';
 

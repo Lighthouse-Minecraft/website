@@ -57,6 +57,7 @@ new class extends Component {
             || $user->can('viewAny', \App\Models\Announcement::class)
             || $user->can('viewAny', \App\Models\Meeting::class)
             || $user->can('manage-community-stories')
+            || $user->can('manage-blog')
         );
     }
 
@@ -103,6 +104,7 @@ new class extends Component {
                 $user?->can('viewAny', \App\Models\Announcement::class) => 'announcement-manager',
                 $user?->can('viewAny', \App\Models\Meeting::class) => 'meeting-manager',
                 $user?->can('manage-community-stories') => 'community-questions',
+                $user?->can('manage-blog') => 'blog-posts',
                 default => 'page-manager',
             },
             'logs' => match (true) {
@@ -193,6 +195,11 @@ new class extends Component {
                 @can('manage-community-stories')
                     <flux:tab name="community-questions">Community Questions</flux:tab>
                 @endcan
+                @can('manage-blog')
+                    <flux:tab name="blog-posts">Blog Posts</flux:tab>
+                    <flux:tab name="blog-comments">Blog Comments</flux:tab>
+                    <flux:tab name="blog-images">Blog Images</flux:tab>
+                @endcan
             </flux:tabs>
 
             <flux:tab.panel name="page-manager">
@@ -213,6 +220,21 @@ new class extends Component {
             <flux:tab.panel name="community-questions">
                 @can('manage-community-stories')
                     <livewire:admin-manage-community-questions-page />
+                @endcan
+            </flux:tab.panel>
+            <flux:tab.panel name="blog-posts">
+                @can('manage-blog')
+                    <livewire:admin-manage-blog-posts-page />
+                @endcan
+            </flux:tab.panel>
+            <flux:tab.panel name="blog-comments">
+                @can('manage-blog')
+                    <livewire:admin-manage-blog-comments-page />
+                @endcan
+            </flux:tab.panel>
+            <flux:tab.panel name="blog-images">
+                @can('manage-blog')
+                    <livewire:admin-manage-blog-images-page />
                 @endcan
             </flux:tab.panel>
         </flux:tab.group>
