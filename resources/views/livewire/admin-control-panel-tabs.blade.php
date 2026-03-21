@@ -198,6 +198,7 @@ new class extends Component {
                 @can('manage-blog')
                     <flux:tab name="blog-posts">Blog Posts</flux:tab>
                     <flux:tab name="blog-comments">Blog Comments</flux:tab>
+                    <flux:tab name="blog-images">Blog Images</flux:tab>
                 @endcan
             </flux:tabs>
 
@@ -229,6 +230,11 @@ new class extends Component {
             <flux:tab.panel name="blog-comments">
                 @can('manage-blog')
                     <livewire:admin-manage-blog-comments-page />
+                @endcan
+            </flux:tab.panel>
+            <flux:tab.panel name="blog-images">
+                @can('manage-blog')
+                    <livewire:admin-manage-blog-images-page />
                 @endcan
             </flux:tab.panel>
         </flux:tab.group>
