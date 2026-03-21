@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\AcknowledgeFlag;
+use App\Actions\DeleteMessage;
 use App\Actions\FlagMessage;
 use App\Actions\PostBlogComment;
 use App\Enums\BlogPostStatus;
@@ -61,12 +62,16 @@ new class extends Component {
             return collect();
         }
 
-        return $thread->messages()
+        $query = $thread->messages()
             ->where('kind', MessageKind::Message)
             ->where('is_pending_moderation', false)
-            ->with(['user.minecraftAccounts', 'user.discordAccounts', 'flags.flaggedBy', 'flags.reviewedBy'])
-            ->orderBy('created_at')
-            ->get();
+            ->with(['user.minecraftAccounts', 'user.discordAccounts', 'flags.flaggedBy', 'flags.reviewedBy', 'deletedBy']);
+
+        if (auth()->check() && auth()->user()->can('viewFlagged', \App\Models\Thread::class)) {
+            $query->withTrashed();
+        }
+
+        return $query->orderBy('created_at')->get();
     }
 
     #[Computed]
@@ -185,6 +190,18 @@ new class extends Component {
 
         Flux::modal('acknowledge-flag')->close();
         Flux::toast('Flag acknowledged successfully!', variant: 'success');
+
+        unset($this->comments);
+    }
+
+    public function deleteMessage(int $messageId): void
+    {
+        $message = Message::withTrashed()->findOrFail($messageId);
+        $this->authorize('delete', $message);
+
+        DeleteMessage::run($message, auth()->user());
+
+        Flux::toast('Comment deleted.', variant: 'success');
 
         unset($this->comments);
     }
@@ -366,29 +383,54 @@ new class extends Component {
 
             {{-- Comments Section --}}
             <div class="mt-10 border-t border-zinc-200 pt-8 dark:border-zinc-700">
-                <flux:heading size="lg" class="mb-6">Comments ({{ $this->comments->count() }})</flux:heading>
+                <flux:heading size="lg" class="mb-6">Comments ({{ $this->comments->reject->trashed()->count() }})</flux:heading>
 
                 @if($this->comments->isNotEmpty())
                     <div class="space-y-6">
                         @foreach($this->comments as $comment)
-                            <div wire:key="comment-{{ $comment->id }}" class="flex gap-3">
-                                <flux:avatar size="sm" :src="$comment->user->avatarUrl()" :initials="$comment->user->initials()" class="shrink-0 mt-1" />
-                                <div class="min-w-0 flex-1">
-                                    <div class="flex items-baseline gap-2">
-                                        <span class="font-semibold text-sm text-zinc-900 dark:text-zinc-100">{{ $comment->user->name }}</span>
-                                        <span class="text-xs text-zinc-400 dark:text-zinc-500">{{ $comment->created_at->diffForHumans() }}</span>
-                                        @if($this->canFlagComment($comment))
-                                            <flux:button wire:click="openFlagModal({{ $comment->id }})" variant="ghost" size="xs" class="!p-0.5" aria-label="Flag comment">
-                                                <flux:icon.flag class="size-3.5" />
-                                            </flux:button>
-                                        @endif
+                            @if($comment->trashed())
+                                {{-- Deleted comment — ghostly, visible only to moderators/admins --}}
+                                <div wire:key="comment-{{ $comment->id }}" class="flex gap-3 opacity-40">
+                                    <flux:avatar size="sm" :src="$comment->user->avatarUrl()" :initials="$comment->user->initials()" class="shrink-0 mt-1" />
+                                    <div class="min-w-0 flex-1">
+                                        <div class="flex items-baseline gap-2">
+                                            <span class="font-semibold text-sm text-zinc-400 dark:text-zinc-500">{{ $comment->user->name }}</span>
+                                            <span class="text-xs text-zinc-400 dark:text-zinc-500">{{ $comment->created_at->diffForHumans() }}</span>
+                                            <flux:badge size="sm" color="red">Deleted</flux:badge>
+                                        </div>
+                                        <div class="mt-1 prose prose-sm dark:prose-invert max-w-none text-zinc-400 dark:text-zinc-600 line-through">
+                                            {!! Str::markdown($comment->body, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
+                                        </div>
+                                        <div class="mt-1 text-xs text-zinc-400 dark:text-zinc-600">
+                                            Deleted by {{ $comment->deletedBy?->name ?? 'unknown' }} {{ $comment->deleted_at->diffForHumans() }}
+                                        </div>
                                     </div>
-                                    <div class="mt-1 prose prose-sm dark:prose-invert max-w-none">
-                                        {!! Str::markdown($comment->body, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
-                                    </div>
-                                    @include('livewire.topics.partials.flag-display', ['message' => $comment, 'tz' => auth()->user()->timezone ?? 'UTC'])
                                 </div>
-                            </div>
+                            @else
+                                <div wire:key="comment-{{ $comment->id }}" class="flex gap-3">
+                                    <flux:avatar size="sm" :src="$comment->user->avatarUrl()" :initials="$comment->user->initials()" class="shrink-0 mt-1" />
+                                    <div class="min-w-0 flex-1">
+                                        <div class="flex items-baseline gap-2">
+                                            <span class="font-semibold text-sm text-zinc-900 dark:text-zinc-100">{{ $comment->user->name }}</span>
+                                            <span class="text-xs text-zinc-400 dark:text-zinc-500">{{ $comment->created_at->diffForHumans() }}</span>
+                                            @if($this->canFlagComment($comment))
+                                                <flux:button wire:click="openFlagModal({{ $comment->id }})" variant="ghost" size="xs" class="!p-0.5" aria-label="Flag comment">
+                                                    <flux:icon.flag class="size-3.5" />
+                                                </flux:button>
+                                            @endif
+                                            @can('delete', $comment)
+                                                <flux:button wire:click="deleteMessage({{ $comment->id }})" wire:confirm="Delete this comment? It will be hidden from regular users." variant="ghost" size="xs" class="!p-0.5 text-red-500 hover:text-red-700" aria-label="Delete comment">
+                                                    <flux:icon.trash class="size-3.5" />
+                                                </flux:button>
+                                            @endcan
+                                        </div>
+                                        <div class="mt-1 prose prose-sm dark:prose-invert max-w-none">
+                                            {!! Str::markdown($comment->body, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
+                                        </div>
+                                        @include('livewire.topics.partials.flag-display', ['message' => $comment, 'tz' => auth()->user()?->timezone ?? 'UTC'])
+                                    </div>
+                                </div>
+                            @endif
                         @endforeach
                     </div>
                 @else

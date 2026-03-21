@@ -28,11 +28,18 @@
                         </div>
                     @endif
                 </div>
-                @if($flag->status->value === 'new' && auth()->user()->can('viewFlagged', \App\Models\Thread::class))
-                    <div class="mt-3">
-                        <flux:button wire:click="openAcknowledgeModal({{ $flag->id }})" variant="primary" size="sm">
-                            Acknowledge Flag
-                        </flux:button>
+                @if(auth()->user()->can('viewFlagged', \App\Models\Thread::class) && ! $message->trashed())
+                    <div class="mt-3 flex gap-2">
+                        @if($flag->status->value === 'new')
+                            <flux:button wire:click="openAcknowledgeModal({{ $flag->id }})" variant="primary" size="sm">
+                                Acknowledge Flag
+                            </flux:button>
+                        @endif
+                        @can('delete', $message)
+                            <flux:button wire:click="deleteMessage({{ $message->id }})" wire:confirm="Delete this message? It will be hidden from regular users." variant="danger" size="sm" icon="trash">
+                                Delete Message
+                            </flux:button>
+                        @endcan
                     </div>
                 @endif
             </div>

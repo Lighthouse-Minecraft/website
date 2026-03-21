@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\AcknowledgeFlag;
+use App\Actions\DeleteMessage;
 use App\Actions\FlagMessage;
 use App\Actions\RecordActivity;
 use App\Enums\MessageKind;
@@ -88,10 +89,14 @@ new class extends Component
     #[Computed]
     public function messages()
     {
-        $messages = $this->thread->messages()
-            ->with(['user.minecraftAccounts', 'user.discordAccounts', 'flags.flaggedBy', 'flags.reviewedBy'])
-            ->orderBy('created_at')
-            ->get();
+        $query = $this->thread->messages()
+            ->with(['user.minecraftAccounts', 'user.discordAccounts', 'flags.flaggedBy', 'flags.reviewedBy', 'deletedBy']);
+
+        if (auth()->user()->can('viewFlagged', \App\Models\Thread::class)) {
+            $query->withTrashed();
+        }
+
+        $messages = $query->orderBy('created_at')->get();
 
         if (! auth()->user()->can('internalNotes', $this->thread)) {
             $messages = $messages->filter(fn ($msg) => $msg->kind !== MessageKind::InternalNote);
@@ -423,6 +428,18 @@ new class extends Component
 
         unset($this->messages);
     }
+
+    public function deleteMessage(int $messageId): void
+    {
+        $message = Message::withTrashed()->findOrFail($messageId);
+        $this->authorize('delete', $message);
+
+        DeleteMessage::run($message, auth()->user());
+
+        Flux::toast('Message deleted.', variant: 'success');
+
+        unset($this->messages);
+    }
 }; ?>
 
 <div class="space-y-6">
@@ -535,6 +552,29 @@ new class extends Component
                     </div>
                 </div>
 
+            @elseif($message->trashed())
+                {{-- Deleted message — ghostly, visible only to moderators/admins --}}
+                <div wire:key="message-{{ $message->id }}" class="chat-message {{ $isOwn ? 'chat-message-end' : 'chat-message-start' }} opacity-40">
+                    <flux:avatar size="sm" :src="$message->user->avatarUrl()" :initials="$message->user->initials()" class="shrink-0 mt-1" />
+                    <div class="min-w-0">
+                        <div class="flex items-baseline gap-2 mb-1 {{ $isOwn ? 'justify-end' : '' }}">
+                            @if(! $isOwn)
+                                <a href="{{ route('profile.show', $message->user) }}" class="font-semibold text-sm text-zinc-400 dark:text-zinc-500">{{ $message->user->name }}</a>
+                            @endif
+                            <span class="text-xs text-zinc-400 dark:text-zinc-500">{{ $message->created_at->setTimezone($tz)->format('M j, Y g:i A') }}</span>
+                            <flux:badge size="sm" color="red">Deleted</flux:badge>
+                        </div>
+                        <div class="chat-bubble {{ $isOwn ? 'chat-bubble-end' : 'chat-bubble-start' }} bg-zinc-50 dark:bg-zinc-900 border border-dashed border-zinc-300 dark:border-zinc-700">
+                            <div class="prose prose-sm dark:prose-invert max-w-none text-zinc-400 dark:text-zinc-600 line-through">
+                                {!! Str::markdown($message->body, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
+                            </div>
+                        </div>
+                        <div class="mt-1 text-xs text-zinc-400 dark:text-zinc-600">
+                            Deleted by {{ $message->deletedBy?->name ?? 'unknown' }} on {{ $message->deleted_at->setTimezone($tz)->format('M j, Y g:i A') }}
+                        </div>
+                    </div>
+                </div>
+
             @elseif($isOwn)
                 {{-- Own message — right-aligned, cyan --}}
                 <div wire:key="message-{{ $message->id }}" class="chat-message chat-message-end">
@@ -564,6 +604,11 @@ new class extends Component
                             @can('flag', $message)
                                 <flux:button wire:click="openFlagModal({{ $message->id }})" variant="ghost" size="xs" class="!p-0.5" aria-label="Flag message">
                                     <flux:icon.flag class="size-3.5" />
+                                </flux:button>
+                            @endcan
+                            @can('delete', $message)
+                                <flux:button wire:click="deleteMessage({{ $message->id }})" wire:confirm="Delete this message? It will be hidden from regular users." variant="ghost" size="xs" class="!p-0.5 text-red-500 hover:text-red-700" aria-label="Delete message">
+                                    <flux:icon.trash class="size-3.5" />
                                 </flux:button>
                             @endcan
                         </div>
