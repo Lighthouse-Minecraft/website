@@ -8,6 +8,7 @@ use App\Enums\MinecraftAccountStatus;
 use App\Models\User;
 use App\Notifications\UserPutInBrigNotification;
 use App\Services\TicketNotificationService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Carbon;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -30,6 +31,20 @@ class PutUserInBrig
      */
     public function handle(User $target, User $admin, string $reason, ?Carbon $expiresAt = null, ?Carbon $appealAvailableAt = null, BrigType $brigType = BrigType::Discipline, bool $notify = true): void
     {
+        if ($target->isInBrig()) {
+            throw new AuthorizationException('This user is already in the brig.');
+        }
+
+        if ($brigType === BrigType::Discipline) {
+            if ($target->id === $admin->id) {
+                throw new AuthorizationException('You cannot place yourself in the brig.');
+            }
+
+            if ($target->staffPosition) {
+                throw new AuthorizationException('Staff members cannot be placed in the brig.');
+            }
+        }
+
         if ($appealAvailableAt === null && $brigType === BrigType::Discipline) {
             $appealAvailableAt = now()->addHours(24);
         }
