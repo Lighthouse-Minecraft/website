@@ -111,11 +111,19 @@ new class extends Component {
 
         if (! $this->approvePublishImmediately) {
             $this->validate([
-                'approveScheduledAt' => 'required|date|after:now',
+                'approveScheduledAt' => 'required|date',
             ]);
 
             $userTimezone = Auth::user()->timezone ?? 'UTC';
-            $scheduledAt = Carbon::parse($this->approveScheduledAt, $userTimezone)->utc();
+            $scheduledLocal = Carbon::parse($this->approveScheduledAt, $userTimezone);
+
+            if (! $scheduledLocal->gt(now($userTimezone))) {
+                $this->addError('approveScheduledAt', 'The scheduled time must be in the future.');
+
+                return;
+            }
+
+            $scheduledAt = $scheduledLocal->utc();
         }
 
         ApproveBlogPost::run($post, Auth::user(), $scheduledAt);
@@ -165,6 +173,21 @@ new class extends Component {
 
         $maxImageSize = SiteConfig::getValue('max_image_size_kb', '2048');
 
+        // Normalize slug before validation so uniqueness checks match what's stored
+        $normalizedSlug = Str::slug($this->categorySlug);
+
+        if ($normalizedSlug === '') {
+            $normalizedSlug = Str::slug($this->categoryName);
+        }
+
+        if ($normalizedSlug === '') {
+            $this->addError('categorySlug', 'The slug cannot be empty.');
+
+            return;
+        }
+
+        $this->categorySlug = $normalizedSlug;
+
         $rules = [
             'categoryName' => 'required|string|max:100',
             'categorySlug' => 'required|string|max:100|not_in:tag,author,manage,create,rss,sitemap.xml',
@@ -181,35 +204,40 @@ new class extends Component {
 
         $this->validate($rules);
 
-        $heroImagePath = null;
-
-        if ($this->categoryHeroImage) {
-            $heroImagePath = $this->categoryHeroImage->store('blog/category-hero', config('filesystems.public_disk'));
-        }
-
         if ($this->editingCategoryId) {
             $category = BlogCategory::findOrFail($this->editingCategoryId);
 
             $data = [
                 'name' => $this->categoryName,
-                'slug' => Str::slug($this->categorySlug),
+                'slug' => $normalizedSlug,
                 'content' => $this->categoryContent ?: null,
                 'include_in_sitemap' => $this->categoryIncludeInSitemap,
             ];
 
-            if ($heroImagePath) {
-                if ($category->hero_image_path) {
-                    Storage::disk(config('filesystems.public_disk'))->delete($category->hero_image_path);
-                }
+            if ($this->categoryHeroImage) {
+                $heroImagePath = $this->categoryHeroImage->store('blog/category-hero', config('filesystems.public_disk'));
+                $oldHeroImagePath = $category->hero_image_path;
                 $data['hero_image_path'] = $heroImagePath;
             }
 
             $category->update($data);
+
+            // Delete old hero image after successful DB update
+            if (isset($oldHeroImagePath) && $oldHeroImagePath) {
+                Storage::disk(config('filesystems.public_disk'))->delete($oldHeroImagePath);
+            }
+
             Flux::toast('Category updated.', 'Updated', variant: 'success');
         } else {
+            $heroImagePath = null;
+
+            if ($this->categoryHeroImage) {
+                $heroImagePath = $this->categoryHeroImage->store('blog/category-hero', config('filesystems.public_disk'));
+            }
+
             BlogCategory::create([
                 'name' => $this->categoryName,
-                'slug' => Str::slug($this->categorySlug),
+                'slug' => $normalizedSlug,
                 'content' => $this->categoryContent ?: null,
                 'hero_image_path' => $heroImagePath,
                 'include_in_sitemap' => $this->categoryIncludeInSitemap,
@@ -394,7 +422,7 @@ new class extends Component {
                                 <flux:table.cell>
                                     <flux:badge :variant="$post->status->color()">{{ $post->status->label() }}</flux:badge>
                                 </flux:table.cell>
-                                <flux:table.cell>{{ $post->scheduled_at?->format('M j, Y g:ia') ?? '—' }}</flux:table.cell>
+                                <flux:table.cell>{{ $post->scheduled_at?->setTimezone(Auth::user()?->timezone ?? config('app.timezone'))->format('M j, Y g:ia') ?? '—' }}</flux:table.cell>
                                 <flux:table.cell>{{ $post->created_at->format('M j, Y') }}</flux:table.cell>
                                 <flux:table.cell>
                                     <div class="flex flex-wrap gap-1">

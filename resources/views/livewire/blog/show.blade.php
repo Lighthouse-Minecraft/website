@@ -147,6 +147,7 @@ new class extends Component {
 
         $this->flaggingMessageId = $messageId;
         $this->flagReason = '';
+        $this->resetValidation('flagReason');
 
         Flux::modal('flag-comment')->show();
     }
@@ -318,7 +319,7 @@ new class extends Component {
 
             {{-- JSON-LD --}}
             @if($jsonLd)
-                <script type="application/ld+json">{!! json_encode($jsonLd, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) !!}</script>
+                <script type="application/ld+json">{!! json_encode($jsonLd, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_HEX_TAG) !!}</script>
             @endif
 
             <link rel="canonical" href="{{ $canonicalUrl }}" />
@@ -371,7 +372,7 @@ new class extends Component {
                 @if($post->tags->count())
                     <div class="mt-3 flex flex-wrap gap-1">
                         @foreach($post->tags as $tag)
-                            <a href="{{ route('blog.tag', $tag->slug) }}" wire:navigate>
+                            <a href="{{ route('blog.tag', $tag->slug) }}" wire:navigate wire:key="tag-{{ $tag->id }}">
                                 <flux:badge variant="outline" size="sm">{{ $tag->name }}</flux:badge>
                             </a>
                         @endforeach
@@ -443,6 +444,7 @@ new class extends Component {
                                         <div class="mt-1 text-xs text-zinc-400 dark:text-zinc-600">
                                             Deleted by {{ $comment->deletedBy?->name ?? 'unknown' }} {{ $comment->deleted_at->diffForHumans() }}
                                         </div>
+                                        @include('livewire.topics.partials.flag-display', ['message' => $comment, 'tz' => auth()->user()?->timezone ?? 'UTC'])
                                     </div>
                                 </div>
                             @else
