@@ -39,7 +39,7 @@ class UserPolicy
 
     public function viewPii(User $user, User $model): bool
     {
-        return $user->hasRole('User Manager');
+        return $user->id === $model->id || $user->hasRole('View PII');
     }
 
     public function viewStaffPhone(User $user, User $model): bool

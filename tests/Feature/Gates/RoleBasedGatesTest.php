@@ -46,6 +46,28 @@ it('grants manage-stowaway-users to user with allow-all position', function () {
     expect($user->fresh()->can('manage-stowaway-users'))->toBeTrue();
 });
 
+// == put-in-brig == //
+
+it('grants put-in-brig to user with Brig Warden role', function () {
+    $user = User::factory()->withRole('Brig Warden')->create();
+
+    expect($user->can('put-in-brig'))->toBeTrue();
+});
+
+it('denies put-in-brig without Brig Warden role', function () {
+    $user = User::factory()
+        ->withStaffPosition(StaffDepartment::Command, StaffRank::Officer)
+        ->create();
+
+    expect($user->can('put-in-brig'))->toBeFalse();
+});
+
+it('grants put-in-brig to admin', function () {
+    $user = User::factory()->admin()->create();
+
+    expect($user->can('put-in-brig'))->toBeTrue();
+});
+
 // == release-from-brig == //
 
 it('grants release-from-brig to user with Brig Warden role', function () {
@@ -512,6 +534,7 @@ it('grants all role-based gates to user with allow-all position', function () {
 
     expect($user->can('manage-stowaway-users'))->toBeTrue()
         ->and($user->can('manage-traveler-users'))->toBeTrue()
+        ->and($user->can('put-in-brig'))->toBeTrue()
         ->and($user->can('release-from-brig'))->toBeTrue()
         ->and($user->can('view-mc-command-log'))->toBeTrue()
         ->and($user->can('view-discord-api-log'))->toBeTrue()
@@ -533,6 +556,7 @@ it('grants all role-based gates to admin user', function () {
 
     expect($user->can('manage-stowaway-users'))->toBeTrue()
         ->and($user->can('manage-traveler-users'))->toBeTrue()
+        ->and($user->can('put-in-brig'))->toBeTrue()
         ->and($user->can('release-from-brig'))->toBeTrue()
         ->and($user->can('view-mc-command-log'))->toBeTrue()
         ->and($user->can('view-discord-api-log'))->toBeTrue()
