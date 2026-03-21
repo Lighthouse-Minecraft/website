@@ -58,3 +58,7 @@ Schedule::command('messages:purge-images')
 // Publish scheduled blog posts
 Schedule::job(new \App\Jobs\PublishScheduledPosts)
     ->everyMinute();
+
+// Cleanup unreferenced blog images monthly
+Schedule::job(new \App\Jobs\CleanupUnreferencedBlogImages)
+    ->monthly();
