@@ -539,7 +539,10 @@ new class extends Component {
             </div>
         </flux:modal>
 
-        {{-- Delete Message Confirmation Modal --}}
+    @endif
+
+    {{-- Delete Message Confirmation Modal --}}
+    @auth
         <flux:modal name="confirm-delete-message" class="w-full md:w-96">
             <div class="space-y-4">
                 <flux:heading size="lg">Delete Comment</flux:heading>
@@ -552,5 +555,5 @@ new class extends Component {
                 </div>
             </div>
         </flux:modal>
-    @endif
+    @endauth
 </div>

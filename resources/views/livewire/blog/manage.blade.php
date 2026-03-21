@@ -11,6 +11,7 @@ use App\Models\BlogTag;
 use Carbon\Carbon;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use App\Models\SiteConfig;
@@ -277,8 +278,12 @@ new class extends Component {
     {
         $this->authorize('manage-blog');
         $tag = BlogTag::findOrFail($tagId);
-        $tag->posts()->detach();
-        $tag->delete();
+
+        DB::transaction(function () use ($tag) {
+            $tag->posts()->detach();
+            $tag->delete();
+        });
+
         Flux::toast('Tag deleted.', 'Deleted', variant: 'success');
     }
 

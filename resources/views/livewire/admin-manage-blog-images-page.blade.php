@@ -42,16 +42,11 @@ new class extends Component {
 
         $image = BlogImage::findOrFail($imageId);
 
-        if ($image->posts()->count() > 0) {
-            Flux::toast('Cannot delete an image that is still referenced by posts.', 'Error', variant: 'danger');
-            return;
-        }
-
         try {
             DeleteBlogImage::run($image);
             Flux::toast('Image deleted successfully.', 'Success', variant: 'success');
-        } catch (\Exception $e) {
-            Flux::toast('Failed to delete image. Try again.', 'Error', variant: 'danger');
+        } catch (\RuntimeException $e) {
+            Flux::toast($e->getMessage(), 'Error', variant: 'danger');
         }
     }
 

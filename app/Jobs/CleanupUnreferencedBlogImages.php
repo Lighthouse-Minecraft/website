@@ -6,6 +6,7 @@ use App\Actions\DeleteBlogImage;
 use App\Models\BlogImage;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\Log;
 
 class CleanupUnreferencedBlogImages implements ShouldQueue
 {
@@ -18,7 +19,11 @@ class CleanupUnreferencedBlogImages implements ShouldQueue
             ->get();
 
         foreach ($images as $image) {
-            DeleteBlogImage::run($image);
+            try {
+                DeleteBlogImage::run($image);
+            } catch (\Throwable $e) {
+                Log::warning("Failed to cleanup blog image #{$image->id}: {$e->getMessage()}");
+            }
         }
     }
 }
