@@ -34,8 +34,8 @@
         </div>
     @endforeach
 
-    {{-- Dismissed flags — collapsed into a warning icon --}}
-    @if($dismissedFlags->isNotEmpty())
+    {{-- Dismissed flags — collapsed into a warning icon (moderators/admins only) --}}
+    @if($dismissedFlags->isNotEmpty() && auth()->user()->can('viewFlagged', \App\Models\Thread::class))
         <div class="mt-2 inline-flex">
             <flux:modal.trigger name="dismissed-flags-{{ $message->id }}">
                 <flux:button variant="ghost" size="xs" class="!p-1 text-amber-500 hover:text-amber-600 dark:text-amber-400 dark:hover:text-amber-300" aria-label="View dismissed flags">
