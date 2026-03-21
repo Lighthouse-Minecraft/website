@@ -216,30 +216,34 @@ new class extends Component {
                 <flux:separator />
 
                 <dl class="space-y-3 text-sm">
-                    <div class="flex justify-between gap-4">
-                        <dt class="text-zinc-500 dark:text-zinc-400 font-medium shrink-0">Email</dt>
-                        <dd>{{ $selectedUser->email }}</dd>
-                    </div>
+                    @can('viewPii', $selectedUser)
+                        <div class="flex justify-between gap-4">
+                            <dt class="text-zinc-500 dark:text-zinc-400 font-medium shrink-0">Email</dt>
+                            <dd>{{ $selectedUser->email }}</dd>
+                        </div>
+                    @endcan
 
                     <div class="flex justify-between gap-4">
                         <dt class="text-zinc-500 dark:text-zinc-400 font-medium shrink-0">Joined</dt>
                         <dd>{{ $selectedUser->created_at->format('M j, Y g:i A') }}</dd>
                     </div>
 
-                    <div class="flex justify-between gap-4">
-                        <dt class="text-zinc-500 dark:text-zinc-400 font-medium shrink-0">Date of Birth</dt>
-                        <dd>{{ $selectedUser->date_of_birth?->format('M j, Y') ?? 'Not set' }}</dd>
-                    </div>
+                    @can('viewPii', $selectedUser)
+                        <div class="flex justify-between gap-4">
+                            <dt class="text-zinc-500 dark:text-zinc-400 font-medium shrink-0">Date of Birth</dt>
+                            <dd>{{ $selectedUser->date_of_birth?->format('M j, Y') ?? 'Not set' }}</dd>
+                        </div>
 
-                    <div class="flex justify-between gap-4">
-                        <dt class="text-zinc-500 dark:text-zinc-400 font-medium shrink-0">Age</dt>
-                        <dd>{{ $selectedUser->age() ?? 'Unknown' }}</dd>
-                    </div>
+                        <div class="flex justify-between gap-4">
+                            <dt class="text-zinc-500 dark:text-zinc-400 font-medium shrink-0">Age</dt>
+                            <dd>{{ $selectedUser->age() ?? 'Unknown' }}</dd>
+                        </div>
 
-                    <div class="flex justify-between gap-4">
-                        <dt class="text-zinc-500 dark:text-zinc-400 font-medium shrink-0">Parent Email</dt>
-                        <dd>{{ $selectedUser->parent_email ?? 'None' }}</dd>
-                    </div>
+                        <div class="flex justify-between gap-4">
+                            <dt class="text-zinc-500 dark:text-zinc-400 font-medium shrink-0">Parent Email</dt>
+                            <dd>{{ $selectedUser->parent_email ?? 'None' }}</dd>
+                        </div>
+                    @endcan
 
                     @if($selectedUser->rules_accepted_at)
                         <div class="flex justify-between gap-4">
@@ -249,16 +253,18 @@ new class extends Component {
                     @endif
                 </dl>
 
-                @if($selectedUser->registration_answer)
-                    <flux:separator />
+                @can('viewPii', $selectedUser)
+                    @if($selectedUser->registration_answer)
+                        <flux:separator />
 
-                    <div class="space-y-2">
-                        <flux:text variant="subtle" size="sm" class="font-medium">Registration Question</flux:text>
-                        <flux:text size="sm" class="italic">{{ $selectedUser->registration_question_text ?? 'N/A' }}</flux:text>
-                        <flux:text variant="subtle" size="sm" class="font-medium mt-2">Answer</flux:text>
-                        <flux:text size="sm">{{ $selectedUser->registration_answer }}</flux:text>
-                    </div>
-                @endif
+                        <div class="space-y-2">
+                            <flux:text variant="subtle" size="sm" class="font-medium">Registration Question</flux:text>
+                            <flux:text size="sm" class="italic">{{ $selectedUser->registration_question_text ?? 'N/A' }}</flux:text>
+                            <flux:text variant="subtle" size="sm" class="font-medium mt-2">Answer</flux:text>
+                            <flux:text size="sm">{{ $selectedUser->registration_answer }}</flux:text>
+                        </div>
+                    @endif
+                @endcan
 
                 <flux:separator />
 

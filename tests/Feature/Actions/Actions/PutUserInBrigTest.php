@@ -3,12 +3,15 @@
 declare(strict_types=1);
 
 use App\Actions\PutUserInBrig;
+use App\Enums\BrigType;
 use App\Enums\EmailDigestFrequency;
 use App\Enums\MinecraftAccountStatus;
 use App\Models\MinecraftAccount;
+use App\Models\StaffPosition;
 use App\Models\User;
 use App\Notifications\UserPutInBrigNotification;
 use App\Services\MinecraftRconService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Notification;
 
 uses()->group('brig', 'actions');
@@ -129,4 +132,39 @@ it('works without expires_at or appeal_available_at', function () {
         ->and($fresh->next_appeal_available_at)->not->toBeNull()
         ->and($fresh->next_appeal_available_at->isFuture())->toBeTrue()
         ->and($fresh->next_appeal_available_at->diffInHours(now(), true))->toBeLessThanOrEqual(24);
+});
+
+it('rejects brigging a user who is already in the brig', function () {
+    $admin = User::factory()->create();
+    $target = User::factory()->create(['in_brig' => true]);
+
+    expect(fn () => PutUserInBrig::run($target, $admin, 'Test reason'))
+        ->toThrow(AuthorizationException::class, 'already in the brig');
+});
+
+it('rejects self-brigging for discipline type', function () {
+    $user = User::factory()->create();
+
+    expect(fn () => PutUserInBrig::run($user, $user, 'Test reason'))
+        ->toThrow(AuthorizationException::class, 'cannot place yourself');
+});
+
+it('rejects brigging staff members for discipline type', function () {
+    $admin = User::factory()->create();
+    $target = User::factory()->create();
+    StaffPosition::factory()->assignedTo($target->id)->create();
+    $target->refresh();
+
+    expect(fn () => PutUserInBrig::run($target, $admin, 'Test reason'))
+        ->toThrow(AuthorizationException::class, 'Staff members');
+});
+
+it('allows self-brigging for parental brig type', function () {
+    $user = User::factory()->create();
+
+    $this->mock(MinecraftRconService::class)->shouldReceive('executeCommand')->andReturn(['success' => true, 'response' => null, 'error' => null]);
+
+    PutUserInBrig::run($user, $user, 'Parental pending', brigType: BrigType::ParentalPending);
+
+    expect($user->fresh()->in_brig)->toBeTrue();
 });
