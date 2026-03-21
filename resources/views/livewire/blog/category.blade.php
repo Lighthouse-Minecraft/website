@@ -76,7 +76,7 @@ new class extends Component {
                 @if($post->meta_description)
                     <flux:text class="mt-3">{{ $post->meta_description }}</flux:text>
                 @else
-                    <flux:text class="mt-3">{{ Str::limit(strip_tags($post->body), 200) }}</flux:text>
+                    <div class="mt-3 text-sm text-zinc-700 dark:text-zinc-300">{!! $post->renderPreview(200) !!}</div>
                 @endif
 
                 @if($post->tags->count())

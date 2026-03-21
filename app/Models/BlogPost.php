@@ -143,6 +143,57 @@ class BlogPost extends Model
         return $html;
     }
 
+    public function renderPreview(int $length = 200): string
+    {
+        $body = $this->body;
+
+        // Truncate safely: never cut inside a {{image:ID}} or {{story:ID}} tag
+        if (mb_strlen($body) > $length) {
+            $truncated = mb_substr($body, 0, $length);
+
+            // If we're inside an opening {{ but haven't hit }}, find the tag boundary
+            $lastOpen = mb_strrpos($truncated, '{{');
+            $lastClose = mb_strrpos($truncated, '}}');
+
+            if ($lastOpen !== false && ($lastClose === false || $lastClose < $lastOpen)) {
+                // We cut inside a tag — find the closing }} in the full body
+                $closingPos = mb_strpos($body, '}}', $lastOpen);
+                if ($closingPos !== false) {
+                    $truncated = mb_substr($body, 0, $closingPos + 2);
+                } else {
+                    // Malformed tag — truncate before it
+                    $truncated = mb_substr($body, 0, $lastOpen);
+                }
+            }
+
+            $body = rtrim($truncated).'...';
+        }
+
+        // Strip story tags from preview
+        $body = preg_replace('/\{\{story:\d+\}\}/', '', $body);
+
+        $html = Str::markdown($body, [
+            'html_input' => 'strip',
+            'allow_unsafe_links' => false,
+        ]);
+
+        // Render image tags as thumbnails
+        $html = preg_replace_callback('/\{\{image:(\d+)(?:\|([^}]+))?\}\}/', function ($matches) {
+            $image = BlogImage::find((int) $matches[1]);
+
+            if (! $image) {
+                return '';
+            }
+
+            $altText = isset($matches[2]) ? e(trim($matches[2])) : e($image->alt_text);
+            $url = e($image->url());
+
+            return '<img src="'.$url.'" alt="'.$altText.'" class="inline-block h-16 w-16 rounded object-cover" />';
+        }, $html);
+
+        return $html;
+    }
+
     public function isDraft(): bool
     {
         return $this->status === BlogPostStatus::Draft;
