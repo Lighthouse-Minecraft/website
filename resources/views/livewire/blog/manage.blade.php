@@ -71,13 +71,23 @@ new class extends Component {
 
     // Status transitions
 
-    public function submitForReview(int $postId): void
+    public ?int $submitPostId = null;
+
+    public function openSubmitModal(int $postId): void
     {
-        $post = BlogPost::findOrFail($postId);
+        $this->submitPostId = $postId;
+        Flux::modal('confirm-submit-for-review')->show();
+    }
+
+    public function submitForReview(): void
+    {
+        $post = BlogPost::findOrFail($this->submitPostId);
         $this->authorize('submitForReview', $post);
 
         SubmitBlogPostForReview::run($post, Auth::user());
+        Flux::modal('confirm-submit-for-review')->close();
         Flux::toast('Post submitted for review.', 'Submitted', variant: 'success');
+        $this->submitPostId = null;
     }
 
     public function openApproveModal(int $postId): void
@@ -386,7 +396,7 @@ new class extends Component {
                                         @endcan
                                         @if(! $post->isPublished())
                                             @can('submitForReview', $post)
-                                                <flux:button wire:click="submitForReview({{ $post->id }})" wire:confirm="Submit this post for review?" variant="ghost" size="sm" icon="paper-airplane">
+                                                <flux:button wire:click="openSubmitModal({{ $post->id }})" variant="ghost" size="sm" icon="paper-airplane">
                                                     Submit
                                                 </flux:button>
                                             @endcan
@@ -501,6 +511,20 @@ new class extends Component {
             </div>
         </div>
     </div>
+
+    {{-- Submit for Review Confirmation Modal --}}
+    <flux:modal name="confirm-submit-for-review" class="w-full md:w-96">
+        <div class="space-y-4">
+            <flux:heading size="lg">Submit for Review</flux:heading>
+            <p class="text-sm text-zinc-600 dark:text-zinc-400">Are you sure you want to submit this post for review? Other Blog Authors will be notified.</p>
+            <div class="flex justify-end gap-2 pt-4">
+                <flux:modal.close>
+                    <flux:button variant="ghost">Cancel</flux:button>
+                </flux:modal.close>
+                <flux:button wire:click="submitForReview" variant="primary" icon="paper-airplane">Submit</flux:button>
+            </div>
+        </div>
+    </flux:modal>
 
     {{-- Approve Modal --}}
     <flux:modal name="approve-modal" class="w-full lg:w-1/2">
