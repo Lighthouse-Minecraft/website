@@ -1,9 +1,11 @@
 @php
-    $tz = $tz ?? auth()->user()->timezone ?? 'UTC';
-    $visibleFlags = $message->flags->filter(function ($flag) {
-        return auth()->user()->can('viewFlagged', \App\Models\Thread::class)
-            || $flag->flagged_by_user_id === auth()->id();
-    });
+    $tz = $tz ?? auth()->user()?->timezone ?? 'UTC';
+    $visibleFlags = auth()->check()
+        ? $message->flags->filter(function ($flag) {
+            return auth()->user()->can('viewFlagged', \App\Models\Thread::class)
+                || $flag->flagged_by_user_id === auth()->id();
+        })
+        : collect();
 @endphp
 
 @if($visibleFlags->isNotEmpty())

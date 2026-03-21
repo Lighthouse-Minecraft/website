@@ -224,6 +224,10 @@ class AuthServiceProvider extends ServiceProvider
             return ! $user->in_brig && $user->isAtLeastLevel(MembershipLevel::Traveler);
         });
 
+        Gate::define('flag-blog-comment', function ($user) {
+            return ! $user->in_brig && $user->isAtLeastLevel(MembershipLevel::Traveler);
+        });
+
         Gate::define('moderate-blog-comments', function ($user) {
             return $user->hasRole('Moderator') || $user->hasRole('Blog Author');
         });
