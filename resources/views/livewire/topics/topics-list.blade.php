@@ -105,7 +105,11 @@ new class extends Component
     {
         $this->authorize('moderate-blog-comments');
 
-        $message = Message::findOrFail($messageId);
+        $message = Message::where('is_pending_moderation', true)
+            ->where('kind', MessageKind::Message)
+            ->whereHas('thread', fn ($q) => $q->where('type', ThreadType::BlogComment))
+            ->findOrFail($messageId);
+
         ApproveBlogComment::run($message, auth()->user());
 
         Flux::toast('Comment approved.', 'Approved', variant: 'success');
@@ -116,7 +120,11 @@ new class extends Component
     {
         $this->authorize('moderate-blog-comments');
 
-        $message = Message::findOrFail($messageId);
+        $message = Message::where('is_pending_moderation', true)
+            ->where('kind', MessageKind::Message)
+            ->whereHas('thread', fn ($q) => $q->where('type', ThreadType::BlogComment))
+            ->findOrFail($messageId);
+
         RejectBlogComment::run($message, auth()->user());
 
         Flux::toast('Comment rejected.', 'Rejected', variant: 'success');

@@ -18,8 +18,14 @@ new class extends Component {
         $this->resetPage();
     }
 
+    private const ALLOWED_SORTS = ['title', 'created_at'];
+
     public function sort(string $column): void
     {
+        if (! in_array($column, self::ALLOWED_SORTS)) {
+            return;
+        }
+
         if ($this->sortBy === $column) {
             $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
         } else {
@@ -58,7 +64,9 @@ new class extends Component {
             $query->where('title', 'like', '%' . $this->search . '%');
         }
 
-        $query->orderBy($this->sortBy, $this->sortDirection);
+        $sortBy = in_array($this->sortBy, self::ALLOWED_SORTS) ? $this->sortBy : 'created_at';
+        $sortDir = in_array($this->sortDirection, ['asc', 'desc']) ? $this->sortDirection : 'desc';
+        $query->orderBy($sortBy, $sortDir);
 
         return [
             'images' => $query->paginate(20),

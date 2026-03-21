@@ -12,15 +12,20 @@ class SyncBlogPostImages
 
     public function handle(BlogPost $post, ?string $body = null): void
     {
-        $referencedIds = $this->parseImageIds($body ?? $post->body ?? '');
+        $bodyToSync = $body ?? $post->body ?? '';
+        $isDeleteOverride = $body === '';
 
-        // Collect hero_image_id and og_image_id if they exist on the post
-        if ($post->hero_image_id ?? null) {
-            $referencedIds[] = $post->hero_image_id;
-        }
+        $referencedIds = $this->parseImageIds($bodyToSync);
 
-        if ($post->og_image_id ?? null) {
-            $referencedIds[] = $post->og_image_id;
+        // Only include hero/OG references if not in delete mode
+        if (! $isDeleteOverride) {
+            if ($post->hero_image_id ?? null) {
+                $referencedIds[] = $post->hero_image_id;
+            }
+
+            if ($post->og_image_id ?? null) {
+                $referencedIds[] = $post->og_image_id;
+            }
         }
 
         $referencedIds = array_unique(array_filter($referencedIds));

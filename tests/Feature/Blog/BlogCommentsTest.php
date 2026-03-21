@@ -198,6 +198,8 @@ it('closes comment thread when blog post is soft-deleted', function () {
 // === Notification Dispatch ===
 
 it('sends BlogPostPublishedNotification to opted-in Traveler+ users', function () {
+    Notification::fake();
+
     $author = User::factory()->withRole('Blog Author')->create();
     $traveler = User::factory()->withMembershipLevel(MembershipLevel::Traveler)->create();
     $citizen = User::factory()->withMembershipLevel(MembershipLevel::Citizen)->create();
@@ -216,6 +218,8 @@ it('sends BlogPostPublishedNotification to opted-in Traveler+ users', function (
 });
 
 it('does not send blog notification to users in brig', function () {
+    Notification::fake();
+
     $author = User::factory()->withRole('Blog Author')->create();
     $brigUser = User::factory()->withMembershipLevel(MembershipLevel::Citizen)->create([
         'in_brig' => true,
@@ -232,6 +236,8 @@ it('does not send blog notification to users in brig', function () {
 });
 
 it('respects blog notification preference opt-out', function () {
+    Notification::fake();
+
     $author = User::factory()->withRole('Blog Author')->create();
     $optedOut = User::factory()->withMembershipLevel(MembershipLevel::Citizen)->create([
         'notification_preferences' => [
@@ -246,10 +252,7 @@ it('respects blog notification preference opt-out', function () {
 
     PublishBlogPost::run($post);
 
-    // The notification service sends with category 'blog', but with all channels disabled
-    // the notification should still be "sent" via the service (which returns early with no channels)
-    // Since Notification::fake() intercepts at the notify level, and TicketNotificationService
-    // skips calling notify when no channels are available, the user should NOT receive it
+    // TicketNotificationService skips calling notify when no channels are available
     Notification::assertNotSentTo($optedOut, BlogPostPublishedNotification::class);
 });
 

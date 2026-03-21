@@ -50,6 +50,14 @@ new class extends Component {
             abort(404);
         }
 
+        // Redirect to canonical URL if category slug doesn't match
+        $actualCategorySlug = $post->category?->slug ?? 'uncategorized';
+        if ($categorySlug !== $actualCategorySlug) {
+            $this->redirect($post->url(), navigate: true);
+
+            return;
+        }
+
         $this->post = $post;
         $this->renderedBody = $post->renderBody();
     }
@@ -111,6 +119,15 @@ new class extends Component {
     public function canFlagComment(Message $message): bool
     {
         if (! auth()->check()) {
+            return false;
+        }
+
+        $thread = $this->post->commentThread;
+        if (! $thread || $message->thread_id !== $thread->id) {
+            return false;
+        }
+
+        if ($message->kind !== MessageKind::Message) {
             return false;
         }
 
@@ -184,6 +201,12 @@ new class extends Component {
 
         $flag = MessageFlag::findOrFail($this->acknowledgingFlagId);
 
+        // Verify flag belongs to this post's comment thread
+        $thread = $this->post->commentThread;
+        if (! $thread || $flag->thread_id !== $thread->id) {
+            abort(403);
+        }
+
         AcknowledgeFlag::run($flag, auth()->user(), $this->staffNotes ?: null);
 
         $this->acknowledgingFlagId = null;
@@ -204,6 +227,13 @@ new class extends Component {
     public function deleteMessage(): void
     {
         $message = Message::withTrashed()->findOrFail($this->deletingMessageId);
+
+        // Verify message belongs to this post's comment thread
+        $thread = $this->post->commentThread;
+        if (! $thread || $message->thread_id !== $thread->id) {
+            abort(403);
+        }
+
         $this->authorize('delete', $message);
 
         DeleteMessage::run($message, auth()->user());

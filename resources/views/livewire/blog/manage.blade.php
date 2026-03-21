@@ -166,7 +166,7 @@ new class extends Component {
 
         $rules = [
             'categoryName' => 'required|string|max:100',
-            'categorySlug' => 'required|string|max:100',
+            'categorySlug' => 'required|string|max:100|not_in:tag,author,manage,create,rss,sitemap.xml',
             'categoryContent' => 'nullable|string|max:10000',
             'categoryHeroImage' => 'nullable|mimes:jpg,jpeg,png,gif,webp|max:' . $maxImageSize,
             'categoryIncludeInSitemap' => 'boolean',
@@ -229,6 +229,10 @@ new class extends Component {
             Flux::toast('Cannot delete a category that has posts.', 'Error', variant: 'danger');
 
             return;
+        }
+
+        if ($category->hero_image_path) {
+            Storage::disk(config('filesystems.public_disk'))->delete($category->hero_image_path);
         }
 
         $category->delete();

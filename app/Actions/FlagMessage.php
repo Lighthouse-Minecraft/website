@@ -22,7 +22,9 @@ class FlagMessage
 
     public function handle(Message $message, User $flaggingUser, string $note): MessageFlag
     {
-        return DB::transaction(function () use ($message, $flaggingUser, $note) {
+        $moderators = collect();
+
+        $flag = DB::transaction(function () use ($message, $flaggingUser, $note, &$moderators) {
             $thread = $message->thread;
 
             // Create the flag record
@@ -97,13 +99,15 @@ class FlagMessage
             // Record activity
             RecordActivity::run($thread, 'message_flagged', "Message flagged by {$flaggingUser->name}");
 
-            // Notify moderators
-            $notificationService = app(TicketNotificationService::class);
-            foreach ($moderators as $moderator) {
-                $notificationService->send($moderator, new MessageFlaggedNotification($flag));
-            }
-
             return $flag;
         });
+
+        // Notify moderators after transaction commits
+        $notificationService = app(TicketNotificationService::class);
+        foreach ($moderators as $moderator) {
+            $notificationService->send($moderator, new MessageFlaggedNotification($flag));
+        }
+
+        return $flag;
     }
 }

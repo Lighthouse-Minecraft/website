@@ -101,9 +101,14 @@ class BlogPost extends Model
             'allow_unsafe_links' => false,
         ]);
 
-        $html = preg_replace_callback('/\{\{image:(\d+)(?:\|([^}]+))?\}\}/', function ($matches) {
-            $imageId = (int) $matches[1];
-            $image = BlogImage::find($imageId);
+        // Batch-load all referenced images to avoid N+1
+        preg_match_all('/\{\{image:(\d+)(?:\|[^}]*)?\}\}/', $html, $allMatches);
+        $imageMap = ! empty($allMatches[1])
+            ? BlogImage::whereIn('id', array_unique($allMatches[1]))->get()->keyBy('id')
+            : collect();
+
+        $html = preg_replace_callback('/\{\{image:(\d+)(?:\|([^}]+))?\}\}/', function ($matches) use ($imageMap) {
+            $image = $imageMap->get((int) $matches[1]);
 
             if (! $image) {
                 return '';
@@ -177,9 +182,15 @@ class BlogPost extends Model
             'allow_unsafe_links' => false,
         ]);
 
+        // Batch-load all referenced images to avoid N+1
+        preg_match_all('/\{\{image:(\d+)(?:\|[^}]*)?\}\}/', $html, $allMatches);
+        $imageMap = ! empty($allMatches[1])
+            ? BlogImage::whereIn('id', array_unique($allMatches[1]))->get()->keyBy('id')
+            : collect();
+
         // Render image tags as thumbnails
-        $html = preg_replace_callback('/\{\{image:(\d+)(?:\|([^}]+))?\}\}/', function ($matches) {
-            $image = BlogImage::find((int) $matches[1]);
+        $html = preg_replace_callback('/\{\{image:(\d+)(?:\|([^}]+))?\}\}/', function ($matches) use ($imageMap) {
+            $image = $imageMap->get((int) $matches[1]);
 
             if (! $image) {
                 return '';

@@ -19,10 +19,11 @@ class DeleteBlogImage
         $title = $image->title;
         $path = $image->path;
 
+        // Delete file first to avoid orphaned files if DB delete fails
+        Storage::disk(config('filesystems.public_disk'))->delete($path);
+
         RecordActivity::run($image, 'blog_image_deleted', "Blog image \"{$title}\" deleted.");
 
         $image->delete();
-
-        Storage::disk(config('filesystems.public_disk'))->delete($path);
     }
 }

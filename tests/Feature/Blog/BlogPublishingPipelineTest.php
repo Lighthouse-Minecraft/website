@@ -42,6 +42,8 @@ it('records activity when submitting for review', function () {
 });
 
 it('sends review notification to other blog authors', function () {
+    Notification::fake();
+
     $author = User::factory()->withRole('Blog Author')->create();
     $reviewer = User::factory()->withRole('Blog Author')->create();
     $post = BlogPost::factory()->create(['author_id' => $author->id]);
@@ -52,6 +54,8 @@ it('sends review notification to other blog authors', function () {
 });
 
 it('does not send review notification to the submitter', function () {
+    Notification::fake();
+
     $author = User::factory()->withRole('Blog Author')->create();
     $post = BlogPost::factory()->create(['author_id' => $author->id]);
 
@@ -100,6 +104,8 @@ it('records activity when approving a post', function () {
 });
 
 it('sends approval notification to the post author', function () {
+    Notification::fake();
+
     $author = User::factory()->create();
     $reviewer = User::factory()->withRole('Blog Author')->create();
     $post = BlogPost::factory()->inReview()->create(['author_id' => $author->id]);
