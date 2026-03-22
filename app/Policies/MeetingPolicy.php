@@ -54,7 +54,7 @@ class MeetingPolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasRole('Manage Staff Meeting');
+        return $user->hasRole('Meeting - Manager');
     }
 
     /**
@@ -62,7 +62,7 @@ class MeetingPolicy
      */
     public function update(User $user, Meeting $meeting): bool
     {
-        return $user->hasRole('Manage Staff Meeting');
+        return $user->hasRole('Meeting - Manager');
     }
 
     /**

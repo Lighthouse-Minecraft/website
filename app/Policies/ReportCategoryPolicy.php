@@ -22,17 +22,17 @@ class ReportCategoryPolicy
 
     public function viewAny(User $user): bool
     {
-        return $user->hasRole('Manage Site Config');
+        return $user->hasRole('Site Config - Manager');
     }
 
     public function create(User $user): bool
     {
-        return $user->hasRole('Manage Site Config');
+        return $user->hasRole('Site Config - Manager');
     }
 
     public function update(User $user, ReportCategory $category): bool
     {
-        return $user->hasRole('Manage Site Config');
+        return $user->hasRole('Site Config - Manager');
     }
 
     public function delete(User $user, ReportCategory $category): bool

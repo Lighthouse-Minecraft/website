@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class User extends Authenticatable // implements MustVerifyEmail
@@ -329,19 +330,30 @@ class User extends Authenticatable // implements MustVerifyEmail
             return true;
         }
 
-        // No staff position means no roles
+        // Check position-based roles
         $position = $this->staffPosition;
-        if (! $position) {
-            return false;
+        if ($position) {
+            // Position with "allow all" override
+            if ($position->has_all_roles_at !== null) {
+                return true;
+            }
+
+            // Check position's assigned roles
+            if ($position->roles()->where('name', $roleName)->exists()) {
+                return true;
+            }
         }
 
-        // Position with "allow all" override
-        if ($position->has_all_roles_at !== null) {
-            return true;
+        // Check rank-based roles (no inheritance — explicit assignments only)
+        if ($this->staff_rank && $this->staff_rank !== StaffRank::None) {
+            return DB::table('role_staff_rank')
+                ->join('roles', 'roles.id', '=', 'role_staff_rank.role_id')
+                ->where('roles.name', $roleName)
+                ->where('role_staff_rank.staff_rank', $this->staff_rank->value)
+                ->exists();
         }
 
-        // Check position's assigned roles
-        return $position->roles()->where('name', $roleName)->exists();
+        return false;
     }
 
     public function isAtLeastLevel(MembershipLevel $level): bool

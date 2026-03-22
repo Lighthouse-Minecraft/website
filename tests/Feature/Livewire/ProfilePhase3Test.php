@@ -12,13 +12,13 @@ use function Pest\Laravel\actingAs;
 
 uses()->group('parent-portal', 'profile');
 
-it('shows age badge for user with View PII role viewing profile', function () {
+it('shows age badge for user with PII - Viewer role viewing profile', function () {
     $child = User::factory()->minor()->create([
         'date_of_birth' => now()->subYears(10)->format('Y-m-d'),
     ]);
 
     $staff = User::factory()
-        ->withRole('View PII')
+        ->withRole('PII - Viewer')
         ->create(['membership_level' => MembershipLevel::Citizen]);
     actingAs($staff);
 
@@ -44,7 +44,7 @@ it('shows red badge for under-13', function () {
     ]);
 
     $staff = User::factory()
-        ->withRole('View PII')
+        ->withRole('PII - Viewer')
         ->create(['membership_level' => MembershipLevel::Citizen]);
     actingAs($staff);
 
@@ -58,7 +58,7 @@ it('shows blue badge for 13-16', function () {
     ]);
 
     $staff = User::factory()
-        ->withRole('View PII')
+        ->withRole('PII - Viewer')
         ->create(['membership_level' => MembershipLevel::Citizen]);
     actingAs($staff);
 
@@ -72,7 +72,7 @@ it('shows gray badge for adult', function () {
     ]);
 
     $staff = User::factory()
-        ->withRole('View PII')
+        ->withRole('PII - Viewer')
         ->create(['membership_level' => MembershipLevel::Citizen]);
     actingAs($staff);
 
@@ -80,13 +80,13 @@ it('shows gray badge for adult', function () {
         ->assertSee('Age 25');
 });
 
-it('shows parent portal link for user with User Manager role on parent profile', function () {
+it('shows parent portal link for user with User - Manager role on parent profile', function () {
     $parent = User::factory()->adult()->create();
     $child = User::factory()->minor()->create();
     ParentChildLink::create(['parent_user_id' => $parent->id, 'child_user_id' => $child->id]);
 
     $staff = User::factory()
-        ->withRole('User Manager')
+        ->withRole('User - Manager')
         ->create([
             'membership_level' => MembershipLevel::Citizen,
         ]);

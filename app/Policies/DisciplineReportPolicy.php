@@ -23,12 +23,12 @@ class DisciplineReportPolicy
 
     public function viewAny(User $user): bool
     {
-        return $user->hasRole('Manage Discipline Reports') || $user->isAtLeastRank(StaffRank::JrCrew);
+        return $user->hasRole('Discipline Report - Manager') || $user->isAtLeastRank(StaffRank::JrCrew);
     }
 
     public function view(User $user, DisciplineReport $report): bool
     {
-        if ($user->hasRole('Manage Discipline Reports')) {
+        if ($user->hasRole('Discipline Report - Manager')) {
             return true;
         }
 
@@ -49,7 +49,7 @@ class DisciplineReportPolicy
 
     public function create(User $user): bool
     {
-        return $user->hasRole('Manage Discipline Reports') || $user->isAtLeastRank(StaffRank::JrCrew);
+        return $user->hasRole('Discipline Report - Manager') || $user->isAtLeastRank(StaffRank::JrCrew);
     }
 
     public function update(User $user, DisciplineReport $report): bool
@@ -58,7 +58,7 @@ class DisciplineReportPolicy
             return false;
         }
 
-        if ($user->hasRole('Manage Discipline Reports')) {
+        if ($user->hasRole('Discipline Report - Manager')) {
             return true;
         }
 
@@ -72,7 +72,7 @@ class DisciplineReportPolicy
             return false;
         }
 
-        if (! $user->hasRole('Publish Discipline Reports')) {
+        if (! $user->hasRole('Discipline Report - Publisher')) {
             return false;
         }
 

@@ -19,29 +19,29 @@ class BlogPostPolicy
 
     public function create(User $user): bool
     {
-        return $user->hasRole('Blog Author');
+        return $user->hasRole('Blog - Author');
     }
 
     public function update(User $user, BlogPost $post): bool
     {
-        return $user->hasRole('Blog Author');
+        return $user->hasRole('Blog - Author');
     }
 
     public function submitForReview(User $user, BlogPost $post): bool
     {
-        return $user->hasRole('Blog Author') && $post->author_id === $user->id && $post->isDraft();
+        return $user->hasRole('Blog - Author') && $post->author_id === $user->id && $post->isDraft();
     }
 
     public function approve(User $user, BlogPost $post): bool
     {
-        return $user->hasRole('Blog Author')
+        return $user->hasRole('Blog - Author')
             && $post->author_id !== $user->id
             && $post->status === \App\Enums\BlogPostStatus::InReview;
     }
 
     public function archive(User $user, BlogPost $post): bool
     {
-        return $user->hasRole('Blog Author') && $post->isPublished();
+        return $user->hasRole('Blog - Author') && $post->isPublished();
     }
 
     public function delete(User $user, BlogPost $post): bool
@@ -54,6 +54,6 @@ class BlogPostPolicy
             return true;
         }
 
-        return $user->hasRole('Blog Author') && $post->author_id === $user->id;
+        return $user->hasRole('Blog - Author') && $post->author_id === $user->id;
     }
 }

@@ -113,10 +113,10 @@ describe('Stowaway Users Widget', function () {
 });
 
 describe('Stowaway Users Widget - Permissions', function () {
-    it('can be seen by user with Manage Membership Level role', function () {
+    it('can be seen by user with Membership Level - Manager role', function () {
         $user = User::factory()
             ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::JrCrew, 'Jr Quartermaster')
-            ->withRole('Manage Membership Level')
+            ->withRole('Membership Level - Manager')
             ->create();
         loginAs($user);
 
@@ -133,7 +133,7 @@ describe('Stowaway Users Widget - Permissions', function () {
             ->assertDontSeeLivewire('dashboard.stowaway-users-widget');
     })->with('memberAll');
 
-    it('cannot be viewed by staff without Manage Membership Level role', function () {
+    it('cannot be viewed by staff without Membership Level - Manager role', function () {
         $user = User::factory()->withStaffPosition(StaffDepartment::Engineer, StaffRank::Officer, 'Engineer Officer')->create();
         loginAs($user);
 
@@ -142,10 +142,10 @@ describe('Stowaway Users Widget - Permissions', function () {
             ->assertDontSeeLivewire('dashboard.stowaway-users-widget');
     });
 
-    it('allows user with Manage Membership Level role to promote stowaway users', function () {
+    it('allows user with Membership Level - Manager role to promote stowaway users', function () {
         $user = User::factory()
             ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::CrewMember, 'Quartermaster Crew')
-            ->withRole('Manage Membership Level')
+            ->withRole('Membership Level - Manager')
             ->create();
         loginAs($user);
         $member = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create();

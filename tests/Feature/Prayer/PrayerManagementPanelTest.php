@@ -108,7 +108,7 @@ describe('Prayer Management Panel - Data', function () {
 describe('Prayer Management Panel - Permissions', function () {
     // TODO: Re-enable after PRD #280 completion — command officer no longer bypasses before() hook
     // Only Chaplain officers and admins can view the prayer panel
-    it('should allow users with Manage Site Config role and admins to view the panel', function ($user) {
+    it('should allow users with Site Config - Manager role and admins to view the panel', function ($user) {
         loginAs($user);
 
         get(route('acp.index', ['category' => 'config']))
@@ -116,7 +116,7 @@ describe('Prayer Management Panel - Permissions', function () {
             ->assertSee('Prayer Nations');
     })->with([
         'Admin' => fn () => User::factory()->admin()->create(),
-        'Manage Site Config role' => fn () => User::factory()->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)->withRole('Manage Site Config')->create(),
+        'Site Config - Manager role' => fn () => User::factory()->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)->withRole('Site Config - Manager')->create(),
     ])->done();
 
     // Other officer departments cannot view the panel

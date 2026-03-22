@@ -69,8 +69,8 @@ it('prevents updating a published report', function () {
     expect($creator->can('update', $report))->toBeFalse();
 });
 
-it('allows user with Publish Discipline Reports role to publish a draft report', function () {
-    $user = User::factory()->withRole('Publish Discipline Reports')->create();
+it('allows user with Discipline Report - Publisher role to publish a draft report', function () {
+    $user = User::factory()->withRole('Discipline Report - Publisher')->create();
     loginAs($user);
     $report = DisciplineReport::factory()->create();
 

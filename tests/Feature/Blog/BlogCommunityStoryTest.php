@@ -202,7 +202,7 @@ it('updates featured_in_blog_url when approved for immediate publish', function 
         'featured_in_blog_url' => null,
     ]);
 
-    $reviewer = User::factory()->withRole('Blog Author')->create();
+    $reviewer = User::factory()->withRole('Blog - Author')->create();
     $post = BlogPost::factory()->inReview()->create([
         'community_question_id' => $question->id,
     ]);
@@ -220,7 +220,7 @@ it('does not update featured_in_blog_url when scheduled for later', function () 
         'featured_in_blog_url' => null,
     ]);
 
-    $reviewer = User::factory()->withRole('Blog Author')->create();
+    $reviewer = User::factory()->withRole('Blog - Author')->create();
     $post = BlogPost::factory()->inReview()->create([
         'community_question_id' => $question->id,
     ]);
@@ -294,7 +294,7 @@ it('does not send story notification when post is only scheduled', function () {
         'user_id' => $responseAuthor->id,
     ]);
 
-    $reviewer = User::factory()->withRole('Blog Author')->create();
+    $reviewer = User::factory()->withRole('Blog - Author')->create();
     $post = BlogPost::factory()->inReview()->create([
         'community_question_id' => $question->id,
     ]);

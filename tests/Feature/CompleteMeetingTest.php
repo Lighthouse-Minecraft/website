@@ -10,7 +10,7 @@ use App\Models\User;
 use Livewire\Volt\Volt;
 
 beforeEach(function () {
-    $this->user = User::factory()->withRole('Manage Staff Meeting')->create([
+    $this->user = User::factory()->withRole('Meeting - Manager')->create([
         'staff_rank' => StaffRank::Officer, // Give proper permissions
     ]);
     $this->meeting = Meeting::factory()->create([

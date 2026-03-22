@@ -12,19 +12,19 @@ uses()->group('gates', 'roles');
 
 // == manage-stowaway-users / manage-traveler-users == //
 
-it('grants manage-stowaway-users to user with Manage Membership Level role', function () {
-    $user = User::factory()->withRole('Manage Membership Level')->create();
+it('grants manage-stowaway-users to user with Membership Level - Manager role', function () {
+    $user = User::factory()->withRole('Membership Level - Manager')->create();
 
     expect($user->can('manage-stowaway-users'))->toBeTrue();
 });
 
-it('grants manage-traveler-users to user with Manage Membership Level role', function () {
-    $user = User::factory()->withRole('Manage Membership Level')->create();
+it('grants manage-traveler-users to user with Membership Level - Manager role', function () {
+    $user = User::factory()->withRole('Membership Level - Manager')->create();
 
     expect($user->can('manage-traveler-users'))->toBeTrue();
 });
 
-it('denies manage-stowaway-users without Manage Membership Level role', function () {
+it('denies manage-stowaway-users without Membership Level - Manager role', function () {
     $user = User::factory()
         ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::Officer)
         ->create();
@@ -108,8 +108,8 @@ it('denies view-ready-room-command to user in different department without role'
     expect($user->can('view-ready-room-command'))->toBeFalse();
 });
 
-it('grants view-ready-room-command to user with View All Ready Rooms role', function () {
-    $user = User::factory()->withRole('View All Ready Rooms')->create();
+it('grants view-ready-room-command to user with Ready Room - View All role', function () {
+    $user = User::factory()->withRole('Ready Room - View All')->create();
 
     expect($user->can('view-ready-room-command'))->toBeTrue();
 });
@@ -160,8 +160,8 @@ it('grants view-ready-room-steward to user in Steward department', function () {
         ->and($user->can('view-ready-room-command'))->toBeFalse();
 });
 
-it('grants all department ready rooms to user with View All Ready Rooms role', function () {
-    $user = User::factory()->withRole('View All Ready Rooms')->create();
+it('grants all department ready rooms to user with Ready Room - View All role', function () {
+    $user = User::factory()->withRole('Ready Room - View All')->create();
 
     expect($user->can('view-ready-room-command'))->toBeTrue()
         ->and($user->can('view-ready-room-chaplain'))->toBeTrue()
@@ -210,8 +210,8 @@ it('denies view-acp to regular user', function () {
 
 // == view-*-log gates == //
 
-it('grants all log gates to user with View Logs role', function () {
-    $user = User::factory()->withRole('View Logs')->create();
+it('grants all log gates to user with Logs - Viewer role', function () {
+    $user = User::factory()->withRole('Logs - Viewer')->create();
 
     expect($user->can('view-mc-command-log'))->toBeTrue()
         ->and($user->can('view-discord-api-log'))->toBeTrue()
@@ -219,7 +219,7 @@ it('grants all log gates to user with View Logs role', function () {
         ->and($user->can('view-discipline-report-log'))->toBeTrue();
 });
 
-it('denies log gates without View Logs role', function () {
+it('denies log gates without Logs - Viewer role', function () {
     $user = User::factory()
         ->withStaffPosition(StaffDepartment::Engineer, StaffRank::Officer)
         ->create();
@@ -230,8 +230,8 @@ it('denies log gates without View Logs role', function () {
         ->and($user->can('view-discipline-report-log'))->toBeFalse();
 });
 
-it('grants view-discipline-report-log to user with Manage Discipline Reports role', function () {
-    $user = User::factory()->withRole('Manage Discipline Reports')->create();
+it('grants view-discipline-report-log to user with Discipline Report - Manager role', function () {
+    $user = User::factory()->withRole('Discipline Report - Manager')->create();
 
     expect($user->can('view-discipline-report-log'))->toBeTrue()
         ->and($user->can('view-mc-command-log'))->toBeFalse()
@@ -250,8 +250,8 @@ it('grants all log gates to admin', function () {
 
 // == manage-discipline-reports == //
 
-it('grants manage-discipline-reports to user with Manage Discipline Reports role', function () {
-    $user = User::factory()->withRole('Manage Discipline Reports')->create();
+it('grants manage-discipline-reports to user with Discipline Report - Manager role', function () {
+    $user = User::factory()->withRole('Discipline Report - Manager')->create();
 
     expect($user->can('manage-discipline-reports'))->toBeTrue();
 });
@@ -266,8 +266,8 @@ it('denies manage-discipline-reports without role', function () {
 
 // == publish-discipline-reports == //
 
-it('grants publish-discipline-reports to user with Publish Discipline Reports role', function () {
-    $user = User::factory()->withRole('Publish Discipline Reports')->create();
+it('grants publish-discipline-reports to user with Discipline Report - Publisher role', function () {
+    $user = User::factory()->withRole('Discipline Report - Publisher')->create();
 
     expect($user->can('publish-discipline-reports'))->toBeTrue();
 });
@@ -282,8 +282,8 @@ it('denies publish-discipline-reports without role', function () {
 
 // == manage-site-config == //
 
-it('grants manage-site-config to user with Manage Site Config role', function () {
-    $user = User::factory()->withRole('Manage Site Config')->create();
+it('grants manage-site-config to user with Site Config - Manager role', function () {
+    $user = User::factory()->withRole('Site Config - Manager')->create();
 
     expect($user->can('manage-site-config'))->toBeTrue();
 });
@@ -298,8 +298,8 @@ it('denies manage-site-config without role', function () {
 
 // == view-command-dashboard == //
 
-it('grants view-command-dashboard to user with View Command Dashboard role', function () {
-    $user = User::factory()->withRole('View Command Dashboard')->create();
+it('grants view-command-dashboard to user with Command Dashboard - Viewer role', function () {
+    $user = User::factory()->withRole('Command Dashboard - Viewer')->create();
 
     expect($user->can('view-command-dashboard'))->toBeTrue();
 });
@@ -346,8 +346,8 @@ it('denies lock-topic without Moderator role', function () {
 
 // == manage-community-stories == //
 
-it('grants manage-community-stories to user with Manage Community Stories role', function () {
-    $user = User::factory()->withRole('Manage Community Stories')->create();
+it('grants manage-community-stories to user with Community Stories - Manager role', function () {
+    $user = User::factory()->withRole('Community Stories - Manager')->create();
 
     expect($user->can('manage-community-stories'))->toBeTrue();
 });
@@ -362,8 +362,8 @@ it('denies manage-community-stories without role', function () {
 
 // == manage-application-questions == //
 
-it('grants manage-application-questions to user with Manage Site Config role', function () {
-    $user = User::factory()->withRole('Manage Site Config')->create();
+it('grants manage-application-questions to user with Site Config - Manager role', function () {
+    $user = User::factory()->withRole('Site Config - Manager')->create();
 
     expect($user->can('manage-application-questions'))->toBeTrue();
 });

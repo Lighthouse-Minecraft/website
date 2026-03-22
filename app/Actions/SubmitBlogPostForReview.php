@@ -21,7 +21,7 @@ class SubmitBlogPostForReview
 
         $service = app(TicketNotificationService::class);
         $blogAuthors = User::whereHas('staffPosition.roles', function ($query) {
-            $query->where('name', 'Blog Author');
+            $query->where('name', 'Blog - Author');
         })->where('id', '!=', $submitter->id)->get();
 
         foreach ($blogAuthors as $author) {

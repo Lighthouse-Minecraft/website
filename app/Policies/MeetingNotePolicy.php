@@ -22,7 +22,7 @@ class MeetingNotePolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasRole('Manage Staff Meeting')
+        return $user->hasRole('Meeting - Manager')
             || $user->isAtLeastRank(StaffRank::Officer);
     }
 
@@ -31,7 +31,7 @@ class MeetingNotePolicy
      */
     public function update(User $user, MeetingNote $meetingNote): bool
     {
-        if ($user->hasRole('Manage Staff Meeting')) {
+        if ($user->hasRole('Meeting - Manager')) {
             return true;
         }
 

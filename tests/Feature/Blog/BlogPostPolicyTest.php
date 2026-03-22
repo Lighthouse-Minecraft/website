@@ -10,7 +10,7 @@ uses()->group('blog', 'policies');
 // === create ===
 
 it('allows blog author to create posts', function () {
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
 
     expect($author->can('create', BlogPost::class))->toBeTrue();
 });
@@ -30,7 +30,7 @@ it('allows admin to create posts', function () {
 // === update ===
 
 it('allows blog author to update posts', function () {
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     $post = BlogPost::factory()->create();
 
     expect($author->can('update', $post))->toBeTrue();
@@ -67,14 +67,14 @@ it('allows command officer to delete any post', function () {
 });
 
 it('allows original author with blog author role to delete own post', function () {
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     $post = BlogPost::factory()->create(['author_id' => $author->id]);
 
     expect($author->can('delete', $post))->toBeTrue();
 });
 
 it('denies blog author from deleting another authors post', function () {
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     $otherAuthor = User::factory()->create();
     $post = BlogPost::factory()->create(['author_id' => $otherAuthor->id]);
 

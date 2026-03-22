@@ -23,7 +23,7 @@ class PagePolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->isAtLeastRank(StaffRank::Officer) || $user->hasRole('Page Editor');
+        return $user->isAtLeastRank(StaffRank::Officer) || $user->hasRole('Page - Editor');
     }
 
     /**
@@ -31,7 +31,7 @@ class PagePolicy
      */
     public function view(User $user, Page $page): bool
     {
-        return $page->is_published || $user->hasRole('Page Editor') || $user->isAtLeastRank(StaffRank::CrewMember);
+        return $page->is_published || $user->hasRole('Page - Editor') || $user->isAtLeastRank(StaffRank::CrewMember);
     }
 
     /**
@@ -39,7 +39,7 @@ class PagePolicy
      */
     public function create(User $user): bool
     {
-        return ($user->hasRole('Page Editor') || $user->isAtLeastRank(StaffRank::Officer)) && ($user->isInDepartment(StaffDepartment::Steward) || $user->isInDepartment(StaffDepartment::Engineer));
+        return ($user->hasRole('Page - Editor') || $user->isAtLeastRank(StaffRank::Officer)) && ($user->isInDepartment(StaffDepartment::Steward) || $user->isInDepartment(StaffDepartment::Engineer));
     }
 
     /**
@@ -47,7 +47,7 @@ class PagePolicy
      */
     public function update(User $user, Page $page): bool
     {
-        return ($user->hasRole('Page Editor') || $user->isAtLeastRank(StaffRank::Officer)) && ($user->isInDepartment(StaffDepartment::Steward) || $user->isInDepartment(StaffDepartment::Engineer));
+        return ($user->hasRole('Page - Editor') || $user->isAtLeastRank(StaffRank::Officer)) && ($user->isInDepartment(StaffDepartment::Steward) || $user->isInDepartment(StaffDepartment::Engineer));
     }
 
     /**

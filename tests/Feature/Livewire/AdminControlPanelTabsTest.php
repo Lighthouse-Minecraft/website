@@ -93,8 +93,8 @@ describe('Admin Control Panel Tabs Component', function () {
             ->assertDontSee('Config');
     });
 
-    it('shows users category for user with User Manager role', function () {
-        $user = User::factory()->withRole('User Manager')->create();
+    it('shows users category for user with User - Manager role', function () {
+        $user = User::factory()->withRole('User - Manager')->create();
 
         $this->actingAs($user);
 
@@ -102,8 +102,8 @@ describe('Admin Control Panel Tabs Component', function () {
             ->assertSee('Users');
     });
 
-    it('shows config category for user with Manage Site Config role', function () {
-        $user = User::factory()->withRole('Manage Site Config')->create();
+    it('shows config category for user with Site Config - Manager role', function () {
+        $user = User::factory()->withRole('Site Config - Manager')->create();
 
         $this->actingAs($user);
 
@@ -111,10 +111,10 @@ describe('Admin Control Panel Tabs Component', function () {
             ->assertSee('Config');
     });
 
-    it('shows logs category for user with View Logs role', function () {
+    it('shows logs category for user with Logs - Viewer role', function () {
         $user = User::factory()
             ->withStaffPosition(StaffDepartment::Engineer, StaffRank::JrCrew)
-            ->withRole('View Logs')
+            ->withRole('Logs - Viewer')
             ->create();
 
         $this->actingAs($user);
@@ -179,7 +179,7 @@ describe('Admin Control Panel Tabs Component', function () {
         ]);
 
         $position = StaffPosition::factory()->assignedTo($user->id)->create();
-        $pageEditorRole = Role::firstOrCreate(['name' => 'Page Editor']);
+        $pageEditorRole = Role::firstOrCreate(['name' => 'Page - Editor']);
         $position->roles()->attach($pageEditorRole);
 
         $this->actingAs($user);

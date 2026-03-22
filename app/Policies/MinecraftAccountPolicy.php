@@ -13,7 +13,7 @@ class MinecraftAccountPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasRole('User Manager');
+        return $user->hasRole('User - Manager');
     }
 
     /**
@@ -72,7 +72,7 @@ class MinecraftAccountPolicy
      */
     public function viewUuid(User $user, MinecraftAccount $minecraftAccount): bool
     {
-        return $user->hasRole('User Manager');
+        return $user->hasRole('User - Manager');
     }
 
     /**
@@ -89,7 +89,7 @@ class MinecraftAccountPolicy
     public function revoke(User $user, MinecraftAccount $minecraftAccount): bool
     {
         return $minecraftAccount->status === MinecraftAccountStatus::Active
-            && $user->hasRole('User Manager');
+            && $user->hasRole('User - Manager');
     }
 
     /**

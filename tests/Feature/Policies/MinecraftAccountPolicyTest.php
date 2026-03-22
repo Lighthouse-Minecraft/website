@@ -114,8 +114,8 @@ it('admin can revoke a minecraft account', function () {
     expect($admin->can('revoke', $account))->toBeTrue();
 });
 
-it('user with User Manager role can revoke a minecraft account', function () {
-    $user = User::factory()->withRole('User Manager')->create();
+it('user with User - Manager role can revoke a minecraft account', function () {
+    $user = User::factory()->withRole('User - Manager')->create();
     loginAs($user);
     $owner = User::factory()->create();
     $account = MinecraftAccount::factory()->active()->create(['user_id' => $owner->id]);
@@ -123,7 +123,7 @@ it('user with User Manager role can revoke a minecraft account', function () {
     expect($user->can('revoke', $account))->toBeTrue();
 });
 
-it('officer without User Manager role cannot revoke a minecraft account', function () {
+it('officer without User - Manager role cannot revoke a minecraft account', function () {
     $officer = officerEngineer();
     $owner = User::factory()->create();
     $account = MinecraftAccount::factory()->active()->create(['user_id' => $owner->id]);
@@ -180,8 +180,8 @@ it('admin can view uuid', function () {
     expect($admin->can('viewUuid', $account))->toBeTrue();
 });
 
-it('user with User Manager role can view uuid', function () {
-    $user = User::factory()->withRole('User Manager')->create();
+it('user with User - Manager role can view uuid', function () {
+    $user = User::factory()->withRole('User - Manager')->create();
     loginAs($user);
     $account = MinecraftAccount::factory()->create();
 

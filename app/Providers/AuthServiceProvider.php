@@ -50,7 +50,7 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         $canManageUsers = function ($user) {
-            return $user->hasRole('Manage Membership Level');
+            return $user->hasRole('Membership Level - Manager');
         };
 
         Gate::define('manage-stowaway-users', $canManageUsers);
@@ -69,23 +69,23 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('view-ready-room-command', function ($user) {
-            return $user->isInDepartment(StaffDepartment::Command) || $user->hasRole('View All Ready Rooms');
+            return $user->isInDepartment(StaffDepartment::Command) || $user->hasRole('Ready Room - View All');
         });
 
         Gate::define('view-ready-room-chaplain', function ($user) {
-            return $user->isInDepartment(StaffDepartment::Chaplain) || $user->hasRole('View All Ready Rooms');
+            return $user->isInDepartment(StaffDepartment::Chaplain) || $user->hasRole('Ready Room - View All');
         });
 
         Gate::define('view-ready-room-engineer', function ($user) {
-            return $user->isInDepartment(StaffDepartment::Engineer) || $user->hasRole('View All Ready Rooms');
+            return $user->isInDepartment(StaffDepartment::Engineer) || $user->hasRole('Ready Room - View All');
         });
 
         Gate::define('view-ready-room-quartermaster', function ($user) {
-            return $user->isInDepartment(StaffDepartment::Quartermaster) || $user->hasRole('View All Ready Rooms');
+            return $user->isInDepartment(StaffDepartment::Quartermaster) || $user->hasRole('Ready Room - View All');
         });
 
         Gate::define('view-ready-room-steward', function ($user) {
-            return $user->isInDepartment(StaffDepartment::Steward) || $user->hasRole('View All Ready Rooms');
+            return $user->isInDepartment(StaffDepartment::Steward) || $user->hasRole('Ready Room - View All');
         });
 
         Gate::define('link-discord', function ($user) {
@@ -105,14 +105,14 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         $canViewLogs = function ($user) {
-            return $user->hasRole('View Logs');
+            return $user->hasRole('Logs - Viewer');
         };
 
         Gate::define('view-mc-command-log', $canViewLogs);
         Gate::define('view-discord-api-log', $canViewLogs);
         Gate::define('view-activity-log', $canViewLogs);
         Gate::define('view-discipline-report-log', function ($user) use ($canViewLogs) {
-            return $canViewLogs($user) || $user->hasRole('Manage Discipline Reports');
+            return $canViewLogs($user) || $user->hasRole('Discipline Report - Manager');
         });
 
         Gate::define('edit-staff-bio', function ($user) {
@@ -131,19 +131,19 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('manage-discipline-reports', function ($user) {
-            return $user->hasRole('Manage Discipline Reports');
+            return $user->hasRole('Discipline Report - Manager');
         });
 
         Gate::define('publish-discipline-reports', function ($user) {
-            return $user->hasRole('Publish Discipline Reports');
+            return $user->hasRole('Discipline Report - Publisher');
         });
 
         Gate::define('manage-site-config', function ($user) {
-            return $user->hasRole('Manage Site Config');
+            return $user->hasRole('Site Config - Manager');
         });
 
         Gate::define('view-command-dashboard', function ($user) {
-            return $user->hasRole('View Command Dashboard');
+            return $user->hasRole('Command Dashboard - Viewer');
         });
 
         // Documentation visibility gates
@@ -189,7 +189,7 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('manage-community-stories', function ($user) {
-            return $user->hasRole('Manage Community Stories');
+            return $user->hasRole('Community Stories - Manager');
         });
 
         // Staff Applications
@@ -213,11 +213,11 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('manage-application-questions', function ($user) {
-            return $user->hasRole('Manage Site Config');
+            return $user->hasRole('Site Config - Manager');
         });
 
         Gate::define('manage-blog', function ($user) {
-            return $user->hasRole('Blog Author');
+            return $user->hasRole('Blog - Author');
         });
 
         Gate::define('post-blog-comment', function ($user) {
@@ -229,7 +229,7 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('moderate-blog-comments', function ($user) {
-            return $user->hasRole('Moderator') || $user->hasRole('Blog Author');
+            return $user->hasRole('Moderator') || $user->hasRole('Blog - Author');
         });
     }
 }

@@ -18,7 +18,7 @@ it('denies access to regular users', function () {
 });
 
 it('allows blog authors to access the page', function () {
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     loginAs($author);
 
     $this->get(route('blog.manage'))->assertOk();
@@ -31,7 +31,7 @@ it('allows admins to access the page', function () {
 });
 
 it('displays existing posts in the list', function () {
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     loginAs($author);
 
     $post = BlogPost::factory()->create(['title' => 'Test Blog Post Title']);
@@ -40,7 +40,7 @@ it('displays existing posts in the list', function () {
 });
 
 it('creates a blog post via the editor page', function () {
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     loginAs($author);
 
     Volt::test('blog.editor')
@@ -55,7 +55,7 @@ it('creates a blog post via the editor page', function () {
 });
 
 it('edits a blog post via the editor page', function () {
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     loginAs($author);
     $post = BlogPost::factory()->create(['author_id' => $author->id, 'title' => 'Original Title']);
 
@@ -67,7 +67,7 @@ it('edits a blog post via the editor page', function () {
 });
 
 it('creates a category via the component', function () {
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     loginAs($author);
 
     Volt::test('blog.manage')
@@ -82,7 +82,7 @@ it('creates a category via the component', function () {
 });
 
 it('creates a tag via the component', function () {
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     loginAs($author);
 
     Volt::test('blog.manage')
@@ -96,7 +96,7 @@ it('creates a tag via the component', function () {
 });
 
 it('deletes a post via the component', function () {
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     loginAs($author);
     $post = BlogPost::factory()->create(['author_id' => $author->id]);
 
@@ -107,7 +107,7 @@ it('deletes a post via the component', function () {
 });
 
 it('deletes a category via the component', function () {
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     loginAs($author);
     $category = BlogCategory::factory()->create();
 
@@ -118,7 +118,7 @@ it('deletes a category via the component', function () {
 });
 
 it('prevents deleting a category that has posts', function () {
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     loginAs($author);
     $category = BlogCategory::factory()->create();
     BlogPost::factory()->create(['category_id' => $category->id]);
@@ -130,7 +130,7 @@ it('prevents deleting a category that has posts', function () {
 });
 
 it('deletes a tag via the component', function () {
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     loginAs($author);
     $tag = BlogTag::factory()->create();
 
@@ -141,7 +141,7 @@ it('deletes a tag via the component', function () {
 });
 
 it('filters posts by status', function () {
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     loginAs($author);
 
     BlogPost::factory()->create(['title' => 'Draft Post']);
@@ -154,7 +154,7 @@ it('filters posts by status', function () {
 });
 
 it('searches posts by title', function () {
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     loginAs($author);
 
     BlogPost::factory()->create(['title' => 'Unique Special Title']);
@@ -167,7 +167,7 @@ it('searches posts by title', function () {
 });
 
 it('opens preview modal with rendered markdown on editor page', function () {
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     loginAs($author);
 
     Volt::test('blog.editor')
