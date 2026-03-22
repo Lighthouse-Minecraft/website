@@ -86,6 +86,7 @@ describe('Create Ticket Component', function () {
     it('staff badge includes unassigned tickets in their visible scope', function () {
         $chaplainStaff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->withRole('Ticket - User')
             ->create();
         $user = User::factory()->create();
 
@@ -106,9 +107,11 @@ describe('Create Ticket Component', function () {
     it('staff badge does not include assigned tickets they are not part of', function () {
         $chaplainStaff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->withRole('Ticket - User')
             ->create();
         $otherStaff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->withRole('Ticket - User')
             ->create();
 
         // Create an assigned ticket — not involving $chaplainStaff
@@ -127,6 +130,7 @@ describe('Create Admin Ticket Component', function () {
     it('can render for staff with createAsStaff permission', function () {
         $staff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::Officer)
+            ->withRole('Ticket - User')
             ->create();
 
         actingAs($staff);
@@ -141,6 +145,7 @@ describe('Create Admin Ticket Component', function () {
     it('validates required fields', function () {
         $staff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::Officer)
+            ->withRole('Ticket - User')
             ->create();
 
         actingAs($staff);
@@ -157,6 +162,7 @@ describe('Create Admin Ticket Component', function () {
     it('creates admin action ticket with correct data', function () {
         $staff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::Officer)
+            ->withRole('Ticket - User')
             ->create();
 
         $targetUser = User::factory()->create();
@@ -181,6 +187,7 @@ describe('Create Admin Ticket Component', function () {
     it('adds both creator and target user as participants', function () {
         $staff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::Officer)
+            ->withRole('Ticket - User')
             ->create();
 
         $targetUser = User::factory()->create();

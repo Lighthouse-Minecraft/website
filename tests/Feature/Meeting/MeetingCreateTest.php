@@ -210,6 +210,7 @@ describe('Meeting Create - Permissions and Security', function () {
 
     it('allows users with the Meeting - Manager role to access the create meeting page', function () {
         $user = User::factory()
+            ->withRole('Staff Access')
             ->withRole('Meeting - Manager')
             ->create([
                 'staff_rank' => StaffRank::CrewMember,

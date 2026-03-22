@@ -97,10 +97,12 @@ describe('Discussion Flagging', function () {
     });
 
     it('allows Quartermaster staff to view flagged discussion', function () {
-        $staff = User::factory()->create([
-            'staff_department' => StaffDepartment::Quartermaster,
-            'staff_rank' => StaffRank::CrewMember,
-        ]);
+        $staff = User::factory()
+            ->withRole('Ticket - Manager')
+            ->create([
+                'staff_department' => StaffDepartment::Quartermaster,
+                'staff_rank' => StaffRank::CrewMember,
+            ]);
         $thread = Thread::factory()->topic()->create([
             'is_flagged' => true,
             'has_open_flags' => true,
@@ -138,10 +140,12 @@ describe('Discussion Flagging', function () {
     });
 
     it('allows Quartermaster staff to acknowledge a flag', function () {
-        $staff = User::factory()->create([
-            'staff_department' => StaffDepartment::Quartermaster,
-            'staff_rank' => StaffRank::CrewMember,
-        ]);
+        $staff = User::factory()
+            ->withRole('Ticket - Manager')
+            ->create([
+                'staff_department' => StaffDepartment::Quartermaster,
+                'staff_rank' => StaffRank::CrewMember,
+            ]);
         $user = User::factory()->create();
         $other = User::factory()->create();
         $thread = Thread::factory()->topic()->create();
@@ -165,10 +169,12 @@ describe('Discussion Flagging', function () {
     });
 
     it('shows flagged filter to Quartermaster staff on discussions list', function () {
-        $staff = User::factory()->create([
-            'staff_department' => StaffDepartment::Quartermaster,
-            'staff_rank' => StaffRank::CrewMember,
-        ]);
+        $staff = User::factory()
+            ->withRole('Ticket - Manager')
+            ->create([
+                'staff_department' => StaffDepartment::Quartermaster,
+                'staff_rank' => StaffRank::CrewMember,
+            ]);
 
         actingAs($staff);
 
@@ -274,10 +280,12 @@ describe('Discussion Flagging', function () {
     });
 
     it('shows flags on multiple messages to staff', function () {
-        $staff = User::factory()->create([
-            'staff_department' => StaffDepartment::Quartermaster,
-            'staff_rank' => StaffRank::CrewMember,
-        ]);
+        $staff = User::factory()
+            ->withRole('Ticket - Manager')
+            ->create([
+                'staff_department' => StaffDepartment::Quartermaster,
+                'staff_rank' => StaffRank::CrewMember,
+            ]);
         $user = User::factory()->create();
         $other = User::factory()->create();
         $thread = Thread::factory()->topic()->create();

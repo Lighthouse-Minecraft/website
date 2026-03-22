@@ -18,6 +18,7 @@ describe('User Model Ticket Methods', function () {
     it('returns true for hasActionableTickets when there are unassigned open tickets', function () {
         $staff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->withRole('Ticket - User')
             ->create();
 
         Thread::factory()
@@ -33,6 +34,7 @@ describe('User Model Ticket Methods', function () {
     it('returns true for hasActionableTickets when assigned ticket has unread messages', function () {
         $staff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::Officer)
+            ->withRole('Ticket - User')
             ->create();
 
         $thread = Thread::factory()
@@ -52,6 +54,7 @@ describe('User Model Ticket Methods', function () {
     it('returns false for hasActionableTickets when assigned ticket is read', function () {
         $staff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::Officer)
+            ->withRole('Ticket - User')
             ->create();
 
         $thread = Thread::factory()
@@ -72,6 +75,7 @@ describe('User Model Ticket Methods', function () {
     it('returns correct ticket counts for user', function () {
         $staff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->withRole('Ticket - User')
             ->create();
 
         // Create 3 open tickets in their department
@@ -96,6 +100,7 @@ describe('User Model Ticket Methods', function () {
     it('caches hasActionableTickets result', function () {
         $staff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->withRole('Ticket - User')
             ->create();
 
         Thread::factory()
@@ -126,6 +131,7 @@ describe('User Model Ticket Methods', function () {
     it('caches ticketCounts result', function () {
         $staff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->withRole('Ticket - User')
             ->create();
 
         Thread::factory()
