@@ -46,7 +46,7 @@ new class extends Component {
     public function mount(User $user): void
     {
         $authUser = Auth::user();
-        $isStaff = $authUser->isAtLeastRank(StaffRank::JrCrew) || $authUser->hasRole('Admin');
+        $isStaff = $authUser->hasRole('Staff Access');
         $isSelf = $authUser->id === $user->id;
         $isParent = $authUser->children()->where('child_user_id', $user->id)->exists();
 

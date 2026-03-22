@@ -140,7 +140,7 @@ class ThreadPolicy
      */
     public function internalNotes(User $user, Thread $thread): bool
     {
-        if (! $user->hasRole('Ticket - User')) {
+        if (! $user->hasRole('Internal Note - Manager')) {
             return false;
         }
 

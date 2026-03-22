@@ -4,7 +4,6 @@ namespace App\Providers;
 
 use App\Enums\MembershipLevel;
 use App\Enums\StaffDepartment;
-use App\Enums\StaffRank;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 
@@ -193,11 +192,11 @@ class AuthServiceProvider extends ServiceProvider
 
         // Staff Applications
         Gate::define('review-staff-applications', function ($user, $application = null) {
-            if ($user->isAdmin() || $user->isAtLeastRank(StaffRank::Officer)) {
+            if ($user->isAdmin() || $user->hasRole('Applicant Review - All')) {
                 return true;
             }
 
-            if ($user->isAtLeastRank(StaffRank::JrCrew)) {
+            if ($user->hasRole('Applicant Review - Department')) {
                 // When no application is provided (route middleware), allow access to the list
                 if ($application === null) {
                     return true;

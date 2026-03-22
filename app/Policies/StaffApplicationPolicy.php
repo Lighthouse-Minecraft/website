@@ -2,7 +2,6 @@
 
 namespace App\Policies;
 
-use App\Enums\StaffRank;
 use App\Models\StaffApplication;
 use App\Models\User;
 
@@ -19,7 +18,7 @@ class StaffApplicationPolicy
 
     public function viewAny(User $user): bool
     {
-        return $user->isAtLeastRank(StaffRank::CrewMember);
+        return $user->hasRole('Applicant Review - All') || $user->hasRole('Applicant Review - Department');
     }
 
     public function view(User $user, StaffApplication $application): bool

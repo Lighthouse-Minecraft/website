@@ -2,8 +2,6 @@
 
 namespace App\Policies;
 
-use App\Enums\StaffDepartment;
-use App\Enums\StaffRank;
 use App\Models\Page;
 use App\Models\User;
 
@@ -23,7 +21,7 @@ class PagePolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->isAtLeastRank(StaffRank::Officer) || $user->hasRole('Page - Editor');
+        return $user->hasRole('Page - Editor');
     }
 
     /**
@@ -31,7 +29,7 @@ class PagePolicy
      */
     public function view(User $user, Page $page): bool
     {
-        return $page->is_published || $user->hasRole('Page - Editor') || $user->isAtLeastRank(StaffRank::CrewMember);
+        return $page->is_published || $user->hasRole('Page - Editor');
     }
 
     /**
@@ -39,7 +37,7 @@ class PagePolicy
      */
     public function create(User $user): bool
     {
-        return ($user->hasRole('Page - Editor') || $user->isAtLeastRank(StaffRank::Officer)) && ($user->isInDepartment(StaffDepartment::Steward) || $user->isInDepartment(StaffDepartment::Engineer));
+        return $user->hasRole('Page - Editor');
     }
 
     /**
@@ -47,7 +45,7 @@ class PagePolicy
      */
     public function update(User $user, Page $page): bool
     {
-        return ($user->hasRole('Page - Editor') || $user->isAtLeastRank(StaffRank::Officer)) && ($user->isInDepartment(StaffDepartment::Steward) || $user->isInDepartment(StaffDepartment::Engineer));
+        return $user->hasRole('Page - Editor');
     }
 
     /**
@@ -55,8 +53,7 @@ class PagePolicy
      */
     public function delete(User $user, Page $page): bool
     {
-        // Only those who can create pages can delete them
-        return $this->create($user) || ($user->isAtLeastRank(StaffRank::Officer) && ($user->isInDepartment(StaffDepartment::Command)));
+        return $user->hasRole('Page - Editor');
     }
 
     /**

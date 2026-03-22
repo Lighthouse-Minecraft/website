@@ -23,7 +23,7 @@ class MessagePolicy
     public function view(User $user, Message $message): bool
     {
         // Can't view internal notes unless staff
-        if ($message->kind === MessageKind::InternalNote && ! $user->hasRole('Ticket - User')) {
+        if ($message->kind === MessageKind::InternalNote && ! $user->hasRole('Internal Note - Manager')) {
             return false;
         }
 
