@@ -2,7 +2,7 @@
 title: 'Managing Position Roles'
 visibility: staff
 order: 3
-summary: 'How to assign and remove roles on staff positions.'
+summary: 'How to assign and remove roles on staff positions using the grouped picker.'
 ---
 
 ## Overview
@@ -12,7 +12,7 @@ Roles are assigned to **staff positions**, not to individual people. When you as
 ## Who Can Do This
 
 - **Admins** -- full access to assign and remove roles on any position
-- **Manage Site Config** Role -- Can manage all positions' roles except their own.
+- **Site Config - Manager** role -- can manage all positions' roles except their own
 
 ## Where to Find It
 
@@ -21,33 +21,27 @@ Roles are assigned to **staff positions**, not to individual people. When you as
 3. Find the position you want to manage in the table
 4. Click the **Roles** button on that row
 
-This opens the **Manage Roles** modal for that position.
+This opens the **Manage Roles** modal with the grouped role picker.
 
-## Assigning a Role
+## Using the Grouped Role Picker
 
-1. Open the **Manage Roles** modal for the position
-2. Under **Add Role**, select a role from the dropdown
-3. Click the **Add** button
+Roles are organized by feature group (Ticket, Task, Meeting, etc.) in collapsible sections. Each section shows how many roles from that group are assigned (e.g., "2/3").
 
-The role appears immediately in the **Assigned Roles** list. The person holding that position now has the permission.
+1. Click a **group header** to expand or collapse it
+2. Click any **role badge** to toggle it on or off
+3. Assigned roles show in color with a check icon; unassigned roles appear faded
 
-## Removing a Role
-
-1. Open the **Manage Roles** modal for the position
-2. Find the role you want to remove in the **Assigned Roles** list
-3. Click the **X** button next to the role badge
-
-The role is removed immediately. The person holding the position loses that permission right away.
+Changes take effect immediately. There's no save button -- each click adds or removes the role right away.
 
 ## Using Allow All
 
-Some leadership positions need access to everything. Instead of assigning every role individually, you can enable **Allow All**. This can only be managed by a user with the **Admin** permission.
+Some leadership positions need access to everything. Instead of assigning every role individually, you can enable **Allow All**. This can only be managed by admins.
 
 1. Open the **Manage Roles** modal for the position
 2. At the top, find the **Allow All Roles** toggle
 3. Click **Enable**
 
-When Allow All is on, the person in that position has every permission role automatically. You don't need to assign individual roles -- the modal will show a message that individual assignments aren't needed.
+When Allow All is on, the person in that position has every permission role automatically. The grouped picker is hidden since individual assignments aren't needed.
 
 To turn it off, click **Disable** in the same spot. The position will go back to using only its individually assigned roles (if any).
 
@@ -55,13 +49,12 @@ To turn it off, click **Disable** in the same spot. The position will go back to
 
 The **Staff Positions** table has a **Roles** column that shows what each position has:
 
-- An amber **Allow All** badge with a star icon means the position has Allow All enabled
+- An amber **Allow All** badge with a star icon means Allow All is enabled
 - Colored badges show individually assigned roles
-- "None" means no roles are assigned to that position
+- "None" means no roles are assigned
 
 ## Things to Keep In Mind
 
-- Roles take effect immediately. There's no save button or confirmation step when adding or removing individual roles.
-- If you remove a role from a position while someone holds it, they lose that permission right away.
+- Changes take effect immediately with each click. The person holding the position gains or loses that permission right away.
 - Enabling Allow All doesn't remove individually assigned roles -- it just overrides them. If you later disable Allow All, the individual roles are still there.
-- You can't assign the same role twice to a position. The system handles this automatically.
+- You can't manage roles on your own position. This prevents accidentally giving yourself more permissions.

@@ -7,9 +7,9 @@ summary: 'Understand how permission roles control what you can do on the site.'
 
 ## Overview
 
-Permissions on the Lighthouse website are controlled through **roles**. Roles are named permissions like "Moderator" or "Brig Warden" that unlock specific features and actions on the site.
+Permissions on the Lighthouse website are controlled through **roles**. Roles follow a **Feature - Tier** naming convention like "Ticket - User", "Meeting - Secretary", or "Discipline Report - Manager" that makes it easy to see what each one does at a glance.
 
-You don't get roles directly. Instead, roles are attached to your **staff position**, and you inherit whatever roles that position has. If you change positions, your permissions update automatically.
+Roles come from two places: your **staff position** and your **staff rank**. Both show up on your profile page as color-coded badges.
 
 ## How You Get Permissions
 
@@ -17,18 +17,29 @@ There are four ways someone can have a particular permission:
 
 1. **Admin status** -- Admins automatically have every permission on the site. Admin access is granted separately from staff positions.
 2. **Allow All** -- Some positions are marked with **Allow All**, which grants every role at once without listing them individually. This is typically used for senior leadership positions.
-3. **Position roles** -- Your position has specific roles assigned to it. These are the individual permissions you'll see listed on your profile.
-4. **Rank and department** -- A few features (like accessing the Admin Control Panel or viewing your department's Ready Room tab) are based on your rank or department rather than roles. Usage of this permission style is limited to only things that apply to all Officers or all staff.
+3. **Position roles** -- Your position has specific roles assigned to it. These are unique to your job on the team.
+4. **Rank roles** -- Your staff rank (Junior Crew Member, Crew Member, or Officer) has roles assigned to it. Everyone at that rank gets these roles automatically. For example, all Crew Members might get "Ticket - User" and "Task - Department".
 
 ## Where to See Your Roles
 
-If you're a staff member, you can see the roles assigned to any staff member's position on their **profile page**. Look for the **Staff Details** card -- it shows the position title and the role badges underneath.
+On any staff member's **profile page**, look for the **Staff Details** card. You'll see two sections:
 
-- If the position has **Allow All** enabled, you'll see a single amber **Allow All** badge
-- Otherwise, you'll see individual colored badges for each assigned role
+- **Position Roles** -- Roles specific to that person's staff position. If the position has **Allow All** enabled, you'll see a single amber **Allow All** badge instead of individual roles.
+- **Rank Roles** -- Labeled with the rank name (e.g., "Crew Member Roles"). These are the roles that everyone at that rank shares.
+
+Both sections only appear if there are roles to show.
+
+## Role Naming Convention
+
+All roles follow a **Feature - Tier** pattern:
+
+- The **feature** tells you what area it's for (Ticket, Task, Meeting, etc.)
+- The **tier** tells you the level of access (User, Manager, Department, Secretary, etc.)
+
+For example, "Task - Department" lets you manage tasks for your own department, while "Task - Manager" lets you manage tasks for any department. A few standalone roles like "Moderator" and "Brig Warden" don't follow this pattern.
 
 ## What Happens When Your Position Changes
 
-When you're moved to a different staff position, your old roles go away immediately and you pick up the roles from your new position. There's nothing you need to do -- it happens automatically.
+When you're moved to a different staff position, your position roles update immediately to match the new position. Your rank roles stay the same since they're tied to your rank, not your position.
 
-If you're removed from your staff position entirely, you lose all role-based permissions. Rank-based access (like the Ready Room) also goes away since you no longer have a rank.
+If you're removed from staff entirely, you lose both position and rank roles since you no longer have a rank.
