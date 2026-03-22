@@ -1,0 +1,8 @@
+reviews:
+  auto_apply_labels: false
+  labeling_instructions: []
+
+issue_enrichment:
+  labeling_instructions:
+    auto_apply: false
+    instructions: []
