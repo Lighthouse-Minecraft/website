@@ -19,20 +19,19 @@ beforeEach(function () {
 
 // == Role Assignment to Positions ==
 
-it('allows admin to assign a role to a staff position', function () {
+it('allows admin to assign a role to a staff position via event', function () {
     $admin = loginAsAdmin();
     $position = StaffPosition::factory()->create();
     $role = Role::firstOrCreate(['name' => 'Moderator'], ['color' => 'blue', 'icon' => 'shield-check']);
 
     livewire('admin-manage-staff-positions-page')
         ->set('rolePositionId', $position->id)
-        ->set('selectedRoleId', $role->id)
-        ->call('addRoleToPosition');
+        ->call('onRoleAdded', $role->id);
 
     expect($position->fresh()->roles()->where('name', 'Moderator')->exists())->toBeTrue();
 });
 
-it('allows admin to remove a role from a staff position', function () {
+it('allows admin to remove a role from a staff position via event', function () {
     $admin = loginAsAdmin();
     $position = StaffPosition::factory()->create();
     $role = Role::firstOrCreate(['name' => 'Moderator'], ['color' => 'blue', 'icon' => 'shield-check']);
@@ -40,7 +39,7 @@ it('allows admin to remove a role from a staff position', function () {
 
     livewire('admin-manage-staff-positions-page')
         ->set('rolePositionId', $position->id)
-        ->call('removeRoleFromPosition', $role->id);
+        ->call('onRoleRemoved', $role->id);
 
     expect($position->fresh()->roles()->where('name', 'Moderator')->exists())->toBeFalse();
 });
