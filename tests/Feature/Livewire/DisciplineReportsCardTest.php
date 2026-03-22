@@ -83,7 +83,11 @@ it('shows all reports including drafts to staff', function () {
 });
 
 it('allows staff to create a report via modal', function () {
-    $staff = officerCommand();
+    $staff = User::factory()
+        ->withStaffPosition(StaffDepartment::Command, StaffRank::Officer)
+        ->withRole('Staff Access')
+        ->withRole('Discipline Report - Manager')
+        ->create();
     loginAs($staff);
     $subject = User::factory()->create();
 

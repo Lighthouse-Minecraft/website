@@ -169,6 +169,7 @@ describe('View Topic Component', function () {
             ->withStaffPosition(\App\Enums\StaffDepartment::Quartermaster, \App\Enums\StaffRank::CrewMember)
             ->withRole('Staff Access')
             ->withRole('Ticket - User')
+            ->withRole('Internal Note - Manager')
             ->create();
         $thread = Thread::factory()->topic()->create();
         $thread->addParticipant($staff);

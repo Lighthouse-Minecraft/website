@@ -374,26 +374,28 @@ it('grants review-staff-applications to admin', function () {
     expect($user->can('review-staff-applications'))->toBeTrue();
 });
 
-it('grants review-staff-applications to officers', function () {
+it('grants review-staff-applications to user with Applicant Review - All role', function () {
     $user = User::factory()
-        ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::Officer)
+        ->withRole('Applicant Review - All')
         ->create();
 
     expect($user->can('review-staff-applications'))->toBeTrue();
 });
 
-it('grants review-staff-applications list access to JrCrew', function () {
+it('grants review-staff-applications list access to Applicant Review - Department', function () {
     $user = User::factory()
         ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::JrCrew)
+        ->withRole('Applicant Review - Department')
         ->create();
 
-    // Without application parameter, JrCrew can access the list
+    // Without application parameter, department reviewer can access the list
     expect($user->can('review-staff-applications'))->toBeTrue();
 });
 
-it('grants review-staff-applications for same-department application to JrCrew', function () {
+it('grants review-staff-applications for same-department application to Applicant Review - Department', function () {
     $user = User::factory()
         ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::JrCrew)
+        ->withRole('Applicant Review - Department')
         ->create();
 
     $position = StaffPosition::factory()
@@ -404,9 +406,10 @@ it('grants review-staff-applications for same-department application to JrCrew',
     expect($user->can('review-staff-applications', $application))->toBeTrue();
 });
 
-it('denies review-staff-applications for different-department application to JrCrew', function () {
+it('denies review-staff-applications for different-department application to Applicant Review - Department', function () {
     $user = User::factory()
         ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::JrCrew)
+        ->withRole('Applicant Review - Department')
         ->create();
 
     $position = StaffPosition::factory()
@@ -417,9 +420,9 @@ it('denies review-staff-applications for different-department application to JrC
     expect($user->can('review-staff-applications', $application))->toBeFalse();
 });
 
-it('grants review-staff-applications for any department to officers', function () {
+it('grants review-staff-applications for any department to Applicant Review - All', function () {
     $user = User::factory()
-        ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::Officer)
+        ->withRole('Applicant Review - All')
         ->create();
 
     $position = StaffPosition::factory()
@@ -436,18 +439,20 @@ it('denies review-staff-applications to regular users', function () {
     expect($user->can('review-staff-applications'))->toBeFalse();
 });
 
-it('grants review-staff-applications list access to CrewMember (isAtLeastRank JrCrew)', function () {
+it('denies review-staff-applications to staff without applicant review role', function () {
     $user = User::factory()
         ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+        ->withRole('Staff Access')
         ->create();
 
-    // CrewMember >= JrCrew, so they can access the list
-    expect($user->can('review-staff-applications'))->toBeTrue();
+    // Staff Access alone does not grant applicant review access
+    expect($user->can('review-staff-applications'))->toBeFalse();
 });
 
-it('grants review-staff-applications for same-department application to CrewMember', function () {
+it('grants review-staff-applications for same-department application to CrewMember with Applicant Review - Department', function () {
     $user = User::factory()
         ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+        ->withRole('Applicant Review - Department')
         ->create();
 
     $position = StaffPosition::factory()
@@ -458,9 +463,10 @@ it('grants review-staff-applications for same-department application to CrewMemb
     expect($user->can('review-staff-applications', $application))->toBeTrue();
 });
 
-it('denies review-staff-applications for different-department application to CrewMember', function () {
+it('denies review-staff-applications for different-department application to CrewMember with Applicant Review - Department', function () {
     $user = User::factory()
         ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+        ->withRole('Applicant Review - Department')
         ->create();
 
     $position = StaffPosition::factory()

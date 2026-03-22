@@ -68,6 +68,7 @@ describe('View Ticket Component', function () {
         $staff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
             ->withRole('Ticket - User')
+            ->withRole('Internal Note - Manager')
             ->create();
 
         $thread = Thread::factory()->withDepartment(StaffDepartment::Chaplain)->create();
@@ -173,6 +174,7 @@ describe('View Ticket Component', function () {
         $staff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
             ->withRole('Ticket - User')
+            ->withRole('Internal Note - Manager')
             ->create();
 
         $thread = Thread::factory()->withDepartment(StaffDepartment::Chaplain)->create();

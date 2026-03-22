@@ -18,31 +18,30 @@ it('allows admin to perform any action', function () {
         ->and($admin->can('publish', $report))->toBeTrue();
 });
 
-// TODO: Re-enable after PRD #280 completion — command officer no longer bypasses before() hook
-it('command officer without roles can view and create but not publish', function () {
+it('staff with Staff Access can view but not create or publish without specific roles', function () {
     $officer = officerCommand();
     loginAs($officer);
     $report = DisciplineReport::factory()->create();
 
     expect($officer->can('viewAny', DisciplineReport::class))->toBeTrue()
         ->and($officer->can('view', $report))->toBeTrue()
-        ->and($officer->can('create', DisciplineReport::class))->toBeTrue()
-        ->and($officer->can('update', $report))->toBeTrue()
+        ->and($officer->can('create', DisciplineReport::class))->toBeFalse()
+        ->and($officer->can('update', $report))->toBeFalse()
         ->and($officer->can('publish', $report))->toBeFalse();
 });
 
-it('allows jr crew to view any reports', function () {
-    $jrCrew = jrCrewQuartermaster();
-    loginAs($jrCrew);
+it('allows staff with Staff Access to view any reports', function () {
+    $staff = jrCrewQuartermaster();
+    loginAs($staff);
 
-    expect($jrCrew->can('viewAny', DisciplineReport::class))->toBeTrue();
+    expect($staff->can('viewAny', DisciplineReport::class))->toBeTrue();
 });
 
-it('allows jr crew to create reports', function () {
-    $jrCrew = jrCrewQuartermaster();
-    loginAs($jrCrew);
+it('allows user with Discipline Report - Manager to create reports', function () {
+    $user = User::factory()->withRole('Discipline Report - Manager')->create();
+    loginAs($user);
 
-    expect($jrCrew->can('create', DisciplineReport::class))->toBeTrue();
+    expect($user->can('create', DisciplineReport::class))->toBeTrue();
 });
 
 it('allows report creator to update their draft report', function () {
@@ -53,12 +52,12 @@ it('allows report creator to update their draft report', function () {
     expect($creator->can('update', $report))->toBeTrue();
 });
 
-it('allows officer to update any draft report', function () {
-    $officer = officerQuartermaster();
-    loginAs($officer);
+it('allows user with Discipline Report - Manager to update any draft report', function () {
+    $manager = User::factory()->withRole('Discipline Report - Manager')->create();
+    loginAs($manager);
     $report = DisciplineReport::factory()->create();
 
-    expect($officer->can('update', $report))->toBeTrue();
+    expect($manager->can('update', $report))->toBeTrue();
 });
 
 it('prevents updating a published report', function () {

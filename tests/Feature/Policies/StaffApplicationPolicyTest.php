@@ -14,22 +14,25 @@ it('allows admin to review applications', function () {
     expect($admin->can('viewAny', StaffApplication::class))->toBeTrue();
 });
 
-it('command officer can view applications via officer rank check', function () {
-    $officer = officerCommand();
+it('allows user with Applicant Review - All role to view applications', function () {
+    $user = User::factory()->withRole('Applicant Review - All')->create();
 
-    expect($officer->can('viewAny', StaffApplication::class))->toBeTrue();
+    expect($user->can('viewAny', StaffApplication::class))->toBeTrue();
 });
 
-it('allows crew member from any department to view applications', function () {
-    $crew = crewEngineer();
+it('allows user with Applicant Review - Department role to view applications', function () {
+    $user = User::factory()
+        ->withStaffPosition(\App\Enums\StaffDepartment::Engineer, \App\Enums\StaffRank::CrewMember)
+        ->withRole('Applicant Review - Department')
+        ->create();
 
-    expect($crew->can('viewAny', StaffApplication::class))->toBeTrue();
+    expect($user->can('viewAny', StaffApplication::class))->toBeTrue();
 });
 
-it('denies jr crew from viewing applications', function () {
-    $jrCrew = jrCrewEngineer();
+it('denies staff without applicant review role from viewing applications', function () {
+    $staff = crewEngineer();
 
-    expect($jrCrew->can('viewAny', StaffApplication::class))->toBeFalse();
+    expect($staff->can('viewAny', StaffApplication::class))->toBeFalse();
 });
 
 it('allows user to view own application', function () {

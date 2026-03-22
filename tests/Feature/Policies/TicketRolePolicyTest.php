@@ -55,10 +55,11 @@ it('denies createAsStaff without Ticket - User role', function () {
 
 // == internalNotes == //
 
-it('grants internalNotes to Ticket - User who can view the thread', function () {
+it('grants internalNotes to Internal Note - Manager who can view the thread', function () {
     $user = User::factory()
         ->withStaffPosition(StaffDepartment::Command, StaffRank::CrewMember)
         ->withRole('Ticket - User')
+        ->withRole('Internal Note - Manager')
         ->create();
 
     $thread = Thread::factory()
@@ -69,10 +70,11 @@ it('grants internalNotes to Ticket - User who can view the thread', function () 
     expect($user->can('internalNotes', $thread))->toBeTrue();
 });
 
-it('denies internalNotes without Ticket - User role', function () {
+it('denies internalNotes without Internal Note - Manager role', function () {
     $user = User::factory()
         ->withStaffPosition(StaffDepartment::Command, StaffRank::CrewMember)
         ->withRole('Staff Access')
+        ->withRole('Ticket - User')
         ->create();
 
     $thread = Thread::factory()
@@ -249,8 +251,8 @@ it('denies addParticipant without Ticket - User role', function () {
 
 // == MessagePolicy: view internal notes == //
 
-it('allows Ticket - User to view internal note messages', function () {
-    $user = User::factory()->withRole('Ticket - User')->create();
+it('allows Internal Note - Manager to view internal note messages', function () {
+    $user = User::factory()->withRole('Internal Note - Manager')->create();
 
     $thread = Thread::factory()->create();
     $thread->participants()->create(['user_id' => $user->id]);
