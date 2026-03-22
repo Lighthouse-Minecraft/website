@@ -76,8 +76,8 @@ it('replaces multiple story markers in the same post', function () {
 
     expect($rendered)->toContain('First story content.')
         ->and($rendered)->toContain('Second story content.')
-        ->and($rendered)->toContain($response1->user->name)
-        ->and($rendered)->toContain($response2->user->name);
+        ->and($rendered)->toContain(e($response1->user->name))
+        ->and($rendered)->toContain(e($response2->user->name));
 });
 
 it('displays the response author avatar in the story card when available', function () {
