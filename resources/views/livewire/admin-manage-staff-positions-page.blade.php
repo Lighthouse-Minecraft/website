@@ -527,7 +527,8 @@ new class extends Component {
     {{-- Manage Rank Roles Modal --}}
     <flux:modal name="manage-rank-roles-modal" class="w-full lg:w-1/2 space-y-6">
         @if($this->activeRankValue)
-            @php $activeRank = \App\Enums\StaffRank::from($this->activeRankValue); @endphp
+            @php $activeRank = \App\Enums\StaffRank::tryFrom($this->activeRankValue); @endphp
+            @if($activeRank)
             <flux:heading size="lg">
                 Manage Roles:
                 <flux:badge color="{{ $activeRank->color() }}">{{ $activeRank->label() }}</flux:badge>
@@ -542,6 +543,7 @@ new class extends Component {
             <div class="flex justify-end">
                 <flux:button variant="ghost" x-on:click="$flux.modal('manage-rank-roles-modal').close()">Done</flux:button>
             </div>
+            @endif
         @endif
     </flux:modal>
 </div>

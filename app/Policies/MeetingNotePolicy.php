@@ -21,9 +21,11 @@ class MeetingNotePolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasRole('Meeting - Manager')
-            || $user->hasRole('Meeting - Secretary')
-            || $user->hasRole('Meeting - Department');
+        if ($user->hasRole('Meeting - Manager') || $user->hasRole('Meeting - Secretary')) {
+            return true;
+        }
+
+        return $user->hasRole('Meeting - Department') && $user->staff_department !== null;
     }
 
     /**

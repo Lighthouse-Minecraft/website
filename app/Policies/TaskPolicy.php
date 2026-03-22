@@ -37,7 +37,11 @@ class TaskPolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasRole('Task - Manager') || $user->hasRole('Task - Department');
+        if ($user->hasRole('Task - Manager')) {
+            return true;
+        }
+
+        return $user->hasRole('Task - Department') && $user->staff_department !== null;
     }
 
     /**
