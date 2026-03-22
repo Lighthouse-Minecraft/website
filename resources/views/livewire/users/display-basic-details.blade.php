@@ -820,7 +820,9 @@ new class extends Component {
                                 <flux:heading size="sm" class="mb-1">Position Roles</flux:heading>
                                 <div class="flex flex-wrap gap-1">
                                     @foreach($position->roles as $role)
-                                        <flux:badge size="sm" color="{{ $role->color }}" icon="{{ $role->icon }}">{{ $role->name }}</flux:badge>
+                                        <span wire:key="position-role-{{ $role->id }}">
+                                            <flux:badge size="sm" color="{{ $role->color }}" icon="{{ $role->icon }}">{{ $role->name }}</flux:badge>
+                                        </span>
                                     @endforeach
                                 </div>
                             </div>
@@ -832,7 +834,9 @@ new class extends Component {
                                 <flux:heading size="sm" class="mb-1">{{ $user->staff_rank->label() }} Roles</flux:heading>
                                 <div class="flex flex-wrap gap-1">
                                     @foreach($rankRoles as $role)
-                                        <flux:badge size="sm" color="{{ $role->color }}" icon="{{ $role->icon }}">{{ $role->name }}</flux:badge>
+                                        <span wire:key="rank-role-{{ $role->id }}">
+                                            <flux:badge size="sm" color="{{ $role->color }}" icon="{{ $role->icon }}">{{ $role->name }}</flux:badge>
+                                        </span>
                                     @endforeach
                                 </div>
                             </div>

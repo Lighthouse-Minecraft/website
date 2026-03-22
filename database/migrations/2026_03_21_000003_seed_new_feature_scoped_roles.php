@@ -107,6 +107,10 @@ return new class extends Migration
 
     public function down(): void
     {
-        DB::table('roles')->whereIn('name', array_column($this->roles, 'name'))->delete();
+        // Don't delete roles that existed before this migration (renamed from previous names)
+        $preExisting = ['Staff Access', 'Discipline Report - Publisher'];
+        $toDelete = array_diff(array_column($this->roles, 'name'), $preExisting);
+
+        DB::table('roles')->whereIn('name', $toDelete)->delete();
     }
 };

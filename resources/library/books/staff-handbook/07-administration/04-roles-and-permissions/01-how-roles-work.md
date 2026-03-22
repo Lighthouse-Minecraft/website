@@ -40,6 +40,6 @@ For example, "Task - Department" lets you manage tasks for your own department, 
 
 ## What Happens When Your Position Changes
 
-When you're moved to a different staff position, your position roles update immediately to match the new position. Your rank roles stay the same since they're tied to your rank, not your position.
+When you're moved to a different staff position, your position roles update immediately to match the new position. If the new position is a different rank (e.g., moving from a Crew Member position to an Officer position), your rank roles update too since they're tied to your rank level.
 
 If you're removed from staff entirely, you lose both position and rank roles since you no longer have a rank.

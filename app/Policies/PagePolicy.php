@@ -27,9 +27,9 @@ class PagePolicy
     /**
      * Determine whether the user can view the model.
      */
-    public function view(User $user, Page $page): bool
+    public function view(?User $user, Page $page): bool
     {
-        return $page->is_published || $user->hasRole('Page - Editor');
+        return $page->is_published || ($user && $user->hasRole('Page - Editor'));
     }
 
     /**

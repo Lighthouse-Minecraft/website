@@ -202,10 +202,19 @@ new class extends Component {
         return $result;
     }
 
+    private function resolveActiveRank(): StaffRank
+    {
+        $rank = StaffRank::tryFrom((int) $this->activeRankValue);
+        abort_if($rank === null || ! in_array($rank, [StaffRank::JrCrew, StaffRank::CrewMember, StaffRank::Officer], true), 422);
+
+        return $rank;
+    }
+
     public function openRankRolesModal(int $rankValue): void
     {
         abort_unless(auth()->user()->isAdmin(), 403, 'Only admins can manage rank roles.');
         $this->activeRankValue = $rankValue;
+        $this->resolveActiveRank(); // validate
         $this->rolePositionId = null;
         Flux::modal('manage-rank-roles-modal')->show();
     }
@@ -213,12 +222,13 @@ new class extends Component {
     #[On('role-added')]
     public function onRoleAdded(int $roleId): void
     {
-        if ($this->activeRankValue) {
+        if ($this->activeRankValue !== null) {
+            $rank = $this->resolveActiveRank();
             abort_unless(auth()->user()->isAdmin(), 403);
 
             DB::table('role_staff_rank')->insertOrIgnore([
                 'role_id' => $roleId,
-                'staff_rank' => $this->activeRankValue,
+                'staff_rank' => $rank->value,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
@@ -240,12 +250,13 @@ new class extends Component {
     #[On('role-removed')]
     public function onRoleRemoved(int $roleId): void
     {
-        if ($this->activeRankValue) {
+        if ($this->activeRankValue !== null) {
+            $rank = $this->resolveActiveRank();
             abort_unless(auth()->user()->isAdmin(), 403);
 
             DB::table('role_staff_rank')
                 ->where('role_id', $roleId)
-                ->where('staff_rank', $this->activeRankValue)
+                ->where('staff_rank', $rank->value)
                 ->delete();
 
             unset($this->rankRoles);

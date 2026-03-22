@@ -131,7 +131,7 @@ See every department's tab in the Ready Room, not just your own.
 
 ### PII - Viewer
 
-View personally identifiable information (phone numbers) for staff members.
+View personally identifiable information for staff members, including email addresses and age (derived from date of birth). Staff phone visibility is handled separately through the profile's staff phone permission.
 
 ### Command Dashboard - Viewer
 
