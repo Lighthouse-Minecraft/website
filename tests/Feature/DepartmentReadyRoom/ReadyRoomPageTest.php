@@ -77,6 +77,7 @@ describe('Department Page - Departments', function () {
     it('allows users with Ready Room - View All role to view all departments', function () {
         $user = User::factory()
             ->withStaffPosition(StaffDepartment::Command, StaffRank::JrCrew)
+            ->withRole('Staff Access')
             ->withRole('Ready Room - View All')
             ->create();
         loginAs($user);

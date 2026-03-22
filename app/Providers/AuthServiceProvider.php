@@ -65,7 +65,7 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('view-ready-room', function ($user) {
-            return $user->hasRole('Admin') || $user->isAtLeastRank(StaffRank::JrCrew);
+            return $user->hasRole('Staff Access');
         });
 
         Gate::define('view-ready-room-command', function ($user) {
@@ -101,7 +101,7 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('view-acp', function ($user) {
-            return $user->isAdmin() || $user->isAtLeastRank(StaffRank::JrCrew);
+            return $user->hasRole('Staff Access');
         });
 
         $canViewLogs = function ($user) {
@@ -116,7 +116,7 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('edit-staff-bio', function ($user) {
-            return $user->isAtLeastRank(StaffRank::CrewMember) || $user->is_board_member;
+            return $user->hasRole('Staff Access') || $user->is_board_member;
         });
 
         Gate::define('board-member', function ($user) {
@@ -124,8 +124,7 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('view-user-discipline-reports', function ($user, $targetUser) {
-            return $user->hasRole('Admin')
-                || $user->isAtLeastRank(StaffRank::JrCrew)
+            return $user->hasRole('Staff Access')
                 || $user->id === $targetUser->id
                 || $user->children()->where('child_user_id', $targetUser->id)->exists();
         });
@@ -160,11 +159,11 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('view-docs-staff', function ($user) {
-            return ! $user->in_brig && ($user->isAtLeastRank(StaffRank::JrCrew) || $user->hasRole('Admin'));
+            return ! $user->in_brig && $user->hasRole('Staff Access');
         });
 
         Gate::define('view-docs-officer', function ($user) {
-            return ! $user->in_brig && ($user->isAtLeastRank(StaffRank::Officer) || $user->hasRole('Admin'));
+            return ! $user->in_brig && $user->hasRole('Officer Docs - Viewer');
         });
 
         Gate::define('edit-docs', function ($user) {

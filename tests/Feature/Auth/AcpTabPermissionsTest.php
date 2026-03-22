@@ -94,10 +94,8 @@ test('officer without User - Manager role cannot viewAny minecraft accounts', fu
     expect($user->can('viewAny', MinecraftAccount::class))->toBeFalse();
 });
 
-test('engineering staff can pass view-acp gate', function () {
-    $user = User::factory()
-        ->withStaffPosition(StaffDepartment::Engineer, StaffRank::JrCrew)
-        ->create();
+test('user with Staff Access role can pass view-acp gate', function () {
+    $user = User::factory()->withRole('Staff Access')->create();
 
     expect($user->can('view-acp'))->toBeTrue();
 });

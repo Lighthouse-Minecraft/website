@@ -116,6 +116,7 @@ describe('Stowaway Users Widget - Permissions', function () {
     it('can be seen by user with Membership Level - Manager role', function () {
         $user = User::factory()
             ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::JrCrew, 'Jr Quartermaster')
+            ->withRole('Staff Access')
             ->withRole('Membership Level - Manager')
             ->create();
         loginAs($user);
@@ -134,7 +135,7 @@ describe('Stowaway Users Widget - Permissions', function () {
     })->with('memberAll');
 
     it('cannot be viewed by staff without Membership Level - Manager role', function () {
-        $user = User::factory()->withStaffPosition(StaffDepartment::Engineer, StaffRank::Officer, 'Engineer Officer')->create();
+        $user = User::factory()->withStaffPosition(StaffDepartment::Engineer, StaffRank::Officer, 'Engineer Officer')->withRole('Staff Access')->create();
         loginAs($user);
 
         get('dashboard')
@@ -145,6 +146,7 @@ describe('Stowaway Users Widget - Permissions', function () {
     it('allows user with Membership Level - Manager role to promote stowaway users', function () {
         $user = User::factory()
             ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::CrewMember, 'Quartermaster Crew')
+            ->withRole('Staff Access')
             ->withRole('Membership Level - Manager')
             ->create();
         loginAs($user);

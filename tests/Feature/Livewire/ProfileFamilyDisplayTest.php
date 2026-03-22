@@ -104,11 +104,12 @@ it('hides Parent Portal link from non-staff', function () {
 
 it('shows action dropdown for staff on profile', function () {
     $target = User::factory()->create(['membership_level' => MembershipLevel::Stowaway]);
-    $admin = User::factory()->create([
-        'membership_level' => MembershipLevel::Citizen,
-        'staff_department' => StaffDepartment::Command,
-        'staff_rank' => StaffRank::Officer,
-    ]);
+    $admin = User::factory()
+        ->withStaffPosition(StaffDepartment::Command, StaffRank::Officer)
+        ->withRole('Staff Access')
+        ->create([
+            'membership_level' => MembershipLevel::Citizen,
+        ]);
     actingAs($admin);
 
     Livewire\Volt\Volt::test('users.display-basic-details', ['user' => $target])

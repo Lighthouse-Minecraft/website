@@ -116,7 +116,7 @@ describe('Prayer Management Panel - Permissions', function () {
             ->assertSee('Prayer Nations');
     })->with([
         'Admin' => fn () => User::factory()->admin()->create(),
-        'Site Config - Manager role' => fn () => User::factory()->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)->withRole('Site Config - Manager')->create(),
+        'Site Config - Manager role' => fn () => User::factory()->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)->withRole('Staff Access')->withRole('Site Config - Manager')->create(),
     ])->done();
 
     // Other officer departments cannot view the panel

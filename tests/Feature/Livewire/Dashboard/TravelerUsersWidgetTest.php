@@ -166,6 +166,7 @@ describe('Traveler Users Widget', function () {
     it('is visible to user with Membership Level - Manager role', function () {
         $user = User::factory()
             ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::JrCrew, 'Jr Quartermaster')
+            ->withRole('Staff Access')
             ->withRole('Membership Level - Manager')
             ->create();
         $this->actingAs($user);
@@ -185,7 +186,7 @@ describe('Traveler Users Widget', function () {
     });
 
     it('is not visible to staff without Membership Level - Manager role', function () {
-        $user = User::factory()->withStaffPosition(StaffDepartment::Engineer, StaffRank::Officer, 'Engineer Officer')->create();
+        $user = User::factory()->withStaffPosition(StaffDepartment::Engineer, StaffRank::Officer, 'Engineer Officer')->withRole('Staff Access')->create();
         $this->actingAs($user);
 
         $response = get(route('dashboard'));

@@ -105,6 +105,7 @@ it('allows staff to create a report via modal', function () {
 it('allows user with Discipline Report - Publisher role to publish a draft report', function () {
     $publisher = User::factory()
         ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::Officer)
+        ->withRole('Staff Access')
         ->withRole('Discipline Report - Publisher')
         ->create();
     loginAs($publisher);

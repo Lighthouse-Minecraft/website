@@ -78,7 +78,7 @@ it('shows staff-only message for non-staff', function () {
 });
 
 it('renders staff page for staff users', function () {
-    $user = User::factory()->withStaffPosition(StaffDepartment::Command, StaffRank::JrCrew)->create();
+    $user = User::factory()->withStaffPosition(StaffDepartment::Command, StaffRank::JrCrew)->withRole('Staff Access')->create();
     loginAs($user);
 
     $this->get('/library/books/test-book/part/chapter/staff-page')

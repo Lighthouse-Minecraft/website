@@ -178,28 +178,18 @@ it('grants view-acp to admin', function () {
     expect($user->can('view-acp'))->toBeTrue();
 });
 
-it('grants view-acp to JrCrew', function () {
+it('grants view-acp to user with Staff Access role', function () {
+    $user = User::factory()->withRole('Staff Access')->create();
+
+    expect($user->can('view-acp'))->toBeTrue();
+});
+
+it('denies view-acp to staff without Staff Access role', function () {
     $user = User::factory()
         ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::JrCrew)
         ->create();
 
-    expect($user->can('view-acp'))->toBeTrue();
-});
-
-it('grants view-acp to CrewMember', function () {
-    $user = User::factory()
-        ->withStaffPosition(StaffDepartment::Engineer, StaffRank::CrewMember)
-        ->create();
-
-    expect($user->can('view-acp'))->toBeTrue();
-});
-
-it('grants view-acp to Officer', function () {
-    $user = User::factory()
-        ->withStaffPosition(StaffDepartment::Steward, StaffRank::Officer)
-        ->create();
-
-    expect($user->can('view-acp'))->toBeTrue();
+    expect($user->can('view-acp'))->toBeFalse();
 });
 
 it('denies view-acp to regular user', function () {
@@ -481,26 +471,44 @@ it('denies review-staff-applications for different-department application to Cre
     expect($user->can('review-staff-applications', $application))->toBeFalse();
 });
 
-// == Rank-based gates remain unchanged == //
+// == Staff Access role gates == //
 
-it('grants view-ready-room to JrCrew (rank-based, unchanged)', function () {
-    $user = User::factory()
-        ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::JrCrew)
-        ->create();
+it('grants view-ready-room to user with Staff Access role', function () {
+    $user = User::factory()->withRole('Staff Access')->create();
 
     expect($user->can('view-ready-room'))->toBeTrue();
 });
 
-it('denies view-ready-room to regular user (rank-based, unchanged)', function () {
+it('denies view-ready-room to staff without Staff Access role', function () {
+    $user = User::factory()
+        ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::JrCrew)
+        ->create();
+
+    expect($user->can('view-ready-room'))->toBeFalse();
+});
+
+it('denies view-ready-room to regular user', function () {
     $user = User::factory()->create();
 
     expect($user->can('view-ready-room'))->toBeFalse();
 });
 
-it('grants edit-staff-bio to CrewMember (rank-based, unchanged)', function () {
+it('grants edit-staff-bio to user with Staff Access role', function () {
+    $user = User::factory()->withRole('Staff Access')->create();
+
+    expect($user->can('edit-staff-bio'))->toBeTrue();
+});
+
+it('denies edit-staff-bio to staff without Staff Access role', function () {
     $user = User::factory()
         ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
         ->create();
+
+    expect($user->can('edit-staff-bio'))->toBeFalse();
+});
+
+it('grants edit-staff-bio to board member without Staff Access role', function () {
+    $user = User::factory()->create(['is_board_member' => true]);
 
     expect($user->can('edit-staff-bio'))->toBeTrue();
 });
@@ -546,7 +554,10 @@ it('grants all role-based gates to user with allow-all position', function () {
         ->and($user->can('view-command-dashboard'))->toBeTrue()
         ->and($user->can('lock-topic'))->toBeTrue()
         ->and($user->can('manage-community-stories'))->toBeTrue()
-        ->and($user->can('manage-application-questions'))->toBeTrue();
+        ->and($user->can('manage-application-questions'))->toBeTrue()
+        ->and($user->can('view-acp'))->toBeTrue()
+        ->and($user->can('view-ready-room'))->toBeTrue()
+        ->and($user->can('edit-staff-bio'))->toBeTrue();
 });
 
 // == Admin override works for all role-based gates == //
@@ -573,5 +584,8 @@ it('grants all role-based gates to admin user', function () {
         ->and($user->can('view-ready-room-chaplain'))->toBeTrue()
         ->and($user->can('view-ready-room-engineer'))->toBeTrue()
         ->and($user->can('view-ready-room-quartermaster'))->toBeTrue()
-        ->and($user->can('view-ready-room-steward'))->toBeTrue();
+        ->and($user->can('view-ready-room-steward'))->toBeTrue()
+        ->and($user->can('view-acp'))->toBeTrue()
+        ->and($user->can('view-ready-room'))->toBeTrue()
+        ->and($user->can('edit-staff-bio'))->toBeTrue();
 });
