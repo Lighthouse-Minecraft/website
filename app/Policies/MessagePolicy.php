@@ -3,7 +3,6 @@
 namespace App\Policies;
 
 use App\Enums\MessageKind;
-use App\Enums\StaffRank;
 use App\Models\Message;
 use App\Models\User;
 
@@ -24,7 +23,7 @@ class MessagePolicy
     public function view(User $user, Message $message): bool
     {
         // Can't view internal notes unless staff
-        if ($message->kind === MessageKind::InternalNote && ! $user->isAtLeastRank(StaffRank::CrewMember)) {
+        if ($message->kind === MessageKind::InternalNote && ! $user->hasRole('Ticket - User')) {
             return false;
         }
 

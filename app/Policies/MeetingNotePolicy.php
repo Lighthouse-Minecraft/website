@@ -2,7 +2,6 @@
 
 namespace App\Policies;
 
-use App\Enums\StaffRank;
 use App\Models\MeetingNote;
 use App\Models\User;
 
@@ -23,7 +22,8 @@ class MeetingNotePolicy
     public function create(User $user): bool
     {
         return $user->hasRole('Meeting - Manager')
-            || $user->isAtLeastRank(StaffRank::Officer);
+            || $user->hasRole('Meeting - Secretary')
+            || $user->hasRole('Meeting - Department');
     }
 
     /**
@@ -35,8 +35,13 @@ class MeetingNotePolicy
             return true;
         }
 
-        // Officers can edit their own department's notes
-        if ($user->isAtLeastRank(StaffRank::Officer) && $user->staff_department !== null) {
+        // Meeting - Secretary can edit notes for all departments
+        if ($user->hasRole('Meeting - Secretary')) {
+            return true;
+        }
+
+        // Meeting - Department can only edit their own department's notes
+        if ($user->hasRole('Meeting - Department') && $user->staff_department !== null) {
             return $meetingNote->section_key === $user->staff_department->value;
         }
 
