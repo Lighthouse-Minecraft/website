@@ -5,10 +5,14 @@ reviews:
   auto_review:
     enabled: true
     base_branches:
-      - main
       - staging
   auto_apply_labels: false
   labeling_instructions: []
 
 chat:
   auto_reply: true
+
+issue_enrichment:
+  labeling_instructions:
+    auto_apply: false
+    instructions: []
