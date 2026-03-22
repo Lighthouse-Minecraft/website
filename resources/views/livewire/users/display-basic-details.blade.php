@@ -797,20 +797,41 @@ new class extends Component {
                         @endif
                     </div>
 
-                    @if(Auth::user()->isAtLeastRank(\App\Enums\StaffRank::JrCrew) || Auth::user()->isAdmin())
+                    @if(Auth::user()->hasRole('Staff Access'))
                         @php
                             $position = $user->staffPosition->load('roles');
+                            $rankRoles = $user->staff_rank && $user->staff_rank !== \App\Enums\StaffRank::None
+                                ? \App\Models\Role::whereIn('id',
+                                    \Illuminate\Support\Facades\DB::table('role_staff_rank')
+                                        ->where('staff_rank', $user->staff_rank->value)
+                                        ->pluck('role_id')
+                                )->orderBy('name')->get()
+                                : collect();
                         @endphp
+
+                        {{-- Position Roles --}}
                         @if($position->has_all_roles_at)
                             <div>
-                                <flux:heading size="sm" class="mb-1">Roles</flux:heading>
+                                <flux:heading size="sm" class="mb-1">Position Roles</flux:heading>
                                 <flux:badge size="sm" color="amber" icon="star">Allow All</flux:badge>
                             </div>
                         @elseif($position->roles->isNotEmpty())
                             <div>
-                                <flux:heading size="sm" class="mb-1">Roles</flux:heading>
+                                <flux:heading size="sm" class="mb-1">Position Roles</flux:heading>
                                 <div class="flex flex-wrap gap-1">
                                     @foreach($position->roles as $role)
+                                        <flux:badge size="sm" color="{{ $role->color }}" icon="{{ $role->icon }}">{{ $role->name }}</flux:badge>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+
+                        {{-- Rank Roles --}}
+                        @if($rankRoles->isNotEmpty())
+                            <div>
+                                <flux:heading size="sm" class="mb-1">{{ $user->staff_rank->label() }} Roles</flux:heading>
+                                <div class="flex flex-wrap gap-1">
+                                    @foreach($rankRoles as $role)
                                         <flux:badge size="sm" color="{{ $role->color }}" icon="{{ $role->icon }}">{{ $role->name }}</flux:badge>
                                     @endforeach
                                 </div>

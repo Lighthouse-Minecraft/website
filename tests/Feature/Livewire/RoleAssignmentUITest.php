@@ -116,6 +116,7 @@ it('prevents non-admin from toggling Allow All', function () {
 it('shows role badges on profile to staff members', function () {
     $staffUser = User::factory()
         ->withStaffPosition(StaffDepartment::Command, StaffRank::JrCrew, 'Jr Crew')
+        ->withRole('Staff Access')
         ->create();
 
     $targetUser = User::factory()->create();
@@ -165,6 +166,7 @@ it('hides role badges on profile from non-staff users', function () {
 it('shows Allow All badge on profile for staff-visible positions', function () {
     $staffUser = User::factory()
         ->withStaffPosition(StaffDepartment::Command, StaffRank::JrCrew, 'Jr Crew')
+        ->withRole('Staff Access')
         ->create();
 
     $targetUser = User::factory()->create();
