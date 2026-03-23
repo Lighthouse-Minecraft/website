@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\MembershipLevel;
 use App\Models\StaffApplication;
 use App\Models\User;
 
@@ -28,7 +29,7 @@ class StaffApplicationPolicy
 
     public function create(User $user): bool
     {
-        return ! $user->in_brig;
+        return ! $user->in_brig && $user->isAtLeastLevel(MembershipLevel::Traveler);
     }
 
     public function update(User $user, StaffApplication $application): bool
