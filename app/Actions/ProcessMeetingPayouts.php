@@ -127,7 +127,27 @@ class ProcessMeetingPayouts
                 continue;
             }
 
-            // All eligibility checks passed — attempt payout
+            // All eligibility checks passed — persist a placeholder record before
+            // firing RCON. This makes the unique (meeting_id, user_id) constraint
+            // the idempotency guard: if the process crashes after RCON succeeds but
+            // before the DB write, a retry will find this record and skip re-firing
+            // the command, preventing a double-payment.
+            $payout = MeetingPayout::firstOrCreate(
+                ['meeting_id' => $meeting->id, 'user_id' => $attendee->id],
+                [
+                    'minecraft_account_id' => $mcAccount->id,
+                    'amount' => $amount,
+                    'status' => 'failed', // pessimistic default; updated to 'paid' on success
+                ]
+            );
+
+            if (! $payout->wasRecentlyCreated) {
+                // Record already existed from a prior crashed run — count it and skip RCON
+                $payout->status === 'paid' ? $paidCount++ : $failedCount++;
+
+                continue;
+            }
+
             $rconService = app(MinecraftRconService::class);
             $result = $rconService->executeCommand(
                 "money give {$mcAccount->username} {$amount}",
@@ -138,23 +158,11 @@ class ProcessMeetingPayouts
             );
 
             if ($result['success']) {
-                MeetingPayout::create([
-                    'meeting_id' => $meeting->id,
-                    'user_id' => $attendee->id,
-                    'minecraft_account_id' => $mcAccount->id,
-                    'amount' => $amount,
-                    'status' => 'paid',
-                ]);
+                $payout->update(['status' => 'paid']);
                 $paidCount++;
             } else {
-                MeetingPayout::create([
-                    'meeting_id' => $meeting->id,
-                    'user_id' => $attendee->id,
-                    'minecraft_account_id' => $mcAccount->id,
-                    'amount' => $amount,
-                    'status' => 'failed',
-                ]);
                 $failedCount++;
+                // Status is already 'failed' from firstOrCreate — no update needed
             }
         }
 

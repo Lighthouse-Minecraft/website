@@ -227,6 +227,34 @@ it('marks payout as failed when RCON returns failure, but does not block complet
     expect($payout->status)->toBe('failed');
 });
 
+// --- Idempotency / crash recovery ---
+
+it('does not re-fire RCON when a failed placeholder record already exists', function () {
+    $meeting = makeMeeting();
+    $user = User::factory()->create(['staff_rank' => StaffRank::CrewMember]);
+    $mcAccount = withPrimaryMcAccount($user);
+    addAttendee($meeting, $user);
+    submitReport($meeting, $user);
+
+    // Simulate a prior crashed run: placeholder was persisted but status never updated
+    MeetingPayout::create([
+        'meeting_id' => $meeting->id,
+        'user_id' => $user->id,
+        'minecraft_account_id' => $mcAccount->id,
+        'amount' => 75,
+        'status' => 'failed',
+    ]);
+
+    // RCON should NOT be called — the existing record acts as the idempotency guard
+    test()->mock(MinecraftRconService::class)
+        ->shouldNotReceive('executeCommand');
+
+    ProcessMeetingPayouts::run($meeting);
+
+    $count = MeetingPayout::where('meeting_id', $meeting->id)->where('user_id', $user->id)->count();
+    expect($count)->toBe(1);
+});
+
 // --- Duplicate prevention ---
 
 it('does not create duplicate payout records when called twice', function () {
