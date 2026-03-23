@@ -83,7 +83,11 @@ it('shows all reports including drafts to staff', function () {
 });
 
 it('allows staff to create a report via modal', function () {
-    $staff = officerCommand();
+    $staff = User::factory()
+        ->withStaffPosition(StaffDepartment::Command, StaffRank::Officer)
+        ->withRole('Staff Access')
+        ->withRole('Discipline Report - Manager')
+        ->create();
     loginAs($staff);
     $subject = User::factory()->create();
 
@@ -102,10 +106,11 @@ it('allows staff to create a report via modal', function () {
     ]);
 });
 
-it('allows user with Publish Discipline Reports role to publish a draft report', function () {
+it('allows user with Discipline Report - Publisher role to publish a draft report', function () {
     $publisher = User::factory()
         ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::Officer)
-        ->withRole('Publish Discipline Reports')
+        ->withRole('Staff Access')
+        ->withRole('Discipline Report - Publisher')
         ->create();
     loginAs($publisher);
     $subject = User::factory()->create();

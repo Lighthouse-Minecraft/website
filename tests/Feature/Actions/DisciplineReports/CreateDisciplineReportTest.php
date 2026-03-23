@@ -98,10 +98,14 @@ it('does not notify the reporter even if they are in the quartermaster departmen
     Notification::assertNotSentTo($reporter, DisciplineReportPendingReviewNotification::class);
 });
 
-it('does not notify quartermaster when officer creates report', function () {
+it('does not notify quartermaster when reporter has Discipline Report - Publisher role', function () {
     Notification::fake();
 
-    $reporter = officerCommand();
+    $reporter = User::factory()
+        ->withStaffPosition(\App\Enums\StaffDepartment::Command, \App\Enums\StaffRank::Officer)
+        ->withRole('Staff Access')
+        ->withRole('Discipline Report - Publisher')
+        ->create();
     $subject = User::factory()->create();
     $qmOfficer = officerQuartermaster();
 

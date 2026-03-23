@@ -2,7 +2,6 @@
 
 namespace App\Policies;
 
-use App\Enums\StaffRank;
 use App\Models\Task;
 use App\Models\User;
 
@@ -38,7 +37,11 @@ class TaskPolicy
      */
     public function create(User $user): bool
     {
-        return $user->isAtLeastRank(StaffRank::CrewMember);
+        if ($user->hasRole('Task - Manager')) {
+            return true;
+        }
+
+        return $user->hasRole('Task - Department') && $user->staff_department !== null;
     }
 
     /**
@@ -46,7 +49,18 @@ class TaskPolicy
      */
     public function update(User $user, Task $task): bool
     {
-        return $user->isAtLeastRank(StaffRank::CrewMember);
+        // Task - Manager can edit tasks for any department
+        if ($user->hasRole('Task - Manager')) {
+            return true;
+        }
+
+        // Task - Department can only edit tasks in their own department
+        if ($user->hasRole('Task - Department')) {
+            return $user->staff_department !== null
+                && $task->section_key === $user->staff_department->value;
+        }
+
+        return false;
     }
 
     /**

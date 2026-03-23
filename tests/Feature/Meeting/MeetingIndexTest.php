@@ -83,7 +83,7 @@ describe('Meetings List Page - Permissions', function () {
     });
 
     it('is visible to Crew Members', function () {
-        $user = User::factory()->withStaffPosition(StaffDepartment::Steward, StaffRank::CrewMember, 'crew')->create();
+        $user = User::factory()->withStaffPosition(StaffDepartment::Steward, StaffRank::CrewMember, 'crew')->withRole('Staff Access')->create();
         actingAs($user);
 
         get(route('acp.index', ['category' => 'content']))
@@ -103,7 +103,7 @@ describe('Meetings List Page - Permissions', function () {
 
     it('shows private meetings to officers', function () {
         $privateMeeting = Meeting::factory()->private()->create();
-        $user = User::factory()->withStaffPosition(StaffDepartment::Command, StaffRank::Officer)->create();
+        $user = User::factory()->withStaffPosition(StaffDepartment::Command, StaffRank::Officer)->withRole('Staff Access')->create();
         actingAs($user);
 
         get(route('meeting.index'))

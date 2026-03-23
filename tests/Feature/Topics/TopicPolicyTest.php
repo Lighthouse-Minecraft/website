@@ -31,8 +31,12 @@ describe('createTopic policy', function () {
         expect($parent->can('createTopic', [Thread::class, $report]))->toBeTrue();
     });
 
-    it('allows staff (JrCrew+) to create topic on published report', function () {
-        $staff = jrCrewQuartermaster();
+    it('allows staff with Ticket - User role to create topic on published report', function () {
+        $staff = User::factory()
+            ->withStaffPosition(\App\Enums\StaffDepartment::Quartermaster, \App\Enums\StaffRank::JrCrew)
+            ->withRole('Staff Access')
+            ->withRole('Ticket - User')
+            ->create();
         $report = DisciplineReport::factory()->published()->create();
 
         $this->actingAs($staff);
@@ -141,7 +145,11 @@ describe('lock-topic gate', function () {
 
 describe('addParticipant policy', function () {
     it('allows staff who can view the thread to add participants', function () {
-        $staff = crewQuartermaster();
+        $staff = User::factory()
+            ->withStaffPosition(\App\Enums\StaffDepartment::Quartermaster, \App\Enums\StaffRank::CrewMember)
+            ->withRole('Staff Access')
+            ->withRole('Ticket - User')
+            ->create();
         $thread = Thread::factory()->topic()->create();
         $thread->addParticipant($staff);
 

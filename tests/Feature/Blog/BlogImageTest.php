@@ -165,7 +165,7 @@ it('handles a mix of valid and invalid image tags', function () {
 it('allows users with manage-blog gate to upload images', function () {
     Storage::fake(config('filesystems.public_disk'));
 
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     loginAs($author);
 
     $response = \Livewire\Livewire::test('blog.editor')
@@ -183,7 +183,7 @@ it('denies upload to users without manage-blog gate', function () {
 // === Image Gallery ===
 
 it('displays the image gallery with existing images', function () {
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     loginAs($author);
 
     $image1 = BlogImage::factory()->create(['title' => 'Sunset Photo']);
@@ -196,7 +196,7 @@ it('displays the image gallery with existing images', function () {
 });
 
 it('filters gallery images by title search', function () {
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     loginAs($author);
 
     BlogImage::factory()->create(['title' => 'Sunset Photo']);
@@ -212,7 +212,7 @@ it('filters gallery images by title search', function () {
 });
 
 it('shows empty state when no gallery images match search', function () {
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     loginAs($author);
 
     BlogImage::factory()->create(['title' => 'Sunset Photo']);
@@ -223,7 +223,7 @@ it('shows empty state when no gallery images match search', function () {
 });
 
 it('inserts gallery image tag into post body', function () {
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     loginAs($author);
 
     $image = BlogImage::factory()->create(['title' => 'Test Image']);
@@ -247,7 +247,7 @@ it('denies gallery image insertion to users without manage-blog gate', function 
 // === Hero Image Picker ===
 
 it('selects an existing image as hero image', function () {
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     loginAs($author);
 
     $image = BlogImage::factory()->create(['title' => 'Hero Photo']);
@@ -258,7 +258,7 @@ it('selects an existing image as hero image', function () {
 });
 
 it('removes the selected hero image', function () {
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     loginAs($author);
 
     $image = BlogImage::factory()->create();
@@ -272,7 +272,7 @@ it('removes the selected hero image', function () {
 it('uploads and selects a new hero image', function () {
     Storage::fake(config('filesystems.public_disk'));
 
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     loginAs($author);
 
     $file = UploadedFile::fake()->image('hero.jpg');
@@ -292,7 +292,7 @@ it('uploads and selects a new hero image', function () {
 });
 
 it('shows thumbnail preview when hero image is selected', function () {
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     loginAs($author);
 
     $image = BlogImage::factory()->create(['title' => 'Preview Hero']);
@@ -305,7 +305,7 @@ it('shows thumbnail preview when hero image is selected', function () {
 // === OG Image Picker ===
 
 it('selects an existing image as OG image', function () {
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     loginAs($author);
 
     $image = BlogImage::factory()->create(['title' => 'OG Photo']);
@@ -316,7 +316,7 @@ it('selects an existing image as OG image', function () {
 });
 
 it('removes the selected OG image', function () {
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     loginAs($author);
 
     $image = BlogImage::factory()->create();
@@ -330,7 +330,7 @@ it('removes the selected OG image', function () {
 it('uploads and selects a new OG image', function () {
     Storage::fake(config('filesystems.public_disk'));
 
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     loginAs($author);
 
     $file = UploadedFile::fake()->image('og.jpg');
@@ -350,7 +350,7 @@ it('uploads and selects a new OG image', function () {
 });
 
 it('saves hero and OG image IDs when creating a post', function () {
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     loginAs($author);
 
     $heroImage = BlogImage::factory()->create();
@@ -369,7 +369,7 @@ it('saves hero and OG image IDs when creating a post', function () {
 });
 
 it('loads hero and OG image IDs when editing a post', function () {
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     loginAs($author);
 
     $heroImage = BlogImage::factory()->create();

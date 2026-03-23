@@ -23,16 +23,16 @@ class DisciplineReportPolicy
 
     public function viewAny(User $user): bool
     {
-        return $user->hasRole('Manage Discipline Reports') || $user->isAtLeastRank(StaffRank::JrCrew);
+        return $user->hasRole('Discipline Report - Manager') || $user->hasRole('Staff Access');
     }
 
     public function view(User $user, DisciplineReport $report): bool
     {
-        if ($user->hasRole('Manage Discipline Reports')) {
+        if ($user->hasRole('Discipline Report - Manager')) {
             return true;
         }
 
-        if ($user->isAtLeastRank(StaffRank::JrCrew)) {
+        if ($user->hasRole('Staff Access')) {
             return true;
         }
 
@@ -49,7 +49,7 @@ class DisciplineReportPolicy
 
     public function create(User $user): bool
     {
-        return $user->hasRole('Manage Discipline Reports') || $user->isAtLeastRank(StaffRank::JrCrew);
+        return $user->hasRole('Discipline Report - Manager');
     }
 
     public function update(User $user, DisciplineReport $report): bool
@@ -58,12 +58,11 @@ class DisciplineReportPolicy
             return false;
         }
 
-        if ($user->hasRole('Manage Discipline Reports')) {
+        if ($user->hasRole('Discipline Report - Manager')) {
             return true;
         }
 
-        return $user->id === $report->reporter_user_id
-            || $user->isAtLeastRank(StaffRank::Officer);
+        return $user->id === $report->reporter_user_id;
     }
 
     public function publish(User $user, DisciplineReport $report): bool
@@ -72,7 +71,7 @@ class DisciplineReportPolicy
             return false;
         }
 
-        if (! $user->hasRole('Publish Discipline Reports')) {
+        if (! $user->hasRole('Discipline Report - Publisher')) {
             return false;
         }
 

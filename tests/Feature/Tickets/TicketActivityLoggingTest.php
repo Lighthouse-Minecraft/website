@@ -37,6 +37,7 @@ describe('Ticket Activity Logging', function () {
     it('logs activity when staff joins a ticket by replying', function () {
         $staff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, \App\Enums\StaffRank::CrewMember)
+            ->withRole('Ticket - User')
             ->create();
 
         $thread = Thread::factory()
@@ -64,6 +65,7 @@ describe('Ticket Activity Logging', function () {
     it('logs activity when viewer becomes participant', function () {
         $staff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, \App\Enums\StaffRank::CrewMember)
+            ->withRole('Ticket - User')
             ->create();
 
         $thread = Thread::factory()->withDepartment(StaffDepartment::Chaplain)->create();
@@ -125,6 +127,7 @@ describe('Ticket Activity Logging', function () {
     it('does not log activity for internal notes', function () {
         $staff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, \App\Enums\StaffRank::CrewMember)
+            ->withRole('Ticket - User')
             ->create();
 
         $thread = Thread::factory()->withDepartment(StaffDepartment::Chaplain)->create();

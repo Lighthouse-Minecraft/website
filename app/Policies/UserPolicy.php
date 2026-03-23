@@ -21,7 +21,7 @@ class UserPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasRole('User Manager');
+        return $user->hasRole('User - Manager');
     }
 
     /**
@@ -34,12 +34,12 @@ class UserPolicy
 
     public function viewActivityLog(User $user, User $model): bool
     {
-        return $user->hasRole('User Manager');
+        return $user->hasRole('User - Manager');
     }
 
     public function viewPii(User $user, User $model): bool
     {
-        return $user->id === $model->id || $user->hasRole('View PII');
+        return $user->id === $model->id || $user->hasRole('PII - Viewer');
     }
 
     public function viewStaffPhone(User $user, User $model): bool
@@ -63,7 +63,7 @@ class UserPolicy
      */
     public function update(User $user, User $model): bool
     {
-        return $user->hasRole('User Manager') || $user->id == $model->id;
+        return $user->hasRole('User - Manager') || $user->id == $model->id;
     }
 
     public function updateStaffPosition(User $user, User $model): bool

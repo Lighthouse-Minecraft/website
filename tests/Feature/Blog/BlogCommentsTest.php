@@ -31,7 +31,7 @@ it('has BlogComment value in ThreadType enum', function () {
 // === Thread Auto-Creation ===
 
 it('creates a comment thread when a blog post is published', function () {
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     $post = BlogPost::factory()->create([
         'author_id' => $author->id,
         'status' => BlogPostStatus::InReview,
@@ -50,7 +50,7 @@ it('creates a comment thread when a blog post is published', function () {
 });
 
 it('does not create duplicate threads on re-publish', function () {
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     $post = BlogPost::factory()->create(['author_id' => $author->id]);
 
     CreateBlogCommentThread::run($post);
@@ -182,7 +182,7 @@ it('rejects a pending blog comment by deleting it', function () {
 // === Thread Lifecycle ===
 
 it('closes comment thread when blog post is soft-deleted', function () {
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     $post = BlogPost::factory()->published()->create(['author_id' => $author->id]);
     CreateBlogCommentThread::run($post);
 
@@ -200,7 +200,7 @@ it('closes comment thread when blog post is soft-deleted', function () {
 it('sends BlogPostPublishedNotification to opted-in Traveler+ users', function () {
     Notification::fake();
 
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     $traveler = User::factory()->withMembershipLevel(MembershipLevel::Traveler)->create();
     $citizen = User::factory()->withMembershipLevel(MembershipLevel::Citizen)->create();
     $stowaway = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create();
@@ -220,7 +220,7 @@ it('sends BlogPostPublishedNotification to opted-in Traveler+ users', function (
 it('does not send blog notification to users in brig', function () {
     Notification::fake();
 
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     $brigUser = User::factory()->withMembershipLevel(MembershipLevel::Citizen)->create([
         'in_brig' => true,
     ]);
@@ -238,7 +238,7 @@ it('does not send blog notification to users in brig', function () {
 it('respects blog notification preference opt-out', function () {
     Notification::fake();
 
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     $optedOut = User::factory()->withMembershipLevel(MembershipLevel::Citizen)->create([
         'notification_preferences' => [
             'blog' => ['email' => false, 'pushover' => false, 'discord' => false],
@@ -289,8 +289,8 @@ it('allows users with Moderator role to moderate comments', function () {
     expect($moderator->can('moderate-blog-comments'))->toBeTrue();
 });
 
-it('allows users with Blog Author role to moderate comments', function () {
-    $author = User::factory()->withRole('Blog Author')->create();
+it('allows users with Blog - Author role to moderate comments', function () {
+    $author = User::factory()->withRole('Blog - Author')->create();
     loginAs($author);
 
     expect($author->can('moderate-blog-comments'))->toBeTrue();

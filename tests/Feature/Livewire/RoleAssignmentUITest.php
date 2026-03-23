@@ -19,20 +19,19 @@ beforeEach(function () {
 
 // == Role Assignment to Positions ==
 
-it('allows admin to assign a role to a staff position', function () {
+it('allows admin to assign a role to a staff position via event', function () {
     $admin = loginAsAdmin();
     $position = StaffPosition::factory()->create();
     $role = Role::firstOrCreate(['name' => 'Moderator'], ['color' => 'blue', 'icon' => 'shield-check']);
 
     livewire('admin-manage-staff-positions-page')
         ->set('rolePositionId', $position->id)
-        ->set('selectedRoleId', $role->id)
-        ->call('addRoleToPosition');
+        ->call('onRoleAdded', $role->id);
 
     expect($position->fresh()->roles()->where('name', 'Moderator')->exists())->toBeTrue();
 });
 
-it('allows admin to remove a role from a staff position', function () {
+it('allows admin to remove a role from a staff position via event', function () {
     $admin = loginAsAdmin();
     $position = StaffPosition::factory()->create();
     $role = Role::firstOrCreate(['name' => 'Moderator'], ['color' => 'blue', 'icon' => 'shield-check']);
@@ -40,7 +39,7 @@ it('allows admin to remove a role from a staff position', function () {
 
     livewire('admin-manage-staff-positions-page')
         ->set('rolePositionId', $position->id)
-        ->call('removeRoleFromPosition', $role->id);
+        ->call('onRoleRemoved', $role->id);
 
     expect($position->fresh()->roles()->where('name', 'Moderator')->exists())->toBeFalse();
 });
@@ -117,6 +116,7 @@ it('prevents non-admin from toggling Allow All', function () {
 it('shows role badges on profile to staff members', function () {
     $staffUser = User::factory()
         ->withStaffPosition(StaffDepartment::Command, StaffRank::JrCrew, 'Jr Crew')
+        ->withRole('Staff Access')
         ->create();
 
     $targetUser = User::factory()->create();
@@ -166,6 +166,7 @@ it('hides role badges on profile from non-staff users', function () {
 it('shows Allow All badge on profile for staff-visible positions', function () {
     $staffUser = User::factory()
         ->withStaffPosition(StaffDepartment::Command, StaffRank::JrCrew, 'Jr Crew')
+        ->withRole('Staff Access')
         ->create();
 
     $targetUser = User::factory()->create();

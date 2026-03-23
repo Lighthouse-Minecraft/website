@@ -5,7 +5,10 @@ use App\Enums\StaffRank;
 use App\Models\Role;
 use App\Models\StaffPosition;
 use Flux\Flux;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Livewire\Attributes\Computed;
+use Livewire\Attributes\On;
 use Livewire\Volt\Component;
 
 new class extends Component {
@@ -143,38 +146,11 @@ new class extends Component {
         $this->authorize('manageRoles', $position);
 
         $this->rolePositionId = $positionId;
-        $this->selectedRoleId = null;
+        $this->activeRankValue = null;
         Flux::modal('manage-roles-modal')->show();
     }
 
-    public function addRoleToPosition(): void
-    {
-        if (! $this->rolePositionId || ! $this->selectedRoleId) {
-            return;
-        }
-
-        $position = StaffPosition::findOrFail($this->rolePositionId);
-        $this->authorize('manageRoles', $position);
-
-        $position->roles()->syncWithoutDetaching([$this->selectedRoleId]);
-        $this->selectedRoleId = null;
-
-        Flux::toast('Role assigned to position.', 'Added', variant: 'success');
-    }
-
-    public function removeRoleFromPosition(int $roleId): void
-    {
-        if (! $this->rolePositionId) {
-            return;
-        }
-
-        $position = StaffPosition::findOrFail($this->rolePositionId);
-        $this->authorize('manageRoles', $position);
-
-        $position->roles()->detach($roleId);
-
-        Flux::toast('Role removed from position.', 'Removed', variant: 'success');
-    }
+    // addRoleToPosition and removeRoleFromPosition are now handled by onRoleAdded/onRoleRemoved events
 
     public function toggleAllowAll(int $positionId): void
     {
@@ -201,6 +177,115 @@ new class extends Component {
         return StaffPosition::with('roles')->find($this->rolePositionId);
     }
 
+    // Rank role management
+    public ?int $activeRankValue = null;
+
+    #[Computed]
+    public function rankRoles(): array
+    {
+        $ranks = [StaffRank::JrCrew, StaffRank::CrewMember, StaffRank::Officer];
+        $result = [];
+
+        foreach ($ranks as $rank) {
+            $roleIds = DB::table('role_staff_rank')
+                ->where('staff_rank', $rank->value)
+                ->pluck('role_id')
+                ->toArray();
+
+            $result[$rank->value] = [
+                'rank' => $rank,
+                'roleIds' => $roleIds,
+                'roles' => Role::whereIn('id', $roleIds)->orderBy('name')->get(),
+            ];
+        }
+
+        return $result;
+    }
+
+    private function resolveActiveRank(): StaffRank
+    {
+        $rank = StaffRank::tryFrom((int) $this->activeRankValue);
+        abort_if($rank === null || ! in_array($rank, [StaffRank::JrCrew, StaffRank::CrewMember, StaffRank::Officer], true), 422);
+
+        return $rank;
+    }
+
+    public function openRankRolesModal(int $rankValue): void
+    {
+        abort_unless(auth()->user()->isAdmin(), 403, 'Only admins can manage rank roles.');
+        $this->activeRankValue = $rankValue;
+        $this->resolveActiveRank(); // validate
+        $this->rolePositionId = null;
+        Flux::modal('manage-rank-roles-modal')->show();
+    }
+
+    #[On('role-added')]
+    public function onRoleAdded(int $roleId): void
+    {
+        if ($this->activeRankValue !== null) {
+            $rank = $this->resolveActiveRank();
+            abort_unless(auth()->user()->isAdmin(), 403);
+
+            DB::table('role_staff_rank')->insertOrIgnore([
+                'role_id' => $roleId,
+                'staff_rank' => $rank->value,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            unset($this->rankRoles);
+            unset($this->activeRankRoleIds);
+            Flux::toast('Role assigned to rank.', 'Added', variant: 'success');
+        } elseif ($this->rolePositionId) {
+            $position = StaffPosition::findOrFail($this->rolePositionId);
+            $this->authorize('manageRoles', $position);
+
+            $position->roles()->syncWithoutDetaching([$roleId]);
+
+            unset($this->rolePosition);
+            Flux::toast('Role assigned to position.', 'Added', variant: 'success');
+        }
+    }
+
+    #[On('role-removed')]
+    public function onRoleRemoved(int $roleId): void
+    {
+        if ($this->activeRankValue !== null) {
+            $rank = $this->resolveActiveRank();
+            abort_unless(auth()->user()->isAdmin(), 403);
+
+            DB::table('role_staff_rank')
+                ->where('role_id', $roleId)
+                ->where('staff_rank', $rank->value)
+                ->delete();
+
+            unset($this->rankRoles);
+            unset($this->activeRankRoleIds);
+            Flux::toast('Role removed from rank.', 'Removed', variant: 'success');
+        } elseif ($this->rolePositionId) {
+            $position = StaffPosition::findOrFail($this->rolePositionId);
+            $this->authorize('manageRoles', $position);
+
+            $position->roles()->detach($roleId);
+
+            unset($this->rolePosition);
+            Flux::toast('Role removed from position.', 'Removed', variant: 'success');
+        }
+    }
+
+    #[Computed]
+    public function activeRankRoleIds(): array
+    {
+        if (! $this->activeRankValue) {
+            return [];
+        }
+
+        return DB::table('role_staff_rank')
+            ->where('staff_rank', $this->activeRankValue)
+            ->pluck('role_id')
+            ->toArray();
+    }
+
     public function getUnassignedRolesProperty()
     {
         $assignedRoleIds = StaffPosition::whereNull('has_all_roles_at')
@@ -215,6 +300,32 @@ new class extends Component {
 
 <div class="space-y-6">
     <flux:heading size="xl">Manage Staff Positions</flux:heading>
+
+    {{-- Rank Role Cards --}}
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        @foreach($this->rankRoles as $rankValue => $data)
+            <flux:card wire:key="rank-card-{{ $rankValue }}">
+                <div class="flex items-center justify-between mb-3">
+                    <flux:heading size="md">
+                        <flux:badge color="{{ $data['rank']->color() }}">{{ $data['rank']->label() }}</flux:badge>
+                        Roles
+                    </flux:heading>
+                    @if(auth()->user()->isAdmin())
+                        <flux:button size="sm" icon="pencil-square" wire:click="openRankRolesModal({{ $rankValue }})">Edit</flux:button>
+                    @endif
+                </div>
+                @if($data['roles']->isNotEmpty())
+                    <div class="flex flex-wrap gap-1">
+                        @foreach($data['roles'] as $role)
+                            <flux:badge size="sm" color="{{ $role->color }}" icon="{{ $role->icon }}">{{ $role->name }}</flux:badge>
+                        @endforeach
+                    </div>
+                @else
+                    <flux:text variant="subtle" class="text-sm">No roles assigned.</flux:text>
+                @endif
+            </flux:card>
+        @endforeach
+    </div>
 
     <flux:table>
         <flux:table.columns>
@@ -375,7 +486,7 @@ new class extends Component {
         </div>
     </flux:modal>
 
-    {{-- Manage Roles Modal --}}
+    {{-- Manage Roles Modal (Position) --}}
     <flux:modal name="manage-roles-modal" class="w-full lg:w-1/2 space-y-6">
         @if($this->rolePosition)
             <flux:heading size="lg">Manage Roles: {{ $this->rolePosition->title }}</flux:heading>
@@ -400,43 +511,39 @@ new class extends Component {
             @if($this->rolePosition->has_all_roles_at)
                 <flux:text variant="subtle">This position has Allow All enabled. Individual role assignments are not needed.</flux:text>
             @else
-                {{-- Current Roles --}}
-                <div>
-                    <flux:heading size="sm" class="mb-2">Assigned Roles</flux:heading>
-                    @if($this->rolePosition->roles->isNotEmpty())
-                        <div class="flex flex-wrap gap-2">
-                            @foreach($this->rolePosition->roles as $role)
-                                <div wire:key="assigned-role-{{ $role->id }}" class="flex items-center gap-1">
-                                    <flux:badge size="sm" color="{{ $role->color }}" icon="{{ $role->icon }}">{{ $role->name }}</flux:badge>
-                                    <flux:button size="xs" variant="ghost" icon="x-mark" wire:click="removeRoleFromPosition({{ $role->id }})" class="hover:!text-red-600 dark:hover:!text-red-400" />
-                                </div>
-                            @endforeach
-                        </div>
-                    @else
-                        <flux:text variant="subtle" class="text-sm">No roles assigned yet.</flux:text>
-                    @endif
-                </div>
-
-                {{-- Add Role --}}
-                <div>
-                    <flux:heading size="sm" class="mb-2">Add Role</flux:heading>
-                    <div class="flex gap-2">
-                        <flux:select wire:model="selectedRoleId" class="flex-1">
-                            <flux:select.option value="">Select a role...</flux:select.option>
-                            @foreach($this->allRoles as $role)
-                                @if(! $this->rolePosition->roles->contains('id', $role->id))
-                                    <flux:select.option value="{{ $role->id }}">{{ $role->name }}</flux:select.option>
-                                @endif
-                            @endforeach
-                        </flux:select>
-                        <flux:button wire:click="addRoleToPosition" variant="primary" size="sm" icon="plus">Add</flux:button>
-                    </div>
-                </div>
+                <livewire:partials.grouped-role-picker
+                    :assigned-role-ids="$this->rolePosition->roles->pluck('id')->toArray()"
+                    :read-only="false"
+                    wire:key="position-role-picker-{{ $this->rolePositionId }}"
+                />
             @endif
 
             <div class="flex justify-end">
                 <flux:button variant="ghost" x-on:click="$flux.modal('manage-roles-modal').close()">Done</flux:button>
             </div>
+        @endif
+    </flux:modal>
+
+    {{-- Manage Rank Roles Modal --}}
+    <flux:modal name="manage-rank-roles-modal" class="w-full lg:w-1/2 space-y-6">
+        @if($this->activeRankValue)
+            @php $activeRank = \App\Enums\StaffRank::tryFrom($this->activeRankValue); @endphp
+            @if($activeRank)
+            <flux:heading size="lg">
+                Manage Roles:
+                <flux:badge color="{{ $activeRank->color() }}">{{ $activeRank->label() }}</flux:badge>
+            </flux:heading>
+
+            <livewire:partials.grouped-role-picker
+                :assigned-role-ids="$this->activeRankRoleIds"
+                :read-only="false"
+                wire:key="rank-role-picker-{{ $this->activeRankValue }}"
+            />
+
+            <div class="flex justify-end">
+                <flux:button variant="ghost" x-on:click="$flux.modal('manage-rank-roles-modal').close()">Done</flux:button>
+            </div>
+            @endif
         @endif
     </flux:modal>
 </div>

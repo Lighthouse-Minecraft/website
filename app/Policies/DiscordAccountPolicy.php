@@ -9,7 +9,7 @@ class DiscordAccountPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->hasRole('User Manager');
+        return $user->hasRole('User - Manager');
     }
 
     public function view(User $user, DiscordAccount $discordAccount): bool

@@ -18,23 +18,23 @@ beforeEach(function () {
 dataset('officersWithMeetingRole', [
     'Officer Command' => fn () => User::factory()
         ->withStaffPosition(StaffDepartment::Command, StaffRank::Officer, 'Test Command Officer')
-        ->withRole('Manage Staff Meeting')
+        ->withRole('Meeting - Manager')
         ->create(),
     'Officer Chaplain' => fn () => User::factory()
         ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::Officer, 'Test Chaplain Officer')
-        ->withRole('Manage Staff Meeting')
+        ->withRole('Meeting - Manager')
         ->create(),
     'Officer Engineer' => fn () => User::factory()
         ->withStaffPosition(StaffDepartment::Engineer, StaffRank::Officer, 'Test Engineer Officer')
-        ->withRole('Manage Staff Meeting')
+        ->withRole('Meeting - Manager')
         ->create(),
     'Officer Quartermaster' => fn () => User::factory()
         ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::Officer, 'Test Quartermaster Officer')
-        ->withRole('Manage Staff Meeting')
+        ->withRole('Meeting - Manager')
         ->create(),
     'Officer Steward' => fn () => User::factory()
         ->withStaffPosition(StaffDepartment::Steward, StaffRank::Officer, 'Test Steward Officer')
-        ->withRole('Manage Staff Meeting')
+        ->withRole('Meeting - Manager')
         ->create(),
 ]);
 

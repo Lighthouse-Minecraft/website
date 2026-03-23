@@ -3,6 +3,7 @@
 use App\Enums\TaskStatus;
 use App\Models\Meeting;
 use App\Models\Task;
+use App\Models\User;
 
 use function Pest\Livewire\livewire;
 
@@ -82,8 +83,13 @@ describe('Task Management - Task Edit', function () {
 })->todo(issue: 28, assignee: 'jonzenor');
 
 describe('Task Management - Permissions', function () {
-    // Officers and Crew Members can create tasks
-    it('should allow officers and crew members to create tasks', function ($user) {
+    // Officers and Crew Members with Task - Department role can create tasks
+    it('should allow staff with Task - Department role to create tasks', function () {
+        $user = User::factory()
+            ->withStaffPosition(\App\Enums\StaffDepartment::Command, \App\Enums\StaffRank::CrewMember)
+            ->withRole('Staff Access')
+            ->withRole('Task - Department')
+            ->create();
         loginAs($user);
 
         livewire('task.department-list', ['meeting' => $this->meeting, 'section_key' => 'command'])
@@ -91,7 +97,22 @@ describe('Task Management - Permissions', function () {
             ->set('taskName', 'Test Task')
             ->call('addTask')
             ->assertOk();
-    })->with('rankAtLeastCrewMembers');
+    });
+
+    it('should allow staff with Task - Manager role to create tasks', function () {
+        $user = User::factory()
+            ->withStaffPosition(\App\Enums\StaffDepartment::Command, \App\Enums\StaffRank::Officer)
+            ->withRole('Staff Access')
+            ->withRole('Task - Manager')
+            ->create();
+        loginAs($user);
+
+        livewire('task.department-list', ['meeting' => $this->meeting, 'section_key' => 'command'])
+            ->assertSee('Add Task')
+            ->set('taskName', 'Test Task')
+            ->call('addTask')
+            ->assertOk();
+    });
 
 })->wip(issue: 28, assignee: 'jonzenor');
 

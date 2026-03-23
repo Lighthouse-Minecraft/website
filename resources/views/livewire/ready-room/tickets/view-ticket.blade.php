@@ -117,7 +117,7 @@ new class extends Component
         }
 
         // Non-staff can't reply to resolved tickets
-        if ($this->thread->status === ThreadStatus::Resolved && ! auth()->user()->isAtLeastRank(\App\Enums\StaffRank::CrewMember)) {
+        if ($this->thread->status === ThreadStatus::Resolved && ! auth()->user()->can('changeStatus', $this->thread)) {
             return false;
         }
 
@@ -264,7 +264,7 @@ new class extends Component
         // Auto-assign unassigned tickets when staff replies (atomic to prevent race)
         if (! $this->thread->assigned_to_user_id
             && auth()->id() !== $this->thread->created_by_user_id
-            && auth()->user()->isAtLeastRank(\App\Enums\StaffRank::CrewMember)
+            && auth()->user()->can('changeStatus', $this->thread)
             && ! $isInternal) {
             $affected = \App\Models\Thread::where('id', $this->thread->id)
                 ->whereNull('assigned_to_user_id')
@@ -501,7 +501,7 @@ new class extends Component
         $oldStatus = $this->thread->status;
 
         // Staff can close directly, regular users mark as resolved
-        $isStaff = auth()->user()->isAtLeastRank(\App\Enums\StaffRank::CrewMember);
+        $isStaff = auth()->user()->can('changeStatus', $this->thread);
         $newStatus = $isStaff ? ThreadStatus::Closed : ThreadStatus::Resolved;
 
         $updateData = ['status' => $newStatus];

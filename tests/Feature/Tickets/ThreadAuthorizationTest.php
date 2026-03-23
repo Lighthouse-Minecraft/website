@@ -10,10 +10,10 @@ use App\Models\User;
 use function Pest\Laravel\actingAs;
 
 describe('Thread Authorization', function () {
-    // TODO: Re-enable after PRD #280 completion — command officer no longer bypasses before() hook
     it('command officer without admin no longer bypasses viewAll', function () {
         $commandOfficer = User::factory()
             ->withStaffPosition(StaffDepartment::Command, StaffRank::Officer)
+            ->withRole('Ticket - User')
             ->create();
 
         $thread = Thread::factory()
@@ -38,9 +38,10 @@ describe('Thread Authorization', function () {
             ->and($thread->isVisibleTo($admin))->toBeTrue();
     })->done();
 
-    it('allows staff to view threads in their department', function () {
+    it('allows staff with Ticket - User role to view threads in their department', function () {
         $chaplainStaff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->withRole('Ticket - User')
             ->create();
 
         $chaplainThread = Thread::factory()
@@ -57,9 +58,10 @@ describe('Thread Authorization', function () {
             ->and($engineerThread->isVisibleTo($chaplainStaff))->toBeFalse();
     })->done();
 
-    it('allows Quartermaster to view flagged threads across departments', function () {
+    it('allows Ticket - Manager to view flagged threads across departments', function () {
         $quartermaster = User::factory()
             ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::Officer)
+            ->withRole('Ticket - Manager')
             ->create();
 
         $flaggedChaplainThread = Thread::factory()
@@ -92,9 +94,10 @@ describe('Thread Authorization', function () {
             ->and($nonParticipantThread->isVisibleTo($user))->toBeFalse();
     })->done();
 
-    it('allows staff to change thread status in their department', function () {
+    it('allows staff with Ticket - User role to change thread status in their department', function () {
         $chaplainStaff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->withRole('Ticket - User')
             ->create();
 
         $chaplainThread = Thread::factory()
@@ -111,9 +114,11 @@ describe('Thread Authorization', function () {
             ->and($chaplainStaff->can('changeStatus', $engineerThread))->toBeFalse();
     })->done();
 
-    it('allows officers to assign threads in their department', function () {
+    it('allows Ticket - Manager to assign threads in their department', function () {
         $chaplainOfficer = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::Officer)
+            ->withRole('Ticket - User')
+            ->withRole('Ticket - Manager')
             ->create();
 
         $chaplainThread = Thread::factory()
@@ -125,9 +130,10 @@ describe('Thread Authorization', function () {
         expect($chaplainOfficer->can('assign', $chaplainThread))->toBeTrue();
     })->done();
 
-    it('prevents non-officers from assigning threads', function () {
+    it('prevents staff without Ticket - Manager from assigning threads', function () {
         $chaplainMember = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->withRole('Ticket - User')
             ->create();
 
         $chaplainThread = Thread::factory()
@@ -139,9 +145,11 @@ describe('Thread Authorization', function () {
         expect($chaplainMember->can('assign', $chaplainThread))->toBeFalse();
     })->done();
 
-    it('allows officers to reroute threads in their department', function () {
+    it('allows Ticket - Manager to reroute threads in their department', function () {
         $chaplainOfficer = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::Officer)
+            ->withRole('Ticket - User')
+            ->withRole('Ticket - Manager')
             ->create();
 
         $chaplainThread = Thread::factory()

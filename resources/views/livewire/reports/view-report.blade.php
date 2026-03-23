@@ -21,7 +21,7 @@ new class extends Component
     #[Computed]
     public function isStaff(): bool
     {
-        return auth()->user()->isAtLeastRank(\App\Enums\StaffRank::JrCrew);
+        return auth()->user()->hasRole('Staff Access');
     }
 
     #[Computed]

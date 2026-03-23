@@ -33,8 +33,8 @@ it('command officer returns null from community response policy before hook', fu
 
 // === view ===
 
-it('user with Manage Community Stories role can view any response', function () {
-    $manager = User::factory()->withRole('Manage Community Stories')->create();
+it('user with Community Stories - Manager role can view any response', function () {
+    $manager = User::factory()->withRole('Community Stories - Manager')->create();
     $response = CommunityResponse::factory()->create();
 
     expect($manager->can('view', $response))->toBeTrue();
@@ -56,8 +56,8 @@ it('user can view approved responses', function () {
 
 // === update ===
 
-it('user with Manage Community Stories role can update any response', function () {
-    $manager = User::factory()->withRole('Manage Community Stories')->create();
+it('user with Community Stories - Manager role can update any response', function () {
+    $manager = User::factory()->withRole('Community Stories - Manager')->create();
     $response = CommunityResponse::factory()->create();
 
     expect($manager->can('update', $response))->toBeTrue();
@@ -79,8 +79,8 @@ it('non-owner without role cannot update response', function () {
 
 // === delete ===
 
-it('user with Manage Community Stories role can delete any response', function () {
-    $manager = User::factory()->withRole('Manage Community Stories')->create();
+it('user with Community Stories - Manager role can delete any response', function () {
+    $manager = User::factory()->withRole('Community Stories - Manager')->create();
     $response = CommunityResponse::factory()->create();
 
     expect($manager->can('delete', $response))->toBeTrue();

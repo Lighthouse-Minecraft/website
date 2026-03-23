@@ -73,11 +73,12 @@ describe('Department Page - Departments', function () {
             ->assertSee('Steward');
     })->done();
 
-    // Users with View All Ready Rooms role can view all departments
-    it('allows users with View All Ready Rooms role to view all departments', function () {
+    // Users with Ready Room - View All role can view all departments
+    it('allows users with Ready Room - View All role to view all departments', function () {
         $user = User::factory()
             ->withStaffPosition(StaffDepartment::Command, StaffRank::JrCrew)
-            ->withRole('View All Ready Rooms')
+            ->withRole('Staff Access')
+            ->withRole('Ready Room - View All')
             ->create();
         loginAs($user);
 
@@ -101,8 +102,8 @@ describe('Department Page - Departments', function () {
             ->assertSee('Steward');
     })->done();
 
-    // Officers without View All Ready Rooms role can only view their own department
-    it('limits officers without View All Ready Rooms role to their department', function () {
+    // Officers without Ready Room - View All role can only view their own department
+    it('limits officers without Ready Room - View All role to their department', function () {
         $user = officerChaplain();
         loginAs($user);
 

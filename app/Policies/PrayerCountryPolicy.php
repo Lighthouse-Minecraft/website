@@ -22,7 +22,7 @@ class PrayerCountryPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasRole('Manage Site Config');
+        return $user->hasRole('Site Config - Manager');
     }
 
     public function viewPrayer(User $user): bool
@@ -35,7 +35,7 @@ class PrayerCountryPolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasRole('Manage Site Config');
+        return $user->hasRole('Site Config - Manager');
     }
 
     /**
@@ -43,6 +43,6 @@ class PrayerCountryPolicy
      */
     public function update(User $user, PrayerCountry $prayerCountry): bool
     {
-        return $user->hasRole('Manage Site Config');
+        return $user->hasRole('Site Config - Manager');
     }
 }

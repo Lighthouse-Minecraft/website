@@ -163,10 +163,11 @@ describe('Traveler Users Widget', function () {
         $response->assertSeeLivewire('dashboard.traveler-users-widget');
     });
 
-    it('is visible to user with Manage Membership Level role', function () {
+    it('is visible to user with Membership Level - Manager role', function () {
         $user = User::factory()
             ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::JrCrew, 'Jr Quartermaster')
-            ->withRole('Manage Membership Level')
+            ->withRole('Staff Access')
+            ->withRole('Membership Level - Manager')
             ->create();
         $this->actingAs($user);
 
@@ -184,8 +185,8 @@ describe('Traveler Users Widget', function () {
         $response->assertDontSeeLivewire('dashboard.traveler-users-widget');
     });
 
-    it('is not visible to staff without Manage Membership Level role', function () {
-        $user = User::factory()->withStaffPosition(StaffDepartment::Engineer, StaffRank::Officer, 'Engineer Officer')->create();
+    it('is not visible to staff without Membership Level - Manager role', function () {
+        $user = User::factory()->withStaffPosition(StaffDepartment::Engineer, StaffRank::Officer, 'Engineer Officer')->withRole('Staff Access')->create();
         $this->actingAs($user);
 
         $response = get(route('dashboard'));
