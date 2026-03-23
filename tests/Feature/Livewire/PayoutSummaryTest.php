@@ -28,6 +28,18 @@ function addPayout(Meeting $meeting, User $user, string $status, int $amount = 0
 
 // --- Visibility ---
 
+it('denies access to non-staff users', function () {
+    $nonStaff = User::factory()->create(); // no 'Staff Access' role
+    loginAs($nonStaff);
+
+    $meeting = makeCompletedMeeting();
+    $user = User::factory()->create(['name' => 'Paid Staff']);
+    addPayout($meeting, $user, 'paid', 75);
+
+    Volt::test('meeting.payout-summary', ['meeting' => $meeting])
+        ->assertForbidden();
+});
+
 it('renders payout summary when payout records exist', function () {
     $staff = User::factory()->withRole('Staff Access')->create();
     loginAs($staff);

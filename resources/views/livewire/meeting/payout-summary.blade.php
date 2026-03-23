@@ -8,6 +8,7 @@ new class extends Component {
 
     public function mount(Meeting $meeting): void
     {
+        $this->authorize('view', $meeting);
         $this->meeting = $meeting;
     }
 

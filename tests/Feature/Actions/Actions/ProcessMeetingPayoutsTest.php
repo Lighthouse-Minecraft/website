@@ -272,6 +272,33 @@ it('does not re-fire RCON when a pending placeholder record already exists', fun
     expect($count)->toBe(1);
 });
 
+it('counts a pre-existing pending record as pending, not failed, in the activity log', function () {
+    $meeting = makeMeeting();
+    $user = User::factory()->create(['staff_rank' => StaffRank::CrewMember]);
+    $mcAccount = withPrimaryMcAccount($user);
+    addAttendee($meeting, $user);
+    submitReport($meeting, $user);
+
+    MeetingPayout::create([
+        'meeting_id' => $meeting->id,
+        'user_id' => $user->id,
+        'minecraft_account_id' => $mcAccount->id,
+        'amount' => 75,
+        'status' => 'pending',
+    ]);
+
+    test()->mock(MinecraftRconService::class)->shouldNotReceive('executeCommand');
+
+    ProcessMeetingPayouts::run($meeting);
+
+    $this->assertDatabaseHas('activity_logs', [
+        'subject_type' => Meeting::class,
+        'subject_id' => $meeting->id,
+        'action' => 'meeting_payouts_processed',
+        'description' => 'Meeting payouts: 0 paid, 0 skipped, 0 failed, 1 pending (interrupted).',
+    ]);
+});
+
 // --- Duplicate prevention ---
 
 it('does not create duplicate payout records when called twice', function () {

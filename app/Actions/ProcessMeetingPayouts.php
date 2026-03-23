@@ -31,10 +31,17 @@ class ProcessMeetingPayouts
         $paidCount = 0;
         $skippedCount = 0;
         $failedCount = 0;
+        $pendingCount = 0;
 
         foreach ($attendees as $attendee) {
-            // Skip if payout record already exists (duplicate prevention)
-            if (MeetingPayout::where('meeting_id', $meeting->id)->where('user_id', $attendee->id)->exists()) {
+            // Skip if payout record already exists (duplicate prevention).
+            // Count pending records so the activity log surfaces interrupted payouts.
+            $existingPayout = MeetingPayout::where('meeting_id', $meeting->id)->where('user_id', $attendee->id)->first();
+            if ($existingPayout !== null) {
+                if ($existingPayout->status === 'pending') {
+                    $pendingCount++;
+                }
+
                 continue;
             }
 
@@ -143,8 +150,15 @@ class ProcessMeetingPayouts
             );
 
             if (! $payout->wasRecentlyCreated) {
-                // Record already existed from a prior crashed run — count it and skip RCON
-                $payout->status === 'paid' ? $paidCount++ : $failedCount++;
+                // Record already existed from a prior crashed run — count and skip RCON
+                if ($payout->status === 'paid') {
+                    $paidCount++;
+                } elseif ($payout->status === 'pending') {
+                    // RCON was never attempted — surface as pending, not failed
+                    $pendingCount++;
+                } else {
+                    $failedCount++;
+                }
 
                 continue;
             }
@@ -167,10 +181,11 @@ class ProcessMeetingPayouts
             }
         }
 
-        RecordActivity::run(
-            $meeting,
-            'meeting_payouts_processed',
-            "Meeting payouts: {$paidCount} paid, {$skippedCount} skipped, {$failedCount} failed."
-        );
+        $summary = "Meeting payouts: {$paidCount} paid, {$skippedCount} skipped, {$failedCount} failed.";
+        if ($pendingCount > 0) {
+            $summary = "Meeting payouts: {$paidCount} paid, {$skippedCount} skipped, {$failedCount} failed, {$pendingCount} pending (interrupted).";
+        }
+
+        RecordActivity::run($meeting, 'meeting_payouts_processed', $summary);
     }
 }
