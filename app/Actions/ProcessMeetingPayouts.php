@@ -6,6 +6,7 @@ use App\Enums\StaffRank;
 use App\Models\Meeting;
 use App\Models\MeetingPayout;
 use App\Models\SiteConfig;
+use App\Services\MinecraftRconService;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ProcessMeetingPayouts
@@ -127,26 +128,32 @@ class ProcessMeetingPayouts
             }
 
             // All eligibility checks passed — attempt payout
-            $payout = MeetingPayout::create([
-                'meeting_id' => $meeting->id,
-                'user_id' => $attendee->id,
-                'minecraft_account_id' => $mcAccount->id,
-                'amount' => $amount,
-                'status' => 'paid',
-            ]);
+            $rconService = app(MinecraftRconService::class);
+            $result = $rconService->executeCommand(
+                "money give {$mcAccount->username} {$amount}",
+                'meeting_payout',
+                $mcAccount->username,
+                $attendee,
+                ['meeting_id' => $meeting->id]
+            );
 
-            try {
-                SendMinecraftCommand::run(
-                    "money give {$mcAccount->username} {$amount}",
-                    'meeting_payout',
-                    $mcAccount->username,
-                    $attendee,
-                    ['meeting_id' => $meeting->id],
-                    false // synchronous so RCON failures are caught and recorded
-                );
+            if ($result['success']) {
+                MeetingPayout::create([
+                    'meeting_id' => $meeting->id,
+                    'user_id' => $attendee->id,
+                    'minecraft_account_id' => $mcAccount->id,
+                    'amount' => $amount,
+                    'status' => 'paid',
+                ]);
                 $paidCount++;
-            } catch (\Throwable $e) {
-                $payout->update(['status' => 'failed']);
+            } else {
+                MeetingPayout::create([
+                    'meeting_id' => $meeting->id,
+                    'user_id' => $attendee->id,
+                    'minecraft_account_id' => $mcAccount->id,
+                    'amount' => $amount,
+                    'status' => 'failed',
+                ]);
                 $failedCount++;
             }
         }

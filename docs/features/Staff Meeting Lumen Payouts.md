@@ -334,7 +334,7 @@ Called by `SendMinecraftCommand` when `$async = false`. Returns `['success' => b
 
 ### Meeting Completion with Payouts
 
-```
+```text
 Manager clicks "Complete Meeting" on Finalizing page
   -> Livewire: manage-meeting::CompleteMeeting()
     -> Flux::modal('complete-meeting-confirmation')->show()
@@ -347,10 +347,9 @@ Manager clicks "Complete Meeting" button in modal
     -> ProcessMeetingPayouts::run($this->meeting, $this->excludedPayoutUserIds)
       -> For each attendee in meeting_user pivot:
          -> Create MeetingPayout (skipped) OR
-         -> SendMinecraftCommand::run("money give {username} {amount}", 'meeting_payout', ...)
-            -> MinecraftRconService::executeCommand(...)
-               -> SUCCESS: MeetingPayout status = 'paid'
-               -> THROWS:  MeetingPayout status = 'failed' (meeting still completes)
+         -> MinecraftRconService::executeCommand("money give {username} {amount}", ...)
+            -> SUCCESS ($result['success'] == true):  MeetingPayout status = 'paid'
+            -> FAILURE ($result['success'] == false): MeetingPayout status = 'failed' (meeting still completes)
       -> RecordActivity::run($meeting, 'meeting_payouts_processed', '...')
     -> Flux::modal('complete-meeting-confirmation')->close()
     -> Flux::modal('schedule-next-meeting')->show()
@@ -360,7 +359,7 @@ Manager clicks "Complete Meeting" button in modal
 
 ### Payout Preview: Manager Excludes a User
 
-```
+```text
 Manager toggles exclude switch for a user in payout-preview table
   -> Livewire: payout-preview::toggleExclude(int $userId)
     -> $this->authorize('update', $this->meeting)  [Meeting - Manager required]
@@ -375,7 +374,7 @@ Manager toggles exclude switch for a user in payout-preview table
 
 ### Completed Meeting: Viewing Payout Summary
 
-```
+```text
 Staff member visits completed meeting page (GET /meetings/{meeting}/manage)
   -> Route: meeting.edit [auth middleware]
     -> manage-meeting component renders

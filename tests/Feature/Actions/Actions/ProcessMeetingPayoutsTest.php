@@ -209,7 +209,7 @@ it('skips a user in the excluded list', function () {
 
 // --- RCON failure ---
 
-it('marks payout as failed when RCON throws, but does not block completion', function () {
+it('marks payout as failed when RCON returns failure, but does not block completion', function () {
     $meeting = makeMeeting();
     $user = User::factory()->create(['staff_rank' => StaffRank::CrewMember]);
     withPrimaryMcAccount($user);
@@ -218,7 +218,7 @@ it('marks payout as failed when RCON throws, but does not block completion', fun
 
     test()->mock(MinecraftRconService::class)
         ->shouldReceive('executeCommand')
-        ->andThrow(new \RuntimeException('RCON error'));
+        ->andReturn(['success' => false, 'response' => null, 'error' => 'RCON error']);
 
     // Should not throw
     ProcessMeetingPayouts::run($meeting);
