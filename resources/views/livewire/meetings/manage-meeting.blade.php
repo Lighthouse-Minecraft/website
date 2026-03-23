@@ -558,6 +558,10 @@ new class extends Component {
                     <flux:text>{!! nl2br($meeting->community_minutes) !!}</flux:text>
                 </flux:card>
             @endif
+
+            @if($meeting->isStaffMeeting())
+                <livewire:meeting.payout-summary :meeting="$meeting" :key="'payout-summary-' . $meeting->id" />
+            @endif
         </div>
     @endif
 
