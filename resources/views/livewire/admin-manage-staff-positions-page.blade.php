@@ -288,11 +288,17 @@ new class extends Component {
 
     public function getUnassignedRolesProperty()
     {
-        $assignedRoleIds = StaffPosition::whereNull('has_all_roles_at')
+        // Roles assigned to positions
+        $positionRoleIds = StaffPosition::whereNull('has_all_roles_at')
             ->with('roles')
             ->get()
             ->flatMap(fn ($p) => $p->roles->pluck('id'))
             ->unique();
+
+        // Roles assigned to ranks
+        $rankRoleIds = DB::table('role_staff_rank')->pluck('role_id')->unique();
+
+        $assignedRoleIds = $positionRoleIds->merge($rankRoleIds)->unique();
 
         return Role::whereNotIn('id', $assignedRoleIds)->orderBy('name')->get();
     }
@@ -467,10 +473,10 @@ new class extends Component {
         @if($this->unassignedRoles->isEmpty())
             <div class="flex items-center gap-2 p-3 rounded-lg border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20">
                 <flux:icon name="check-circle" variant="solid" class="text-emerald-500" />
-                <flux:text>All roles are assigned to at least one position.</flux:text>
+                <flux:text>All roles are assigned to at least one position or rank.</flux:text>
             </div>
         @else
-            <flux:text variant="subtle">The following roles have not been assigned to any staff position:</flux:text>
+            <flux:text variant="subtle">The following roles have not been assigned to any position or rank:</flux:text>
             <div class="flex flex-wrap gap-2">
                 @foreach($this->unassignedRoles as $role)
                     <flux:badge size="sm" color="{{ $role->color }}" icon="{{ $role->icon }}">{{ $role->name }}</flux:badge>
