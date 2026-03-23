@@ -44,19 +44,19 @@ it('denies traveler from suggesting a question', function () {
     expect($user->can('suggest-community-question'))->toBeFalse();
 });
 
-it('allows user with Manage Community Stories role to manage community stories', function () {
-    $user = \App\Models\User::factory()->withRole('Manage Community Stories')->create();
+it('allows user with Community Stories - Manager role to manage community stories', function () {
+    $user = \App\Models\User::factory()->withRole('Community Stories - Manager')->create();
 
     expect($user->can('manage-community-stories'))->toBeTrue();
 });
 
-it('denies user without Manage Community Stories role from managing community stories', function () {
+it('denies user without Community Stories - Manager role from managing community stories', function () {
     $user = jrCrewQuartermaster();
 
     expect($user->can('manage-community-stories'))->toBeFalse();
 });
 
-it('denies officer without Manage Community Stories role from managing community stories', function () {
+it('denies officer without Community Stories - Manager role from managing community stories', function () {
     $user = officerCommand();
 
     expect($user->can('manage-community-stories'))->toBeFalse();

@@ -3,7 +3,6 @@
 namespace App\Policies;
 
 use App\Enums\MembershipLevel;
-use App\Enums\StaffRank;
 use App\Models\Meeting;
 use App\Models\User;
 
@@ -23,7 +22,7 @@ class MeetingPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->isAtLeastRank(StaffRank::CrewMember);
+        return $user->hasRole('Staff Access');
     }
 
     /**
@@ -31,17 +30,17 @@ class MeetingPolicy
      */
     public function view(User $user, Meeting $meeting): bool
     {
-        return $user->isAtLeastRank(StaffRank::CrewMember);
+        return $user->hasRole('Staff Access');
     }
 
     public function attend(User $user, Meeting $meeting): bool
     {
-        return $user->isAtLeastRank(StaffRank::CrewMember);
+        return $user->hasRole('Staff Access');
     }
 
     public function viewAnyPrivate(User $user): bool
     {
-        return $user->isAtLeastRank(StaffRank::CrewMember);
+        return $user->hasRole('Staff Access');
     }
 
     public function viewAnyPublic(User $user): bool
@@ -54,7 +53,7 @@ class MeetingPolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasRole('Manage Staff Meeting');
+        return $user->hasRole('Meeting - Manager');
     }
 
     /**
@@ -62,7 +61,7 @@ class MeetingPolicy
      */
     public function update(User $user, Meeting $meeting): bool
     {
-        return $user->hasRole('Manage Staff Meeting');
+        return $user->hasRole('Meeting - Manager');
     }
 
     /**

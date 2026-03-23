@@ -16,4 +16,16 @@ class Role extends Model
     {
         return $this->belongsToMany(StaffPosition::class);
     }
+
+    /**
+     * Get the feature group prefix from the role name (e.g., "Ticket" from "Ticket - User").
+     */
+    public function getGroupAttribute(): string
+    {
+        if (str_contains($this->name, ' - ')) {
+            return explode(' - ', $this->name, 2)[0];
+        }
+
+        return 'Other';
+    }
 }

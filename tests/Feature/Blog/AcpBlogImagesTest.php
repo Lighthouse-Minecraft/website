@@ -13,7 +13,7 @@ uses()->group('blog', 'blog-images', 'acp');
 // === Table Rendering ===
 
 it('displays blog images table for users with manage-blog gate', function () {
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     loginAs($author);
 
     $image = BlogImage::factory()->create(['title' => 'Test Image Title']);
@@ -26,7 +26,7 @@ it('displays blog images table for users with manage-blog gate', function () {
 
 it('displays image metadata in the table', function () {
     $uploader = User::factory()->create(['name' => 'ImageUploader']);
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     loginAs($author);
 
     $image = BlogImage::factory()->create([
@@ -42,7 +42,7 @@ it('displays image metadata in the table', function () {
 });
 
 it('displays usage count for images with references', function () {
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     loginAs($author);
 
     $image = BlogImage::factory()->create(['title' => 'Referenced Image']);
@@ -55,7 +55,7 @@ it('displays usage count for images with references', function () {
 });
 
 it('displays unused badge for images with zero references', function () {
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     loginAs($author);
 
     BlogImage::factory()->create(['title' => 'Unused Image']);
@@ -65,7 +65,7 @@ it('displays unused badge for images with zero references', function () {
 });
 
 it('paginates blog images', function () {
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     loginAs($author);
 
     BlogImage::factory()->count(25)->create();
@@ -79,7 +79,7 @@ it('paginates blog images', function () {
 // === Search ===
 
 it('filters images by title search', function () {
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     loginAs($author);
 
     BlogImage::factory()->create(['title' => 'Sunset Photo']);
@@ -94,7 +94,7 @@ it('filters images by title search', function () {
 });
 
 it('shows empty state when no images match search', function () {
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     loginAs($author);
 
     BlogImage::factory()->create(['title' => 'Sunset Photo']);
@@ -109,7 +109,7 @@ it('shows empty state when no images match search', function () {
 it('allows deleting an image with zero references', function () {
     Storage::fake(config('filesystems.public_disk'));
 
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     loginAs($author);
 
     $image = BlogImage::factory()->create(['title' => 'Deletable Image']);
@@ -126,7 +126,7 @@ it('allows deleting an image with zero references', function () {
 it('records activity when a blog image is deleted', function () {
     Storage::fake(config('filesystems.public_disk'));
 
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     loginAs($author);
 
     $image = BlogImage::factory()->create(['title' => 'Activity Delete Image']);
@@ -147,7 +147,7 @@ it('records activity when a blog image is deleted', function () {
 // === Delete (blocked) ===
 
 it('blocks deleting an image with active references via component', function () {
-    $author = User::factory()->withRole('Blog Author')->create();
+    $author = User::factory()->withRole('Blog - Author')->create();
     loginAs($author);
 
     $image = BlogImage::factory()->create(['title' => 'Referenced Image']);

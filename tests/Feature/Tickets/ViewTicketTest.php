@@ -36,6 +36,7 @@ describe('View Ticket Component', function () {
     it('can render for staff in department', function () {
         $staff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->withRole('Ticket - User')
             ->create();
 
         $thread = Thread::factory()->withDepartment(StaffDepartment::Chaplain)->create();
@@ -66,6 +67,8 @@ describe('View Ticket Component', function () {
     it('shows internal notes to staff', function () {
         $staff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->withRole('Ticket - User')
+            ->withRole('Internal Note - Manager')
             ->create();
 
         $thread = Thread::factory()->withDepartment(StaffDepartment::Chaplain)->create();
@@ -83,6 +86,7 @@ describe('View Ticket Component', function () {
     it('allows staff to change ticket status', function () {
         $staff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->withRole('Ticket - User')
             ->create();
 
         $thread = Thread::factory()
@@ -103,6 +107,8 @@ describe('View Ticket Component', function () {
     it('allows officers to assign tickets', function () {
         $officer = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::Officer)
+            ->withRole('Ticket - User')
+            ->withRole('Ticket - Manager')
             ->create();
 
         $assignee = User::factory()
@@ -167,6 +173,8 @@ describe('View Ticket Component', function () {
     it('allows staff to create internal notes', function () {
         $staff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->withRole('Ticket - User')
+            ->withRole('Internal Note - Manager')
             ->create();
 
         $thread = Thread::factory()->withDepartment(StaffDepartment::Chaplain)->create();
@@ -190,6 +198,7 @@ describe('View Ticket Component', function () {
     it('adds replying staff as participant if not already', function () {
         $staff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->withRole('Ticket - User')
             ->create();
 
         $thread = Thread::factory()->withDepartment(StaffDepartment::Chaplain)->create();
@@ -232,6 +241,7 @@ describe('View Ticket Component', function () {
     it('Quartermaster has viewFlagged permission', function () {
         $quartermaster = User::factory()
             ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::Officer)
+            ->withRole('Ticket - Manager')
             ->create();
 
         // Quartermaster has viewFlagged permission which allows seeing flags
@@ -241,6 +251,7 @@ describe('View Ticket Component', function () {
     it('allows Quartermaster to acknowledge flags', function () {
         $quartermaster = User::factory()
             ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::Officer)
+            ->withRole('Ticket - Manager')
             ->create();
 
         $author = User::factory()->create();
@@ -273,6 +284,7 @@ describe('View Ticket Component', function () {
     it('adds staff as participant when they view department ticket as observer', function () {
         $staff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->withRole('Ticket - User')
             ->create();
 
         $thread = Thread::factory()->withDepartment(StaffDepartment::Chaplain)->create();
@@ -294,6 +306,7 @@ describe('View Ticket Component', function () {
     it('marks ticket as read for observer viewing it', function () {
         $staff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->withRole('Ticket - User')
             ->create();
 
         $thread = Thread::factory()
@@ -315,6 +328,7 @@ describe('View Ticket Component', function () {
     it('converts viewer to participant when they reply', function () {
         $staff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->withRole('Ticket - User')
             ->create();
 
         $thread = Thread::factory()->withDepartment(StaffDepartment::Chaplain)->create();
@@ -342,6 +356,7 @@ describe('View Ticket Component', function () {
         $user = User::factory()->create();
         $viewer = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->withRole('Ticket - User')
             ->create();
 
         $thread = Thread::factory()->withDepartment(StaffDepartment::Chaplain)->create();
@@ -361,6 +376,7 @@ describe('View Ticket Component', function () {
     it('posts message and closes ticket when close button clicked with text', function () {
         $staff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->withRole('Ticket - User')
             ->create();
 
         $user = User::factory()->create();
@@ -396,6 +412,7 @@ describe('View Ticket Component', function () {
     it('closes ticket without posting when close button clicked with empty text', function () {
         $staff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->withRole('Ticket - User')
             ->create();
 
         $thread = Thread::factory()
@@ -502,6 +519,7 @@ describe('View Ticket Component', function () {
     it('auto-assigns unassigned ticket when staff replies', function () {
         $staff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->withRole('Ticket - User')
             ->create();
         $creator = User::factory()->create();
 
@@ -524,9 +542,11 @@ describe('View Ticket Component', function () {
     it('does not change assignment when ticket is already assigned', function () {
         $staff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->withRole('Ticket - User')
             ->create();
         $otherStaff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->withRole('Ticket - User')
             ->create();
         $creator = User::factory()->create();
 
@@ -567,6 +587,7 @@ describe('View Ticket Component', function () {
     it('does not auto-assign on internal note', function () {
         $staff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->withRole('Ticket - User')
             ->create();
         $creator = User::factory()->create();
 

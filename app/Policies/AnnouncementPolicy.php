@@ -37,7 +37,7 @@ class AnnouncementPolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasRole('Announcement Editor');
+        return $user->hasRole('Announcement - Editor');
     }
 
     /**
@@ -45,7 +45,7 @@ class AnnouncementPolicy
      */
     public function update(User $user, Announcement $announcement): bool
     {
-        return $user->hasRole('Announcement Editor');
+        return $user->hasRole('Announcement - Editor');
     }
 
     public function acknowledge(User $user, Announcement $announcement): bool
@@ -58,6 +58,6 @@ class AnnouncementPolicy
      */
     public function delete(User $user, Announcement $announcement): bool
     {
-        return $user->hasRole('Announcement Editor');
+        return $user->hasRole('Announcement - Editor');
     }
 }

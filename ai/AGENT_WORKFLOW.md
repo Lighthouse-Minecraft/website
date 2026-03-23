@@ -10,8 +10,8 @@ Rules for how Claude (and other agents) operate in this repository during a sess
 
 | Type | Pattern | Base | Purpose |
 |---|---|---|---|
-| PRD branch | `prd/<short-prd-name>` | `staging` | Integration branch for an entire PRD |
-| Issue branch | `prd/<short-prd-name>/<issue-short-name>` | PRD branch | Single issue from a PRD |
+| PRD branch | `prd-<short-prd-name>` | `staging` | Integration branch for an entire PRD (hyphen, not slash) |
+| Issue branch | `prd-<short-prd-name>/<issue-short-name>` | PRD branch | Single issue from a PRD (deleted after merge) |
 | Standalone branch | `<descriptive-name>` | `staging` | Quick fix or standalone issue |
 
 ### Rules
@@ -26,15 +26,17 @@ Rules for how Claude (and other agents) operate in this repository during a sess
 
 ```
 staging
-  └── prd/role-migration              (PRD branch)
-        ├── prd/role-migration/admin-flag       (issue branch → merge back)
-        ├── prd/role-migration/seed-roles       (issue branch → merge back)
-        ├── prd/role-migration/gate-refactor    (issue branch → merge back)
-        └── ... (each issue merges into PRD branch)
+  └── prd-role-migration              (PRD branch — hyphen separator)
+        ├── prd-role-migration/admin-flag       (issue branch → merge back → delete)
+        ├── prd-role-migration/seed-roles       (issue branch → merge back → delete)
+        ├── prd-role-migration/gate-refactor    (issue branch → merge back → delete)
+        └── ... (each issue merges into PRD branch, then branch is deleted)
 
   When all issues are done:
-    PR: prd/role-migration → staging
+    PR: prd-role-migration → staging
 ```
+
+**Why hyphen?** Git cannot have both `prd/foo` (branch ref) and `prd/foo/bar` (sub-ref) simultaneously. Using `prd-foo` for the PRD branch and `prd-foo/bar` for issue branches avoids this conflict.
 
 ---
 
@@ -157,11 +159,12 @@ Rules:
 
 ## Documentation Updates
 
-Documentation is updated as part of the `/work-prd` workflow:
-- After all issues are complete, the orchestrator runs documentation updates.
-- Technical docs (`/document-feature`), user docs (`/write-user-docs`), and staff docs (`/write-staff-docs`) are created or updated as needed.
-- Documentation skills handle both creation of new docs and updating existing docs.
-- This ensures docs reflect the complete feature, not partial slices.
+Documentation is updated after all issues are complete but **before** the PR is created (in both `/work-prd` and `/auto-process-prd`):
+1. `/document-feature <feature-name>` — technical documentation
+2. `/write-user-docs <feature-name>` — if the PRD has user-facing aspects
+3. `/write-staff-docs <feature-name>` — if the PRD has staff-facing aspects
+
+This ensures docs reflect the complete feature, not partial slices. Documentation changes are committed to the PRD branch before pushing and opening the PR.
 
 ---
 

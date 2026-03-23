@@ -2,7 +2,7 @@
 
 namespace App\Policies;
 
-use App\Enums\StaffRank;
+use App\Enums\MembershipLevel;
 use App\Models\StaffApplication;
 use App\Models\User;
 
@@ -19,7 +19,7 @@ class StaffApplicationPolicy
 
     public function viewAny(User $user): bool
     {
-        return $user->isAtLeastRank(StaffRank::CrewMember);
+        return $user->hasRole('Applicant Review - All') || $user->hasRole('Applicant Review - Department');
     }
 
     public function view(User $user, StaffApplication $application): bool
@@ -29,7 +29,7 @@ class StaffApplicationPolicy
 
     public function create(User $user): bool
     {
-        return ! $user->in_brig;
+        return ! $user->in_brig && $user->isAtLeastLevel(MembershipLevel::Traveler);
     }
 
     public function update(User $user, StaffApplication $application): bool

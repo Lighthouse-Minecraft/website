@@ -44,8 +44,8 @@ All non-trivial features follow this pipeline:
 
 ### Branching Model
 
-- **PRD branch**: `prd/<short-prd-name>` — created from `staging`, all issue work merges here.
-- **Issue branch**: `prd/<short-prd-name>/<issue-short-name>` — created from the PRD branch.
+- **PRD branch**: `prd-<short-prd-name>` — created from `staging`, all issue work merges here. Uses hyphen (not slash) to avoid git ref conflicts with issue sub-branches.
+- **Issue branch**: `prd-<short-prd-name>/<issue-short-name>` — created from the PRD branch. Deleted after merging back.
 - **Standalone branch**: `<descriptive-name>` — for quick fixes or single issues without a PRD.
 - When all issues are complete, a PR is created from the PRD branch → `staging`.
 

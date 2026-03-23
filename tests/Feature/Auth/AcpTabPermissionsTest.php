@@ -8,25 +8,25 @@ use App\Models\DiscordAccount;
 use App\Models\MinecraftAccount;
 use App\Models\User;
 
-test('user with View Logs role can pass view-mc-command-log gate', function () {
+test('user with Logs - Viewer role can pass view-mc-command-log gate', function () {
     $user = User::factory()
-        ->withRole('View Logs')
+        ->withRole('Logs - Viewer')
         ->create();
 
     expect($user->can('view-mc-command-log'))->toBeTrue();
 });
 
-test('user with View Logs role can pass view-activity-log gate', function () {
+test('user with Logs - Viewer role can pass view-activity-log gate', function () {
     $user = User::factory()
-        ->withRole('View Logs')
+        ->withRole('Logs - Viewer')
         ->create();
 
     expect($user->can('view-activity-log'))->toBeTrue();
 });
 
-test('user with View Logs role can pass view-discord-api-log gate', function () {
+test('user with Logs - Viewer role can pass view-discord-api-log gate', function () {
     $user = User::factory()
-        ->withRole('View Logs')
+        ->withRole('Logs - Viewer')
         ->create();
 
     expect($user->can('view-discord-api-log'))->toBeTrue();
@@ -50,7 +50,7 @@ test('admin can pass view-discord-api-log gate', function () {
     expect($user->can('view-discord-api-log'))->toBeTrue();
 });
 
-test('user without View Logs role is denied discord api log gate', function () {
+test('user without Logs - Viewer role is denied discord api log gate', function () {
     $user = User::factory()
         ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
         ->create();
@@ -58,7 +58,7 @@ test('user without View Logs role is denied discord api log gate', function () {
     expect($user->can('view-discord-api-log'))->toBeFalse();
 });
 
-test('user without View Logs role is denied mc command log gate', function () {
+test('user without Logs - Viewer role is denied mc command log gate', function () {
     $user = User::factory()
         ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
         ->create();
@@ -66,7 +66,7 @@ test('user without View Logs role is denied mc command log gate', function () {
     expect($user->can('view-mc-command-log'))->toBeFalse();
 });
 
-test('user without View Logs role is denied activity log gate', function () {
+test('user without Logs - Viewer role is denied activity log gate', function () {
     $user = User::factory()
         ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::JrCrew)
         ->create();
@@ -74,19 +74,19 @@ test('user without View Logs role is denied activity log gate', function () {
     expect($user->can('view-activity-log'))->toBeFalse();
 });
 
-test('user with User Manager role can viewAny minecraft accounts', function () {
-    $user = User::factory()->withRole('User Manager')->create();
+test('user with User - Manager role can viewAny minecraft accounts', function () {
+    $user = User::factory()->withRole('User - Manager')->create();
 
     expect($user->can('viewAny', MinecraftAccount::class))->toBeTrue();
 });
 
-test('user with User Manager role can viewAny discord accounts', function () {
-    $user = User::factory()->withRole('User Manager')->create();
+test('user with User - Manager role can viewAny discord accounts', function () {
+    $user = User::factory()->withRole('User - Manager')->create();
 
     expect($user->can('viewAny', DiscordAccount::class))->toBeTrue();
 });
 
-test('officer without User Manager role cannot viewAny minecraft accounts', function () {
+test('officer without User - Manager role cannot viewAny minecraft accounts', function () {
     $user = User::factory()
         ->withStaffPosition(StaffDepartment::Steward, StaffRank::Officer)
         ->create();
@@ -94,10 +94,8 @@ test('officer without User Manager role cannot viewAny minecraft accounts', func
     expect($user->can('viewAny', MinecraftAccount::class))->toBeFalse();
 });
 
-test('engineering staff can pass view-acp gate', function () {
-    $user = User::factory()
-        ->withStaffPosition(StaffDepartment::Engineer, StaffRank::JrCrew)
-        ->create();
+test('user with Staff Access role can pass view-acp gate', function () {
+    $user = User::factory()->withRole('Staff Access')->create();
 
     expect($user->can('view-acp'))->toBeTrue();
 });

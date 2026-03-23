@@ -24,7 +24,7 @@ it('creates a meeting with a specific type', function () {
 });
 
 it('shows department sections only for staff meetings during in-progress', function () {
-    $user = User::factory()->withRole('Manage Staff Meeting')->create(['staff_rank' => StaffRank::Officer]);
+    $user = User::factory()->withRole('Meeting - Manager')->create(['staff_rank' => StaffRank::Officer]);
     $staffMeeting = Meeting::factory()->create([
         'status' => MeetingStatus::InProgress,
         'type' => MeetingType::StaffMeeting,
@@ -39,7 +39,7 @@ it('shows department sections only for staff meetings during in-progress', funct
 });
 
 it('shows single general note for non-staff meetings', function () {
-    $user = User::factory()->withRole('Manage Staff Meeting')->create(['staff_rank' => StaffRank::Officer]);
+    $user = User::factory()->withRole('Meeting - Manager')->create(['staff_rank' => StaffRank::Officer]);
     $boardMeeting = Meeting::factory()->create([
         'status' => MeetingStatus::InProgress,
         'type' => MeetingType::BoardMeeting,
@@ -53,7 +53,7 @@ it('shows single general note for non-staff meetings', function () {
 });
 
 it('displays meeting type in meeting details', function () {
-    $user = User::factory()->withRole('Manage Staff Meeting')->create(['staff_rank' => StaffRank::Officer]);
+    $user = User::factory()->withRole('Meeting - Manager')->create(['staff_rank' => StaffRank::Officer]);
     $meeting = Meeting::factory()->create([
         'status' => MeetingStatus::Pending,
         'type' => MeetingType::StaffMeeting,
@@ -66,7 +66,7 @@ it('displays meeting type in meeting details', function () {
 });
 
 it('defaults show_community_updates to true for staff meetings', function () {
-    $user = User::factory()->withRole('Manage Staff Meeting')->create(['staff_rank' => StaffRank::Officer]);
+    $user = User::factory()->withRole('Meeting - Manager')->create(['staff_rank' => StaffRank::Officer]);
 
     Volt::actingAs($user)
         ->test('meeting.create-modal')
@@ -81,7 +81,7 @@ it('defaults show_community_updates to true for staff meetings', function () {
 });
 
 it('defaults show_community_updates to false for non-staff meetings', function () {
-    $user = User::factory()->withRole('Manage Staff Meeting')->create(['staff_rank' => StaffRank::Officer]);
+    $user = User::factory()->withRole('Meeting - Manager')->create(['staff_rank' => StaffRank::Officer]);
 
     Volt::actingAs($user)
         ->test('meeting.create-modal')

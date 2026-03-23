@@ -145,8 +145,8 @@ describe('Meeting Create - Functionality', function () {
 
 describe('Meeting Create - Permissions and Security', function () {
 
-    it('allows Officers with Manage Staff Meeting role to access the create meeting page', function ($department) {
-        $user = User::factory()->withStaffPosition($department, StaffRank::Officer, 'Officer')->withRole('Manage Staff Meeting')->create();
+    it('allows Officers with Meeting - Manager role to access the create meeting page', function ($department) {
+        $user = User::factory()->withStaffPosition($department, StaffRank::Officer, 'Officer')->withRole('Meeting - Manager')->create();
         loginAs($user);
 
         livewire('meeting.create-modal')
@@ -208,9 +208,10 @@ describe('Meeting Create - Permissions and Security', function () {
         ])
         ->done();
 
-    it('allows users with the Manage Staff Meeting role to access the create meeting page', function () {
+    it('allows users with the Meeting - Manager role to access the create meeting page', function () {
         $user = User::factory()
-            ->withRole('Manage Staff Meeting')
+            ->withRole('Staff Access')
+            ->withRole('Meeting - Manager')
             ->create([
                 'staff_rank' => StaffRank::CrewMember,
             ]);

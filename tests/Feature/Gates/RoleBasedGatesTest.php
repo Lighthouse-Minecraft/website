@@ -12,19 +12,19 @@ uses()->group('gates', 'roles');
 
 // == manage-stowaway-users / manage-traveler-users == //
 
-it('grants manage-stowaway-users to user with Manage Membership Level role', function () {
-    $user = User::factory()->withRole('Manage Membership Level')->create();
+it('grants manage-stowaway-users to user with Membership Level - Manager role', function () {
+    $user = User::factory()->withRole('Membership Level - Manager')->create();
 
     expect($user->can('manage-stowaway-users'))->toBeTrue();
 });
 
-it('grants manage-traveler-users to user with Manage Membership Level role', function () {
-    $user = User::factory()->withRole('Manage Membership Level')->create();
+it('grants manage-traveler-users to user with Membership Level - Manager role', function () {
+    $user = User::factory()->withRole('Membership Level - Manager')->create();
 
     expect($user->can('manage-traveler-users'))->toBeTrue();
 });
 
-it('denies manage-stowaway-users without Manage Membership Level role', function () {
+it('denies manage-stowaway-users without Membership Level - Manager role', function () {
     $user = User::factory()
         ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::Officer)
         ->create();
@@ -108,8 +108,8 @@ it('denies view-ready-room-command to user in different department without role'
     expect($user->can('view-ready-room-command'))->toBeFalse();
 });
 
-it('grants view-ready-room-command to user with View All Ready Rooms role', function () {
-    $user = User::factory()->withRole('View All Ready Rooms')->create();
+it('grants view-ready-room-command to user with Ready Room - View All role', function () {
+    $user = User::factory()->withRole('Ready Room - View All')->create();
 
     expect($user->can('view-ready-room-command'))->toBeTrue();
 });
@@ -160,8 +160,8 @@ it('grants view-ready-room-steward to user in Steward department', function () {
         ->and($user->can('view-ready-room-command'))->toBeFalse();
 });
 
-it('grants all department ready rooms to user with View All Ready Rooms role', function () {
-    $user = User::factory()->withRole('View All Ready Rooms')->create();
+it('grants all department ready rooms to user with Ready Room - View All role', function () {
+    $user = User::factory()->withRole('Ready Room - View All')->create();
 
     expect($user->can('view-ready-room-command'))->toBeTrue()
         ->and($user->can('view-ready-room-chaplain'))->toBeTrue()
@@ -178,28 +178,18 @@ it('grants view-acp to admin', function () {
     expect($user->can('view-acp'))->toBeTrue();
 });
 
-it('grants view-acp to JrCrew', function () {
+it('grants view-acp to user with Staff Access role', function () {
+    $user = User::factory()->withRole('Staff Access')->create();
+
+    expect($user->can('view-acp'))->toBeTrue();
+});
+
+it('denies view-acp to staff without Staff Access role', function () {
     $user = User::factory()
         ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::JrCrew)
         ->create();
 
-    expect($user->can('view-acp'))->toBeTrue();
-});
-
-it('grants view-acp to CrewMember', function () {
-    $user = User::factory()
-        ->withStaffPosition(StaffDepartment::Engineer, StaffRank::CrewMember)
-        ->create();
-
-    expect($user->can('view-acp'))->toBeTrue();
-});
-
-it('grants view-acp to Officer', function () {
-    $user = User::factory()
-        ->withStaffPosition(StaffDepartment::Steward, StaffRank::Officer)
-        ->create();
-
-    expect($user->can('view-acp'))->toBeTrue();
+    expect($user->can('view-acp'))->toBeFalse();
 });
 
 it('denies view-acp to regular user', function () {
@@ -210,8 +200,8 @@ it('denies view-acp to regular user', function () {
 
 // == view-*-log gates == //
 
-it('grants all log gates to user with View Logs role', function () {
-    $user = User::factory()->withRole('View Logs')->create();
+it('grants all log gates to user with Logs - Viewer role', function () {
+    $user = User::factory()->withRole('Logs - Viewer')->create();
 
     expect($user->can('view-mc-command-log'))->toBeTrue()
         ->and($user->can('view-discord-api-log'))->toBeTrue()
@@ -219,7 +209,7 @@ it('grants all log gates to user with View Logs role', function () {
         ->and($user->can('view-discipline-report-log'))->toBeTrue();
 });
 
-it('denies log gates without View Logs role', function () {
+it('denies log gates without Logs - Viewer role', function () {
     $user = User::factory()
         ->withStaffPosition(StaffDepartment::Engineer, StaffRank::Officer)
         ->create();
@@ -230,8 +220,8 @@ it('denies log gates without View Logs role', function () {
         ->and($user->can('view-discipline-report-log'))->toBeFalse();
 });
 
-it('grants view-discipline-report-log to user with Manage Discipline Reports role', function () {
-    $user = User::factory()->withRole('Manage Discipline Reports')->create();
+it('grants view-discipline-report-log to user with Discipline Report - Manager role', function () {
+    $user = User::factory()->withRole('Discipline Report - Manager')->create();
 
     expect($user->can('view-discipline-report-log'))->toBeTrue()
         ->and($user->can('view-mc-command-log'))->toBeFalse()
@@ -250,8 +240,8 @@ it('grants all log gates to admin', function () {
 
 // == manage-discipline-reports == //
 
-it('grants manage-discipline-reports to user with Manage Discipline Reports role', function () {
-    $user = User::factory()->withRole('Manage Discipline Reports')->create();
+it('grants manage-discipline-reports to user with Discipline Report - Manager role', function () {
+    $user = User::factory()->withRole('Discipline Report - Manager')->create();
 
     expect($user->can('manage-discipline-reports'))->toBeTrue();
 });
@@ -266,8 +256,8 @@ it('denies manage-discipline-reports without role', function () {
 
 // == publish-discipline-reports == //
 
-it('grants publish-discipline-reports to user with Publish Discipline Reports role', function () {
-    $user = User::factory()->withRole('Publish Discipline Reports')->create();
+it('grants publish-discipline-reports to user with Discipline Report - Publisher role', function () {
+    $user = User::factory()->withRole('Discipline Report - Publisher')->create();
 
     expect($user->can('publish-discipline-reports'))->toBeTrue();
 });
@@ -282,8 +272,8 @@ it('denies publish-discipline-reports without role', function () {
 
 // == manage-site-config == //
 
-it('grants manage-site-config to user with Manage Site Config role', function () {
-    $user = User::factory()->withRole('Manage Site Config')->create();
+it('grants manage-site-config to user with Site Config - Manager role', function () {
+    $user = User::factory()->withRole('Site Config - Manager')->create();
 
     expect($user->can('manage-site-config'))->toBeTrue();
 });
@@ -298,8 +288,8 @@ it('denies manage-site-config without role', function () {
 
 // == view-command-dashboard == //
 
-it('grants view-command-dashboard to user with View Command Dashboard role', function () {
-    $user = User::factory()->withRole('View Command Dashboard')->create();
+it('grants view-command-dashboard to user with Command Dashboard - Viewer role', function () {
+    $user = User::factory()->withRole('Command Dashboard - Viewer')->create();
 
     expect($user->can('view-command-dashboard'))->toBeTrue();
 });
@@ -346,8 +336,8 @@ it('denies lock-topic without Moderator role', function () {
 
 // == manage-community-stories == //
 
-it('grants manage-community-stories to user with Manage Community Stories role', function () {
-    $user = User::factory()->withRole('Manage Community Stories')->create();
+it('grants manage-community-stories to user with Community Stories - Manager role', function () {
+    $user = User::factory()->withRole('Community Stories - Manager')->create();
 
     expect($user->can('manage-community-stories'))->toBeTrue();
 });
@@ -362,8 +352,8 @@ it('denies manage-community-stories without role', function () {
 
 // == manage-application-questions == //
 
-it('grants manage-application-questions to user with Manage Site Config role', function () {
-    $user = User::factory()->withRole('Manage Site Config')->create();
+it('grants manage-application-questions to user with Site Config - Manager role', function () {
+    $user = User::factory()->withRole('Site Config - Manager')->create();
 
     expect($user->can('manage-application-questions'))->toBeTrue();
 });
@@ -384,26 +374,28 @@ it('grants review-staff-applications to admin', function () {
     expect($user->can('review-staff-applications'))->toBeTrue();
 });
 
-it('grants review-staff-applications to officers', function () {
+it('grants review-staff-applications to user with Applicant Review - All role', function () {
     $user = User::factory()
-        ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::Officer)
+        ->withRole('Applicant Review - All')
         ->create();
 
     expect($user->can('review-staff-applications'))->toBeTrue();
 });
 
-it('grants review-staff-applications list access to JrCrew', function () {
+it('grants review-staff-applications list access to Applicant Review - Department', function () {
     $user = User::factory()
         ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::JrCrew)
+        ->withRole('Applicant Review - Department')
         ->create();
 
-    // Without application parameter, JrCrew can access the list
+    // Without application parameter, department reviewer can access the list
     expect($user->can('review-staff-applications'))->toBeTrue();
 });
 
-it('grants review-staff-applications for same-department application to JrCrew', function () {
+it('grants review-staff-applications for same-department application to Applicant Review - Department', function () {
     $user = User::factory()
         ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::JrCrew)
+        ->withRole('Applicant Review - Department')
         ->create();
 
     $position = StaffPosition::factory()
@@ -414,9 +406,10 @@ it('grants review-staff-applications for same-department application to JrCrew',
     expect($user->can('review-staff-applications', $application))->toBeTrue();
 });
 
-it('denies review-staff-applications for different-department application to JrCrew', function () {
+it('denies review-staff-applications for different-department application to Applicant Review - Department', function () {
     $user = User::factory()
         ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::JrCrew)
+        ->withRole('Applicant Review - Department')
         ->create();
 
     $position = StaffPosition::factory()
@@ -427,9 +420,9 @@ it('denies review-staff-applications for different-department application to JrC
     expect($user->can('review-staff-applications', $application))->toBeFalse();
 });
 
-it('grants review-staff-applications for any department to officers', function () {
+it('grants review-staff-applications for any department to Applicant Review - All', function () {
     $user = User::factory()
-        ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::Officer)
+        ->withRole('Applicant Review - All')
         ->create();
 
     $position = StaffPosition::factory()
@@ -446,18 +439,20 @@ it('denies review-staff-applications to regular users', function () {
     expect($user->can('review-staff-applications'))->toBeFalse();
 });
 
-it('grants review-staff-applications list access to CrewMember (isAtLeastRank JrCrew)', function () {
+it('denies review-staff-applications to staff without applicant review role', function () {
     $user = User::factory()
         ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+        ->withRole('Staff Access')
         ->create();
 
-    // CrewMember >= JrCrew, so they can access the list
-    expect($user->can('review-staff-applications'))->toBeTrue();
+    // Staff Access alone does not grant applicant review access
+    expect($user->can('review-staff-applications'))->toBeFalse();
 });
 
-it('grants review-staff-applications for same-department application to CrewMember', function () {
+it('grants review-staff-applications for same-department application to CrewMember with Applicant Review - Department', function () {
     $user = User::factory()
         ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+        ->withRole('Applicant Review - Department')
         ->create();
 
     $position = StaffPosition::factory()
@@ -468,9 +463,10 @@ it('grants review-staff-applications for same-department application to CrewMemb
     expect($user->can('review-staff-applications', $application))->toBeTrue();
 });
 
-it('denies review-staff-applications for different-department application to CrewMember', function () {
+it('denies review-staff-applications for different-department application to CrewMember with Applicant Review - Department', function () {
     $user = User::factory()
         ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+        ->withRole('Applicant Review - Department')
         ->create();
 
     $position = StaffPosition::factory()
@@ -481,26 +477,44 @@ it('denies review-staff-applications for different-department application to Cre
     expect($user->can('review-staff-applications', $application))->toBeFalse();
 });
 
-// == Rank-based gates remain unchanged == //
+// == Staff Access role gates == //
 
-it('grants view-ready-room to JrCrew (rank-based, unchanged)', function () {
-    $user = User::factory()
-        ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::JrCrew)
-        ->create();
+it('grants view-ready-room to user with Staff Access role', function () {
+    $user = User::factory()->withRole('Staff Access')->create();
 
     expect($user->can('view-ready-room'))->toBeTrue();
 });
 
-it('denies view-ready-room to regular user (rank-based, unchanged)', function () {
+it('denies view-ready-room to staff without Staff Access role', function () {
+    $user = User::factory()
+        ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::JrCrew)
+        ->create();
+
+    expect($user->can('view-ready-room'))->toBeFalse();
+});
+
+it('denies view-ready-room to regular user', function () {
     $user = User::factory()->create();
 
     expect($user->can('view-ready-room'))->toBeFalse();
 });
 
-it('grants edit-staff-bio to CrewMember (rank-based, unchanged)', function () {
+it('grants edit-staff-bio to user with Staff Access role', function () {
+    $user = User::factory()->withRole('Staff Access')->create();
+
+    expect($user->can('edit-staff-bio'))->toBeTrue();
+});
+
+it('denies edit-staff-bio to staff without Staff Access role', function () {
     $user = User::factory()
         ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
         ->create();
+
+    expect($user->can('edit-staff-bio'))->toBeFalse();
+});
+
+it('grants edit-staff-bio to board member without Staff Access role', function () {
+    $user = User::factory()->create(['is_board_member' => true]);
 
     expect($user->can('edit-staff-bio'))->toBeTrue();
 });
@@ -546,7 +560,10 @@ it('grants all role-based gates to user with allow-all position', function () {
         ->and($user->can('view-command-dashboard'))->toBeTrue()
         ->and($user->can('lock-topic'))->toBeTrue()
         ->and($user->can('manage-community-stories'))->toBeTrue()
-        ->and($user->can('manage-application-questions'))->toBeTrue();
+        ->and($user->can('manage-application-questions'))->toBeTrue()
+        ->and($user->can('view-acp'))->toBeTrue()
+        ->and($user->can('view-ready-room'))->toBeTrue()
+        ->and($user->can('edit-staff-bio'))->toBeTrue();
 });
 
 // == Admin override works for all role-based gates == //
@@ -573,5 +590,8 @@ it('grants all role-based gates to admin user', function () {
         ->and($user->can('view-ready-room-chaplain'))->toBeTrue()
         ->and($user->can('view-ready-room-engineer'))->toBeTrue()
         ->and($user->can('view-ready-room-quartermaster'))->toBeTrue()
-        ->and($user->can('view-ready-room-steward'))->toBeTrue();
+        ->and($user->can('view-ready-room-steward'))->toBeTrue()
+        ->and($user->can('view-acp'))->toBeTrue()
+        ->and($user->can('view-ready-room'))->toBeTrue()
+        ->and($user->can('edit-staff-bio'))->toBeTrue();
 });

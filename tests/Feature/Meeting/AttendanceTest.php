@@ -10,7 +10,7 @@ use function Pest\Laravel\get;
 use function Pest\Livewire\livewire;
 
 beforeEach(function () {
-    $this->admin = User::factory()->withRole('Manage Staff Meeting')->create([
+    $this->admin = User::factory()->withRole('Meeting - Manager')->create([
         'staff_rank' => StaffRank::Officer,
         'staff_department' => StaffDepartment::Command,
         'staff_title' => 'Test Admin',
@@ -228,9 +228,9 @@ test('only authorized users can toggle attendance', function () {
         ->assertForbidden();
 });
 
-test('user with Manage Staff Meeting role can manage attendees', function () {
+test('user with Meeting - Manager role can manage attendees', function () {
     $secretary = User::factory()
-        ->withRole('Manage Staff Meeting')
+        ->withRole('Meeting - Manager')
         ->create([
             'staff_rank' => StaffRank::CrewMember,
             'staff_title' => 'Meeting Manager',

@@ -209,10 +209,10 @@ describe('Department Engagement Widget', function () {
 });
 
 describe('Department Engagement Widget - Permissions', function () {
-    it('is visible to user with View Command Dashboard role on the dashboard', function () {
+    it('is visible to user with Command Dashboard - Viewer role on the dashboard', function () {
         $user = User::factory()
             ->withStaffPosition(StaffDepartment::Command, StaffRank::Officer)
-            ->withRole('View Command Dashboard')
+            ->withRole('Command Dashboard - Viewer')
             ->create();
         loginAs($user);
 
@@ -227,7 +227,7 @@ describe('Department Engagement Widget - Permissions', function () {
             ->assertSeeLivewire('dashboard.command-department-engagement');
     });
 
-    it('is not visible to command staff without View Command Dashboard role', function () {
+    it('is not visible to command staff without Command Dashboard - Viewer role', function () {
         $user = officerCommand();
         loginAs($user);
 

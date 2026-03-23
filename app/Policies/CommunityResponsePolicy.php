@@ -18,7 +18,7 @@ class CommunityResponsePolicy
 
     public function view(User $user, CommunityResponse $response): bool
     {
-        if ($user->hasRole('Manage Community Stories')) {
+        if ($user->hasRole('Community Stories - Manager')) {
             return true;
         }
 
@@ -27,7 +27,7 @@ class CommunityResponsePolicy
 
     public function update(User $user, CommunityResponse $response): bool
     {
-        if ($user->hasRole('Manage Community Stories')) {
+        if ($user->hasRole('Community Stories - Manager')) {
             return true;
         }
 
@@ -36,7 +36,7 @@ class CommunityResponsePolicy
 
     public function delete(User $user, CommunityResponse $response): bool
     {
-        if ($user->hasRole('Manage Community Stories')) {
+        if ($user->hasRole('Community Stories - Manager')) {
             return true;
         }
 

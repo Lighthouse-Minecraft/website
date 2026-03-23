@@ -123,6 +123,7 @@ describe('Message Flagging Workflow', function () {
         $flagger = User::factory()->create();
         $quartermaster = User::factory()
             ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::CrewMember)
+            ->withRole('Ticket - Manager')
             ->create();
 
         $thread = Thread::factory()->withDepartment(StaffDepartment::Chaplain)->create();
@@ -143,6 +144,7 @@ describe('Message Flagging Workflow', function () {
         $flagger = User::factory()->create();
         $quartermaster = User::factory()
             ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::Officer)
+            ->withRole('Ticket - Manager')
             ->create();
 
         $thread = Thread::factory()->withDepartment(StaffDepartment::Chaplain)->create();
@@ -169,6 +171,7 @@ describe('Message Flagging Workflow', function () {
         $flagger = User::factory()->create();
         $quartermaster = User::factory()
             ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::Officer)
+            ->withRole('Ticket - Manager')
             ->create();
 
         $thread = Thread::factory()->withDepartment(StaffDepartment::Chaplain)->create();
@@ -194,6 +197,7 @@ describe('Message Flagging Workflow', function () {
         $flagger = User::factory()->create();
         $quartermaster = User::factory()
             ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::Officer)
+            ->withRole('Ticket - Manager')
             ->create();
 
         $thread = Thread::factory()->withDepartment(StaffDepartment::Chaplain)->create();

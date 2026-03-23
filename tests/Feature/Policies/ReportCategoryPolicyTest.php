@@ -14,7 +14,7 @@ it('allows authorized roles to manage report categories', function (Closure $cre
         ->and($user->can('create', ReportCategory::class))->toBe($canManage);
 })->with([
     'admin' => [fn () => loginAsAdmin(), true],
-    'Manage Site Config role' => [fn () => tap(User::factory()->withRole('Manage Site Config')->create(), fn ($u) => loginAs($u)), true],
+    'Site Config - Manager role' => [fn () => tap(User::factory()->withRole('Site Config - Manager')->create(), fn ($u) => loginAs($u)), true],
     'officer without role' => [fn () => tap(officerCommand(), fn ($u) => loginAs($u)), false],
     'crew without role' => [fn () => tap(crewQuartermaster(), fn ($u) => loginAs($u)), false],
 ]);

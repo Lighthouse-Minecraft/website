@@ -37,16 +37,16 @@ it('command officer returns null from discipline report policy before hook', fun
 
 // === viewAny with role ===
 
-it('user with Manage Discipline Reports role can view any reports', function () {
-    $manager = User::factory()->withRole('Manage Discipline Reports')->create();
+it('user with Discipline Report - Manager role can view any reports', function () {
+    $manager = User::factory()->withRole('Discipline Report - Manager')->create();
 
     expect($manager->can('viewAny', DisciplineReport::class))->toBeTrue();
 });
 
 // === view with role ===
 
-it('user with Manage Discipline Reports role can view any report', function () {
-    $manager = User::factory()->withRole('Manage Discipline Reports')->create();
+it('user with Discipline Report - Manager role can view any report', function () {
+    $manager = User::factory()->withRole('Discipline Report - Manager')->create();
     $report = DisciplineReport::factory()->create();
 
     expect($manager->can('view', $report))->toBeTrue();
@@ -54,23 +54,23 @@ it('user with Manage Discipline Reports role can view any report', function () {
 
 // === create with role ===
 
-it('user with Manage Discipline Reports role can create reports', function () {
-    $manager = User::factory()->withRole('Manage Discipline Reports')->create();
+it('user with Discipline Report - Manager role can create reports', function () {
+    $manager = User::factory()->withRole('Discipline Report - Manager')->create();
 
     expect($manager->can('create', DisciplineReport::class))->toBeTrue();
 });
 
 // === update with role ===
 
-it('user with Manage Discipline Reports role can update draft reports', function () {
-    $manager = User::factory()->withRole('Manage Discipline Reports')->create();
+it('user with Discipline Report - Manager role can update draft reports', function () {
+    $manager = User::factory()->withRole('Discipline Report - Manager')->create();
     $report = DisciplineReport::factory()->create();
 
     expect($manager->can('update', $report))->toBeTrue();
 });
 
-it('user with Manage Discipline Reports role cannot update published reports', function () {
-    $manager = User::factory()->withRole('Manage Discipline Reports')->create();
+it('user with Discipline Report - Manager role cannot update published reports', function () {
+    $manager = User::factory()->withRole('Discipline Report - Manager')->create();
     $report = DisciplineReport::factory()->published()->create();
 
     expect($manager->can('update', $report))->toBeFalse();
@@ -78,22 +78,22 @@ it('user with Manage Discipline Reports role cannot update published reports', f
 
 // === publish with role ===
 
-it('user with Publish Discipline Reports role can publish draft reports', function () {
-    $publisher = User::factory()->withRole('Publish Discipline Reports')->create();
+it('user with Discipline Report - Publisher role can publish draft reports', function () {
+    $publisher = User::factory()->withRole('Discipline Report - Publisher')->create();
     $report = DisciplineReport::factory()->create();
 
     expect($publisher->can('publish', $report))->toBeTrue();
 });
 
-it('user without Publish Discipline Reports role cannot publish', function () {
-    $manager = User::factory()->withRole('Manage Discipline Reports')->create();
+it('user without Discipline Report - Publisher role cannot publish', function () {
+    $manager = User::factory()->withRole('Discipline Report - Manager')->create();
     $report = DisciplineReport::factory()->create();
 
     expect($manager->can('publish', $report))->toBeFalse();
 });
 
-it('user with Publish Discipline Reports role cannot publish already published report', function () {
-    $publisher = User::factory()->withRole('Publish Discipline Reports')->create();
+it('user with Discipline Report - Publisher role cannot publish already published report', function () {
+    $publisher = User::factory()->withRole('Discipline Report - Publisher')->create();
     $report = DisciplineReport::factory()->published()->create();
 
     expect($publisher->can('publish', $report))->toBeFalse();
@@ -102,7 +102,7 @@ it('user with Publish Discipline Reports role cannot publish already published r
 it('reporter with Publish role cannot publish their own report about a staff member', function () {
     $reporter = User::factory()
         ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::Officer)
-        ->withRole('Publish Discipline Reports')
+        ->withRole('Discipline Report - Publisher')
         ->create();
     $subject = User::factory()
         ->withStaffPosition(StaffDepartment::Engineer, StaffRank::CrewMember)
@@ -119,7 +119,7 @@ it('admin can publish any draft report via before hook bypass on publish', funct
     $admin = User::factory()->admin()->create();
     $report = DisciplineReport::factory()->create();
 
-    // Admin has Publish Discipline Reports role via hasRole admin override
+    // Admin has Discipline Report - Publisher role via hasRole admin override
     expect($admin->can('publish', $report))->toBeTrue();
 });
 

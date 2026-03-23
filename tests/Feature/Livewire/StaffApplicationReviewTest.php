@@ -15,25 +15,30 @@ it('admin can see review list', function () {
         ->assertOk();
 });
 
-it('command officer can see review list', function () {
-    $officer = officerCommand();
-    actingAs($officer);
+it('user with Applicant Review - All role can see review list', function () {
+    $reviewer = \App\Models\User::factory()
+        ->withRole('Applicant Review - All')
+        ->create();
+    actingAs($reviewer);
 
     Livewire::test('staff-applications.review-list')
         ->assertOk();
 });
 
-it('crew member from any department can access review page', function () {
-    $crew = crewEngineer();
-    actingAs($crew);
+it('user with Applicant Review - Department role can access review page', function () {
+    $reviewer = \App\Models\User::factory()
+        ->withStaffPosition(\App\Enums\StaffDepartment::Engineer, \App\Enums\StaffRank::CrewMember)
+        ->withRole('Applicant Review - Department')
+        ->create();
+    actingAs($reviewer);
 
     Livewire::test('staff-applications.review-list')
         ->assertOk();
 });
 
-it('jr crew cannot access review page', function () {
-    $jrCrew = jrCrewEngineer();
-    actingAs($jrCrew);
+it('staff without applicant review role cannot access review page', function () {
+    $staff = crewEngineer();
+    actingAs($staff);
 
     Livewire::test('staff-applications.review-list')
         ->assertForbidden();

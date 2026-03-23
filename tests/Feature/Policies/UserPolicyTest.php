@@ -38,8 +38,8 @@ it('admin can view any users', function () {
     expect($admin->can('viewAny', User::class))->toBeTrue();
 });
 
-it('user with User Manager role can view any users', function () {
-    $user = User::factory()->withRole('User Manager')->create();
+it('user with User - Manager role can view any users', function () {
+    $user = User::factory()->withRole('User - Manager')->create();
     expect($user->can('viewAny', User::class))->toBeTrue();
 });
 
@@ -83,8 +83,8 @@ it('admin can view PII', function () {
     expect($admin->can('viewPii', $target))->toBeTrue();
 });
 
-it('user with View PII role can view PII of others', function () {
-    $user = User::factory()->withRole('View PII')->create();
+it('user with PII - Viewer role can view PII of others', function () {
+    $user = User::factory()->withRole('PII - Viewer')->create();
     $target = User::factory()->create();
     expect($user->can('viewPii', $target))->toBeTrue();
 });
@@ -107,13 +107,13 @@ it('user can update themselves', function () {
     expect($user->can('update', $user))->toBeTrue();
 });
 
-it('user with User Manager role can update other users', function () {
-    $user = User::factory()->withRole('User Manager')->create();
+it('user with User - Manager role can update other users', function () {
+    $user = User::factory()->withRole('User - Manager')->create();
     $target = User::factory()->create();
     expect($user->can('update', $target))->toBeTrue();
 });
 
-it('officer without User Manager role cannot update other users', function () {
+it('officer without User - Manager role cannot update other users', function () {
     $officer = officerQuartermaster();
     $target = User::factory()->create();
     expect($officer->can('update', $target))->toBeFalse();

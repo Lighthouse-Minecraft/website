@@ -62,7 +62,7 @@ it('blocks residents from citizen pages', function () {
 })->throws(\Symfony\Component\HttpKernel\Exception\HttpException::class);
 
 it('allows staff to view staff pages', function () {
-    $user = User::factory()->withStaffPosition(StaffDepartment::Command, StaffRank::JrCrew)->create();
+    $user = User::factory()->withStaffPosition(StaffDepartment::Command, StaffRank::JrCrew)->withRole('Staff Access')->create();
     loginAs($user);
 
     $result = CheckDocumentVisibility::run('staff');
@@ -78,7 +78,7 @@ it('blocks non-staff from staff pages', function () {
 })->throws(\Symfony\Component\HttpKernel\Exception\HttpException::class);
 
 it('allows officers to view officer pages', function () {
-    $user = User::factory()->withStaffPosition(StaffDepartment::Command, StaffRank::Officer)->create();
+    $user = User::factory()->withStaffPosition(StaffDepartment::Command, StaffRank::Officer)->withRole('Officer Docs - Viewer')->create();
     loginAs($user);
 
     $result = CheckDocumentVisibility::run('officer');
@@ -87,7 +87,7 @@ it('allows officers to view officer pages', function () {
 });
 
 it('blocks jr crew from officer pages', function () {
-    $user = User::factory()->withStaffPosition(StaffDepartment::Command, StaffRank::JrCrew)->create();
+    $user = User::factory()->withStaffPosition(StaffDepartment::Command, StaffRank::JrCrew)->withRole('Staff Access')->create();
     loginAs($user);
 
     CheckDocumentVisibility::run('officer');

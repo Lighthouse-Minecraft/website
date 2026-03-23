@@ -2,8 +2,6 @@
 
 namespace App\Policies;
 
-use App\Enums\StaffDepartment;
-use App\Enums\StaffRank;
 use App\Models\DisciplineReport;
 use App\Models\Thread;
 use App\Models\User;
@@ -40,8 +38,7 @@ class ThreadPolicy
      */
     public function viewDepartment(User $user): bool
     {
-        // Any staff member can view their department's tickets
-        return $user->staff_department !== null && $user->isAtLeastRank(StaffRank::CrewMember);
+        return $user->staff_department !== null && $user->hasRole('Ticket - User');
     }
 
     /**
@@ -49,8 +46,7 @@ class ThreadPolicy
      */
     public function viewFlagged(User $user): bool
     {
-        return $user->hasRole('Moderator')
-            || ($user->isInDepartment(StaffDepartment::Quartermaster) && $user->isAtLeastRank(StaffRank::CrewMember));
+        return $user->hasRole('Moderator') || $user->hasRole('Ticket - Manager');
     }
 
     /**
@@ -78,8 +74,7 @@ class ThreadPolicy
      */
     public function createAsStaff(User $user): bool
     {
-        // Staff can create admin-action tickets
-        return $user->isAtLeastRank(StaffRank::CrewMember);
+        return $user->hasRole('Ticket - User');
     }
 
     /**
@@ -107,8 +102,8 @@ class ThreadPolicy
             return true;
         }
 
-        // Staff (JrCrew+) can create topic
-        return $user->isAtLeastRank(StaffRank::JrCrew);
+        // Staff with Ticket - User role can create topic
+        return $user->hasRole('Ticket - User');
     }
 
     /**
@@ -116,7 +111,7 @@ class ThreadPolicy
      */
     public function addParticipant(User $user, Thread $thread): bool
     {
-        if (! $user->isAtLeastRank(StaffRank::CrewMember)) {
+        if (! $user->hasRole('Ticket - User')) {
             return false;
         }
 
@@ -145,8 +140,7 @@ class ThreadPolicy
      */
     public function internalNotes(User $user, Thread $thread): bool
     {
-        // Staff who can view the thread can add internal notes
-        if (! $user->isAtLeastRank(StaffRank::CrewMember)) {
+        if (! $user->hasRole('Internal Note - Manager')) {
             return false;
         }
 
@@ -158,8 +152,7 @@ class ThreadPolicy
      */
     public function changeStatus(User $user, Thread $thread): bool
     {
-        // Staff who can view the thread can change status
-        if (! $user->isAtLeastRank(StaffRank::CrewMember)) {
+        if (! $user->hasRole('Ticket - User')) {
             return false;
         }
 
@@ -171,8 +164,7 @@ class ThreadPolicy
      */
     public function assign(User $user, Thread $thread): bool
     {
-        // Officers and above who can view the thread can assign
-        if (! $user->isAtLeastRank(StaffRank::Officer)) {
+        if (! $user->hasRole('Ticket - Manager')) {
             return false;
         }
 
@@ -184,8 +176,7 @@ class ThreadPolicy
      */
     public function reroute(User $user, Thread $thread): bool
     {
-        // Officers and above who can view the thread can reroute
-        if (! $user->isAtLeastRank(StaffRank::Officer)) {
+        if (! $user->hasRole('Ticket - Manager')) {
             return false;
         }
 
@@ -197,8 +188,8 @@ class ThreadPolicy
      */
     public function close(User $user, Thread $thread): bool
     {
-        // Staff who can view the thread can close it
-        if ($user->isAtLeastRank(StaffRank::CrewMember) && $thread->isVisibleTo($user)) {
+        // Staff with Ticket - User role who can view the thread can close it
+        if ($user->hasRole('Ticket - User') && $thread->isVisibleTo($user)) {
             return true;
         }
 

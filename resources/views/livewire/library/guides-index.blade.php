@@ -29,8 +29,8 @@ new class extends Component {
             'users' => ! $user->in_brig,
             'resident' => ! $user->in_brig && $user->isAtLeastLevel(MembershipLevel::Resident),
             'citizen' => ! $user->in_brig && $user->isAtLeastLevel(MembershipLevel::Citizen),
-            'staff' => $user->isAtLeastRank(StaffRank::JrCrew) || $user->hasRole('Admin'),
-            'officer' => $user->isAtLeastRank(StaffRank::Officer) || $user->hasRole('Admin'),
+            'staff' => $user->hasRole('Staff Access'),
+            'officer' => $user->hasRole('Officer Docs - Viewer'),
             default => false,
         };
     }

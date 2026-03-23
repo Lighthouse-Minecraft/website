@@ -39,6 +39,7 @@ describe('Tickets List Component', function () {
     it('shows all tickets across departments for any staff in open filter', function () {
         $chaplainStaff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->withRole('Ticket - User')
             ->create();
 
         $chaplainThread = Thread::factory()
@@ -62,6 +63,7 @@ describe('Tickets List Component', function () {
     it('shows all tickets for Command Officers', function () {
         $commandOfficer = User::factory()
             ->withStaffPosition(StaffDepartment::Command, StaffRank::Officer)
+            ->withRole('Ticket - User')
             ->create();
 
         $chaplainThread = Thread::factory()
@@ -83,6 +85,7 @@ describe('Tickets List Component', function () {
     it('shows all tickets for Quartermaster in open filter', function () {
         $quartermaster = User::factory()
             ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::Officer)
+            ->withRole('Ticket - Manager')
             ->create();
 
         $flaggedChaplainThread = Thread::factory()
@@ -107,6 +110,7 @@ describe('Tickets List Component', function () {
     it('filters by open status', function () {
         $user = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->withRole('Ticket - User')
             ->create();
 
         $openThread = Thread::factory()
@@ -133,10 +137,12 @@ describe('Tickets List Component', function () {
     it('filters by assigned to me', function () {
         $staff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->withRole('Ticket - User')
             ->create();
 
         $otherStaff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->withRole('Ticket - User')
             ->create();
 
         $myThread = Thread::factory()
@@ -160,10 +166,12 @@ describe('Tickets List Component', function () {
     it('filters by unassigned', function () {
         $staff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->withRole('Ticket - User')
             ->create();
 
         $otherStaff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->withRole('Ticket - User')
             ->create();
 
         $unassignedThread = Thread::factory()
@@ -186,10 +194,12 @@ describe('Tickets List Component', function () {
     it('shows flagged filter only for Quartermaster', function () {
         $quartermaster = User::factory()
             ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::Officer)
+            ->withRole('Ticket - Manager')
             ->create();
 
         $regularStaff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->withRole('Ticket - User')
             ->create();
 
         actingAs($quartermaster);
@@ -204,6 +214,7 @@ describe('Tickets List Component', function () {
     it('filters by flagged tickets for Quartermaster', function () {
         $quartermaster = User::factory()
             ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::Officer)
+            ->withRole('Ticket - Manager')
             ->create();
 
         $flaggedThread = Thread::factory()
@@ -227,6 +238,7 @@ describe('Tickets List Component', function () {
     it('displays red flag badge for tickets with open flags', function () {
         $staff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->withRole('Ticket - User')
             ->create();
 
         $flaggedThread = Thread::factory()
@@ -333,6 +345,7 @@ describe('Tickets List Component', function () {
     it('shows department badge in ticket list', function () {
         $staff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->withRole('Ticket - User')
             ->create();
 
         $chaplainThread = Thread::factory()
@@ -409,6 +422,7 @@ describe('Tickets List Component', function () {
     it('allows staff to switch between my tickets and staff filters', function () {
         $staff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->withRole('Ticket - User')
             ->create();
 
         // A ticket the staff member is a participant in
@@ -437,6 +451,7 @@ describe('Tickets List Component', function () {
     it('prevents duplicate tickets when staff member is participant in department ticket', function () {
         $staff = User::factory()
             ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->withRole('Ticket - User')
             ->create();
 
         $ticket = Thread::factory()
@@ -478,6 +493,7 @@ describe('Tickets List Component', function () {
     it('displays filter counts for all filter categories', function () {
         $staff = User::factory()
             ->withStaffPosition(StaffDepartment::Engineer, StaffRank::CrewMember)
+            ->withRole('Ticket - User')
             ->create();
 
         // Create tickets for different filters

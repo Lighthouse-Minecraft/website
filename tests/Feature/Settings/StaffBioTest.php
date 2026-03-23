@@ -9,7 +9,7 @@ use App\Models\User;
 uses()->group('staff', 'settings');
 
 it('allows crew members to access the staff bio page', function () {
-    $user = User::factory()->withStaffPosition(StaffDepartment::Engineer, StaffRank::CrewMember)->create();
+    $user = User::factory()->withStaffPosition(StaffDepartment::Engineer, StaffRank::CrewMember)->withRole('Staff Access')->create();
 
     $this->actingAs($user)
         ->get(route('settings.staff-bio'))
@@ -17,7 +17,7 @@ it('allows crew members to access the staff bio page', function () {
 });
 
 it('allows officers to access the staff bio page', function () {
-    $user = User::factory()->withStaffPosition(StaffDepartment::Command, StaffRank::Officer)->create();
+    $user = User::factory()->withStaffPosition(StaffDepartment::Command, StaffRank::Officer)->withRole('Staff Access')->create();
 
     $this->actingAs($user)
         ->get(route('settings.staff-bio'))

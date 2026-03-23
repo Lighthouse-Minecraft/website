@@ -41,13 +41,13 @@ it('user with Moderator role can view flagged tickets', function () {
     expect($moderator->can('viewFlagged', Thread::class))->toBeTrue();
 });
 
-it('quartermaster crew member can view flagged tickets', function () {
-    $crew = crewQuartermaster();
+it('Ticket - Manager can view flagged tickets', function () {
+    $user = User::factory()->withRole('Ticket - Manager')->create();
 
-    expect($crew->can('viewFlagged', Thread::class))->toBeTrue();
+    expect($user->can('viewFlagged', Thread::class))->toBeTrue();
 });
 
-it('non-quartermaster crew without Moderator role cannot view flagged tickets', function () {
+it('staff without Ticket - Manager or Moderator role cannot view flagged tickets', function () {
     $crew = crewEngineer();
 
     expect($crew->can('viewFlagged', Thread::class))->toBeFalse();
@@ -75,16 +75,19 @@ it('non-admin cannot view all threads via viewAll method', function () {
 
 // === viewDepartment ===
 
-it('crew member can view their department threads', function () {
-    $crew = crewEngineer();
+it('user with Ticket - User role and department can view department threads', function () {
+    $user = User::factory()
+        ->withStaffPosition(\App\Enums\StaffDepartment::Engineer, \App\Enums\StaffRank::CrewMember)
+        ->withRole('Ticket - User')
+        ->create();
 
-    expect($crew->can('viewDepartment', Thread::class))->toBeTrue();
+    expect($user->can('viewDepartment', Thread::class))->toBeTrue();
 });
 
-it('jr crew cannot view department threads', function () {
-    $jrCrew = jrCrewEngineer();
+it('staff without Ticket - User role cannot view department threads', function () {
+    $crew = crewEngineer();
 
-    expect($jrCrew->can('viewDepartment', Thread::class))->toBeFalse();
+    expect($crew->can('viewDepartment', Thread::class))->toBeFalse();
 });
 
 // === reply ===

@@ -110,7 +110,11 @@ describe('View Topic Component', function () {
     });
 
     it('allows staff to add participants via search', function () {
-        $staff = crewQuartermaster();
+        $staff = User::factory()
+            ->withStaffPosition(\App\Enums\StaffDepartment::Quartermaster, \App\Enums\StaffRank::CrewMember)
+            ->withRole('Staff Access')
+            ->withRole('Ticket - User')
+            ->create();
         $newUser = User::factory()->create(['name' => 'Unique Test Name']);
         $thread = Thread::factory()->topic()->create();
         $thread->addParticipant($staff);
@@ -161,7 +165,12 @@ describe('View Topic Component', function () {
     });
 
     it('shows internal notes to staff participants', function () {
-        $staff = crewQuartermaster();
+        $staff = User::factory()
+            ->withStaffPosition(\App\Enums\StaffDepartment::Quartermaster, \App\Enums\StaffRank::CrewMember)
+            ->withRole('Staff Access')
+            ->withRole('Ticket - User')
+            ->withRole('Internal Note - Manager')
+            ->create();
         $thread = Thread::factory()->topic()->create();
         $thread->addParticipant($staff);
 

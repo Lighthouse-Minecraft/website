@@ -21,7 +21,7 @@ class RolePolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasRole('Manage Site Config');
+        return $user->hasRole('Site Config - Manager');
     }
 
     /**
