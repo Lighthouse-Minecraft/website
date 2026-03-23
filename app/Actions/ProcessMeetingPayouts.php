@@ -16,9 +16,9 @@ class ProcessMeetingPayouts
     public function handle(Meeting $meeting, array $excludedUserIds = []): void
     {
         $payoutAmounts = [
-            StaffRank::JrCrew->value => (int) SiteConfig::getValue('meeting_payout_jr_crew', '0'),
-            StaffRank::CrewMember->value => (int) SiteConfig::getValue('meeting_payout_crew_member', '0'),
-            StaffRank::Officer->value => (int) SiteConfig::getValue('meeting_payout_officer', '0'),
+            StaffRank::JrCrew->value => max(0, (int) SiteConfig::getValue('meeting_payout_jr_crew', '0')),
+            StaffRank::CrewMember->value => max(0, (int) SiteConfig::getValue('meeting_payout_crew_member', '0')),
+            StaffRank::Officer->value => max(0, (int) SiteConfig::getValue('meeting_payout_officer', '0')),
         ];
 
         $submittedUserIds = $meeting->reports()
@@ -57,7 +57,7 @@ class ProcessMeetingPayouts
             $amount = $payoutAmounts[$rank->value] ?? 0;
 
             // Rank payout disabled
-            if ($amount === 0) {
+            if ($amount <= 0) {
                 MeetingPayout::create([
                     'meeting_id' => $meeting->id,
                     'user_id' => $attendee->id,
@@ -127,17 +127,18 @@ class ProcessMeetingPayouts
                 continue;
             }
 
-            // All eligibility checks passed — persist a placeholder record before
-            // firing RCON. This makes the unique (meeting_id, user_id) constraint
-            // the idempotency guard: if the process crashes after RCON succeeds but
-            // before the DB write, a retry will find this record and skip re-firing
-            // the command, preventing a double-payment.
+            // All eligibility checks passed — persist a 'pending' placeholder before
+            // firing RCON. Using 'pending' (not 'failed') clearly signals the payout
+            // was never attempted, so admins know to re-process rather than investigate
+            // a real RCON failure. The unique (meeting_id, user_id) constraint acts as
+            // the idempotency guard: a retry finds the existing record and skips RCON,
+            // preventing double-payment.
             $payout = MeetingPayout::firstOrCreate(
                 ['meeting_id' => $meeting->id, 'user_id' => $attendee->id],
                 [
                     'minecraft_account_id' => $mcAccount->id,
                     'amount' => $amount,
-                    'status' => 'failed', // pessimistic default; updated to 'paid' on success
+                    'status' => 'pending',
                 ]
             );
 
@@ -161,8 +162,8 @@ class ProcessMeetingPayouts
                 $payout->update(['status' => 'paid']);
                 $paidCount++;
             } else {
+                $payout->update(['status' => 'failed']);
                 $failedCount++;
-                // Status is already 'failed' from firstOrCreate — no update needed
             }
         }
 

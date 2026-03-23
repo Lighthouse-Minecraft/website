@@ -14,7 +14,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('minecraft_account_id')->nullable()->constrained()->nullOnDelete();
             $table->unsignedInteger('amount');
-            $table->enum('status', ['paid', 'skipped', 'failed']);
+            $table->enum('status', ['paid', 'skipped', 'failed', 'pending']);
             $table->string('skip_reason')->nullable();
             $table->timestamps();
 

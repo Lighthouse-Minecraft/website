@@ -193,6 +193,22 @@ it('skips a user when rank payout is set to 0', function () {
         ->and($payout->skip_reason)->toBe('Rank payout disabled');
 });
 
+it('skips a user when rank payout is set to a negative value', function () {
+    SiteConfig::setValue('meeting_payout_crew_member', '-50');
+
+    $meeting = makeMeeting();
+    $user = User::factory()->create(['staff_rank' => StaffRank::CrewMember]);
+    withPrimaryMcAccount($user);
+    addAttendee($meeting, $user);
+    submitReport($meeting, $user);
+
+    ProcessMeetingPayouts::run($meeting);
+
+    $payout = MeetingPayout::where('meeting_id', $meeting->id)->where('user_id', $user->id)->first();
+    expect($payout->status)->toBe('skipped')
+        ->and($payout->skip_reason)->toBe('Rank payout disabled');
+});
+
 it('skips a user in the excluded list', function () {
     $meeting = makeMeeting();
     $user = User::factory()->create(['staff_rank' => StaffRank::CrewMember]);
@@ -229,20 +245,21 @@ it('marks payout as failed when RCON returns failure, but does not block complet
 
 // --- Idempotency / crash recovery ---
 
-it('does not re-fire RCON when a failed placeholder record already exists', function () {
+it('does not re-fire RCON when a pending placeholder record already exists', function () {
     $meeting = makeMeeting();
     $user = User::factory()->create(['staff_rank' => StaffRank::CrewMember]);
     $mcAccount = withPrimaryMcAccount($user);
     addAttendee($meeting, $user);
     submitReport($meeting, $user);
 
-    // Simulate a prior crashed run: placeholder was persisted but status never updated
+    // Simulate a prior crashed run: placeholder was persisted as 'pending' but process
+    // crashed before RCON fired or before the status could be updated
     MeetingPayout::create([
         'meeting_id' => $meeting->id,
         'user_id' => $user->id,
         'minecraft_account_id' => $mcAccount->id,
         'amount' => 75,
-        'status' => 'failed',
+        'status' => 'pending',
     ]);
 
     // RCON should NOT be called — the existing record acts as the idempotency guard

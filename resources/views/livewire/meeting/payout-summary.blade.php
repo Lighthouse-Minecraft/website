@@ -40,6 +40,12 @@ new class extends Component {
     {
         return $this->payouts->where('status', 'failed')->count();
     }
+
+    #[\Livewire\Attributes\Computed]
+    public function pendingCount(): int
+    {
+        return $this->payouts->where('status', 'pending')->count();
+    }
 }; ?>
 
 <div>
@@ -51,6 +57,9 @@ new class extends Component {
                 {{ $this->paidCount }} paid ({{ $this->totalLumens }} ✦ total)&nbsp;&middot;&nbsp;
                 {{ $this->skippedCount }} skipped&nbsp;&middot;&nbsp;
                 {{ $this->failedCount }} failed
+                @if($this->pendingCount > 0)
+                    &nbsp;&middot;&nbsp;{{ $this->pendingCount }} pending (interrupted — manual action needed)
+                @endif
             </flux:text>
 
             <div class="overflow-x-auto">
@@ -81,6 +90,8 @@ new class extends Component {
                                         <flux:badge color="green" size="sm">Paid</flux:badge>
                                     @elseif($payout->status === 'skipped')
                                         <flux:badge color="zinc" size="sm">Skipped</flux:badge>
+                                    @elseif($payout->status === 'pending')
+                                        <flux:badge color="yellow" size="sm">Pending</flux:badge>
                                     @else
                                         <flux:badge color="red" size="sm">Failed</flux:badge>
                                     @endif

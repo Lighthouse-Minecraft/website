@@ -137,6 +137,20 @@ it('shows failed status for failed user', function () {
         ->assertSee('Failed');
 });
 
+it('shows pending status badge for interrupted payout', function () {
+    $staff = User::factory()->withRole('Staff Access')->create();
+    loginAs($staff);
+
+    $meeting = makeCompletedMeeting();
+    $user = User::factory()->create(['name' => 'Pending Person']);
+    addPayout($meeting, $user, 'pending', 75);
+
+    Volt::test('meeting.payout-summary', ['meeting' => $meeting])
+        ->assertSee('Pending Person')
+        ->assertSee('Pending')
+        ->assertSee('pending (interrupted');
+});
+
 it('summary data persists from database across reloads', function () {
     $staff = User::factory()->withRole('Staff Access')->create();
     loginAs($staff);
