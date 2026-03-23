@@ -2,6 +2,7 @@
 
 use App\Actions\CreateDefaultMeetingQuestions;
 use App\Actions\FormatMeetingNotesWithAi;
+use App\Actions\ProcessMeetingPayouts;
 use App\Actions\RecordActivity;
 use App\Enums\MeetingStatus;
 use App\Enums\MeetingType;
@@ -311,6 +312,8 @@ new class extends Component {
 
         $this->meeting->completeMeeting();
         $this->meeting->save();
+
+        ProcessMeetingPayouts::run($this->meeting);
 
         Flux::modal('complete-meeting-confirmation')->close();
 
