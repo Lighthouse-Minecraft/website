@@ -17,7 +17,7 @@ function makeCompletedMeeting(): Meeting
 
 function addPayout(Meeting $meeting, User $user, string $status, int $amount = 0, ?string $reason = null): MeetingPayout
 {
-    return MeetingPayout::create([
+    return MeetingPayout::factory()->create([
         'meeting_id' => $meeting->id,
         'user_id' => $user->id,
         'amount' => $amount,
