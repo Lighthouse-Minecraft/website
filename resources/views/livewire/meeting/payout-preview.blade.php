@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\StaffDepartment;
 use App\Enums\StaffRank;
 use App\Models\Meeting;
 use App\Models\MeetingReport;
@@ -47,7 +48,7 @@ new class extends Component {
         $payoutAmounts = $this->payoutAmounts;
         $submittedUserIds = $this->submittedUserIds;
 
-        return $attendees->map(function ($attendee) use ($payoutAmounts, $submittedUserIds) {
+        $rows = $attendees->map(function ($attendee) use ($payoutAmounts, $submittedUserIds) {
             $rank = $attendee->staff_rank;
             $attended = (bool) $attendee->pivot->attended;
             $formSubmitted = in_array($attendee->id, $submittedUserIds);
@@ -75,16 +76,23 @@ new class extends Component {
             }
 
             return [
-                'user'        => $attendee,
-                'rank'        => $rank,
-                'attended'    => $attended,
+                'user'          => $attendee,
+                'rank'          => $rank,
+                'attended'      => $attended,
                 'formSubmitted' => $formSubmitted,
-                'mcAccount'   => $mcAccount,
-                'amount'      => $amount,
-                'eligible'    => $eligible,
-                'skipReason'  => $skipReason,
+                'mcAccount'     => $mcAccount,
+                'amount'        => $amount,
+                'eligible'      => $eligible,
+                'skipReason'    => $skipReason,
+                'department'    => $attendee->staff_department,
             ];
         });
+
+        // Sort by rank descending (Officer → Crew Member → Jr Crew), then name.
+        return $rows->sortBy([
+            fn ($a, $b) => ($b['rank']?->value ?? 0) <=> ($a['rank']?->value ?? 0),
+            fn ($a, $b) => $a['user']->name <=> $b['user']->name,
+        ])->groupBy(fn ($row) => $row['department']?->value ?? 'none');
     }
 
     public function toggleExclude(int $userId): void
@@ -118,78 +126,91 @@ new class extends Component {
                     <tr class="text-left border-b border-zinc-200 dark:border-zinc-700">
                         <th class="pb-2 pr-4 font-medium text-zinc-500 dark:text-zinc-400">Name</th>
                         <th class="pb-2 pr-4 font-medium text-zinc-500 dark:text-zinc-400">Rank</th>
-                        <th class="pb-2 pr-4 font-medium text-zinc-500 dark:text-zinc-400 text-center">Form</th>
+                        <th class="pb-2 pr-4 font-medium text-zinc-500 dark:text-zinc-400 text-center">Staff Update Submitted</th>
                         <th class="pb-2 pr-4 font-medium text-zinc-500 dark:text-zinc-400 text-center">Attended</th>
                         <th class="pb-2 pr-4 font-medium text-zinc-500 dark:text-zinc-400 text-center">MC Account</th>
                         <th class="pb-2 pr-4 font-medium text-zinc-500 dark:text-zinc-400 text-right">Amount</th>
                         @can('update', $meeting)
-                            <th class="pb-2 font-medium text-zinc-500 dark:text-zinc-400 text-center">Include</th>
+                            <th class="pb-2 font-medium text-zinc-500 dark:text-zinc-400 text-center">Payout Authorized</th>
                         @endcan
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800">
-                    @foreach($this->attendeesWithEligibility as $row)
-                        <tr wire:key="payout-row-{{ $row['user']->id }}"
-                            class="{{ ! $row['eligible'] ? 'opacity-50' : '' }}">
-                            <td class="py-2 pr-4">
-                                <div>
-                                    <flux:link href="{{ route('profile.show', $row['user']) }}">{{ $row['user']->name }}</flux:link>
-                                    @if(! $row['eligible'] && $row['skipReason'])
-                                        <div class="text-xs text-red-500 dark:text-red-400">{{ $row['skipReason'] }}</div>
-                                    @endif
-                                </div>
+                    @forelse($this->attendeesWithEligibility as $departmentKey => $rows)
+                        {{-- Department header row --}}
+                        @php
+                            $dept = collect(StaffDepartment::cases())->first(fn ($d) => $d->value === $departmentKey);
+                        @endphp
+                        <tr wire:key="payout-dept-{{ $departmentKey }}">
+                            <td colspan="7" class="pt-4 pb-1 text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
+                                {{ $dept?->label() ?? 'No Department' }}
                             </td>
-                            <td class="py-2 pr-4 text-zinc-600 dark:text-zinc-400">
-                                {{ $row['rank']?->label() ?? '—' }}
-                            </td>
-                            <td class="py-2 pr-4 text-center">
-                                @if($row['formSubmitted'])
-                                    <flux:icon name="check-circle" variant="solid" class="w-4 h-4 text-green-500 mx-auto" />
-                                @else
-                                    <flux:icon name="x-circle" variant="solid" class="w-4 h-4 text-red-400 mx-auto" />
-                                @endif
-                            </td>
-                            <td class="py-2 pr-4 text-center">
-                                @if($row['attended'])
-                                    <flux:icon name="check-circle" variant="solid" class="w-4 h-4 text-green-500 mx-auto" />
-                                @else
-                                    <flux:icon name="x-circle" variant="solid" class="w-4 h-4 text-red-400 mx-auto" />
-                                @endif
-                            </td>
-                            <td class="py-2 pr-4 text-center">
-                                @if($row['mcAccount'])
-                                    <flux:icon name="check-circle" variant="solid" class="w-4 h-4 text-green-500 mx-auto" />
-                                @else
-                                    <flux:icon name="x-circle" variant="solid" class="w-4 h-4 text-red-400 mx-auto" />
-                                @endif
-                            </td>
-                            <td class="py-2 pr-4 text-right font-medium">
-                                @if($row['eligible'])
-                                    {{ $row['amount'] }} ✦
-                                @else
-                                    —
-                                @endif
-                            </td>
-                            @can('update', $meeting)
-                                <td class="py-2 text-center">
-                                    @if($row['eligible'])
-                                        <flux:switch
-                                            wire:click="toggleExclude({{ $row['user']->id }})"
-                                            :checked="! in_array($row['user']->id, $excludedUserIds)"
-                                        />
+                        </tr>
+                        @foreach($rows as $row)
+                            <tr wire:key="payout-row-{{ $row['user']->id }}"
+                                class="{{ ! $row['eligible'] ? 'opacity-50' : '' }}">
+                                <td class="py-2 pr-4">
+                                    <div>
+                                        <flux:link href="{{ route('profile.show', $row['user']) }}">{{ $row['user']->name }}</flux:link>
+                                        @if(! $row['eligible'] && $row['skipReason'])
+                                            <div class="text-xs text-red-500 dark:text-red-400">{{ $row['skipReason'] }}</div>
+                                        @endif
+                                    </div>
+                                </td>
+                                <td class="py-2 pr-4 text-zinc-600 dark:text-zinc-400">
+                                    {{ $row['rank']?->label() ?? '—' }}
+                                </td>
+                                <td class="py-2 pr-4 text-center">
+                                    @if($row['formSubmitted'])
+                                        <flux:icon name="check-circle" variant="solid" class="w-4 h-4 text-green-500 mx-auto" />
+                                    @else
+                                        <flux:icon name="x-circle" variant="solid" class="w-4 h-4 text-red-400 mx-auto" />
                                     @endif
                                 </td>
-                            @endcan
-                        </tr>
-                    @endforeach
-
-                    @if($this->attendeesWithEligibility->isEmpty())
+                                <td class="py-2 pr-4 text-center">
+                                    @if($row['rank'] === \App\Enums\StaffRank::Officer)
+                                        @if($row['attended'])
+                                            <flux:icon name="check-circle" variant="solid" class="w-4 h-4 text-green-500 mx-auto" />
+                                        @else
+                                            <flux:icon name="x-circle" variant="solid" class="w-4 h-4 text-red-400 mx-auto" />
+                                        @endif
+                                    @else
+                                        <span class="text-zinc-400 dark:text-zinc-500">—</span>
+                                    @endif
+                                </td>
+                                <td class="py-2 pr-4 text-center">
+                                    @if($row['mcAccount'])
+                                        <flux:icon name="check-circle" variant="solid" class="w-4 h-4 text-green-500 mx-auto" />
+                                    @else
+                                        <flux:icon name="x-circle" variant="solid" class="w-4 h-4 text-red-400 mx-auto" />
+                                    @endif
+                                </td>
+                                <td class="py-2 pr-4 text-right font-medium">
+                                    @if($row['eligible'])
+                                        {{ $row['amount'] }} ✦
+                                    @else
+                                        —
+                                    @endif
+                                </td>
+                                @can('update', $meeting)
+                                    <td class="py-2 text-center">
+                                        @if($row['eligible'])
+                                            <flux:switch
+                                                wire:click="toggleExclude({{ $row['user']->id }})"
+                                                :checked="! in_array($row['user']->id, $excludedUserIds)"
+                                            />
+                                        @endif
+                                    </td>
+                                @endcan
+                            </tr>
+                        @endforeach
+                    @empty
                         <tr>
                             <td colspan="7" class="py-4 text-center text-zinc-500 dark:text-zinc-400">
                                 No staff members in this meeting.
                             </td>
                         </tr>
-                    @endif
+                    @endforelse
                 </tbody>
             </table>
         </div>
