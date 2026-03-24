@@ -59,7 +59,7 @@ Key terminology:
 | `user_id` | bigint unsigned (FK) | No | — | → `users.id`, cascades on delete |
 | `minecraft_account_id` | bigint unsigned (FK) | Yes | NULL | → `minecraft_accounts.id`, nulls on delete |
 | `amount` | unsigned int | No | — | Lumen amount; 0 for skipped/disabled |
-| `status` | enum | No | — | `'paid'`, `'skipped'`, `'failed'` |
+| `status` | enum | No | — | `'paid'`, `'skipped'`, `'failed'`, `'pending'` |
 | `skip_reason` | varchar | Yes | NULL | Human-readable reason when status ≠ paid |
 | `created_at` | timestamp | Yes | NULL | |
 | `updated_at` | timestamp | Yes | NULL | |

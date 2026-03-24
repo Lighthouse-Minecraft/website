@@ -317,10 +317,21 @@ new class extends Component {
             $this->meeting->community_minutes = $communityNote->content;
         }
 
-        $this->meeting->completeMeeting();
+        // Save community notes while still in Finalizing, before running payouts
         $this->meeting->save();
 
-        ProcessMeetingPayouts::run($this->meeting, $this->excludedPayoutUserIds);
+        if ($this->meeting->isStaffMeeting()) {
+            try {
+                ProcessMeetingPayouts::run($this->meeting, $this->excludedPayoutUserIds);
+            } catch (\Throwable $exception) {
+                report($exception);
+                Flux::toast('Payout processing failed. Meeting remains in Finalizing so you can retry.', variant: 'danger');
+                return;
+            }
+        }
+
+        $this->meeting->completeMeeting();
+        $this->meeting->save();
 
         Flux::modal('complete-meeting-confirmation')->close();
 
