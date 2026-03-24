@@ -106,6 +106,11 @@ class Meeting extends Model
         return $this->hasMany(MeetingReport::class);
     }
 
+    public function payouts(): HasMany
+    {
+        return $this->hasMany(MeetingPayout::class);
+    }
+
     public function archivedTasks(): HasMany
     {
         return $this->hasMany(Task::class, 'archived_meeting_id');

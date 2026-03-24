@@ -2,6 +2,7 @@
 
 use App\Actions\CreateDefaultMeetingQuestions;
 use App\Actions\FormatMeetingNotesWithAi;
+use App\Actions\ProcessMeetingPayouts;
 use App\Actions\RecordActivity;
 use App\Enums\MeetingStatus;
 use App\Enums\MeetingType;
@@ -25,6 +26,7 @@ new class extends Component {
     public string $scheduleNextDay = '';
     public string $scheduleNextTime = '7:00 PM';
     public string $aiPrompt = '';
+    public array $excludedPayoutUserIds = [];
 
     public string $editTitle = '';
     public string $editDay = '';
@@ -54,6 +56,12 @@ new class extends Component {
     public function refreshAttendees(): void
     {
         $this->meeting->load('attendees');
+    }
+
+    #[\Livewire\Attributes\On('payoutExcludedUsersChanged')]
+    public function syncExcludedPayoutUsers(array $excludedUserIds): void
+    {
+        $this->excludedPayoutUserIds = $excludedUserIds;
     }
 
     public function mount(Meeting $meeting) {
@@ -312,6 +320,8 @@ new class extends Component {
         $this->meeting->completeMeeting();
         $this->meeting->save();
 
+        ProcessMeetingPayouts::run($this->meeting, $this->excludedPayoutUserIds);
+
         Flux::modal('complete-meeting-confirmation')->close();
 
         // Pre-fill next meeting scheduler with current meeting details
@@ -529,6 +539,10 @@ new class extends Component {
                 </flux:button>
             </div>
         @endcan
+
+        @if($meeting->isStaffMeeting())
+            <livewire:meeting.payout-preview :meeting="$meeting" :key="'payout-preview-' . $meeting->id" />
+        @endif
     @elseif ($meeting->status == MeetingStatus::Completed)
         <div class="w-3/4 mx-auto space-y-6">
             <flux:card>
@@ -543,6 +557,10 @@ new class extends Component {
 
                     <flux:text>{!! nl2br($meeting->community_minutes) !!}</flux:text>
                 </flux:card>
+            @endif
+
+            @if($meeting->isStaffMeeting())
+                <livewire:meeting.payout-summary :meeting="$meeting" :key="'payout-summary-' . $meeting->id" />
             @endif
         </div>
     @endif
