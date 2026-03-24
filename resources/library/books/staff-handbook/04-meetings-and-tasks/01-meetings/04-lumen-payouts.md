@@ -38,7 +38,7 @@ During the **Finalizing** step, a **Payout Preview** table appears below the com
 2. Toggle their **Include** switch to off
 3. Their payout will be recorded as "Excluded by manager" in the permanent record
 
-Exclusion toggles are not saved to the database -- if you refresh the page or the Finalizing step re-polls (every 30 seconds), your exclusions will be reset. Make your exclusion decisions right before clicking Complete Meeting.
+Exclusion toggles are not saved to the database -- if you refresh the page, your exclusions will be reset. Make your exclusion decisions before clicking Complete Meeting.
 
 If the Payout Preview doesn't appear, all rank payout amounts are currently set to zero in the site config (payouts are disabled).
 
@@ -69,7 +69,7 @@ Payout amounts per rank are configured by admins in the ACP Site Config page (ke
 ## Important Notes
 
 - The payout preview only shows attendees added to the meeting's attendee list. If someone's missing, add them via **Manage Attendees** before completing.
-- Exclusion toggles reset if the page polls or refreshes -- make exclusions immediately before completing.
+- Exclusion toggles reset if the page is refreshed -- make exclusions before completing the meeting.
 - Failed payouts are recorded but not retried automatically. Manual Lumen grants are needed for those users.
 - Staff without a linked Minecraft account are skipped every meeting -- remind them to [[books/user-handbook/minecraft/accounts/joining-the-server|link their account]] to start receiving payouts.
 
