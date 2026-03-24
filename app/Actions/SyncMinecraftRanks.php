@@ -28,12 +28,13 @@ class SyncMinecraftRanks
         $activeAccounts = $user->minecraftAccounts()->active()->get();
 
         foreach ($activeAccounts as $account) {
-            SendMinecraftCommand::dispatch(
+            SendMinecraftCommand::run(
                 "lh setmember {$account->username} {$rank}",
                 'rank',
                 $account->username,
                 $user,
-                ['action' => 'sync_rank', 'membership_level' => $user->membership_level->value]
+                ['action' => 'sync_rank', 'membership_level' => $user->membership_level->value],
+                false
             );
 
             RecordActivity::handle(

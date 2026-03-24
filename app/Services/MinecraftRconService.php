@@ -43,24 +43,24 @@ class MinecraftRconService
         ]);
 
         try {
-            $rcon = new Rcon(
-                config('services.minecraft.rcon_host'),
-                config('services.minecraft.rcon_port'),
-                config('services.minecraft.rcon_password'),
-                3 // timeout in seconds
-            );
+            ['connected' => $connected, 'result' => $result] = $this->connectAndSend($command);
 
-            if ($rcon->connect()) {
-                $result = $rcon->sendCommand($command);
-                if ($result === false) {
-                    $response = null;
-                    $errorMessage = 'Failed to send command to RCON server';
+            if (! $connected) {
+                $errorMessage = 'Failed to connect to RCON server';
+            } elseif ($result === false) {
+                $response = null;
+                $errorMessage = 'Failed to send command to RCON server';
+            } else {
+                $response = $result;
+                if ($this->isLhCommand($command)) {
+                    if (str_starts_with(trim($response), 'Success:')) {
+                        $status = 'success';
+                    } else {
+                        $errorMessage = 'lh command returned non-success response: '.(empty($response) ? '(empty)' : $response);
+                    }
                 } else {
-                    $response = $result;
                     $status = 'success';
                 }
-            } else {
-                $errorMessage = 'Failed to connect to RCON server';
             }
         } catch (\Exception $e) {
             $errorMessage = $e->getMessage();
@@ -81,5 +81,33 @@ class MinecraftRconService
             'response' => $response,
             'error' => $errorMessage,
         ];
+    }
+
+    /**
+     * Open an RCON connection and send a command.
+     *
+     * Returns ['connected' => true, 'result' => string|false] on successful connection,
+     * or ['connected' => false, 'result' => null] when the connection itself fails.
+     * Extracted as a protected method so tests can override it with simulated responses.
+     */
+    protected function connectAndSend(string $command): array
+    {
+        $rcon = new Rcon(
+            config('services.minecraft.rcon_host'),
+            config('services.minecraft.rcon_port'),
+            config('services.minecraft.rcon_password'),
+            3 // timeout in seconds
+        );
+
+        if (! $rcon->connect()) {
+            return ['connected' => false, 'result' => null];
+        }
+
+        return ['connected' => true, 'result' => $rcon->sendCommand($command)];
+    }
+
+    private function isLhCommand(string $command): bool
+    {
+        return str_starts_with($command, 'lh ');
     }
 }

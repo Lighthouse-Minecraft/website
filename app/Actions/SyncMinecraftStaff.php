@@ -26,12 +26,13 @@ class SyncMinecraftStaff
 
         foreach ($activeAccounts as $account) {
             if ($department !== null) {
-                SendMinecraftCommand::dispatch(
+                SendMinecraftCommand::run(
                     "lh setstaff {$account->username} {$department->value}",
                     'staff',
                     $account->username,
                     $user,
-                    ['action' => 'set_staff_position', 'department' => $department->value]
+                    ['action' => 'set_staff_position', 'department' => $department->value],
+                    false
                 );
 
                 RecordActivity::handle(
@@ -40,12 +41,13 @@ class SyncMinecraftStaff
                     "Set Minecraft staff position to {$department->label()} for {$account->username}"
                 );
             } else {
-                SendMinecraftCommand::dispatch(
+                SendMinecraftCommand::run(
                     "lh removestaff {$account->username}",
                     'staff',
                     $account->username,
                     $user,
-                    ['action' => 'remove_staff_position']
+                    ['action' => 'remove_staff_position'],
+                    false
                 );
 
                 RecordActivity::handle(
