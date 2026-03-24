@@ -5,7 +5,6 @@ namespace App\Actions;
 use App\Enums\MinecraftAccountStatus;
 use App\Models\MinecraftAccount;
 use App\Models\User;
-use App\Services\MinecraftRconService;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ReactivateMinecraftAccount
@@ -45,33 +44,22 @@ class ReactivateMinecraftAccount
             ];
         }
 
-        $rconService = app(MinecraftRconService::class);
-
-        $whitelistResult = $rconService->executeCommand(
-            $account->whitelistAddCommand(),
-            'whitelist',
-            $account->username,
-            $user,
-            ['action' => 'reactivate']
-        );
-
-        if (! $whitelistResult['success']) {
-            return [
-                'success' => false,
-                'message' => 'Failed to add player to server whitelist. Please try again later.',
-            ];
-        }
-
         $account->status = MinecraftAccountStatus::Active;
         $account->save();
 
         // If user has no primary account, make this reactivated one primary
         AutoAssignPrimaryAccount::run($owner);
 
-        SyncMinecraftRanks::run($owner);
+        $syncResult = SyncMinecraftAccount::run($account);
 
-        if ($owner->staff_department !== null) {
-            SyncMinecraftStaff::run($owner, $owner->staff_department);
+        if (! $syncResult['whitelist']['success']) {
+            $account->status = MinecraftAccountStatus::Removed;
+            $account->save();
+
+            return [
+                'success' => false,
+                'message' => 'Failed to add player to server whitelist. Please try again later.',
+            ];
         }
 
         RecordActivity::run(

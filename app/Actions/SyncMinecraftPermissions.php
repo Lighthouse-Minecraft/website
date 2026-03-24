@@ -10,14 +10,18 @@ class SyncMinecraftPermissions
     use AsAction;
 
     /**
-     * Sync all Minecraft permissions for a user — both membership rank and staff position.
+     * Sync all Minecraft permissions for a user across every active account.
      *
-     * Calls SyncMinecraftRanks (which handles the server-access guard) and
-     * SyncMinecraftStaff (passing the user's current department, or null to remove staff).
+     * Delegates to SyncMinecraftAccount for each active account, which applies
+     * the authoritative desired state: whitelist eligibility, member rank, and
+     * staff assignment — all in one consistent synchronous pass.
      */
     public function handle(User $user): void
     {
-        SyncMinecraftRanks::run($user);
-        SyncMinecraftStaff::run($user, $user->staff_department);
+        $activeAccounts = $user->minecraftAccounts()->active()->get();
+
+        foreach ($activeAccounts as $account) {
+            SyncMinecraftAccount::run($account);
+        }
     }
 }

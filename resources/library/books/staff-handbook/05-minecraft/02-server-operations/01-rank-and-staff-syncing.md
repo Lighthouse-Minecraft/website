@@ -40,6 +40,8 @@ The website communicates with the Minecraft server using **RCON** (Remote Consol
 
 All RCON commands sent to the Minecraft server are logged. Officers and Engineering department staff can view these logs in the **Admin Control Panel** under the Logs category. This is useful for debugging if a rank sync or whitelist change didn't seem to go through.
 
+The **MC Command Log** shows each command alongside its status (success, failed, or timeout) and the actual response text returned by the server. For `lh` plugin commands, a successful response will show `Success:` followed by a confirmation message. A failed entry will show the raw error or empty response that the plugin returned -- this is the first place to look when a rank or staff sync doesn't behave as expected.
+
 ## Important Notes
 
 - RCON commands are sent as background jobs -- there may be a brief delay between a website action and the in-game change

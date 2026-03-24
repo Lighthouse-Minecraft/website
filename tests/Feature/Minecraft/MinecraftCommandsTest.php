@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+use App\Actions\SyncMinecraftRanks;
+use App\Actions\SyncMinecraftStaff;
+use App\Enums\MembershipLevel;
+use App\Enums\StaffDepartment;
 use App\Models\MinecraftAccount;
 use App\Models\MinecraftCommandLog;
 use App\Models\MinecraftVerification;
@@ -107,4 +111,148 @@ test('rcon service handles connection failure', function () {
     $this->assertDatabaseHas('minecraft_command_logs', [
         'status' => 'failed',
     ]);
+});
+
+// lh command hardening tests
+
+/**
+ * Return a MinecraftRconService subclass that returns a controlled RCON response
+ * without opening a real network connection.
+ */
+function makeRconServiceWithResponse(string $response): MinecraftRconService
+{
+    return new class($response) extends MinecraftRconService
+    {
+        public function __construct(private readonly string $simulatedResponse) {}
+
+        protected function connectAndSend(string $command): array
+        {
+            return ['connected' => true, 'result' => $this->simulatedResponse];
+        }
+    };
+}
+
+function makeRconServiceConnectionFailed(): MinecraftRconService
+{
+    return new class extends MinecraftRconService
+    {
+        protected function connectAndSend(string $command): array
+        {
+            return ['connected' => false, 'result' => null];
+        }
+    };
+}
+
+test('lh command is recorded as success when response starts with Success:', function () {
+    $user = User::factory()->create();
+    $service = makeRconServiceWithResponse('Success: Rank updated for TestPlayer');
+
+    $result = $service->executeCommand('lh setmember TestPlayer traveler', 'rank', 'TestPlayer', $user);
+
+    expect($result['success'])->toBeTrue()
+        ->and($result['error'])->toBeNull();
+
+    $this->assertDatabaseHas('minecraft_command_logs', [
+        'command' => 'lh setmember TestPlayer traveler',
+        'status' => 'success',
+    ]);
+});
+
+test('lh command is recorded as failed when response is blank', function () {
+    $user = User::factory()->create();
+    $service = makeRconServiceWithResponse('');
+
+    $result = $service->executeCommand('lh setmember TestPlayer traveler', 'rank', 'TestPlayer', $user);
+
+    expect($result['success'])->toBeFalse();
+
+    $this->assertDatabaseHas('minecraft_command_logs', [
+        'command' => 'lh setmember TestPlayer traveler',
+        'status' => 'failed',
+    ]);
+});
+
+test('lh command is recorded as failed when response does not start with Success:', function () {
+    $user = User::factory()->create();
+    $service = makeRconServiceWithResponse('Player not found: TestPlayer');
+
+    $result = $service->executeCommand('lh setmember TestPlayer traveler', 'rank', 'TestPlayer', $user);
+
+    expect($result['success'])->toBeFalse()
+        ->and($result['error'])->toContain('Player not found');
+
+    $this->assertDatabaseHas('minecraft_command_logs', [
+        'command' => 'lh setmember TestPlayer traveler',
+        'status' => 'failed',
+    ]);
+});
+
+test('non-lh command is recorded as success for any non-false response', function () {
+    $user = User::factory()->create();
+    $service = makeRconServiceWithResponse('Added TestPlayer to the whitelist');
+
+    $result = $service->executeCommand('whitelist add TestPlayer', 'whitelist', 'TestPlayer', $user);
+
+    expect($result['success'])->toBeTrue();
+
+    $this->assertDatabaseHas('minecraft_command_logs', [
+        'command' => 'whitelist add TestPlayer',
+        'status' => 'success',
+    ]);
+});
+
+test('rcon connection failure is recorded as failed for lh command', function () {
+    $user = User::factory()->create();
+    $service = makeRconServiceConnectionFailed();
+
+    $result = $service->executeCommand('lh setmember TestPlayer traveler', 'rank', 'TestPlayer', $user);
+
+    expect($result['success'])->toBeFalse()
+        ->and($result['error'])->toBe('Failed to connect to RCON server');
+
+    $this->assertDatabaseHas('minecraft_command_logs', [
+        'command' => 'lh setmember TestPlayer traveler',
+        'status' => 'failed',
+    ]);
+});
+
+// Synchronous command execution tests
+
+test('SyncMinecraftRanks sends rank command synchronously via rcon service', function () {
+    $user = User::factory()->create(['membership_level' => MembershipLevel::Traveler]);
+    MinecraftAccount::factory()->for($user)->active()->create(['username' => 'TestPlayer']);
+
+    $rconMock = $this->mock(MinecraftRconService::class);
+    $rconMock->shouldReceive('executeCommand')
+        ->once()
+        ->with('lh setmember TestPlayer traveler', 'rank', 'TestPlayer', Mockery::any(), Mockery::any())
+        ->andReturn(['success' => true, 'response' => 'Success: rank set', 'error' => null]);
+
+    SyncMinecraftRanks::run($user);
+});
+
+test('SyncMinecraftStaff sends setstaff command synchronously via rcon service', function () {
+    $user = User::factory()->create();
+    MinecraftAccount::factory()->for($user)->active()->create(['username' => 'StaffPlayer']);
+
+    $rconMock = $this->mock(MinecraftRconService::class);
+    $rconMock->shouldReceive('executeCommand')
+        ->once()
+        ->with('lh setstaff StaffPlayer engineer', 'staff', 'StaffPlayer', Mockery::any(), Mockery::any())
+        ->andReturn(['success' => true, 'response' => 'Success: staff set', 'error' => null]);
+
+    SyncMinecraftStaff::run($user, StaffDepartment::Engineer);
+});
+
+test('SyncMinecraftStaff sends removestaff command synchronously via rcon service', function () {
+    $user = User::factory()->create();
+    MinecraftAccount::factory()->for($user)->active()->create(['username' => 'StaffPlayer']);
+
+    $rconMock = $this->mock(MinecraftRconService::class);
+    $rconMock->shouldReceive('executeCommand')
+        ->once()
+        ->with('lh removestaff StaffPlayer', 'staff', 'StaffPlayer', Mockery::any(), Mockery::any())
+        ->andReturn(['success' => true, 'response' => 'Success: staff removed', 'error' => null]);
+
+    SyncMinecraftStaff::run($user, null);
 });
