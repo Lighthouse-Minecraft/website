@@ -1,5 +1,5 @@
 ---
-title: Lumen Payouts
+title: 'Lumen Payouts'
 visibility: staff
 order: 4
 summary: 'How automatic Lumen rewards work for meeting participants, and how managers control them.'
@@ -7,7 +7,7 @@ summary: 'How automatic Lumen rewards work for meeting participants, and how man
 
 ## Overview
 
-When a meeting is completed, the system automatically pays out Lumens -- our in-game currency -- to eligible staff members. This replaces manual payout tracking. Lumens are sent directly to each person's primary Minecraft account via RCON when the meeting manager clicks **Complete Meeting**.
+When a meeting is completed, the system automatically pays out Lumens -- our in-game currency -- to eligible staff members. This replaces manual payout tracking. Lumens are sent directly to each person's **primary Minecraft account** when the meeting manager clicks **Complete Meeting**.
 
 Payouts only apply to staff meetings (not community or other meeting types).
 
@@ -17,9 +17,9 @@ Eligibility requirements differ by rank:
 
 | Rank | Requirements |
 |------|-------------|
-| Junior Crew Member | Submit staff update form |
-| Crew Member | Submit staff update form |
-| Officer | Submit staff update form **and** be marked as attending |
+| Junior Crew Member | Submit staff update form prior to the meeting starting |
+| Crew Member | Submit staff update form prior to the meeting starting |
+| Officer | Submit staff update form prior to the meeting starting **and** be marked as attending the meeting |
 
 Users with no linked Minecraft account are automatically skipped -- the system can't send Lumens without an in-game username. If a rank's payout amount is set to zero in the site config, everyone of that rank is skipped for that meeting.
 

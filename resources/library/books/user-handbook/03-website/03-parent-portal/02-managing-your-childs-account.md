@@ -1,6 +1,6 @@
 ---
 title: "Managing Your Child's Account"
-visibility: users
+visibility: public
 order: 2
 summary: 'How to create child accounts, edit their details, and control their permissions.'
 ---
