@@ -1,23 +1,26 @@
 name: Deploy Notifier
 
 on:
-  push:
-    branches: [staging, main]
+  pull_request:
+    types: [closed]
+    branches: [staging]
 
 jobs:
   notify:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     env:
       DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+      PR_TITLE: ${{ github.event.pull_request.title }}
+      PR_BODY: ${{ github.event.pull_request.body }}
+      PR_URL: ${{ github.event.pull_request.html_url }}
+      PR_ACTOR: ${{ github.event.pull_request.user.login }}
     steps:
       - name: Post to Discord
         if: ${{ env.DISCORD_WEBHOOK != '' }}
         run: |
-          branch="${GITHUB_REF_NAME}"
-          short_sha="${GITHUB_SHA::7}"
-          env_name=$([ "$branch" = "main" ] && echo "production" || echo "staging")
-          msg="🚀 Deploy triggered to *$env_name* by ${GITHUB_ACTOR} (${branch} @ ${short_sha})"
-          url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}"
+          truncated_body="${PR_BODY:0:1600}"
+          msg="🚀 **$PR_TITLE** merged to *staging* by $PR_ACTOR"$'\n\n'"$truncated_body"
 
-          curl -H "Content-Type: application/json" -X POST "$DISCORD_WEBHOOK" \
-            -d "$(jq -n --arg t "$msg" --arg u "$url" '{content: ($t + "\n" + $u)}')"
+          curl --fail -H "Content-Type: application/json" -X POST "$DISCORD_WEBHOOK" \
+            -d "$(jq -n --arg t "$msg" --arg u "$PR_URL" '{content: ($t + "\n" + $u)}')"

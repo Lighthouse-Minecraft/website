@@ -1,6 +1,6 @@
 ---
 title: 'Submitting an Appeal'
-visibility: users
+visibility: public
 order: 2
 summary: 'How to appeal a Brig placement and what happens after you submit.'
 ---

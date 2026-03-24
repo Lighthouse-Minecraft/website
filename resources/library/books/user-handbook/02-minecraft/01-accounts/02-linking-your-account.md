@@ -1,6 +1,6 @@
 ---
 title: 'Linking Your Account'
-visibility: users
+visibility: public
 order: 2
 summary: 'Step-by-step guide to connecting your Minecraft account to your Lighthouse profile.'
 ---
