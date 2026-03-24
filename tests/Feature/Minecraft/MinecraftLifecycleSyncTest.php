@@ -219,10 +219,6 @@ test('parent enabling MC triggers whitelist add and rank sync via unified sync',
         'status' => MinecraftAccountStatus::ParentDisabled,
     ]);
 
-    // First save parent_allows_minecraft = true so the sync evaluates eligible
-    $child->parent_allows_minecraft = true;
-    $child->save();
-
     $this->rconMock->shouldReceive('executeCommand')
         ->with('whitelist add ReEnabledKid', 'whitelist', 'ReEnabledKid', Mockery::any(), Mockery::any())
         ->once()
@@ -235,7 +231,8 @@ test('parent enabling MC triggers whitelist add and rank sync via unified sync',
 
     UpdateChildPermission::run($child, $parent, 'minecraft', true);
 
-    expect($account->fresh()->status)->toBe(MinecraftAccountStatus::Active);
+    expect($child->fresh()->parent_allows_minecraft)->toBeTrue()
+        ->and($account->fresh()->status)->toBe(MinecraftAccountStatus::Active);
 });
 
 test('parent enabling MC also syncs staff position when child is staff', function () {
@@ -249,9 +246,6 @@ test('parent enabling MC also syncs staff position when child is staff', functio
         'username' => 'StaffKid',
         'status' => MinecraftAccountStatus::ParentDisabled,
     ]);
-
-    $child->parent_allows_minecraft = true;
-    $child->save();
 
     $this->rconMock->shouldReceive('executeCommand')
         ->with('lh setstaff StaffKid engineer', 'staff', 'StaffKid', Mockery::any(), Mockery::any())
