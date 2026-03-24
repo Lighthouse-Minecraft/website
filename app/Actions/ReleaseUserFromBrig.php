@@ -44,44 +44,19 @@ class ReleaseUserFromBrig
         // Restore all banned Minecraft accounts
         foreach ($target->minecraftAccounts()->where('status', MinecraftAccountStatus::Banned->value)->get() as $account) {
             try {
-                if ($mcRestoreStatus === MinecraftAccountStatus::Active) {
-                    SendMinecraftCommand::run(
-                        $account->whitelistAddCommand(),
-                        'whitelist',
-                        $account->username,
-                        $target
-                    );
-                }
                 $account->status = $mcRestoreStatus;
                 $account->save();
+
+                if ($mcRestoreStatus === MinecraftAccountStatus::Active) {
+                    SyncMinecraftAccount::run($account);
+                }
             } catch (\Exception $e) {
-                Log::error('Failed to whitelist account on brig release', [
+                Log::error('Failed to restore Minecraft account on brig release', [
                     'username' => $account->username,
                     'user_id' => $target->id,
                     'error' => $e->getMessage(),
                     'exception' => $e,
                 ]);
-            }
-        }
-
-        if ($mcRestoreStatus === MinecraftAccountStatus::Active) {
-            try {
-                SyncMinecraftRanks::run($target);
-            } catch (\Exception $e) {
-                Log::error('Failed to sync Minecraft ranks on brig release', [
-                    'user_id' => $target->id,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-            if ($target->staff_department !== null) {
-                try {
-                    SyncMinecraftStaff::run($target, $target->staff_department);
-                } catch (\Exception $e) {
-                    Log::error('Failed to sync Minecraft staff on brig release', [
-                        'user_id' => $target->id,
-                        'error' => $e->getMessage(),
-                    ]);
-                }
             }
         }
 

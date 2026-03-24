@@ -8,8 +8,6 @@ use App\Enums\StaffRank;
 use App\Models\MinecraftAccount;
 use App\Models\MinecraftVerification;
 use App\Models\User;
-use App\Notifications\MinecraftCommandNotification;
-use Illuminate\Support\Facades\Notification;
 
 beforeEach(function () {
     $this->user = User::factory()->create();
@@ -388,10 +386,7 @@ test('completes verification for linked bedrock with clean gamertag via bedrock_
     ]);
 });
 
-test('syncs staff position when staff member verifies account', function () {
-    Notification::fake();
-
-    // Create staff user with server access
+test('syncs rank and staff position synchronously when staff member verifies account', function () {
     $staffUser = User::factory()->create([
         'membership_level' => \App\Enums\MembershipLevel::Traveler,
         'staff_department' => StaffDepartment::Command,
@@ -406,38 +401,33 @@ test('syncs staff position when staff member verifies account', function () {
         'minecraft_uuid' => '169a79f4-44e9-4726-a5be-fca90e38aaf5',
     ]);
 
-    // Create the verifying account
     MinecraftAccount::factory()->for($staffUser)->verifying()->create([
         'username' => 'StaffPlayer',
         'uuid' => '169a79f4-44e9-4726-a5be-fca90e38aaf5',
         'account_type' => 'java',
     ]);
 
+    $rconMock = $this->mock(\App\Services\MinecraftRconService::class);
+    $rconMock->shouldReceive('executeCommand')
+        ->with(Mockery::pattern('/^whitelist/'), Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any())
+        ->andReturn(['success' => true, 'response' => 'Added to whitelist', 'error' => null]);
+    $rconMock->shouldReceive('executeCommand')
+        ->with(Mockery::pattern('/^lh setmember StaffPlayer/'), 'rank', 'StaffPlayer', Mockery::any(), Mockery::any())
+        ->once()
+        ->andReturn(['success' => true, 'response' => 'Success: rank set', 'error' => null]);
+    $rconMock->shouldReceive('executeCommand')
+        ->with('lh setstaff StaffPlayer command', 'staff', 'StaffPlayer', Mockery::any(), Mockery::any())
+        ->once()
+        ->andReturn(['success' => true, 'response' => 'Success: staff set', 'error' => null]);
+
     $action = new CompleteVerification;
-    $result = $action->handle(
-        'ABC123',
-        'StaffPlayer',
-        '169a79f4-44e9-4726-a5be-fca90e38aaf5'
-    );
+    $result = $action->handle('ABC123', 'StaffPlayer', '169a79f4-44e9-4726-a5be-fca90e38aaf5');
 
     expect($result['success'])->toBeTrue();
 
-    // Verify account is active
     $this->assertDatabaseHas('minecraft_accounts', [
         'user_id' => $staffUser->id,
         'username' => 'StaffPlayer',
         'status' => 'active',
     ]);
-
-    // setmember command dispatched for Traveler rank assignment
-    Notification::assertSentOnDemand(
-        MinecraftCommandNotification::class,
-        fn ($n) => str_contains($n->command, 'lh setmember')
-    );
-
-    // setstaff command dispatched for staff position sync
-    Notification::assertSentOnDemand(
-        MinecraftCommandNotification::class,
-        fn ($n) => str_contains($n->command, 'lh setstaff')
-    );
 });
