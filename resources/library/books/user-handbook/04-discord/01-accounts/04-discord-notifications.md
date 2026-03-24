@@ -1,6 +1,6 @@
 ---
 title: 'Discord Notifications'
-visibility: users
+visibility: public
 order: 4
 summary: 'How to receive Lighthouse notifications as Discord direct messages.'
 ---

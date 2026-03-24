@@ -1,5 +1,6 @@
 ---
 title: "Getting Started"
+visibility: public
 order: 1
 summary: "Begin your journey with the Lighthouse community."
 ---

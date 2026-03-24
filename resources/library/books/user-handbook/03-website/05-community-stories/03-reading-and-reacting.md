@@ -1,6 +1,6 @@
 ---
 title: 'Reading Stories & Reactions'
-visibility: users
+visibility: public
 order: 3
 summary: 'How to browse community stories and leave emoji reactions.'
 ---

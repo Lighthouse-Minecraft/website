@@ -1,6 +1,6 @@
 ---
 title: 'Tracking Your Application'
-visibility: users
+visibility: public
 order: 2
 summary: 'How to check your application status, participate in interviews, and withdraw.'
 ---

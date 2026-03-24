@@ -1,6 +1,6 @@
 ---
 title: 'Suggesting Questions'
-visibility: users
+visibility: public
 order: 4
 summary: 'How Citizens can suggest new community questions.'
 ---

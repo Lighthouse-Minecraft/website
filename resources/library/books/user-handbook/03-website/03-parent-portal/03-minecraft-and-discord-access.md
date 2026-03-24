@@ -1,6 +1,6 @@
 ---
 title: 'Minecraft and Discord Access'
-visibility: users
+visibility: public
 order: 3
 summary: 'How to manage your child''s Minecraft and Discord access from the Parent Portal.'
 ---

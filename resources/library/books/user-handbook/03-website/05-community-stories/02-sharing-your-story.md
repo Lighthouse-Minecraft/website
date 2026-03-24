@@ -1,6 +1,6 @@
 ---
 title: 'Sharing Your Story'
-visibility: users
+visibility: public
 order: 2
 summary: 'How to write and submit your response to a community question.'
 ---

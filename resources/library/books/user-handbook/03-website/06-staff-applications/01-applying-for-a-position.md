@@ -1,6 +1,6 @@
 ---
 title: 'Applying for a Position'
-visibility: users
+visibility: public
 order: 1
 summary: 'How to find open staff positions and submit your application.'
 ---

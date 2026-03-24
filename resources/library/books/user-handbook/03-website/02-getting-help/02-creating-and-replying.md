@@ -1,6 +1,6 @@
 ---
 title: 'Creating and Replying to Tickets'
-visibility: users
+visibility: public
 order: 2
 summary: 'Step-by-step guide to creating a support ticket and managing replies.'
 ---

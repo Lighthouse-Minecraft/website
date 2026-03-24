@@ -1,6 +1,6 @@
 ---
 title: 'Commenting on Posts'
-visibility: users
+visibility: public
 order: 2
 summary: 'How to leave comments on blog posts and what to expect with moderation.'
 ---
