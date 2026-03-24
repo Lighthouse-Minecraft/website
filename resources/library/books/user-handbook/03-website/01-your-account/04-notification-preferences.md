@@ -1,6 +1,6 @@
 ---
 title: 'Notification Preferences'
-visibility: users
+visibility: public
 order: 4
 summary: 'Choose how and when you receive notifications from Lighthouse.'
 ---

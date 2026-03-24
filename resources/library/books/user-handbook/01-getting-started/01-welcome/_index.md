@@ -1,5 +1,6 @@
 ---
 title: "Welcome"
+visibility: public
 order: 1
 summary: "An introduction to Lighthouse."
 ---

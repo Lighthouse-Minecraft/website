@@ -1,6 +1,6 @@
 ---
 title: 'Your Profile and Settings'
-visibility: users
+visibility: public
 order: 3
 summary: 'Customize your profile, avatar, timezone, and other account settings.'
 ---

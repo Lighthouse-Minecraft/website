@@ -19,7 +19,8 @@ jobs:
       - name: Post to Discord
         if: ${{ env.DISCORD_WEBHOOK != '' }}
         run: |
-          msg="🚀 **$PR_TITLE** merged to *staging* by $PR_ACTOR"$'\n\n'"$PR_BODY"
+          truncated_body="${PR_BODY:0:1600}"
+          msg="🚀 **$PR_TITLE** merged to *staging* by $PR_ACTOR"$'\n\n'"$truncated_body"
 
-          curl -H "Content-Type: application/json" -X POST "$DISCORD_WEBHOOK" \
+          curl --fail -H "Content-Type: application/json" -X POST "$DISCORD_WEBHOOK" \
             -d "$(jq -n --arg t "$msg" --arg u "$PR_URL" '{content: ($t + "\n" + $u)}')"
