@@ -87,7 +87,7 @@ test('repair command syncs staff on all accounts when a staff member has multipl
         ->once()
         ->andReturn(['success' => true, 'response' => 'Success: Backed up and cleared', 'error' => null]);
 
-    // No staff_rank set → crew behavior → engineer_crew
+    // CrewMember rank is below Officer → engineer_crew suffix
     $this->rconMock->shouldReceive('executeCommand')
         ->with('lh syncuser StaffAcct1 traveler engineer_crew', Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any())
         ->once()
@@ -193,7 +193,7 @@ test('lifecycle sync and repair command both handle a staff user via lh syncuser
     ]);
     MinecraftAccount::factory()->for($user)->active()->create(['username' => 'StaffConsist']);
 
-    // Both paths use lh syncuser with _crew suffix (no staff_rank → crew)
+    // Both paths use lh syncuser with _crew suffix (CrewMember < Officer)
     $this->rconMock->shouldReceive('executeCommand')
         ->with('lh syncuser StaffConsist traveler engineer_crew', Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any())
         ->twice()
