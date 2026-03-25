@@ -42,6 +42,17 @@ class RepairMinecraftPermissions extends Command
         $rcon = $dryRun ? null : app(MinecraftRconService::class);
         $firstCommand = true;
 
+        // Send lh syncstart once before the per-account loop in live mode.
+        // This backs up and clears the whitelist so every account gets a clean resync.
+        // Dry-run skips this — it only shows planned per-account actions.
+        if (! $dryRun) {
+            $firstCommand = $this->pauseIfNeeded($firstCommand, $pace);
+            $syncstartResult = $rcon->executeCommand('lh syncstart', 'sync', null, null, ['action' => 'syncstart']);
+            if (! $syncstartResult['success']) {
+                $this->warn('lh syncstart failed — proceeding with per-account sync anyway');
+            }
+        }
+
         foreach ($accounts as $account) {
             $user = $account->user;
             $rank = $user->membership_level->minecraftRank();
@@ -50,55 +61,36 @@ class RepairMinecraftPermissions extends Command
             $this->line("  <fg=cyan>{$account->username}</> ({$user->name})");
 
             if ($eligible) {
-                $staffDepartment = $user->staff_department;
+                $staffPosition = $user->minecraftStaffPosition();
+                $syncCmd = $account->syncUserCommand($rank, $staffPosition);
 
-                // ── Whitelist add ─────────────────────────────────────────────
-                $whitelistCmd = $account->whitelistAddCommand();
                 if ($dryRun) {
-                    $this->line("    [dry-run] {$whitelistCmd}");
+                    $this->line("    [dry-run] {$syncCmd}");
                     $counts['adds']++;
-                } else {
-                    $firstCommand = $this->pauseIfNeeded($firstCommand, $pace);
-                    $result = $rcon->executeCommand(
-                        $whitelistCmd, 'whitelist', $account->username, $user,
-                        ['action' => 'repair_whitelist_add']
-                    );
-                    $this->reportResult($whitelistCmd, $result['success']);
-                    $result['success'] ? $counts['adds']++ : $counts['failures']++;
-                }
-
-                // ── Member rank ───────────────────────────────────────────────
-                $rankCmd = "lh setmember {$account->username} {$rank}";
-                if ($dryRun) {
-                    $this->line("    [dry-run] {$rankCmd}");
                     $counts['rank_changes']++;
-                } else {
-                    $firstCommand = $this->pauseIfNeeded($firstCommand, $pace);
-                    $result = $rcon->executeCommand(
-                        $rankCmd, 'rank', $account->username, $user,
-                        ['action' => 'repair_rank', 'rank' => $rank]
-                    );
-                    $this->reportResult($rankCmd, $result['success']);
-                    $result['success'] ? $counts['rank_changes']++ : $counts['failures']++;
-                }
-
-                // ── Staff position ────────────────────────────────────────────
-                $staffCmd = $staffDepartment !== null
-                    ? "lh setstaff {$account->username} {$staffDepartment->value}"
-                    : "lh removestaff {$account->username}";
-
-                if ($dryRun) {
-                    $this->line("    [dry-run] {$staffCmd}");
                     $counts['staff_changes']++;
                 } else {
                     $firstCommand = $this->pauseIfNeeded($firstCommand, $pace);
                     $result = $rcon->executeCommand(
-                        $staffCmd, 'staff', $account->username, $user,
-                        ['action' => $staffDepartment !== null ? 'repair_staff_set' : 'repair_staff_remove']
+                        $syncCmd, 'sync', $account->username, $user,
+                        ['action' => 'repair_sync']
                     );
-                    $this->reportResult($staffCmd, $result['success']);
-                    $result['success'] ? $counts['staff_changes']++ : $counts['failures']++;
+                    $this->reportResult($syncCmd, $result['success']);
+                    if ($result['success']) {
+                        $counts['adds']++;
+                        $counts['rank_changes']++;
+                        $counts['staff_changes']++;
+                    } else {
+                        $counts['failures']++;
+                    }
                 }
+
+                // Old three-command sequence preserved for fallback reference:
+                // $whitelistCmd = $account->whitelistAddCommand();
+                // $rankCmd = "lh setmember {$account->username} {$rank}";
+                // $staffCmd = $staffDepartment !== null
+                //     ? "lh setstaff {$account->username} {$staffDepartment->value}"
+                //     : "lh removestaff {$account->username}";
             } else {
                 // ── Ineligible: whitelist remove ──────────────────────────────
                 $reason = $this->ineligibilityReason($user, $rank);

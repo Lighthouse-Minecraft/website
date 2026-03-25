@@ -49,10 +49,14 @@ This adds a 2-second pause between outbound commands. You can set `--pace` to an
 
 ## What the Command Repairs
 
-For each active Minecraft account, the command evaluates eligibility using the member's current website state:
+In a **live run** (non-dry-run), before touching any individual accounts, the command sends **`lh syncstart`** to the server. This backs up the current whitelist to a timestamped file and clears it completely, so every account gets a fresh resync with no stale entries.
 
-- **Eligible** (Traveler or higher, not in the Brig, parent permissions allow Minecraft): adds the account to the whitelist, sets the in-game rank to match the membership level, and applies or removes the staff department group depending on whether the member holds a staff position
+Then, for each active Minecraft account, the command evaluates eligibility using the member's current website state:
+
+- **Eligible** (Traveler or higher, not in the Brig, parent permissions allow Minecraft): sends a single `lh syncuser` command that whitelists the account, sets the in-game rank, and applies the correct staff group all at once
 - **Ineligible** (Drifter/Stowaway, in the Brig, or parent has disabled Minecraft): removes the account from the whitelist
+
+For staff members, the applied in-game group depends on their rank: Officers get their department name (e.g., `engineer`), while Crew Members and Jr Crew get the department name with `_crew` appended (e.g., `engineer_crew`). Non-staff accounts receive `none` as the staff position.
 
 Accounts in `verifying`, `banned`, `cancelled`, `removed`, or `parent_disabled` status are skipped -- the command only processes accounts with `active` status.
 
@@ -65,6 +69,6 @@ See [[books/staff-handbook/minecraft/server-operations/rank-and-staff-syncing|Ra
 ## Important Notes
 
 - The repair command does **not** write to the Activity Log. Results are only visible in the MC Command Log.
-- Running the command multiple times is safe -- it's idempotent. Sending a `whitelist add` for someone who's already whitelisted doesn't break anything.
+- Running the command multiple times is safe. Each run starts with `lh syncstart` to clear and back up the whitelist, then re-adds every eligible account from scratch.
 - If the Minecraft server is offline when you run the command, every RCON command will fail. Wait until the server is back up and run it again.
 - The `--dry-run` flag never sends RCON commands, even if the server is online. It's always safe to use for inspection.

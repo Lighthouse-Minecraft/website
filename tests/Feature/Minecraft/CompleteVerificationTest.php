@@ -409,16 +409,9 @@ test('syncs rank and staff position synchronously when staff member verifies acc
 
     $rconMock = $this->mock(\App\Services\MinecraftRconService::class);
     $rconMock->shouldReceive('executeCommand')
-        ->with(Mockery::pattern('/^whitelist/'), Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any())
-        ->andReturn(['success' => true, 'response' => 'Added to whitelist', 'error' => null]);
-    $rconMock->shouldReceive('executeCommand')
-        ->with(Mockery::pattern('/^lh setmember StaffPlayer/'), 'rank', 'StaffPlayer', Mockery::any(), Mockery::any())
+        ->with('lh syncuser StaffPlayer traveler command', 'sync', 'StaffPlayer', Mockery::any(), Mockery::any())
         ->once()
-        ->andReturn(['success' => true, 'response' => 'Success: rank set', 'error' => null]);
-    $rconMock->shouldReceive('executeCommand')
-        ->with('lh setstaff StaffPlayer command', 'staff', 'StaffPlayer', Mockery::any(), Mockery::any())
-        ->once()
-        ->andReturn(['success' => true, 'response' => 'Success: staff set', 'error' => null]);
+        ->andReturn(['success' => true, 'response' => 'Success: Synced StaffPlayer', 'error' => null]);
 
     $action = new CompleteVerification;
     $result = $action->handle('ABC123', 'StaffPlayer', '169a79f4-44e9-4726-a5be-fca90e38aaf5');

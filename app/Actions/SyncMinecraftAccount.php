@@ -51,21 +51,30 @@ class SyncMinecraftAccount
             ];
         }
 
-        $whitelistResult = $rcon->executeCommand(
-            $account->whitelistAddCommand(),
-            'whitelist',
+        $staffPosition = $user->minecraftStaffPosition();
+
+        $syncResult = $rcon->executeCommand(
+            $account->syncUserCommand($rank, $staffPosition),
+            'sync',
             $account->username,
             $user,
-            ['action' => 'sync_add_eligible']
+            ['action' => 'sync_user']
         );
 
-        $rankResult = $rcon->executeCommand(
-            "lh setmember {$account->username} {$rank}",
-            'rank',
-            $account->username,
-            $user,
-            ['action' => 'sync_rank', 'membership_level' => $user->membership_level->value]
-        );
+        // Old three-command sequence preserved for fallback reference:
+        // $whitelistResult = $rcon->executeCommand(
+        //     $account->whitelistAddCommand(),
+        //     'whitelist', $account->username, $user, ['action' => 'sync_add_eligible']
+        // );
+        // $rankResult = $rcon->executeCommand(
+        //     "lh setmember {$account->username} {$rank}",
+        //     'rank', $account->username, $user, ['action' => 'sync_rank', 'membership_level' => $user->membership_level->value]
+        // );
+        // if ($staffDepartment !== null) {
+        //     $rcon->executeCommand("lh setstaff {$account->username} {$staffDepartment->value}", 'staff', ...);
+        // } else {
+        //     $rcon->executeCommand("lh removestaff {$account->username}", 'staff', ...);
+        // }
 
         RecordActivity::handle(
             $user,
@@ -73,37 +82,19 @@ class SyncMinecraftAccount
             "Synced Minecraft rank to {$rank} for {$account->username}"
         );
 
-        $staffDepartment = $user->staff_department;
-
-        if ($staffDepartment !== null) {
-            $staffResult = $rcon->executeCommand(
-                "lh setstaff {$account->username} {$staffDepartment->value}",
-                'staff',
-                $account->username,
-                $user,
-                ['action' => 'set_staff_position', 'department' => $staffDepartment->value]
-            );
-
+        if ($staffPosition !== 'none') {
             RecordActivity::handle(
                 $user,
                 'minecraft_staff_position_set',
-                "Set Minecraft staff position to {$staffDepartment->label()} for {$account->username}"
+                "Set Minecraft staff position to {$staffPosition} for {$account->username}"
             );
 
             $staffReturn = [
-                'success' => $staffResult['success'],
+                'success' => $syncResult['success'],
                 'action' => 'set',
-                'department' => $staffDepartment->value,
+                'department' => $staffPosition,
             ];
         } else {
-            $staffResult = $rcon->executeCommand(
-                "lh removestaff {$account->username}",
-                'staff',
-                $account->username,
-                $user,
-                ['action' => 'remove_staff_position']
-            );
-
             RecordActivity::handle(
                 $user,
                 'minecraft_staff_position_removed',
@@ -111,7 +102,7 @@ class SyncMinecraftAccount
             );
 
             $staffReturn = [
-                'success' => $staffResult['success'],
+                'success' => $syncResult['success'],
                 'action' => 'remove',
                 'department' => null,
             ];
@@ -119,8 +110,8 @@ class SyncMinecraftAccount
 
         return [
             'eligible' => true,
-            'whitelist' => ['success' => $whitelistResult['success'], 'action' => 'add'],
-            'rank' => ['success' => $rankResult['success'], 'rank' => $rank],
+            'whitelist' => ['success' => $syncResult['success'], 'action' => 'add'],
+            'rank' => ['success' => $syncResult['success'], 'rank' => $rank],
             'staff' => $staffReturn,
         ];
     }

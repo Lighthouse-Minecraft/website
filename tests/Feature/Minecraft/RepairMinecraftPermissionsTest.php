@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Enums\MembershipLevel;
 use App\Enums\MinecraftAccountType;
 use App\Enums\StaffDepartment;
+use App\Enums\StaffRank;
 use App\Models\MinecraftAccount;
 use App\Models\User;
 use App\Services\MinecraftRconService;
@@ -26,7 +27,7 @@ test('exits successfully with message when no active accounts exist', function (
 
 // ─── Dry-run behavior ────────────────────────────────────────────────────────
 
-test('dry-run reports planned whitelist add and rank for eligible account', function () {
+test('dry-run reports lh syncuser for eligible account', function () {
     $user = User::factory()->create(['membership_level' => MembershipLevel::Traveler]);
     MinecraftAccount::factory()->for($user)->active()->create(['username' => 'EligiblePlayer']);
 
@@ -34,9 +35,21 @@ test('dry-run reports planned whitelist add and rank for eligible account', func
 
     $this->artisan('minecraft:repair-permissions', ['--dry-run' => true])
         ->assertSuccessful()
-        ->expectsOutputToContain('[dry-run] whitelist add EligiblePlayer')
-        ->expectsOutputToContain('[dry-run] lh setmember EligiblePlayer traveler')
-        ->expectsOutputToContain('[dry-run] lh removestaff EligiblePlayer');
+        ->expectsOutputToContain('[dry-run] lh syncuser EligiblePlayer traveler none');
+});
+
+test('dry-run does not send lh syncstart', function () {
+    $user = User::factory()->create(['membership_level' => MembershipLevel::Traveler]);
+    MinecraftAccount::factory()->for($user)->active()->create(['username' => 'EligiblePlayer']);
+
+    $this->rconMock->shouldReceive('executeCommand')
+        ->with('lh syncstart', Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any())
+        ->never();
+
+    $this->rconMock->shouldReceive('executeCommand')->never();
+
+    $this->artisan('minecraft:repair-permissions', ['--dry-run' => true])
+        ->assertSuccessful();
 });
 
 test('dry-run reports planned whitelist remove for brigged account', function () {
@@ -77,16 +90,30 @@ test('dry-run reports planned whitelist remove for parent-disabled account', fun
         ->expectsOutputToContain('parent disabled');
 });
 
-test('dry-run reports setstaff command for staff members', function () {
+test('dry-run reports lh syncuser with _crew suffix for crew staff member', function () {
     $user = User::factory()->create([
         'membership_level' => MembershipLevel::Traveler,
+        'staff_rank' => StaffRank::CrewMember,
         'staff_department' => StaffDepartment::Engineer,
     ]);
     MinecraftAccount::factory()->for($user)->active()->create(['username' => 'StaffMember']);
 
     $this->artisan('minecraft:repair-permissions', ['--dry-run' => true])
         ->assertSuccessful()
-        ->expectsOutputToContain('[dry-run] lh setstaff StaffMember engineer');
+        ->expectsOutputToContain('[dry-run] lh syncuser StaffMember traveler engineer_crew');
+});
+
+test('dry-run reports lh syncuser with department for Officer staff member', function () {
+    $user = User::factory()->create([
+        'membership_level' => MembershipLevel::Traveler,
+        'staff_rank' => StaffRank::Officer,
+        'staff_department' => StaffDepartment::Engineer,
+    ]);
+    MinecraftAccount::factory()->for($user)->active()->create(['username' => 'OfficerMember']);
+
+    $this->artisan('minecraft:repair-permissions', ['--dry-run' => true])
+        ->assertSuccessful()
+        ->expectsOutputToContain('[dry-run] lh syncuser OfficerMember traveler engineer');
 });
 
 test('dry-run sends no RCON commands and prints summary', function () {
@@ -104,24 +131,48 @@ test('dry-run sends no RCON commands and prints summary', function () {
 
 // ─── Live execution ───────────────────────────────────────────────────────────
 
-test('live mode sends whitelist, rank, and staff RCON commands for eligible account', function () {
+test('live mode sends lh syncstart once before any per-account commands', function () {
+    $user = User::factory()->create(['membership_level' => MembershipLevel::Traveler]);
+    MinecraftAccount::factory()->for($user)->active()->create(['username' => 'SyncPlayer']);
+
+    $callOrder = [];
+
+    $this->rconMock->shouldReceive('executeCommand')
+        ->with('lh syncstart', 'sync', null, null, Mockery::any())
+        ->once()
+        ->andReturnUsing(function () use (&$callOrder) {
+            $callOrder[] = 'syncstart';
+
+            return ['success' => true, 'response' => 'Success: Backed up and cleared', 'error' => null];
+        });
+
+    $this->rconMock->shouldReceive('executeCommand')
+        ->with(Mockery::pattern('/^lh syncuser /'), Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any())
+        ->once()
+        ->andReturnUsing(function () use (&$callOrder) {
+            $callOrder[] = 'syncuser';
+
+            return ['success' => true, 'response' => 'Success: Synced SyncPlayer', 'error' => null];
+        });
+
+    $this->artisan('minecraft:repair-permissions', ['--pace' => '0'])->assertSuccessful();
+
+    expect($callOrder)->toBe(['syncstart', 'syncuser']);
+});
+
+test('live mode sends single lh syncuser command for eligible account', function () {
     $user = User::factory()->create(['membership_level' => MembershipLevel::Traveler]);
     MinecraftAccount::factory()->for($user)->active()->create(['username' => 'LivePlayer']);
 
     $this->rconMock->shouldReceive('executeCommand')
-        ->with('whitelist add LivePlayer', 'whitelist', 'LivePlayer', Mockery::any(), Mockery::any())
+        ->with('lh syncstart', 'sync', null, null, Mockery::any())
         ->once()
-        ->andReturn(['success' => true, 'response' => 'Added', 'error' => null]);
+        ->andReturn(['success' => true, 'response' => 'Success: Backed up and cleared', 'error' => null]);
 
     $this->rconMock->shouldReceive('executeCommand')
-        ->with('lh setmember LivePlayer traveler', 'rank', 'LivePlayer', Mockery::any(), Mockery::any())
+        ->with('lh syncuser LivePlayer traveler none', 'sync', 'LivePlayer', Mockery::any(), Mockery::any())
         ->once()
-        ->andReturn(['success' => true, 'response' => 'Success: rank set', 'error' => null]);
-
-    $this->rconMock->shouldReceive('executeCommand')
-        ->with('lh removestaff LivePlayer', 'staff', 'LivePlayer', Mockery::any(), Mockery::any())
-        ->once()
-        ->andReturn(['success' => true, 'response' => 'Success: staff removed', 'error' => null]);
+        ->andReturn(['success' => true, 'response' => 'Success: Synced LivePlayer', 'error' => null]);
 
     $this->artisan('minecraft:repair-permissions', ['--pace' => '0'])
         ->assertSuccessful()
@@ -137,6 +188,11 @@ test('live mode sends whitelist remove for ineligible account', function () {
         'in_brig' => true,
     ]);
     MinecraftAccount::factory()->for($user)->active()->create(['username' => 'BrigPlayer']);
+
+    $this->rconMock->shouldReceive('executeCommand')
+        ->with('lh syncstart', Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any())
+        ->once()
+        ->andReturn(['success' => true, 'response' => 'Success: Backed up and cleared', 'error' => null]);
 
     $this->rconMock->shouldReceive('executeCommand')
         ->with('whitelist remove BrigPlayer', 'whitelist', 'BrigPlayer', Mockery::any(), Mockery::any())
@@ -179,14 +235,14 @@ test('mixed eligible and ineligible accounts processed correctly in dry-run', fu
 
     $this->artisan('minecraft:repair-permissions', ['--dry-run' => true])
         ->assertSuccessful()
-        ->expectsOutputToContain('[dry-run] whitelist add EligPlayer')
+        ->expectsOutputToContain('[dry-run] lh syncuser EligPlayer traveler none')
         ->expectsOutputToContain('[dry-run] whitelist remove BrigPlayer2')
         ->expectsOutputToContain('[dry-run] whitelist remove DrifterPlayer')
         ->expectsOutputToContain('[dry-run] Whitelist adds:    1')
         ->expectsOutputToContain('[dry-run] Whitelist removes: 2');
 });
 
-test('mixed live run sends correct RCON commands with pace=0', function () {
+test('mixed live run sends lh syncstart then correct commands per account', function () {
     $eligible = User::factory()->create(['membership_level' => MembershipLevel::Traveler]);
     MinecraftAccount::factory()->for($eligible)->active()->create(['username' => 'EligPlayer2']);
 
@@ -194,14 +250,14 @@ test('mixed live run sends correct RCON commands with pace=0', function () {
     MinecraftAccount::factory()->for($ineligible)->active()->create(['username' => 'IneligPlayer']);
 
     $this->rconMock->shouldReceive('executeCommand')
-        ->with('whitelist add EligPlayer2', Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any())
+        ->with('lh syncstart', 'sync', null, null, Mockery::any())
         ->once()
-        ->andReturn(['success' => true, 'response' => 'Added', 'error' => null]);
+        ->andReturn(['success' => true, 'response' => 'Success: Backed up and cleared', 'error' => null]);
 
     $this->rconMock->shouldReceive('executeCommand')
-        ->with(Mockery::pattern('/^lh /'), Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any())
-        ->twice()
-        ->andReturn(['success' => true, 'response' => 'Success: done', 'error' => null]);
+        ->with('lh syncuser EligPlayer2 traveler none', Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any())
+        ->once()
+        ->andReturn(['success' => true, 'response' => 'Success: Synced EligPlayer2', 'error' => null]);
 
     $this->rconMock->shouldReceive('executeCommand')
         ->with('whitelist remove IneligPlayer', Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any())
@@ -217,7 +273,7 @@ test('mixed live run sends correct RCON commands with pace=0', function () {
 
 // ─── Bedrock account ─────────────────────────────────────────────────────────
 
-test('bedrock account uses fwhitelist command in dry-run', function () {
+test('bedrock account uses lh syncuser with -bedrock suffix in dry-run', function () {
     $user = User::factory()->create(['membership_level' => MembershipLevel::Traveler]);
     MinecraftAccount::factory()->for($user)->active()->create([
         'username' => 'BedrockGuy',
@@ -227,5 +283,5 @@ test('bedrock account uses fwhitelist command in dry-run', function () {
 
     $this->artisan('minecraft:repair-permissions', ['--dry-run' => true])
         ->assertSuccessful()
-        ->expectsOutputToContain('[dry-run] fwhitelist add');
+        ->expectsOutputToContain('[dry-run] lh syncuser BedrockGuy traveler none -bedrock bedrock-uuid-5678');
 });

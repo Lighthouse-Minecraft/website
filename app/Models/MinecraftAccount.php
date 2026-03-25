@@ -126,4 +126,20 @@ class MinecraftAccount extends Model
             MinecraftAccountType::Bedrock => "fwhitelist remove {$this->uuid}",
         };
     }
+
+    /**
+     * Returns the lh syncuser command for this account.
+     * Java:    "lh syncuser <username> <rank> <staffPosition>"
+     * Bedrock: "lh syncuser <username> <rank> <staffPosition> -bedrock <uuid>"
+     */
+    public function syncUserCommand(string $rank, string $staffPosition): string
+    {
+        $base = "lh syncuser {$this->username} {$rank} {$staffPosition}";
+
+        if ($this->account_type === MinecraftAccountType::Bedrock) {
+            return "{$base} -bedrock {$this->uuid}";
+        }
+
+        return $base;
+    }
 }

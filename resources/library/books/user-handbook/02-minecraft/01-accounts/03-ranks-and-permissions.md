@@ -19,7 +19,14 @@ Drifters and Stowaways don't have server access yet -- you'll need to be promote
 
 ## Staff Ranks
 
-If you're a staff member, your staff position is also reflected in-game. This helps other players know who to turn to for help and provides the permissions needed for staff duties.
+If you're a staff member, your staff position is reflected in-game alongside your membership rank. This helps other players know who to turn to for help and gives you the permissions needed for staff duties.
+
+Staff in-game ranks are based on both your **department** and your **staff rank**:
+
+- **Officers** and above show their department name in-game (for example, an Officer in the Engineering department appears as `engineer`).
+- **Crew Members** and Jr Crew Members show their department with a `_crew` suffix (for example, a Crew Member in Engineering appears as `engineer_crew`).
+
+Your in-game staff rank updates automatically when your staff position changes -- you don't need to do anything.
 
 ## Promotions
 
