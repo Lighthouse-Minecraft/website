@@ -47,7 +47,10 @@ class RepairMinecraftPermissions extends Command
         // Dry-run skips this — it only shows planned per-account actions.
         if (! $dryRun) {
             $firstCommand = $this->pauseIfNeeded($firstCommand, $pace);
-            $rcon->executeCommand('lh syncstart', 'sync', null, null, ['action' => 'syncstart']);
+            $syncstartResult = $rcon->executeCommand('lh syncstart', 'sync', null, null, ['action' => 'syncstart']);
+            if (! $syncstartResult['success']) {
+                $this->warn('lh syncstart failed — proceeding with per-account sync anyway');
+            }
         }
 
         foreach ($accounts as $account) {

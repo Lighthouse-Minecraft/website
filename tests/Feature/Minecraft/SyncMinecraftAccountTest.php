@@ -100,6 +100,7 @@ test('eligible user records rank sync and staff activity', function () {
 test('eligible staff user records staff position set activity', function () {
     $user = User::factory()->create([
         'membership_level' => MembershipLevel::Traveler,
+        'staff_rank' => StaffRank::CrewMember,
         'staff_department' => StaffDepartment::Chaplain,
     ]);
     $account = MinecraftAccount::factory()->for($user)->active()->create(['username' => 'Padre']);

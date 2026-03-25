@@ -388,7 +388,7 @@ class User extends Authenticatable // implements MustVerifyEmail
 
     public function minecraftStaffPosition(): string
     {
-        if ($this->staff_department === null) {
+        if ($this->staff_department === null || $this->staff_rank === null || $this->staff_rank === StaffRank::None) {
             return 'none';
         }
 

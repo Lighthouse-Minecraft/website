@@ -7,6 +7,7 @@ use App\Actions\SyncMinecraftPermissions;
 use App\Enums\MembershipLevel;
 use App\Enums\MinecraftAccountType;
 use App\Enums\StaffDepartment;
+use App\Enums\StaffRank;
 use App\Models\MinecraftAccount;
 use App\Models\User;
 use App\Services\MinecraftRconService;
@@ -75,6 +76,7 @@ test('repair command removes all whitelist entries when a brigged user has multi
 test('repair command syncs staff on all accounts when a staff member has multiple accounts', function () {
     $user = User::factory()->create([
         'membership_level' => MembershipLevel::Traveler,
+        'staff_rank' => StaffRank::CrewMember,
         'staff_department' => StaffDepartment::Engineer,
     ]);
     MinecraftAccount::factory()->for($user)->active()->create(['username' => 'StaffAcct1']);
@@ -186,6 +188,7 @@ test('lifecycle sync and repair command both remove a parent-disabled user from 
 test('lifecycle sync and repair command both handle a staff user via lh syncuser', function () {
     $user = User::factory()->create([
         'membership_level' => MembershipLevel::Traveler,
+        'staff_rank' => StaffRank::CrewMember,
         'staff_department' => StaffDepartment::Engineer,
     ]);
     MinecraftAccount::factory()->for($user)->active()->create(['username' => 'StaffConsist']);

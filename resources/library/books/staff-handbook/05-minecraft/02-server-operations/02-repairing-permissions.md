@@ -49,7 +49,7 @@ This adds a 2-second pause between outbound commands. You can set `--pace` to an
 
 ## What the Command Repairs
 
-Before touching any individual accounts, the command sends **`lh syncstart`** to the server. This backs up the current whitelist to a timestamped file and clears it completely, so every account gets a fresh resync with no stale entries.
+In a **live run** (non-dry-run), before touching any individual accounts, the command sends **`lh syncstart`** to the server. This backs up the current whitelist to a timestamped file and clears it completely, so every account gets a fresh resync with no stale entries.
 
 Then, for each active Minecraft account, the command evaluates eligibility using the member's current website state:
 
