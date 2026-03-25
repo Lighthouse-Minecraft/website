@@ -26,19 +26,19 @@ test('repair command repairs all active accounts when a user has multiple', func
     MinecraftAccount::factory()->for($user)->active()->create(['username' => 'MultiAcct2']);
 
     $this->rconMock->shouldReceive('executeCommand')
-        ->with('whitelist add MultiAcct1', Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any())
+        ->with('lh syncstart', 'sync', null, null, Mockery::any())
         ->once()
-        ->andReturn(['success' => true, 'response' => 'Added', 'error' => null]);
+        ->andReturn(['success' => true, 'response' => 'Success: Backed up and cleared', 'error' => null]);
 
     $this->rconMock->shouldReceive('executeCommand')
-        ->with('whitelist add MultiAcct2', Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any())
+        ->with('lh syncuser MultiAcct1 traveler none', Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any())
         ->once()
-        ->andReturn(['success' => true, 'response' => 'Added', 'error' => null]);
+        ->andReturn(['success' => true, 'response' => 'Success: Synced MultiAcct1', 'error' => null]);
 
     $this->rconMock->shouldReceive('executeCommand')
-        ->with(Mockery::pattern('/^lh /'), Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any())
-        ->times(4) // 2 accounts × (setmember + removestaff)
-        ->andReturn(['success' => true, 'response' => 'Success: done', 'error' => null]);
+        ->with('lh syncuser MultiAcct2 traveler none', Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any())
+        ->once()
+        ->andReturn(['success' => true, 'response' => 'Success: Synced MultiAcct2', 'error' => null]);
 
     $this->artisan('minecraft:repair-permissions', ['--pace' => '0'])
         ->assertSuccessful()
@@ -72,7 +72,7 @@ test('repair command removes all whitelist entries when a brigged user has multi
         ->expectsOutputToContain('Failures:          0');
 });
 
-test('repair command sets staff on all accounts when a staff member has multiple accounts', function () {
+test('repair command syncs staff on all accounts when a staff member has multiple accounts', function () {
     $user = User::factory()->create([
         'membership_level' => MembershipLevel::Traveler,
         'staff_department' => StaffDepartment::Engineer,
@@ -81,14 +81,20 @@ test('repair command sets staff on all accounts when a staff member has multiple
     MinecraftAccount::factory()->for($user)->active()->create(['username' => 'StaffAcct2']);
 
     $this->rconMock->shouldReceive('executeCommand')
-        ->with('lh setstaff StaffAcct1 engineer', Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any())
+        ->with('lh syncstart', Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any())
         ->once()
-        ->andReturn(['success' => true, 'response' => 'Success: staff set', 'error' => null]);
+        ->andReturn(['success' => true, 'response' => 'Success: Backed up and cleared', 'error' => null]);
+
+    // No staff_rank set → crew behavior → engineer_crew
+    $this->rconMock->shouldReceive('executeCommand')
+        ->with('lh syncuser StaffAcct1 traveler engineer_crew', Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any())
+        ->once()
+        ->andReturn(['success' => true, 'response' => 'Success: Synced StaffAcct1', 'error' => null]);
 
     $this->rconMock->shouldReceive('executeCommand')
-        ->with('lh setstaff StaffAcct2 engineer', Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any())
+        ->with('lh syncuser StaffAcct2 traveler engineer_crew', Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any())
         ->once()
-        ->andReturn(['success' => true, 'response' => 'Success: staff set', 'error' => null]);
+        ->andReturn(['success' => true, 'response' => 'Success: Synced StaffAcct2', 'error' => null]);
 
     $this->artisan('minecraft:repair-permissions', ['--pace' => '0'])
         ->assertSuccessful()
@@ -109,14 +115,19 @@ test('repair command handles a user with both java and bedrock accounts', functi
     ]);
 
     $this->rconMock->shouldReceive('executeCommand')
-        ->with('whitelist add JavaUser', Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any())
+        ->with('lh syncstart', Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any())
         ->once()
-        ->andReturn(['success' => true, 'response' => 'Added', 'error' => null]);
+        ->andReturn(['success' => true, 'response' => 'Success: Backed up and cleared', 'error' => null]);
 
     $this->rconMock->shouldReceive('executeCommand')
-        ->with('fwhitelist add bedrock-uuid-abcd', Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any())
+        ->with('lh syncuser JavaUser traveler none', Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any())
         ->once()
-        ->andReturn(['success' => true, 'response' => 'Added', 'error' => null]);
+        ->andReturn(['success' => true, 'response' => 'Success: Synced JavaUser', 'error' => null]);
+
+    $this->rconMock->shouldReceive('executeCommand')
+        ->with('lh syncuser BedrockUser traveler none -bedrock bedrock-uuid-abcd', Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any())
+        ->once()
+        ->andReturn(['success' => true, 'response' => 'Success: Synced BedrockUser', 'error' => null]);
 
     $this->artisan('minecraft:repair-permissions', ['--pace' => '0'])
         ->assertSuccessful()
@@ -126,31 +137,15 @@ test('repair command handles a user with both java and bedrock accounts', functi
 
 // ─── Consistency: lifecycle sync and repair agree ─────────────────────────────
 
-test('lifecycle sync and repair command both handle an eligible user', function () {
+test('lifecycle sync and repair command both handle an eligible user via lh syncuser', function () {
     $user = User::factory()->create(['membership_level' => MembershipLevel::Traveler]);
     MinecraftAccount::factory()->for($user)->active()->create(['username' => 'ConsistElig']);
 
-    // Lifecycle path uses lh syncuser (once from SyncMinecraftPermissions)
+    // Both paths now use lh syncuser — called twice total
     $this->rconMock->shouldReceive('executeCommand')
         ->with('lh syncuser ConsistElig traveler none', Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any())
-        ->once()
+        ->twice()
         ->andReturn(['success' => true, 'response' => 'Success: Synced ConsistElig', 'error' => null]);
-
-    // Repair command still uses old three-command sequence (updated in #368)
-    $this->rconMock->shouldReceive('executeCommand')
-        ->with('whitelist add ConsistElig', Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any())
-        ->once()
-        ->andReturn(['success' => true, 'response' => 'Added', 'error' => null]);
-
-    $this->rconMock->shouldReceive('executeCommand')
-        ->with('lh setmember ConsistElig traveler', Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any())
-        ->once()
-        ->andReturn(['success' => true, 'response' => 'Success: rank set', 'error' => null]);
-
-    $this->rconMock->shouldReceive('executeCommand')
-        ->with('lh removestaff ConsistElig', Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any())
-        ->once()
-        ->andReturn(['success' => true, 'response' => 'Success: staff removed', 'error' => null]);
 
     SyncMinecraftPermissions::run($user);
     $this->artisan('minecraft:repair-permissions', ['--pace' => '0'])->assertSuccessful();
@@ -188,24 +183,18 @@ test('lifecycle sync and repair command both remove a parent-disabled user from 
     $this->artisan('minecraft:repair-permissions', ['--pace' => '0'])->assertSuccessful();
 });
 
-test('lifecycle sync and repair command both handle a staff user', function () {
+test('lifecycle sync and repair command both handle a staff user via lh syncuser', function () {
     $user = User::factory()->create([
         'membership_level' => MembershipLevel::Traveler,
         'staff_department' => StaffDepartment::Engineer,
     ]);
     MinecraftAccount::factory()->for($user)->active()->create(['username' => 'StaffConsist']);
 
-    // Lifecycle path uses lh syncuser with _crew suffix (no staff_rank set → crew behavior)
+    // Both paths use lh syncuser with _crew suffix (no staff_rank → crew)
     $this->rconMock->shouldReceive('executeCommand')
         ->with('lh syncuser StaffConsist traveler engineer_crew', Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any())
-        ->once()
+        ->twice()
         ->andReturn(['success' => true, 'response' => 'Success: Synced StaffConsist', 'error' => null]);
-
-    // Repair command still uses old lh setstaff command (updated in #368)
-    $this->rconMock->shouldReceive('executeCommand')
-        ->with('lh setstaff StaffConsist engineer', Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any())
-        ->once()
-        ->andReturn(['success' => true, 'response' => 'Success: staff set', 'error' => null]);
 
     SyncMinecraftPermissions::run($user);
     $this->artisan('minecraft:repair-permissions', ['--pace' => '0'])->assertSuccessful();
@@ -226,8 +215,8 @@ test('dry-run correctly reports all planned actions across multiple users and ac
 
     $this->artisan('minecraft:repair-permissions', ['--dry-run' => true])
         ->assertSuccessful()
-        ->expectsOutputToContain('[dry-run] whitelist add DryElig1')
-        ->expectsOutputToContain('[dry-run] whitelist add DryElig2')
+        ->expectsOutputToContain('[dry-run] lh syncuser DryElig1 traveler none')
+        ->expectsOutputToContain('[dry-run] lh syncuser DryElig2 traveler none')
         ->expectsOutputToContain('[dry-run] whitelist remove DryBrig1')
         ->expectsOutputToContain('[dry-run] whitelist remove DryBrig2')
         ->expectsOutputToContain('[dry-run] Whitelist adds:    2')
