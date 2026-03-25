@@ -126,24 +126,30 @@ test('repair command handles a user with both java and bedrock accounts', functi
 
 // ─── Consistency: lifecycle sync and repair agree ─────────────────────────────
 
-test('lifecycle sync and repair command send the same whitelist and rank commands for an eligible user', function () {
+test('lifecycle sync and repair command both handle an eligible user', function () {
     $user = User::factory()->create(['membership_level' => MembershipLevel::Traveler]);
     MinecraftAccount::factory()->for($user)->active()->create(['username' => 'ConsistElig']);
 
-    // Each RCON command fires once from SyncMinecraftPermissions, once from the repair command
+    // Lifecycle path uses lh syncuser (once from SyncMinecraftPermissions)
+    $this->rconMock->shouldReceive('executeCommand')
+        ->with('lh syncuser ConsistElig traveler none', Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any())
+        ->once()
+        ->andReturn(['success' => true, 'response' => 'Success: Synced ConsistElig', 'error' => null]);
+
+    // Repair command still uses old three-command sequence (updated in #368)
     $this->rconMock->shouldReceive('executeCommand')
         ->with('whitelist add ConsistElig', Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any())
-        ->twice()
+        ->once()
         ->andReturn(['success' => true, 'response' => 'Added', 'error' => null]);
 
     $this->rconMock->shouldReceive('executeCommand')
         ->with('lh setmember ConsistElig traveler', Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any())
-        ->twice()
+        ->once()
         ->andReturn(['success' => true, 'response' => 'Success: rank set', 'error' => null]);
 
     $this->rconMock->shouldReceive('executeCommand')
         ->with('lh removestaff ConsistElig', Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any())
-        ->twice()
+        ->once()
         ->andReturn(['success' => true, 'response' => 'Success: staff removed', 'error' => null]);
 
     SyncMinecraftPermissions::run($user);
@@ -182,16 +188,23 @@ test('lifecycle sync and repair command both remove a parent-disabled user from 
     $this->artisan('minecraft:repair-permissions', ['--pace' => '0'])->assertSuccessful();
 });
 
-test('lifecycle sync and repair command both set staff position for a staff user', function () {
+test('lifecycle sync and repair command both handle a staff user', function () {
     $user = User::factory()->create([
         'membership_level' => MembershipLevel::Traveler,
         'staff_department' => StaffDepartment::Engineer,
     ]);
     MinecraftAccount::factory()->for($user)->active()->create(['username' => 'StaffConsist']);
 
+    // Lifecycle path uses lh syncuser with _crew suffix (no staff_rank set → crew behavior)
+    $this->rconMock->shouldReceive('executeCommand')
+        ->with('lh syncuser StaffConsist traveler engineer_crew', Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any())
+        ->once()
+        ->andReturn(['success' => true, 'response' => 'Success: Synced StaffConsist', 'error' => null]);
+
+    // Repair command still uses old lh setstaff command (updated in #368)
     $this->rconMock->shouldReceive('executeCommand')
         ->with('lh setstaff StaffConsist engineer', Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any())
-        ->twice()
+        ->once()
         ->andReturn(['success' => true, 'response' => 'Success: staff set', 'error' => null]);
 
     SyncMinecraftPermissions::run($user);

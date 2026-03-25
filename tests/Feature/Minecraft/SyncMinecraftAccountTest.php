@@ -6,6 +6,7 @@ use App\Actions\SyncMinecraftAccount;
 use App\Enums\MembershipLevel;
 use App\Enums\MinecraftAccountType;
 use App\Enums\StaffDepartment;
+use App\Enums\StaffRank;
 use App\Models\MinecraftAccount;
 use App\Models\User;
 use App\Services\MinecraftRconService;
@@ -19,24 +20,14 @@ beforeEach(function () {
 
 // ─── Eligible user (Traveler+, not in brig, parent allows) ───────────────────
 
-test('eligible user receives whitelist add, rank set, and staff removed', function () {
+test('eligible user receives single lh syncuser command', function () {
     $user = User::factory()->create(['membership_level' => MembershipLevel::Traveler]);
     $account = MinecraftAccount::factory()->for($user)->active()->create(['username' => 'Steve']);
 
     $this->rconMock->shouldReceive('executeCommand')
-        ->with('whitelist add Steve', 'whitelist', 'Steve', Mockery::any(), Mockery::any())
+        ->with('lh syncuser Steve traveler none', 'sync', 'Steve', Mockery::any(), Mockery::any())
         ->once()
-        ->andReturn(['success' => true, 'response' => 'Added Steve to whitelist', 'error' => null]);
-
-    $this->rconMock->shouldReceive('executeCommand')
-        ->with('lh setmember Steve traveler', 'rank', 'Steve', Mockery::any(), Mockery::any())
-        ->once()
-        ->andReturn(['success' => true, 'response' => 'Success: rank set', 'error' => null]);
-
-    $this->rconMock->shouldReceive('executeCommand')
-        ->with('lh removestaff Steve', 'staff', 'Steve', Mockery::any(), Mockery::any())
-        ->once()
-        ->andReturn(['success' => true, 'response' => 'Success: staff removed', 'error' => null]);
+        ->andReturn(['success' => true, 'response' => 'Success: Synced Steve', 'error' => null]);
 
     $result = SyncMinecraftAccount::run($account);
 
@@ -47,23 +38,44 @@ test('eligible user receives whitelist add, rank set, and staff removed', functi
         ->and($result['staff']['action'])->toBe('remove');
 });
 
-test('eligible staff user receives setstaff command', function () {
+test('eligible staff Officer receives lh syncuser with department name (no _crew suffix)', function () {
     $user = User::factory()->create([
         'membership_level' => MembershipLevel::Traveler,
+        'staff_rank' => StaffRank::Officer,
         'staff_department' => StaffDepartment::Engineer,
     ]);
-    $account = MinecraftAccount::factory()->for($user)->active()->create(['username' => 'StaffPlayer']);
+    $account = MinecraftAccount::factory()->for($user)->active()->create(['username' => 'OfficerPlayer']);
 
     $this->rconMock->shouldReceive('executeCommand')
-        ->with('lh setstaff StaffPlayer engineer', 'staff', 'StaffPlayer', Mockery::any(), Mockery::any())
+        ->with('lh syncuser OfficerPlayer traveler engineer', 'sync', 'OfficerPlayer', Mockery::any(), Mockery::any())
         ->once()
-        ->andReturn(['success' => true, 'response' => 'Success: staff set', 'error' => null]);
+        ->andReturn(['success' => true, 'response' => 'Success: Synced OfficerPlayer', 'error' => null]);
 
     $result = SyncMinecraftAccount::run($account);
 
     expect($result['eligible'])->toBeTrue()
         ->and($result['staff']['action'])->toBe('set')
         ->and($result['staff']['department'])->toBe('engineer');
+});
+
+test('eligible staff Crew Member receives lh syncuser with _crew suffix', function () {
+    $user = User::factory()->create([
+        'membership_level' => MembershipLevel::Traveler,
+        'staff_rank' => StaffRank::CrewMember,
+        'staff_department' => StaffDepartment::Engineer,
+    ]);
+    $account = MinecraftAccount::factory()->for($user)->active()->create(['username' => 'CrewPlayer']);
+
+    $this->rconMock->shouldReceive('executeCommand')
+        ->with('lh syncuser CrewPlayer traveler engineer_crew', 'sync', 'CrewPlayer', Mockery::any(), Mockery::any())
+        ->once()
+        ->andReturn(['success' => true, 'response' => 'Success: Synced CrewPlayer', 'error' => null]);
+
+    $result = SyncMinecraftAccount::run($account);
+
+    expect($result['eligible'])->toBeTrue()
+        ->and($result['staff']['action'])->toBe('set')
+        ->and($result['staff']['department'])->toBe('engineer_crew');
 });
 
 test('eligible user records rank sync and staff activity', function () {
@@ -120,7 +132,7 @@ test('user below membership threshold receives whitelist remove', function () {
         ->and($result['staff'])->toBeNull();
 });
 
-test('ineligible user does not receive rank or staff commands', function () {
+test('ineligible user does not receive lh syncuser command', function () {
     $user = User::factory()->create(['membership_level' => MembershipLevel::Drifter]);
     $account = MinecraftAccount::factory()->for($user)->active()->create(['username' => 'Drifter1']);
 
@@ -173,7 +185,7 @@ test('parent-disabled user receives whitelist remove', function () {
 
 // ─── Bedrock account ─────────────────────────────────────────────────────────
 
-test('bedrock account uses fwhitelist add command', function () {
+test('bedrock account uses lh syncuser with -bedrock suffix', function () {
     $user = User::factory()->create(['membership_level' => MembershipLevel::Traveler]);
     $account = MinecraftAccount::factory()->for($user)->active()->create([
         'username' => 'BedrockPlayer',
@@ -182,9 +194,9 @@ test('bedrock account uses fwhitelist add command', function () {
     ]);
 
     $this->rconMock->shouldReceive('executeCommand')
-        ->with(Mockery::pattern('/^fwhitelist add /'), 'whitelist', 'BedrockPlayer', Mockery::any(), Mockery::any())
+        ->with(Mockery::pattern('/^lh syncuser BedrockPlayer traveler none -bedrock /'), 'sync', 'BedrockPlayer', Mockery::any(), Mockery::any())
         ->once()
-        ->andReturn(['success' => true, 'response' => 'Added', 'error' => null]);
+        ->andReturn(['success' => true, 'response' => 'Success: Synced BedrockPlayer', 'error' => null]);
 
     $result = SyncMinecraftAccount::run($account);
 
