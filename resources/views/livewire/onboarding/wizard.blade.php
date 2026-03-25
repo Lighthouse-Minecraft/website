@@ -84,7 +84,7 @@ new class extends Component {
         @elseif ($step === 'waiting')
             <flux:card class="border border-zinc-700 bg-zinc-900/50">
                 <div class="flex items-start justify-between">
-                    <flux:heading size="lg">Account Setup in Progress</flux:heading>
+                    <flux:heading size="lg">You're on the Waitlist!</flux:heading>
                     <flux:button wire:click="dismiss" variant="ghost" size="sm" class="text-zinc-400 hover:text-zinc-200 -mt-1 -mr-1">
                         Dismiss
                     </flux:button>
@@ -92,9 +92,13 @@ new class extends Component {
 
                 <flux:separator variant="subtle" class="my-4" />
 
-                <flux:text>
-                    Your account is being reviewed by staff. You'll be promoted to Traveler once approved,
-                    which will unlock Minecraft and additional community features.
+                <flux:text class="mb-3">
+                    A staff member will review your account and promote you to Traveler.
+                    This usually happens within a day or two — hang tight!
+                </flux:text>
+                <flux:text variant="subtle" class="text-sm">
+                    Once you're a Traveler you'll be able to link your Minecraft account and join
+                    the server, plus unlock full community features. Check back soon.
                 </flux:text>
             </flux:card>
 
