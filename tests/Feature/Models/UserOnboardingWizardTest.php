@@ -136,13 +136,14 @@ test('currentOnboardingStep returns complete for a Traveler who has linked Minec
     expect($user->currentOnboardingStep())->toBe('complete');
 });
 
-test('currentOnboardingStep returns complete for a Traveler with parent_allows_minecraft false', function () {
+test('currentOnboardingStep returns minecraft for a Traveler with parent_allows_minecraft false', function () {
+    // Shows the disabled-Minecraft explanation card so the user can click Continue
     $user = User::factory()->create([
         'membership_level' => MembershipLevel::Traveler,
         'parent_allows_minecraft' => false,
     ]);
 
-    expect($user->currentOnboardingStep())->toBe('complete');
+    expect($user->currentOnboardingStep())->toBe('minecraft');
 });
 
 test('currentOnboardingStep returns complete for a Traveler who skipped Minecraft', function () {

@@ -30,6 +30,14 @@
                     <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>Dashboard</flux:navlist.item>
 
                     @auth
+                        @if(auth()->user()->shouldShowOnboardingWizard())
+                            <flux:navlist.item icon="sparkles" :href="route('dashboard')" :current="false" wire:navigate>
+                                Resume Account Setup
+                            </flux:navlist.item>
+                        @endif
+                    @endauth
+
+                    @auth
                         <flux:navlist.item
                             icon="inbox"
                             :href="route('tickets.index')"

@@ -571,11 +571,8 @@ class User extends Authenticatable // implements MustVerifyEmail
             return $discordProcessed ? 'waiting' : 'discord';
         }
 
-        // Traveler+: Minecraft step (auto-complete when parent has disabled Minecraft)
-        if (! $this->parent_allows_minecraft) {
-            return 'complete';
-        }
-
+        // Traveler+: Minecraft step. Shows explanation when parent has disabled Minecraft,
+        // just like Discord shows explanation when parent has disabled Discord.
         $minecraftProcessed = $this->minecraftAccounts()->active()->exists()
             || ActivityLog::where('subject_type', User::class)
                 ->where('subject_id', $this->id)
