@@ -28,6 +28,12 @@ test('shouldShowOnboardingWizard returns false for a Drifter', function () {
     expect($user->shouldShowOnboardingWizard())->toBeFalse();
 });
 
+test('shouldShowOnboardingWizard returns false for a Resident (already past onboarding)', function () {
+    $user = User::factory()->create(['membership_level' => MembershipLevel::Resident]);
+
+    expect($user->shouldShowOnboardingWizard())->toBeFalse();
+});
+
 test('shouldShowOnboardingWizard returns false when dismissed_at is set', function () {
     $user = User::factory()->create([
         'membership_level' => MembershipLevel::Stowaway,

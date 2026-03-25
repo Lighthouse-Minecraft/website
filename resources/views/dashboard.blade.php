@@ -21,14 +21,18 @@
             </div>
         @else
             @can('view-community-content')
+                @php $authUser = auth()->user(); @endphp
+
+                @if($authUser->shouldShowOnboardingWizard())
+                    <livewire:onboarding.wizard />
+                @else
                 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     <livewire:dashboard.announcements-widget />
 
                     @php
-                        $authUser = auth()->user();
                         $showDiscordLink = $authUser->can('link-discord') && $authUser->discordAccounts()->active()->doesntExist();
                         $showMinecraftLink = $authUser->can('link-minecraft-account') && $authUser->minecraftAccounts()->active()->doesntExist();
-                        $showSetupCard = ($showDiscordLink || $showMinecraftLink) && ! $authUser->shouldShowOnboardingWizard();
+                        $showSetupCard = $showDiscordLink || $showMinecraftLink;
                     @endphp
 
                     @if($showSetupCard)
@@ -85,6 +89,7 @@
                         </div>
                     </div>
                 @endcan
+                @endif
             @else
                 <livewire:dashboard.in-brig-card />
             @endcan

@@ -547,7 +547,7 @@ class User extends Authenticatable // implements MustVerifyEmail
      */
     public function shouldShowOnboardingWizard(): bool
     {
-        return $this->isAtLeastLevel(MembershipLevel::Stowaway)
+        return ($this->isLevel(MembershipLevel::Stowaway) || $this->isLevel(MembershipLevel::Traveler))
             && $this->onboarding_wizard_dismissed_at === null
             && $this->onboarding_wizard_completed_at === null;
     }
