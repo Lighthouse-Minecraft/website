@@ -27,18 +27,29 @@ When a staff member is assigned to or removed from a position, the system syncs 
 
 This lets the Minecraft server display staff designations and grant any department-specific in-game permissions.
 
+## Staff Rank Differentiation
+
+Staff in-game groups are assigned based on both department and rank:
+
+- **Officers** receive their department name directly (e.g., `engineer`)
+- **Crew Members and Jr Crew** receive their department name with a `_crew` suffix (e.g., `engineer_crew`)
+
+This distinction exists on the Minecraft server's permission system (LuckPerms) to allow different capability levels between senior and junior staff within the same department.
+
 ## RCON Commands
 
 The website communicates with the Minecraft server using **RCON** (Remote Console). Commands are dispatched as background jobs so they don't block the website. Key commands include:
 
-- Whitelist add/remove (for account linking and brig actions)
-- Rank set (for membership level changes)
-- Staff set/remove (for staff position changes)
+- **`lh syncuser <username> <rank> <staffPosition>`** -- single unified command that whitelists a player, sets their member rank, and applies their staff group in one call
+- **Whitelist remove** -- for ineligible accounts (Brig, parent-disabled, below Traveler)
+- **`lh syncstart`** -- run once before a bulk repair to back up and clear the whitelist
 - Verification code processing (for the linking flow)
 
 ## The Command Log
 
 All RCON commands sent to the Minecraft server are logged. Officers and Engineering department staff can view these logs in the **Admin Control Panel** under the Logs category. This is useful for debugging if a rank sync or whitelist change didn't seem to go through.
+
+The **MC Command Log** shows each command alongside its status (success, failed, or timeout) and the actual response text returned by the server. For `lh` plugin commands, a successful response will show `Success:` followed by a confirmation message. A failed entry will show the raw error or empty response that the plugin returned -- this is the first place to look when a rank or staff sync doesn't behave as expected.
 
 ## Important Notes
 

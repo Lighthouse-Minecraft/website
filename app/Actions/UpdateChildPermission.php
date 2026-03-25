@@ -75,16 +75,11 @@ class UpdateChildPermission
         if (! $enabled) {
             foreach ($child->minecraftAccounts()->whereIn('status', [MinecraftAccountStatus::Active, MinecraftAccountStatus::Verifying])->get() as $account) {
                 try {
-                    SendMinecraftCommand::run(
-                        $account->whitelistRemoveCommand(),
-                        'whitelist',
-                        $account->username,
-                        $parent
-                    );
                     $account->status = MinecraftAccountStatus::ParentDisabled;
                     $account->save();
+                    SyncMinecraftAccount::run($account);
                 } catch (\Exception $e) {
-                    Log::warning('Failed to whitelist-remove MC account for parent disable', [
+                    Log::warning('Failed to disable MC account for parent disable', [
                         'username' => $account->username,
                         'error' => $e->getMessage(),
                     ]);
@@ -93,29 +88,15 @@ class UpdateChildPermission
         } else {
             foreach ($child->minecraftAccounts()->where('status', MinecraftAccountStatus::ParentDisabled)->get() as $account) {
                 try {
-                    SendMinecraftCommand::run(
-                        $account->whitelistAddCommand(),
-                        'whitelist',
-                        $account->username,
-                        $parent
-                    );
                     $account->status = MinecraftAccountStatus::Active;
                     $account->save();
+                    SyncMinecraftAccount::run($account);
                 } catch (\Exception $e) {
-                    Log::warning('Failed to whitelist-add MC account for parent enable', [
+                    Log::warning('Failed to enable MC account for parent enable', [
                         'username' => $account->username,
                         'error' => $e->getMessage(),
                     ]);
                 }
-            }
-
-            try {
-                SyncMinecraftRanks::run($child);
-            } catch (\Exception $e) {
-                Log::error('Failed to sync MC ranks after parent enable', [
-                    'user_id' => $child->id,
-                    'error' => $e->getMessage(),
-                ]);
             }
         }
 

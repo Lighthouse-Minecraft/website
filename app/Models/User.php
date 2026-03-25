@@ -386,6 +386,17 @@ class User extends Authenticatable // implements MustVerifyEmail
         return $this->staff_rank === StaffRank::JrCrew;
     }
 
+    public function minecraftStaffPosition(): string
+    {
+        if ($this->staff_department === null || $this->staff_rank === null || $this->staff_rank === StaffRank::None) {
+            return 'none';
+        }
+
+        return $this->isAtLeastRank(StaffRank::Officer)
+            ? $this->staff_department->value
+            : $this->staff_department->value.'_crew';
+    }
+
     public function staffPosition(): HasOne
     {
         return $this->hasOne(StaffPosition::class);

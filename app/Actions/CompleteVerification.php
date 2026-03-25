@@ -168,44 +168,13 @@ class CompleteVerification
                 $this->completedAccount = $account;
             });
 
-            // Sync permissions OUTSIDE the transaction so the jobs see committed data.
+            // Sync permissions OUTSIDE the transaction so the service sees committed data.
             // Only sync this specific account — not all of the user's accounts.
             if ($this->completedAccount) {
                 $user = $verification->user;
                 $account = $this->completedAccount;
 
-                $rank = $user->membership_level->minecraftRank();
-                if ($rank !== null) {
-                    SendMinecraftCommand::dispatch(
-                        "lh setmember {$account->username} {$rank}",
-                        'rank',
-                        $account->username,
-                        $user,
-                        ['action' => 'sync_rank', 'membership_level' => $user->membership_level->value]
-                    );
-
-                    RecordActivity::handle(
-                        $user,
-                        'minecraft_rank_synced',
-                        "Synced Minecraft rank to {$rank} for {$account->username}"
-                    );
-                }
-
-                if ($user->staff_department !== null) {
-                    SendMinecraftCommand::dispatch(
-                        "lh setstaff {$account->username} {$user->staff_department->value}",
-                        'rank',
-                        $account->username,
-                        $user,
-                        ['action' => 'set_staff_position', 'department' => $user->staff_department->value]
-                    );
-
-                    RecordActivity::handle(
-                        $user,
-                        'minecraft_staff_position_set',
-                        "Set Minecraft staff position to {$user->staff_department->label()} for {$account->username}"
-                    );
-                }
+                SyncMinecraftAccount::run($account);
 
                 // Grant new-player reward (first verified account only).
                 // Wrapped in try/catch so reward failures never block a successful verification.
