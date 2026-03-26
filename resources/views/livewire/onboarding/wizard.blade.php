@@ -130,7 +130,7 @@ new class extends Component
 
                 <flux:text class="mb-3">
                     A staff member will review your account and promote you to Traveler.
-                    This usually happens within a day or two — hang tight!
+                    This usually happens within a few hours — 24 hours at most. Hang tight!
                 </flux:text>
                 <flux:text variant="subtle" class="text-sm mb-4">
                     Once you're a Traveler you'll be able to link your Minecraft account and join
