@@ -132,9 +132,14 @@ new class extends Component
                     A staff member will review your account and promote you to Traveler.
                     This usually happens within a day or two — hang tight!
                 </flux:text>
-                <flux:text variant="subtle" class="text-sm">
+                <flux:text variant="subtle" class="text-sm mb-4">
                     Once you're a Traveler you'll be able to link your Minecraft account and join
                     the server, plus unlock full community features. Check back soon.
+                </flux:text>
+                <flux:text variant="subtle" class="text-sm">
+                    In the meantime, check out the
+                    <flux:link href="{{ route('library.books.show', ['book' => 'user-handbook']) }}" wire:navigate>User Handbook</flux:link>
+                    to learn about everything Lighthouse has to offer.
                 </flux:text>
             </flux:card>
 
