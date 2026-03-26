@@ -109,3 +109,20 @@ it('filters invisible books from index for guests', function () {
         ->assertSee('Test Book')
         ->assertDontSee('Staff Book');
 });
+
+it('displays last_updated date on a page that has it', function () {
+    file_put_contents(
+        $this->docsPath.'/books/test-book/01-part/01-chapter/04-dated-page.md',
+        "---\ntitle: \"Dated Page\"\nvisibility: public\norder: 4\nlast_updated: \"2026-03-25\"\n---\nContent with a date."
+    );
+
+    $this->get('/library/books/test-book/part/chapter/dated-page')
+        ->assertOk()
+        ->assertSee('Last updated: March 25, 2026');
+});
+
+it('does not show last_updated line on a page without it', function () {
+    $this->get('/library/books/test-book/part/chapter/public-page')
+        ->assertOk()
+        ->assertDontSee('Last updated:');
+});
