@@ -161,7 +161,7 @@ test('currentOnboardingStep returns complete for a Traveler who skipped Minecraf
     expect($user->currentOnboardingStep())->toBe('complete');
 });
 
-test('currentOnwardingStep returns complete for a Traveler who continued past disabled Minecraft', function () {
+test('currentOnboardingStep returns complete for a Traveler who continued past disabled Minecraft', function () {
     $user = User::factory()->create(['membership_level' => MembershipLevel::Traveler]);
 
     ActivityLog::create([
