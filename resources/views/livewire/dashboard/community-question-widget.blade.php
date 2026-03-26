@@ -163,7 +163,9 @@ new class extends Component {
                             </flux:file-item>
                         @endif
 
-                        <flux:button type="submit" variant="primary" size="sm">Submit</flux:button>
+                        <div class="flex justify-end">
+                            <flux:button type="submit" variant="primary" size="sm">Submit</flux:button>
+                        </div>
                     </form>
                 @elseif($bonusQuestion)
                     {{-- Bonus archived question --}}
@@ -196,7 +198,9 @@ new class extends Component {
                             </flux:file-item>
                         @endif
 
-                        <flux:button type="submit" variant="primary" size="sm">Submit</flux:button>
+                        <div class="flex justify-end">
+                            <flux:button type="submit" variant="primary" size="sm">Submit</flux:button>
+                        </div>
                     </form>
                 @else
                     {{-- Already answered everything --}}

@@ -77,6 +77,14 @@ For tasks that don't warrant a PRD (bug fixes, small tweaks, single-file changes
 - Implement, test, commit.
 - No PRD or issue needed.
 
+### Documentation Skills
+
+When `/auto-process-prd` completes all implementation issues, it runs these documentation skills (in order) before opening a PR:
+
+1. `/document-feature <feature-name>` — technical reference doc in `docs/features/`
+2. `/write-user-docs <feature-name>` — user handbook pages (run when the PRD has user-facing aspects)
+3. `/write-staff-docs <feature-name>` — staff handbook pages (run when the PRD has staff-facing aspects)
+
 ---
 
 ## Key Conventions (Quick Reference)
