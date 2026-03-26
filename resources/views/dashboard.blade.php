@@ -69,6 +69,22 @@
                                 @endif
                             </div>
                         </flux:card>
+                    @else
+                        <flux:card>
+                            <flux:heading size="sm">My Account</flux:heading>
+                            <flux:separator variant="subtle" class="my-3" />
+                            <div class="flex flex-col gap-2">
+                                <flux:button href="{{ route('settings.discord-account') }}" size="xs" variant="ghost" class="justify-start">
+                                    Discord Account
+                                </flux:button>
+                                <flux:button href="{{ route('settings.minecraft-accounts') }}" size="xs" variant="ghost" class="justify-start">
+                                    Minecraft Accounts
+                                </flux:button>
+                                <flux:button href="{{ route('settings.notifications') }}" size="xs" variant="ghost" class="justify-start">
+                                    Notification Preferences
+                                </flux:button>
+                            </div>
+                        </flux:card>
                     @endif
 
                     <flux:card>
