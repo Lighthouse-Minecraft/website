@@ -104,6 +104,7 @@ new class extends Component
                     </flux:text>
                     <flux:text variant="subtle" class="text-sm mb-4">
                         You'll be redirected to your account settings to complete the link.
+                        Once connected, <strong>return to the dashboard</strong> to continue your setup.
                     </flux:text>
 
                     <div class="flex items-center justify-between">
@@ -172,6 +173,7 @@ new class extends Component
                     </flux:text>
                     <flux:text variant="subtle" class="text-sm mb-4">
                         You'll be redirected to your account settings to complete the link.
+                        Once connected, <strong>return to the dashboard</strong> to continue your setup.
                     </flux:text>
 
                     <div class="flex items-center justify-between">
