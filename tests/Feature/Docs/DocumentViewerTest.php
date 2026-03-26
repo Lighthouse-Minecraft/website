@@ -126,3 +126,22 @@ it('does not show last_updated line on a page without it', function () {
         ->assertOk()
         ->assertDontSee('Last updated:');
 });
+
+it('policy manual book appears on library books index', function () {
+    mkdir($this->docsPath.'/books/policy-manual/01-community-standards', 0755, true);
+    file_put_contents($this->docsPath.'/books/policy-manual/_index.md', "---\ntitle: \"Policy Manual\"\nvisibility: public\norder: 3\nsummary: \"Official community policies.\"\n---\n");
+    file_put_contents($this->docsPath.'/books/policy-manual/01-community-standards/_index.md', "---\ntitle: \"Community Standards\"\nvisibility: public\norder: 1\n---\n");
+
+    $this->get('/library/books')
+        ->assertOk()
+        ->assertSee('Policy Manual');
+});
+
+it('policy manual part index is accessible without authentication', function () {
+    mkdir($this->docsPath.'/books/policy-manual/01-community-standards', 0755, true);
+    file_put_contents($this->docsPath.'/books/policy-manual/_index.md', "---\ntitle: \"Policy Manual\"\nvisibility: public\norder: 3\nsummary: \"Official community policies.\"\n---\n");
+    file_put_contents($this->docsPath.'/books/policy-manual/01-community-standards/_index.md', "---\ntitle: \"Community Standards\"\nvisibility: public\norder: 1\nsummary: \"Behavioral standards for all members.\"\n---\n");
+
+    $this->get('/library/books/policy-manual/community-standards')
+        ->assertOk();
+});
