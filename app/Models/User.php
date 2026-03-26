@@ -61,6 +61,8 @@ class User extends Authenticatable // implements MustVerifyEmail
         'is_board_member',
         'registration_question_text',
         'registration_answer',
+        'onboarding_wizard_dismissed_at',
+        'onboarding_wizard_completed_at',
     ];
 
     /**
@@ -108,6 +110,8 @@ class User extends Authenticatable // implements MustVerifyEmail
             'parent_allows_discord' => 'boolean',
             'is_board_member' => 'boolean',
             'admin_granted_at' => 'datetime',
+            'onboarding_wizard_dismissed_at' => 'datetime',
+            'onboarding_wizard_completed_at' => 'datetime',
         ];
     }
 
@@ -534,6 +538,48 @@ class User extends Authenticatable // implements MustVerifyEmail
     public function hasDiscordLinked(): bool
     {
         return $this->discordAccounts()->active()->exists();
+    }
+
+    /**
+     * Whether the onboarding wizard should be shown to this user.
+     *
+     * True when the user is Stowaway or above and has not yet dismissed or completed the wizard.
+     */
+    public function shouldShowOnboardingWizard(): bool
+    {
+        return ($this->isLevel(MembershipLevel::Stowaway) || $this->isLevel(MembershipLevel::Traveler))
+            && $this->onboarding_wizard_dismissed_at === null
+            && $this->onboarding_wizard_completed_at === null;
+    }
+
+    /**
+     * The current onboarding step for this user.
+     *
+     * Returns one of: 'discord', 'waiting', 'minecraft', 'complete'.
+     * Steps are derived from current user state and activity log entries — no separate step column.
+     */
+    public function currentOnboardingStep(): string
+    {
+        // Discord and waiting steps apply only to Stowaways (not yet Traveler)
+        if ($this->isLevel(MembershipLevel::Stowaway)) {
+            $discordProcessed = $this->discordAccounts()->active()->exists()
+                || ActivityLog::where('subject_type', User::class)
+                    ->where('subject_id', $this->id)
+                    ->whereIn('action', ['onboarding_discord_skipped', 'onboarding_discord_disabled'])
+                    ->exists();
+
+            return $discordProcessed ? 'waiting' : 'discord';
+        }
+
+        // Traveler+: Minecraft step. Shows explanation when parent has disabled Minecraft,
+        // just like Discord shows explanation when parent has disabled Discord.
+        $minecraftProcessed = $this->minecraftAccounts()->active()->exists()
+            || ActivityLog::where('subject_type', User::class)
+                ->where('subject_id', $this->id)
+                ->whereIn('action', ['onboarding_minecraft_skipped', 'onboarding_minecraft_disabled'])
+                ->exists();
+
+        return $minecraftProcessed ? 'complete' : 'minecraft';
     }
 
     public function canSendPushover(): bool

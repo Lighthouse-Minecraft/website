@@ -15,3 +15,6 @@ chat:
 issue_enrichment:
   auto_enrich:
     enabled: false
+  labeling:
+    auto_apply_labels: false
+    labeling_instructions: []

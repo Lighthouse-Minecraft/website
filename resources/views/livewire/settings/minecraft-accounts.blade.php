@@ -554,44 +554,41 @@ new class extends Component {
             <flux:heading size="lg" class="mb-4">Active Verification Code</flux:heading>
 
             <div class="space-y-4">
+                @php
+                    $serverName = config('lighthouse.minecraft.server_name');
+                    $serverHost = config('lighthouse.minecraft.server_host');
+                    $serverPort = $accountType === 'bedrock'
+                        ? config('lighthouse.minecraft.server_port_bedrock')
+                        : config('lighthouse.minecraft.server_port_java');
+                @endphp
+
+                {{-- Step 1: Server connection info (shown prominently first) --}}
+                <div class="p-3 bg-blue-100 dark:bg-blue-900 rounded-lg border border-blue-300 dark:border-blue-700">
+                    <flux:text class="font-semibold text-sm mb-1">Step 1 — Join the server</flux:text>
+                    <flux:text class="text-sm font-medium">{{ $serverName }}</flux:text>
+                    <code class="block mt-1 px-2 py-1 bg-zinc-200 dark:bg-zinc-700 rounded text-sm">
+                        {{ $serverHost }}:{{ $serverPort }}
+                    </code>
+                </div>
+
+                {{-- Step 2: Verification code --}}
                 <div>
-                    <flux:text class="text-sm text-zinc-600 dark:text-zinc-400 mb-2">Your verification code:</flux:text>
+                    <flux:text class="font-semibold text-sm mb-1">Step 2 — Run this command in chat</flux:text>
                     <div class="font-mono text-3xl font-bold text-blue-600 dark:text-blue-400 tracking-wider">
-                        {{ $verificationCode }}
+                        /verify {{ $verificationCode }}
                     </div>
+                    <flux:text class="text-sm mt-2">
+                        @php
+                            $tz = auth()->user()->timezone ?? 'UTC';
+                            $expiresAtInTz = $expiresAt->copy()->setTimezone($tz);
+                        @endphp
+                        Code expires {{ $expiresAtInTz->diffForHumans() }} ({{ $expiresAtInTz->format('g:i A T') }})
+                    </flux:text>
                 </div>
 
-                <flux:text class="text-sm">
-                    @php
-                        $tz = auth()->user()->timezone ?? 'UTC';
-                        $expiresAtInTz = $expiresAt->copy()->setTimezone($tz);
-                    @endphp
-                    Expires {{ $expiresAtInTz->diffForHumans() }} ({{ $expiresAtInTz->format('g:i A T') }})
+                <flux:text class="text-sm text-zinc-600 dark:text-zinc-400">
+                    This page will update automatically once verification is complete.
                 </flux:text>
-
-                <flux:separator />
-
-                <div class="space-y-2">
-                    <flux:text class="font-semibold">Instructions:</flux:text>
-                    @php
-                        $serverName = config('lighthouse.minecraft.server_name');
-                        $serverHost = config('lighthouse.minecraft.server_host');
-                        $serverPort = $accountType === 'bedrock'
-                            ? config('lighthouse.minecraft.server_port_bedrock')
-                            : config('lighthouse.minecraft.server_port_java');
-                    @endphp
-                    <ol class="flex flex-col gap-1 list-decimal list-inside text-sm text-zinc-700 dark:text-zinc-300">
-                        <li>
-                            Join the Minecraft server: <strong>{{ $serverName }}</strong>
-                            <br>
-                            <code class="px-2 py-1 bg-zinc-200 dark:bg-zinc-700 rounded">
-                                {{ $serverHost }}:{{ $serverPort }}
-                            </code>
-                        </li>
-                        <li>Type in chat: <code class="px-2 py-1 bg-zinc-200 dark:bg-zinc-700 rounded">/verify {{ $verificationCode }}</code></li>
-                        <li>Wait for confirmation (this page will update automatically)</li>
-                    </ol>
-                </div>
 
                 <div class="flex justify-between items-center pt-2">
                     @if(app()->isLocal())
