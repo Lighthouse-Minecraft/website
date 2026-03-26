@@ -13,6 +13,7 @@ class PageDTO
         public string $filePath,
         public string $body,
         public string $url,
+        public ?string $lastUpdated = null,
     ) {}
 
     public function renderedHtml(): string

@@ -1,4 +1,4 @@
-@props(['title', 'html', 'breadcrumbs' => [], 'navigation' => [], 'prev' => null, 'next' => null, 'currentUrl' => '', 'editPath' => null, 'bookTitle' => ''])
+@props(['title', 'html', 'breadcrumbs' => [], 'navigation' => [], 'prev' => null, 'next' => null, 'currentUrl' => '', 'editPath' => null, 'bookTitle' => '', 'lastUpdated' => null])
 
 @if($bookTitle)
 <div class="mb-6 flex items-center justify-between">
@@ -43,6 +43,9 @@
                     @endcan
                 @endif
             </div>
+            @if($lastUpdated)
+                <flux:text variant="subtle" class="text-sm mt-1">Last updated: {{ \Carbon\Carbon::parse($lastUpdated)->format('F j, Y') }}</flux:text>
+            @endif
             <flux:separator class="my-4" />
 
             {{-- Rendered markdown --}}
