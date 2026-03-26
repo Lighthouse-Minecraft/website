@@ -21,59 +21,55 @@
             </div>
         @else
             @can('view-community-content')
+                @php $authUser = auth()->user(); @endphp
+
+                @if($authUser->shouldShowOnboardingWizard())
+                    <livewire:onboarding.wizard />
+                @else
                 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     <livewire:dashboard.announcements-widget />
 
-                    <flux:card>
-                        <flux:heading size="md">Account Linking</flux:heading>
-                        <flux:separator variant="subtle" class="my-2" />
+                    @php
+                        $showDiscordLink = $authUser->can('link-discord') && $authUser->discordAccounts()->active()->doesntExist();
+                        $showMinecraftLink = $authUser->can('link-minecraft-account') && $authUser->minecraftAccounts()->active()->doesntExist();
+                        $showSetupCard = $showDiscordLink || $showMinecraftLink;
+                    @endphp
 
-                        @canany(['link-minecraft-account', 'link-discord'])
-                            <div class="flex flex-col gap-3 mt-2">
-                                @can('link-minecraft-account')
-                                    <div class="flex items-center justify-between">
-                                        <div>
-                                            <flux:text class="font-medium">Minecraft</flux:text>
-                                            <flux:text variant="subtle" class="text-sm">
-                                                @php $mcCount = auth()->user()->minecraftAccounts()->countingTowardLimit()->count(); @endphp
-                                                @if($mcCount > 0)
-                                                    {{ $mcCount }} account(s) linked
-                                                @else
-                                                    Link your account to join the server
-                                                @endif
-                                            </flux:text>
-                                        </div>
-                                        <flux:button href="{{ route('settings.minecraft-accounts') }}" size="xs" variant="primary">
-                                            Manage
-                                        </flux:button>
-                                    </div>
-                                @endcan
+                    @if($showSetupCard)
+                        <flux:card class="border border-indigo-500/40 bg-indigo-950/20">
+                            <flux:heading size="md" class="text-indigo-300">Complete Your Setup</flux:heading>
+                            <flux:text variant="subtle" class="text-sm mt-1">
+                                Connect your accounts to get the most out of Lighthouse.
+                            </flux:text>
+                            <flux:separator variant="subtle" class="my-3" />
 
-                                @can('link-discord')
+                            <div class="flex flex-col gap-3">
+                                @if($showDiscordLink)
                                     <div class="flex items-center justify-between">
                                         <div>
                                             <flux:text class="font-medium">Discord</flux:text>
-                                            <flux:text variant="subtle" class="text-sm">
-                                                @php $discordCount = auth()->user()->discordAccounts()->count(); @endphp
-                                                @if($discordCount > 0)
-                                                    {{ $discordCount }} account(s) linked
-                                                @else
-                                                    Link your account for role sync and DM notifications
-                                                @endif
-                                            </flux:text>
+                                            <flux:text variant="subtle" class="text-sm">Get server roles and DM notifications</flux:text>
                                         </div>
-                                        <flux:button href="{{ route('settings.discord-account') }}" size="xs" variant="primary">
-                                            Manage
+                                        <flux:button href="{{ route('settings.discord-account') }}" size="sm" variant="primary">
+                                            Link Discord
                                         </flux:button>
                                     </div>
-                                @endcan
+                                @endif
+
+                                @if($showMinecraftLink)
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <flux:text class="font-medium">Minecraft</flux:text>
+                                            <flux:text variant="subtle" class="text-sm">Link your account to join the server</flux:text>
+                                        </div>
+                                        <flux:button href="{{ route('settings.minecraft-accounts') }}" size="sm" variant="primary">
+                                            Link Minecraft Account
+                                        </flux:button>
+                                    </div>
+                                @endif
                             </div>
-                        @else
-                            <flux:text variant="subtle" class="mt-2">
-                                Account linking is not currently available for your account.
-                            </flux:text>
-                        @endcanany
-                    </flux:card>
+                        </flux:card>
+                    @endif
 
                     <flux:card>
                         <flux:heading>Donations</flux:heading>
@@ -93,6 +89,7 @@
                         </div>
                     </div>
                 @endcan
+                @endif
             @else
                 <livewire:dashboard.in-brig-card />
             @endcan
