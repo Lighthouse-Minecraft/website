@@ -8,13 +8,13 @@ summary: 'How policy pages are edited and what to do after making changes.'
 
 ## How Policy Content Is Stored
 
-Policy Manual pages are markdown files stored in the codebase at:
+Policy Manual pages are Markdown files stored in the codebase at:
 
 ```text
 resources/library/books/policy-manual/
 ```
 
-Each page has a YAML front matter block at the top followed by the page content in markdown. There is no web-based editor for production — changes are made by editing the files directly, committing to git, and deploying.
+Each page has a YAML front matter block at the top followed by the page content in Markdown. There is no web-based editor for production — changes are made by editing the files directly, committing to git, and deploying.
 
 ## Who Makes Updates
 
@@ -35,7 +35,7 @@ Policy content is maintained by Command. If you believe a policy page needs to b
    | Staff Requirements | `resources/library/books/policy-manual/04-staff-and-operations/01-staff-requirements/01-staff-requirements.md` |
    | Operational Policies | `resources/library/books/policy-manual/04-staff-and-operations/02-operational-policies/01-operational-policies.md` |
 
-2. **Edit the content** as needed. Policy pages use standard markdown formatting.
+2. **Edit the content** as needed. Policy pages use standard Markdown formatting.
 
 3. **Update the `last_updated` field** in the front matter. This is the date shown to readers as "Last updated: [date]". It must be set manually whenever the content changes — the system does not update it automatically.
 

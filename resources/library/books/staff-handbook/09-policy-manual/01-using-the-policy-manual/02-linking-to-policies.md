@@ -64,5 +64,5 @@ The slugs are derived from the directory names with numeric prefixes stripped. H
 
 ## The Policy Manual Is Authoritative
 
-If there is a conflict between what a staff member says verbally and what is written in the Policy Manual, the manual is the authoritative source. If you believe a policy page is out of date or inaccurate, raise it with Command rather than telling members something different than what is written.
+If there is a conflict between what a staff member says verbally and what is written in the Policy Manual, the manual is the authoritative source. If you believe a policy page is out of date or inaccurate, raise it with Command rather than telling members something different from what is written.
 

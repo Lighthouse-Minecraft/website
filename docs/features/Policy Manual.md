@@ -319,7 +319,7 @@ resources/library/books/policy-manual/
 
 ## 18. Known Issues & Improvement Opportunities
 
-- **No test for `last_updated` field:** The `PageDTO::$lastUpdated` field and its display in `reader.blade.php` have no automated test coverage. A test in `PageDTOTest.php` asserting that `last_updated` from front-matter is passed through correctly, and a Livewire test asserting the date string renders on the page, would improve confidence.
+- **`last_updated` field test coverage:** The rendering and omission of the "Last updated" line is tested in `DocumentViewerTest.php`. Consider adding a unit test in `PageDTOTest.php` to verify front-matter parsing if more granular coverage is desired.
 - **Date format is hardcoded:** The "F j, Y" Carbon format is inline in `reader.blade.php`. If the project adopts a configurable date format, this should be extracted to a helper or config key.
 - **No validation of `last_updated` format:** The field accepts any string; invalid dates (e.g., `last_updated: 'soon'`) will cause a Carbon parse exception in the view. Consider adding a try/catch around the Carbon parse or validating the field in `buildPage()`.
 - **Policy Manual content is not version-controlled via CMS:** The policy pages are static markdown files. Any policy updates require a code deploy. If policies need frequent updates by non-developer staff, consider integrating with the library editor (currently local-env-only) or a CMS workflow.
