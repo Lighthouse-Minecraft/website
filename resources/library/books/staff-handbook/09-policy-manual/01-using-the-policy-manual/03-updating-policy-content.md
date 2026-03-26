@@ -10,7 +10,7 @@ summary: 'How policy pages are edited and what to do after making changes.'
 
 Policy Manual pages are markdown files stored in the codebase at:
 
-```
+```text
 resources/library/books/policy-manual/
 ```
 

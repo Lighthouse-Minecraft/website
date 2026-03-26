@@ -523,7 +523,11 @@ class DocumentationService
             filePath: $filePath,
             body: $parsed['body'],
             url: route('library.books.page', [$bookSlug, $partSlug, $chapterSlug, $slug]),
-            lastUpdated: $meta['last_updated'] ?? null,
+            lastUpdated: isset($meta['last_updated'])
+                ? ($meta['last_updated'] instanceof \DateTimeInterface
+                    ? $meta['last_updated']->format('Y-m-d')
+                    : (string) $meta['last_updated'])
+                : null,
         );
     }
 
@@ -573,7 +577,11 @@ class DocumentationService
             filePath: $filePath,
             body: $parsed['body'],
             url: route('library.guides.page', [$guideSlug, $slug]),
-            lastUpdated: $meta['last_updated'] ?? null,
+            lastUpdated: isset($meta['last_updated'])
+                ? ($meta['last_updated'] instanceof \DateTimeInterface
+                    ? $meta['last_updated']->format('Y-m-d')
+                    : (string) $meta['last_updated'])
+                : null,
         );
     }
 

@@ -14,7 +14,7 @@ When you answer a member's question by referencing a community policy, sharing a
 
 Policy Manual pages follow this URL pattern:
 
-```
+```text
 /library/books/policy-manual/{part}/{chapter}/{page}
 ```
 

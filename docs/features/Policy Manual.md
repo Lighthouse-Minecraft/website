@@ -256,7 +256,9 @@ No new configuration keys were added. The library base path is registered in a s
 
 ### `last_updated` field coverage
 
-The `last_updated` / `lastUpdated` field is not explicitly tested in the current test suite. Adding coverage is recommended (see Section 18).
+`last_updated` rendering behavior is covered in `tests/Feature/Docs/DocumentViewerTest.php`, including:
+- rendering the "Last updated:" line when metadata is present
+- omitting the line when `last_updated` is absent
 
 ### Policy Manual content
 
