@@ -2,6 +2,7 @@
 title: 'Staff Requirements'
 visibility: public
 order: 1
+last_updated: '2026-03-26'
 summary: 'The qualifications and standards expected of Lighthouse staff members.'
 ---
 

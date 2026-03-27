@@ -2,6 +2,7 @@
 title: 'Staff Reports'
 visibility: public
 order: 1
+last_updated: '2026-03-26'
 summary: "Staff Reports are records made on a member's account by staff. They can acknowledge commendable behavior or document disciplinary incidents."
 ---
 

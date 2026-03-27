@@ -2,6 +2,7 @@
 title: 'The Brig'
 visibility: public
 order: 2
+last_updated: '2026-03-26'
 summary: 'How the Lighthouse discipline system works and what members can expect.'
 ---
 

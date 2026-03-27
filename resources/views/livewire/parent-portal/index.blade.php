@@ -178,6 +178,13 @@ new class extends Component {
 
         $this->authorize('view-parent-portal');
 
+        $parent = $this->getTargetUser();
+        if (! $parent->isAtLeastLevel(\App\Enums\MembershipLevel::Traveler)) {
+            Flux::toast('You must be a Traveler to add child accounts.', 'Not Eligible', variant: 'danger');
+
+            return;
+        }
+
         $this->validate([
             'newChildName' => ['required', 'string', 'max:32'],
             'newChildEmail' => ['required', 'email', 'max:255', 'unique:users,email'],
