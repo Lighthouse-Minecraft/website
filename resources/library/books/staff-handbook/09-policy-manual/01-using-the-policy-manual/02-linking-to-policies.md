@@ -39,7 +39,8 @@ The slugs are derived from the directory names with numeric prefixes stripped. H
 | Page | URL |
 |------|-----|
 | Moderation Practices | `/library/books/policy-manual/moderation/moderation-practices/moderation-practices` |
-| Discipline System | `/library/books/policy-manual/moderation/discipline-system/discipline-system` |
+| Staff Reports | `/library/books/policy-manual/moderation/discipline-system/staff-reports` |
+| The Brig | `/library/books/policy-manual/moderation/discipline-system/the-brig` |
 
 ### Staff & Operations
 
@@ -50,7 +51,7 @@ The slugs are derived from the directory names with numeric prefixes stripped. H
 
 ## Useful Scenarios
 
-**Member asks why they were put in the Brig** — Link to Discipline System. It explains what behaviors trigger Brig placement and how appeals work.
+**Member asks why they were put in the Brig** — Link to The Brig. It explains what behaviors trigger Brig placement and how appeals work.
 
 **Member asks how to report another user** — Link to Moderation Practices. It covers the report process, what information to include, and what to expect.
 
