@@ -2,7 +2,6 @@
 title: 'Operational Policies'
 visibility: public
 order: 1
-last_updated: '2026-03-26'
 summary: 'The policies governing how Lighthouse is run as a community.'
 ---
 
@@ -15,10 +14,10 @@ Lighthouse is led by the Command department, which holds overall responsibility 
 **How decisions are made:**
 
 - **Day-to-day decisions** within a department (routine moderation, event planning, server maintenance) are made by the relevant department head and their team.
-- **Significant decisions** that affect the whole community (policy changes, major feature launches, disciplinary actions involving removal from the community) are made by Command.
+- **Significant decisions** that affect the whole community (policy changes, major feature launches, disciplinary actions involving removal from the community) are made by Command staff after discussion during the regular staff meeting.
 - **Community-wide changes** that affect all members are announced through official channels before or at the time they take effect.
 
-Lighthouse does not operate as a democratic organization. Command has final authority over community decisions. However, member feedback is welcomed and considered when policies are reviewed.
+Lighthouse does not operate as a democratic organization. Each Officer gets a vote in decisions, but ultimately Command has final authority over community decisions. However, member feedback is welcomed and considered when policies are reviewed.
 
 ## How Community Policies Are Created and Updated
 
@@ -30,7 +29,7 @@ Community policies — including those in this manual — are created and mainta
 4. **Publication.** The finalized policy is published in this manual and, where appropriate, announced to the community.
 5. **Maintenance.** Policies are reviewed periodically and updated when circumstances change. Each page in this manual includes a "Last updated" date so readers know when the content was last revised.
 
-Members who believe a policy is outdated, unclear, or unfair may raise this through a [Support Ticket](/tickets/create).
+Members who believe a policy is outdated, unclear, or unfair may raise this through the **Report Documentation Issue** link at the bottom of each policy page.
 
 ## Financial Policies
 
@@ -40,7 +39,7 @@ Lighthouse accepts voluntary donations from members to cover server hosting and 
 - Donations are processed through Stripe. Lighthouse does not retain full payment card information.
 - Funds collected are used to cover operational costs (server hosting, software, domain registration).
 - Donation records are maintained by the lead administrator.
-- The community does not currently publish detailed financial statements, but operates with the understanding that funds are used solely for community operations.
+- The community does not currently publish detailed financial statements, only high level summaries on the Support Lighthouse page. Detailed records are shared with the entire staff team and the Lighthouse Board of Directors for audibility and transparency.
 
 ## Outreach and Growth
 
@@ -56,10 +55,14 @@ Lighthouse grows through relationship and reputation. Our approach to outreach:
 When significant changes are made that affect all members — policy updates, changes to membership tiers, new features, or major operational shifts — Lighthouse will communicate these through one or more of the following channels:
 
 - **Website announcements** — posted on the dashboard.
-- **Discord announcements** — posted in the appropriate Discord channels.
+- **Discord announcements** — posted in the Bulletin Board Discord channels.
 - **Email notifications** — sent to members who have opted in to email notifications.
 
 Lighthouse does not guarantee advance notice for every operational decision, but we commit to transparency on changes that materially affect members' experience of the community.
+
+## Community Updates Page
+
+If the staff are debating updates to the policy or rules or other community information, they will be posted in the [Community Updates](/community-updates) page after each staff meeting. 
 
 ## Contact
 
