@@ -503,6 +503,11 @@ class DocumentationService
             visibility: $visibility,
             pages: $pages->sortBy('order')->values(),
             filePath: $dirPath.'/_index.md',
+            lastUpdated: isset($meta['last_updated'])
+                ? ($meta['last_updated'] instanceof \DateTimeInterface
+                    ? $meta['last_updated']->format('Y-m-d')
+                    : (string) $meta['last_updated'])
+                : null,
         );
     }
 

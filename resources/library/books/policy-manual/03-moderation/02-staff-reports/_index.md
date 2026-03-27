@@ -1,7 +1,7 @@
 ---
 title: 'Staff Reports'
 visibility: public
-order: 1
+order: 2
 last_updated: '2026-03-26'
 summary: "Staff Reports are records made on a member's account by staff. They can acknowledge commendable behavior or document disciplinary incidents."
 ---
@@ -71,4 +71,4 @@ Staff reports are permanent records. Once published, a report cannot be removed 
 
 Staff reports document incidents. The Brig is a separate action — it restricts a member's community access as a consequence of those incidents. A staff report does not automatically result in Brig placement; that is a separate decision made by Command or senior Quartermaster staff based on the full context.
 
-See the [Brig policy](/library/books/policy-manual/moderation/discipline-system/the-brig) for how the discipline system works once a report has been filed.
+See the [Brig policy](/library/books/policy-manual/moderation/the-brig) for how the discipline system works once a report has been filed.
