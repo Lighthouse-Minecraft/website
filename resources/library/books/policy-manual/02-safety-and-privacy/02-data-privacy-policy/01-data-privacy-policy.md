@@ -2,7 +2,6 @@
 title: 'Data Privacy Policy'
 visibility: public
 order: 1
-last_updated: '2026-03-26'
 summary: 'What data Lighthouse collects, how it is stored, and your rights as a member.'
 ---
 
@@ -14,6 +13,7 @@ When you register for a Lighthouse account, we collect:
 
 - **Email address** — used for account authentication and community notifications.
 - **Username** — your chosen display name within the community.
+- **Birthdate** — the user's actual birthdate
 - **Minecraft username and UUID** (if you choose to link your account) — used to verify your identity on the Minecraft server and assign in-game permissions.
 - **Discord user ID** (if you choose to link your account) — used to sync your community membership to Discord roles.
 
@@ -30,6 +30,7 @@ We do not collect payment information directly. Donations are processed through 
 The data we collect exists solely to operate the Lighthouse community. Specifically:
 
 - **Email** enables account authentication, password recovery, and opt-in notifications (meeting reminders, ticket updates).
+- **Birthdate** — used to verify the user's age and determine what parental controls are needed
 - **Minecraft account** enables verification and permission assignment on the Minecraft server.
 - **Discord account** enables role synchronization in the community Discord server.
 - **Activity records** support accountability and help staff maintain a fair and consistent community.
@@ -63,7 +64,7 @@ As a Lighthouse member, you have the following rights regarding your data:
 
 - **Access** — you may request a summary of the personal data we hold about you.
 - **Correction** — if your data is inaccurate, you may request that it be corrected.
-- **Deletion** — you may request that your account and associated personal data be deleted. Submit a request through the [Support Ticket](/tickets/create) system.
+- **Deletion** — you may request that your account and associated personal data be deleted. Use the Account Settings page to initiate an account deletion.
 - **Portability** — you may request a copy of your data in a portable format.
 
 To exercise any of these rights, submit a [Support Ticket](/tickets/create). We will respond within a reasonable time frame.

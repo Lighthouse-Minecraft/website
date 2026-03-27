@@ -31,7 +31,8 @@ Policy content is maintained by Command. If you believe a policy page needs to b
    | Child Safety Policy | `resources/library/books/policy-manual/02-safety-and-privacy/01-child-safety-policy/01-child-safety-policy.md` |
    | Data Privacy Policy | `resources/library/books/policy-manual/02-safety-and-privacy/02-data-privacy-policy/01-data-privacy-policy.md` |
    | Moderation Practices | `resources/library/books/policy-manual/03-moderation/01-moderation-practices/01-moderation-practices.md` |
-   | Discipline System | `resources/library/books/policy-manual/03-moderation/02-discipline-system/01-discipline-system.md` |
+   | Staff Reports | `resources/library/books/policy-manual/03-moderation/02-discipline-system/01-staff-reports.md` |
+   | The Brig | `resources/library/books/policy-manual/03-moderation/02-discipline-system/01-the-brig.md` |
    | Staff Requirements | `resources/library/books/policy-manual/04-staff-and-operations/01-staff-requirements/01-staff-requirements.md` |
    | Operational Policies | `resources/library/books/policy-manual/04-staff-and-operations/02-operational-policies/01-operational-policies.md` |
 

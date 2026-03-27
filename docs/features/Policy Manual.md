@@ -296,7 +296,8 @@ resources/library/books/policy-manual/
 │   │   └── 01-moderation-practices.md
 │   └── 02-discipline-system/
 │       ├── _index.md
-│       └── 01-discipline-system.md
+│       ├── 01-staff-reports.md
+│       └── 01-the-brig.md
 └── 04-staff-and-operations/
     ├── _index.md
     ├── 01-staff-requirements/

@@ -1,8 +1,7 @@
 ---
-title: 'Discipline System'
+title: 'The Brig'
 visibility: public
-order: 1
-last_updated: '2026-03-26'
+order: 2
 summary: 'How the Lighthouse discipline system works and what members can expect.'
 ---
 
@@ -24,7 +23,7 @@ The Brig is not a punishment designed for humiliation. It is a tool for protecti
 
 The Brig may be used in response to:
 
-- Serious violations of the Code of Conduct (harassment, hate speech, threatening behavior, sexual content)
+- Serious violations of the Code of Conduct (harassment, threatening behavior, sexual content)
 - Repeated minor violations that have not stopped despite prior warnings
 - Behavior that is harmful to other members or to the community as a whole
 - Situations where immediate restriction is necessary to protect members while an investigation is ongoing
@@ -54,29 +53,30 @@ Lighthouse does not publicly announce disciplinary actions taken against individ
 
 ## The Appeal Process
 
-A member who has been disciplined may appeal the decision. An appeal is a formal request for Command to review the situation and consider whether the action was appropriate.
+For a member to be let out of The Brig and reinstated to their normal access to the community they must submit an appeal to the staff. An appeal is a formal request for Command to review the situation and decide to let the user return to the community.
 
 **When can a member appeal?**
-Any member who has been placed in the Brig may submit an appeal. There is no waiting period before appealing.
+Any member who has been placed in the Brig may submit an appeal once their cooldown has expired. Only one appeal can be made per week.
 
 **How to submit an appeal:**
-Submit a [Support Ticket](/tickets/create) with the subject "Brig Appeal." Include:
-- Your explanation of what happened
-- Why you believe the action was incorrect or disproportionate
-- What outcome you are requesting
+A user who has been placed in The Brig will see an Appeal button on the [Dashboard](/dashboard) once any cooldown timer on their account has expired. This button will launch the Appeal window, allowing you to make your case for why you should be let back into the community.
+Include:
+- An acknowledgement of the actions that got the user placed in the brig
+- Some type of apology or assurance that this behavior will not be repeated
+- Why the user wishes to return to the community.
 
 **What happens during review:**
 Command will review the original decision, the evidence, and your appeal. They may ask follow-up questions. You will receive a response with the outcome of the review.
 
 **What happens if the appeal is denied:**
-If an appeal is denied, the original decision stands. A member may submit one additional appeal if new information comes to light, but repeat appeals of the same decision without new information will not be reviewed.
+If an appeal is denied, the user remains in The Brig. A member may submit one additional appeal if new information comes to light, but repeat appeals of the same decision without new information will not be reviewed. A new appeal may be made 7 days after the previous appeal was started.
 
 **Appeals and conduct:**
 Submitting an appeal in good faith is always acceptable. However, if a member uses the appeal process to harass staff or to make threats, the appeal will be dismissed and additional discipline may be considered.
 
 ## Removal from the Community
 
-In the most serious cases, a member may be removed from the Lighthouse community entirely — meaning their account is deactivated and they are no longer welcome to participate. This is reserved for:
+In the most serious cases, a member may be removed from the Lighthouse community entirely — meaning their account is placed in a permanent Brig status and they are no longer welcome to participate. This is reserved for:
 
 - Behavior that poses a safety risk to other members (especially minors)
 - Violations that are illegal in nature
