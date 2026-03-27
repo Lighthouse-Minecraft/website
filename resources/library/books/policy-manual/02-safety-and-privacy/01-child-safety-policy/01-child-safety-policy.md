@@ -2,6 +2,7 @@
 title: 'Child Safety Policy'
 visibility: public
 order: 1
+last_updated: '2026-03-26'
 summary: 'How Lighthouse protects minors in our community.'
 ---
 

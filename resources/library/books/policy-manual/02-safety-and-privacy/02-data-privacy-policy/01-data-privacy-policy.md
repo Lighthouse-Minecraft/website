@@ -2,6 +2,7 @@
 title: 'Data Privacy Policy'
 visibility: public
 order: 1
+last_updated: '2026-03-26'
 summary: 'What data Lighthouse collects, how it is stored, and your rights as a member.'
 ---
 

@@ -2,6 +2,7 @@
 title: 'Code of Conduct'
 visibility: public
 order: 1
+last_updated: '2026-03-26'
 summary: 'The behavioral expectations for all Lighthouse community members.'
 ---
 

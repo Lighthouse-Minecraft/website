@@ -2,6 +2,7 @@
 title: 'Operational Policies'
 visibility: public
 order: 1
+last_updated: '2026-03-26'
 summary: 'The policies governing how Lighthouse is run as a community.'
 ---
 
