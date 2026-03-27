@@ -26,13 +26,13 @@ Policy content is maintained by Command. If you believe a policy page needs to b
 
    | Policy Page | File Path |
    |-------------|-----------|
-   | Code of Conduct | `resources/library/books/policy-manual/01-community-standards/01-code-of-conduct.md` |
-   | Community Expectations | `resources/library/books/policy-manual/01-community-standards/02-community-expectations.md` |
-   | Child Safety Policy | `resources/library/books/policy-manual/02-safety-and-privacy/01-child-safety-policy.md` |
-   | Data Privacy Policy | `resources/library/books/policy-manual/02-safety-and-privacy/02-data-privacy-policy.md` |
-   | Moderation Practices | `resources/library/books/policy-manual/03-moderation/01-moderation-practices.md` |
-   | Staff Reports | `resources/library/books/policy-manual/03-moderation/02-staff-reports.md` |
-   | The Brig | `resources/library/books/policy-manual/03-moderation/03-the-brig.md` |
+   | Code of Conduct | `resources/library/books/policy-manual/01-community-standards/01-code-of-conduct/_index.md` |
+   | Community Expectations | `resources/library/books/policy-manual/01-community-standards/02-community-expectations/_index.md` |
+   | Child Safety Policy | `resources/library/books/policy-manual/02-safety-and-privacy/01-child-safety-policy/_index.md` |
+   | Data Privacy Policy | `resources/library/books/policy-manual/02-safety-and-privacy/02-data-privacy-policy/_index.md` |
+   | Moderation Practices | `resources/library/books/policy-manual/03-moderation/01-moderation-practices/_index.md` |
+   | Staff Reports | `resources/library/books/policy-manual/03-moderation/02-staff-reports/_index.md` |
+   | The Brig | `resources/library/books/policy-manual/03-moderation/03-the-brig/_index.md` |
    | Staff Requirements | `resources/library/books/policy-manual/04-staff-and-operations/01-staff-requirements/01-staff-requirements.md` |
    | Staff Authority & Conduct | `resources/library/books/policy-manual/04-staff-and-operations/01-staff-requirements/02-staff-authority-and-conduct.md` |
    | Operational Policies | `resources/library/books/policy-manual/04-staff-and-operations/02-operational-policies/01-operational-policies.md` |

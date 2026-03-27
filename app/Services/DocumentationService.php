@@ -503,6 +503,7 @@ class DocumentationService
             visibility: $visibility,
             pages: $pages->sortBy('order')->values(),
             filePath: $dirPath.'/_index.md',
+            lastUpdated: $meta['last_updated'] ?? null,
         );
     }
 
