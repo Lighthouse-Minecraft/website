@@ -15,38 +15,45 @@ When you answer a member's question by referencing a community policy, sharing a
 Policy Manual pages follow this URL pattern:
 
 ```text
-/library/books/policy-manual/{part}/{chapter}/{page}
+/library/books/policy-manual/{part}/{chapter}
 ```
 
-The slugs are derived from the directory names with numeric prefixes stripped. Here are the direct URLs for each page:
+Each chapter contains its full policy content. The Staff & Operations part also has sub-pages within chapters:
+
+```text
+/library/books/policy-manual/staff-and-operations/{chapter}/{page}
+```
+
+The slugs are derived from the directory names with numeric prefixes stripped. Here are the direct URLs for each policy:
 
 ### Community Standards
 
 | Page | URL |
 |------|-----|
-| Code of Conduct | `/library/books/policy-manual/community-standards/code-of-conduct/code-of-conduct` |
-| Community Expectations | `/library/books/policy-manual/community-standards/community-expectations/community-expectations` |
+| Code of Conduct | `/library/books/policy-manual/community-standards/code-of-conduct` |
+| Community Expectations | `/library/books/policy-manual/community-standards/community-expectations` |
 
 ### Safety & Privacy
 
 | Page | URL |
 |------|-----|
-| Child Safety Policy | `/library/books/policy-manual/safety-and-privacy/child-safety-policy/child-safety-policy` |
-| Data Privacy Policy | `/library/books/policy-manual/safety-and-privacy/data-privacy-policy/data-privacy-policy` |
+| Child Safety Policy | `/library/books/policy-manual/safety-and-privacy/child-safety-policy` |
+| Data Privacy Policy | `/library/books/policy-manual/safety-and-privacy/data-privacy-policy` |
 
 ### Moderation
 
 | Page | URL |
 |------|-----|
-| Moderation Practices | `/library/books/policy-manual/moderation/moderation-practices/moderation-practices` |
-| Staff Reports | `/library/books/policy-manual/moderation/discipline-system/staff-reports` |
-| The Brig | `/library/books/policy-manual/moderation/discipline-system/the-brig` |
+| Moderation Practices | `/library/books/policy-manual/moderation/moderation-practices` |
+| Staff Reports | `/library/books/policy-manual/moderation/staff-reports` |
+| The Brig | `/library/books/policy-manual/moderation/the-brig` |
 
 ### Staff & Operations
 
 | Page | URL |
 |------|-----|
 | Staff Requirements | `/library/books/policy-manual/staff-and-operations/staff-requirements/staff-requirements` |
+| Staff Authority & Conduct | `/library/books/policy-manual/staff-and-operations/staff-requirements/staff-authority-and-conduct` |
 | Operational Policies | `/library/books/policy-manual/staff-and-operations/operational-policies/operational-policies` |
 
 ## Useful Scenarios

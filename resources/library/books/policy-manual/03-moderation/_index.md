@@ -1,5 +1,5 @@
 ---
-title: 'Moderation'
+title: Moderation
 visibility: public
 order: 3
 summary: 'How moderation works at Lighthouse and how the discipline system operates.'

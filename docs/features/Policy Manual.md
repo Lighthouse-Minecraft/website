@@ -33,14 +33,14 @@
 
 The Policy Manual is a publicly accessible book in the Lighthouse library system that contains the official community policies. It is built entirely on the existing `DocumentationService` + file-based library infrastructure — no new database tables, models, controllers, or routes were added. The `DocumentationService` discovers the book automatically by scanning `resources/library/books/`.
 
-The book has four parts, each with two chapters:
+The book has four parts. For Community Standards, Safety & Privacy, and Moderation, each chapter contains its policy content directly in the chapter overview (`_index.md`) with no sub-pages. Staff & Operations retains sub-pages within its chapters.
 
-| Part | Chapter 1 | Chapter 2 |
-|------|-----------|-----------|
-| Community Standards | Code of Conduct | Community Expectations |
-| Safety & Privacy | Child Safety Policy | Data Privacy Policy |
-| Moderation | Moderation Practices | Discipline System |
-| Staff & Operations | Staff Requirements | Operational Policies |
+| Part | Chapters |
+|------|----------|
+| Community Standards | Code of Conduct, Community Expectations |
+| Safety & Privacy | Child Safety Policy, Data Privacy Policy |
+| Moderation | Moderation Practices, Staff Reports, The Brig |
+| Staff & Operations | Staff Requirements (with sub-pages), Operational Policies (with sub-pages) |
 
 All pages are `visibility: public`, meaning they are readable by unauthenticated visitors without any login gate.
 
@@ -215,15 +215,15 @@ No activity log entries are recorded for reading library content.
 ### Policy Manual page request (unauthenticated visitor)
 
 ```
-Browser GET /library/books/policy-manual/community-standards/code-of-conduct/code-of-conduct
-    → Route: library.books.page
-    → Livewire: page-show.blade.php::mount()
-        → DocumentationService::findBookPage('policy-manual', 'community-standards', 'code-of-conduct', 'code-of-conduct')
-            → buildBook() → buildPart() → buildChapter() → buildPage()
-            → parseFile() reads resources/library/books/policy-manual/01-community-standards/01-code-of-conduct/01-code-of-conduct.md
-            → Returns PageDTO (visibility: 'public', lastUpdated: null or date string)
+Browser GET /library/books/policy-manual/community-standards/code-of-conduct
+    → Route: library.books.chapter
+    → Livewire: chapter-show.blade.php::mount()
+        → DocumentationService::findChapterIndex('policy-manual', 'community-standards', 'code-of-conduct')
+            → buildBook() → buildPart() → buildChapter()
+            → parseFile() reads resources/library/books/policy-manual/01-community-standards/01-code-of-conduct/_index.md
+            → Returns ChapterDTO (visibility: 'public', lastUpdated: date string, body: full policy markdown)
         → CheckDocumentVisibility::run('public') — passes for all visitors
-    → x-library.reader rendered with html, navigation, breadcrumbs, lastUpdated
+    → x-library.section-listing rendered with body content, navigation, breadcrumbs (no child pages)
 ```
 
 ### `last_updated` rendering flow
@@ -276,33 +276,29 @@ resources/library/books/policy-manual/
 ├── 01-community-standards/
 │   ├── _index.md                                               Part index
 │   ├── 01-code-of-conduct/
-│   │   ├── _index.md                                           Chapter index
-│   │   └── 01-code-of-conduct.md                              Page content
+│   │   └── _index.md                                           Chapter overview (contains full policy content)
 │   └── 02-community-expectations/
-│       ├── _index.md
-│       └── 01-community-expectations.md
+│       └── _index.md                                           Chapter overview (contains full policy content)
 ├── 02-safety-and-privacy/
 │   ├── _index.md
 │   ├── 01-child-safety-policy/
-│   │   ├── _index.md
-│   │   └── 01-child-safety-policy.md
+│   │   └── _index.md                                           Chapter overview (contains full policy content)
 │   └── 02-data-privacy-policy/
-│       ├── _index.md
-│       └── 01-data-privacy-policy.md
+│       └── _index.md                                           Chapter overview (contains full policy content)
 ├── 03-moderation/
 │   ├── _index.md
 │   ├── 01-moderation-practices/
-│   │   ├── _index.md
-│   │   └── 01-moderation-practices.md
-│   └── 02-discipline-system/
-│       ├── _index.md
-│       ├── 01-staff-reports.md
-│       └── 01-the-brig.md
+│   │   └── _index.md                                           Chapter overview (contains full policy content)
+│   ├── 02-staff-reports/
+│   │   └── _index.md                                           Chapter overview (contains full policy content)
+│   └── 03-the-brig/
+│       └── _index.md                                           Chapter overview (contains full policy content)
 └── 04-staff-and-operations/
     ├── _index.md
     ├── 01-staff-requirements/
     │   ├── _index.md
-    │   └── 01-staff-requirements.md
+    │   ├── 01-staff-requirements.md
+    │   └── 02-staff-authority-and-conduct.md
     └── 02-operational-policies/
         ├── _index.md
         └── 01-operational-policies.md
