@@ -208,6 +208,7 @@ describe('EscalateUnassignedTickets Job', function () {
     it('posts a system message in the thread when escalating', function () {
         Notification::fake();
 
+        // System user is seeded by migration; the job uses it to post system messages
         User::factory()
             ->withRole('Ticket Escalation - Receiver')
             ->create(['notification_preferences' => ['staff_alerts' => ['email' => true]]]);
@@ -252,6 +253,28 @@ describe('EscalateUnassignedTickets Job', function () {
         $job->handle($service);
 
         Notification::assertSentToTimes($recipient, TicketEscalationNotification::class, 1);
+    });
+
+    it('does not escalate when threshold is set to 0 (escalation disabled)', function () {
+        Notification::fake();
+
+        SiteConfig::setValue('ticket_escalation_threshold_minutes', '0');
+
+        User::factory()
+            ->withRole('Ticket Escalation - Receiver')
+            ->create(['notification_preferences' => ['staff_alerts' => ['email' => true]]]);
+
+        Thread::factory()->create([
+            'type' => ThreadType::Ticket,
+            'status' => ThreadStatus::Open,
+            'assigned_to_user_id' => null,
+            'escalated_at' => null,
+            'created_at' => now()->subMinutes(5),
+        ]);
+
+        (new EscalateUnassignedTickets)->handle(app(TicketNotificationService::class));
+
+        Notification::assertNothingSent();
     });
 
     it('does not escalate non-ticket thread types', function () {

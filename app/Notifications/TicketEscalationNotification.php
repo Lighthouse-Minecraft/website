@@ -70,6 +70,9 @@ class TicketEscalationNotification extends Notification implements ShouldQueue
 
     public function toDiscord(object $notifiable): string
     {
-        return "**Unassigned Ticket Alert:** {$this->thread->subject}\n**Department:** {$this->thread->department->label()}\n**From:** {$this->thread->createdBy->name}\n".route('tickets.show', $this->thread);
+        $department = $this->thread->department?->label() ?? 'Unknown';
+        $creator = $this->thread->createdBy?->name ?? 'Unknown';
+
+        return "**Unassigned Ticket Alert:** {$this->thread->subject}\n**Department:** {$department}\n**From:** {$creator}\n".route('tickets.show', $this->thread);
     }
 }

@@ -22,11 +22,16 @@ class EscalateUnassignedTickets implements ShouldQueue
     {
         $thresholdMinutes = (int) SiteConfig::getValue('ticket_escalation_threshold_minutes', '30');
 
+        if ($thresholdMinutes <= 0) {
+            return;
+        }
+
         $tickets = Thread::where('type', ThreadType::Ticket)
             ->where('status', ThreadStatus::Open)
             ->whereNull('assigned_to_user_id')
             ->whereNull('escalated_at')
             ->where('created_at', '<=', now()->subMinutes($thresholdMinutes))
+            ->with(['createdBy'])
             ->get();
 
         if ($tickets->isEmpty()) {
