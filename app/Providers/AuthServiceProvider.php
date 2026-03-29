@@ -214,6 +214,10 @@ class AuthServiceProvider extends ServiceProvider
             return $user->hasRole('Site Config - Manager');
         });
 
+        Gate::define('receive-ticket-escalations', function ($user) {
+            return $user->hasRole('Ticket Escalation - Receiver');
+        });
+
         Gate::define('manage-blog', function ($user) {
             return $user->hasRole('Blog - Author');
         });

@@ -32,6 +32,7 @@ class Thread extends Model
         'is_locked',
         'closed_at',
         'locked_at',
+        'escalated_at',
     ];
 
     protected $casts = [
@@ -45,6 +46,7 @@ class Thread extends Model
         'is_locked' => 'boolean',
         'closed_at' => 'datetime',
         'locked_at' => 'datetime',
+        'escalated_at' => 'datetime',
     ];
 
     public function createdBy(): BelongsTo

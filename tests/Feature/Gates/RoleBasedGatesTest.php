@@ -539,6 +539,35 @@ it('denies view-community-content to user in brig (unchanged)', function () {
     expect($user->can('view-community-content'))->toBeFalse();
 });
 
+// == receive-ticket-escalations == //
+
+it('grants receive-ticket-escalations to user with Ticket Escalation - Receiver role', function () {
+    $user = User::factory()->withRole('Ticket Escalation - Receiver')->create();
+
+    expect($user->can('receive-ticket-escalations'))->toBeTrue();
+});
+
+it('denies receive-ticket-escalations without Ticket Escalation - Receiver role', function () {
+    $user = User::factory()
+        ->withStaffPosition(StaffDepartment::Command, StaffRank::Officer)
+        ->create();
+
+    expect($user->can('receive-ticket-escalations'))->toBeFalse();
+});
+
+it('grants receive-ticket-escalations to admin', function () {
+    $user = User::factory()->admin()->create();
+
+    expect($user->can('receive-ticket-escalations'))->toBeTrue();
+});
+
+it('grants receive-ticket-escalations to user with allow-all position', function () {
+    $user = User::factory()->create();
+    StaffPosition::factory()->assignedTo($user->id)->create(['has_all_roles_at' => now()]);
+
+    expect($user->fresh()->can('receive-ticket-escalations'))->toBeTrue();
+});
+
 // == Allow All positions pass all role-based gates == //
 
 it('grants all role-based gates to user with allow-all position', function () {
@@ -563,7 +592,8 @@ it('grants all role-based gates to user with allow-all position', function () {
         ->and($user->can('manage-application-questions'))->toBeTrue()
         ->and($user->can('view-acp'))->toBeTrue()
         ->and($user->can('view-ready-room'))->toBeTrue()
-        ->and($user->can('edit-staff-bio'))->toBeTrue();
+        ->and($user->can('edit-staff-bio'))->toBeTrue()
+        ->and($user->can('receive-ticket-escalations'))->toBeTrue();
 });
 
 // == Admin override works for all role-based gates == //
@@ -593,5 +623,6 @@ it('grants all role-based gates to admin user', function () {
         ->and($user->can('view-ready-room-steward'))->toBeTrue()
         ->and($user->can('view-acp'))->toBeTrue()
         ->and($user->can('view-ready-room'))->toBeTrue()
-        ->and($user->can('edit-staff-bio'))->toBeTrue();
+        ->and($user->can('edit-staff-bio'))->toBeTrue()
+        ->and($user->can('receive-ticket-escalations'))->toBeTrue();
 });
