@@ -38,7 +38,12 @@ class EscalateUnassignedTickets implements ShouldQueue
             return;
         }
 
-        $recipients = User::all()->filter(fn ($user) => $user->can('receive-ticket-escalations'));
+        $recipients = User::query()
+            ->whereNotNull('admin_granted_at')
+            ->orWhereHas('staffPosition', fn ($q) => $q->whereNotNull('has_all_roles_at'))
+            ->orWhereHas('staffPosition.roles', fn ($q) => $q->where('name', 'Ticket Escalation - Receiver'))
+            ->get()
+            ->filter(fn ($user) => $user->can('receive-ticket-escalations'));
 
         $systemUser = User::where('email', 'system@lighthouse.local')->first();
 
