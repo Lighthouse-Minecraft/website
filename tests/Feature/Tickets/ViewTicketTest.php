@@ -127,6 +127,60 @@ describe('View Ticket Component', function () {
         expect($thread->assigned_to_user_id)->toBe($assignee->id);
     })->done();
 
+    it('resets escalated_at to null when ticket is unassigned #419', function () {
+        $officer = User::factory()
+            ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::Officer)
+            ->withRole('Ticket - User')
+            ->withRole('Ticket - Manager')
+            ->create();
+
+        $assignee = User::factory()
+            ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->create();
+
+        $thread = Thread::factory()->withDepartment(StaffDepartment::Chaplain)->create([
+            'assigned_to_user_id' => $assignee->id,
+            'escalated_at' => now()->subMinutes(5),
+        ]);
+
+        actingAs($officer);
+
+        Volt::test('ready-room.tickets.view-ticket', ['thread' => $thread])
+            ->call('assignTo', null)
+            ->assertHasNoErrors();
+
+        $thread->refresh();
+        expect($thread->assigned_to_user_id)->toBeNull()
+            ->and($thread->escalated_at)->toBeNull();
+    });
+
+    it('does not reset escalated_at when ticket is assigned to a user #419', function () {
+        $officer = User::factory()
+            ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::Officer)
+            ->withRole('Ticket - User')
+            ->withRole('Ticket - Manager')
+            ->create();
+
+        $assignee = User::factory()
+            ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->create();
+
+        $escalatedAt = now()->subMinutes(10);
+        $thread = Thread::factory()->withDepartment(StaffDepartment::Chaplain)->create([
+            'escalated_at' => $escalatedAt,
+        ]);
+
+        actingAs($officer);
+
+        Volt::test('ready-room.tickets.view-ticket', ['thread' => $thread])
+            ->call('assignTo', $assignee->id)
+            ->assertHasNoErrors();
+
+        $thread->refresh();
+        expect($thread->assigned_to_user_id)->toBe($assignee->id)
+            ->and($thread->escalated_at)->not->toBeNull();
+    });
+
     // TODO: Re-enable after PRD #280 completion — command officer no longer bypasses before() hook
     it('allows admin to assign tickets to staff from different departments', function () {
         $admin = User::factory()->admin()->create();
