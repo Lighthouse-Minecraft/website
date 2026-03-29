@@ -59,6 +59,10 @@ Schedule::command('messages:purge-images')
 Schedule::job(new \App\Jobs\PublishScheduledPosts)
     ->everyMinute();
 
+// Escalate unassigned tickets past the configured threshold
+Schedule::job(new \App\Jobs\EscalateUnassignedTickets)
+    ->everyMinute();
+
 // Cleanup unreferenced blog images monthly
 Schedule::job(new \App\Jobs\CleanupUnreferencedBlogImages)
     ->monthly();
