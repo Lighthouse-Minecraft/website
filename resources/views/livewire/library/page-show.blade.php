@@ -104,6 +104,7 @@ new class extends Component {
                 :currentUrl="url()->current()"
                 :editPath="$this->editPath"
                 :bookTitle="$this->bookTitle"
+                :lastUpdated="$this->pageData->lastUpdated"
             />
         @endif
     </div>

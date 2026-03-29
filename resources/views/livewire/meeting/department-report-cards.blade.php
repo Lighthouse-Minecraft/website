@@ -68,15 +68,15 @@ new class extends Component {
                     wire:click="viewReport({{ $member->id }})"
                     class="w-72 flex items-center gap-2 p-2 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700 hover:shadow-sm transition-all cursor-pointer text-left"
                 >
-                    <flux:avatar size="xs" :src="$member->avatarUrl()" />
-                    <div class="min-w-0 flex-1">
-                        <p class="text-xs font-medium truncate">{{ $member->name }}</p>
-                    </div>
                     @if($hasSubmitted)
                         <flux:icon name="check-circle" variant="solid" class="w-4 h-4 text-green-500 shrink-0" />
                     @else
                         <flux:icon name="x-circle" variant="solid" class="w-4 h-4 text-red-400 shrink-0" />
                     @endif
+                    <flux:avatar size="xs" :src="$member->avatarUrl()" />
+                    <div class="min-w-0 flex-1">
+                        <p class="text-xs font-medium truncate">{{ $member->name }}</p>
+                    </div>
                 </button>
             @endforeach
         </div>

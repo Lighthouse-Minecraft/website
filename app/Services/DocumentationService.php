@@ -503,6 +503,11 @@ class DocumentationService
             visibility: $visibility,
             pages: $pages->sortBy('order')->values(),
             filePath: $dirPath.'/_index.md',
+            lastUpdated: isset($meta['last_updated'])
+                ? ($meta['last_updated'] instanceof \DateTimeInterface
+                    ? $meta['last_updated']->format('Y-m-d')
+                    : (string) $meta['last_updated'])
+                : null,
         );
     }
 
@@ -523,6 +528,11 @@ class DocumentationService
             filePath: $filePath,
             body: $parsed['body'],
             url: route('library.books.page', [$bookSlug, $partSlug, $chapterSlug, $slug]),
+            lastUpdated: isset($meta['last_updated'])
+                ? ($meta['last_updated'] instanceof \DateTimeInterface
+                    ? $meta['last_updated']->format('Y-m-d')
+                    : (string) $meta['last_updated'])
+                : null,
         );
     }
 
@@ -572,6 +582,11 @@ class DocumentationService
             filePath: $filePath,
             body: $parsed['body'],
             url: route('library.guides.page', [$guideSlug, $slug]),
+            lastUpdated: isset($meta['last_updated'])
+                ? ($meta['last_updated'] instanceof \DateTimeInterface
+                    ? $meta['last_updated']->format('Y-m-d')
+                    : (string) $meta['last_updated'])
+                : null,
         );
     }
 

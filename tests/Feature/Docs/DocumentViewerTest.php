@@ -109,3 +109,39 @@ it('filters invisible books from index for guests', function () {
         ->assertSee('Test Book')
         ->assertDontSee('Staff Book');
 });
+
+it('displays last_updated date on a page that has it', function () {
+    file_put_contents(
+        $this->docsPath.'/books/test-book/01-part/01-chapter/04-dated-page.md',
+        "---\ntitle: \"Dated Page\"\nvisibility: public\norder: 4\nlast_updated: \"2026-03-25\"\n---\nContent with a date."
+    );
+
+    $this->get('/library/books/test-book/part/chapter/dated-page')
+        ->assertOk()
+        ->assertSee('Last updated: March 25, 2026');
+});
+
+it('does not show last_updated line on a page without it', function () {
+    $this->get('/library/books/test-book/part/chapter/public-page')
+        ->assertOk()
+        ->assertDontSee('Last updated:');
+});
+
+it('policy manual book appears on library books index', function () {
+    mkdir($this->docsPath.'/books/policy-manual/01-community-standards', 0755, true);
+    file_put_contents($this->docsPath.'/books/policy-manual/_index.md', "---\ntitle: \"Policy Manual\"\nvisibility: public\norder: 3\nsummary: \"Official community policies.\"\n---\n");
+    file_put_contents($this->docsPath.'/books/policy-manual/01-community-standards/_index.md', "---\ntitle: \"Community Standards\"\nvisibility: public\norder: 1\n---\n");
+
+    $this->get('/library/books')
+        ->assertOk()
+        ->assertSee('Policy Manual');
+});
+
+it('policy manual part index is accessible without authentication', function () {
+    mkdir($this->docsPath.'/books/policy-manual/01-community-standards', 0755, true);
+    file_put_contents($this->docsPath.'/books/policy-manual/_index.md', "---\ntitle: \"Policy Manual\"\nvisibility: public\norder: 3\nsummary: \"Official community policies.\"\n---\n");
+    file_put_contents($this->docsPath.'/books/policy-manual/01-community-standards/_index.md', "---\ntitle: \"Community Standards\"\nvisibility: public\norder: 1\nsummary: \"Behavioral standards for all members.\"\n---\n");
+
+    $this->get('/library/books/policy-manual/community-standards')
+        ->assertOk();
+});
