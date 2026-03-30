@@ -326,7 +326,7 @@ Staff clicks "Unassign" in ticket view
 
 | Key | Location | Default | Purpose |
 |-----|----------|---------|---------|
-| `ticket_escalation_threshold_minutes` | `site_config` table / ACP | `30` | Minutes before an unassigned open ticket triggers escalation. Set to `0` to disable escalation entirely (the job returns early when threshold is 0 or negative). |
+| `ticket_escalation_threshold_minutes` | `site_config` table / ACP | `30` | Minutes before an unassigned open ticket triggers escalation. Set to `0` or a negative value to disable escalation entirely (values `<= 0` cause the job to return early without processing). |
 
 ---
 
@@ -433,7 +433,7 @@ Staff clicks "Unassign" in ticket view
 
 1. **`User::all()->filter(...)` in the job** — `EscalateUnassignedTickets` loads all users into memory to filter by gate. For a small community this is fine, but at scale a DB-level query joining `staff_positions`, `role_staff_position`, and `roles` would be more efficient. A HITL issue was noted in PRD #416's out-of-scope section.
 
-2. **No ACP validation for threshold** — The `ticket_escalation_threshold_minutes` config has a `<= 0` guard in the job (returns early, disabling escalation), but there is no validation on the ACP input field itself. An admin could set a very large value unintentionally with no warning.
+2. **No ACP validation for threshold** — The `ticket_escalation_threshold_minutes` config has a `<= 0` guard in the job (returns early, disabling escalation), but there is no validation on the ACP input field itself. An admin could set an unexpectedly large value (e.g., `99999`) with no warning, effectively suppressing escalation without realizing it.
 
 3. **No Pending status escalation** — Tickets with `status = Pending` are not escalated even if they are unassigned and old. The PRD explicitly targets `Open` status only; this is intentional design, not a bug, but worth noting for future reviewers.
 
