@@ -253,7 +253,9 @@ No new Artisan commands were added. The job is registered directly in the schedu
 **Registration:**
 ```php
 Schedule::job(new \App\Jobs\EscalateUnassignedTickets)
-    ->everyMinute();
+    ->everyMinute()
+    ->withoutOverlapping()
+    ->onOneServer();
 ```
 
 ---
@@ -324,7 +326,7 @@ Staff clicks "Unassign" in ticket view
 
 | Key | Location | Default | Purpose |
 |-----|----------|---------|---------|
-| `ticket_escalation_threshold_minutes` | `site_config` table / ACP | `30` | Minutes before an unassigned open ticket triggers escalation. Set to 0 to effectively disable (no ticket is old enough within 0 minutes — actually this would escalate immediately; see Known Issues). |
+| `ticket_escalation_threshold_minutes` | `site_config` table / ACP | `30` | Minutes before an unassigned open ticket triggers escalation. Set to `0` or a negative value to disable escalation entirely (values `<= 0` cause the job to return early without processing). |
 
 ---
 
@@ -334,7 +336,7 @@ Staff clicks "Unassign" in ticket view
 
 | File | Tests | What It Covers |
 |------|-------|----------------|
-| `tests/Feature/Jobs/EscalateUnassignedTicketsTest.php` | 12 | Full job behavior |
+| `tests/Feature/Jobs/EscalateUnassignedTicketsTest.php` | 13 | Full job behavior |
 | `tests/Feature/Tickets/ViewTicketTest.php` | 2 (new) | `escalated_at` reset on unassign |
 | `tests/Feature/Gates/RoleBasedGatesTest.php` | 4 (new) | `receive-ticket-escalations` gate |
 
@@ -353,6 +355,7 @@ Staff clicks "Unassign" in ticket view
 - `it posts a system message in the thread when escalating`
 - `it is idempotent — running twice does not double-escalate`
 - `it does not escalate non-ticket thread types`
+- `it does not escalate when threshold is set to 0 (escalation disabled)`
 
 **`ViewTicketTest.php` (new tests):**
 - `it resets escalated_at to null when ticket is unassigned #419`
@@ -366,7 +369,6 @@ Staff clicks "Unassign" in ticket view
 
 ### Coverage Gaps
 
-- **`ticket_escalation_threshold_minutes = 0`** — behavior when threshold is 0 is untested. Mathematically `now()->subMinutes(0)` equals `now()`, so nearly all tickets would immediately qualify. This is a potential footgun if an admin accidentally sets it to 0.
 - **No test for "zero recipients"** — if no user holds the `Ticket Escalation - Receiver` role, the job silently sends nothing. This is correct behavior but not explicitly tested.
 - **Pending ticket status** — not tested explicitly (the job only targets `Open`). This is covered implicitly by the closed/resolved tests but `Pending` is a distinct status.
 
@@ -419,7 +421,7 @@ Staff clicks "Unassign" in ticket view
 - `resources/views/mail/ticket-escalation.blade.php` (new)
 
 **Tests:**
-- `tests/Feature/Jobs/EscalateUnassignedTicketsTest.php` (new, 12 tests)
+- `tests/Feature/Jobs/EscalateUnassignedTicketsTest.php` (new, 13 tests)
 - `tests/Feature/Tickets/ViewTicketTest.php` (modified, +2 tests)
 - `tests/Feature/Gates/RoleBasedGatesTest.php` (modified, +4 tests)
 
@@ -431,7 +433,7 @@ Staff clicks "Unassign" in ticket view
 
 1. **`User::all()->filter(...)` in the job** — `EscalateUnassignedTickets` loads all users into memory to filter by gate. For a small community this is fine, but at scale a DB-level query joining `staff_positions`, `role_staff_position`, and `roles` would be more efficient. A HITL issue was noted in PRD #416's out-of-scope section.
 
-2. **Threshold value `0` is not safe** — If `ticket_escalation_threshold_minutes` is set to `0`, `now()->subMinutes(0)` equals `now()`, meaning every newly-created open unassigned ticket would escalate on the very next job run. There is no guard for this edge case, and no validation on the ACP input field.
+2. **No ACP validation for threshold** — The `ticket_escalation_threshold_minutes` config has a `<= 0` guard in the job (returns early, disabling escalation), but there is no validation on the ACP input field itself. An admin could set an unexpectedly large value (e.g., `99999`) with no warning, effectively suppressing escalation without realizing it.
 
 3. **No Pending status escalation** — Tickets with `status = Pending` are not escalated even if they are unassigned and old. The PRD explicitly targets `Open` status only; this is intentional design, not a bug, but worth noting for future reviewers.
 

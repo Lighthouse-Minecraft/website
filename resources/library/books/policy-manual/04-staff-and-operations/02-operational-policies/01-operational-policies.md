@@ -40,7 +40,7 @@ Lighthouse accepts voluntary donations from members to cover server hosting and 
 - Donations are processed through Stripe. Lighthouse does not retain full payment card information.
 - Funds collected are used to cover operational costs (server hosting, software, domain registration).
 - Donation records are maintained by the lead administrator.
-- The community does not currently publish detailed financial statements, only high level summaries on the Support Lighthouse page. Detailed records are shared with the entire staff team and the Lighthouse Board of Directors for audibility and transparency.
+- The community does not currently publish detailed financial statements, only high-level summaries on the Support Lighthouse page. Detailed records are shared with the entire staff team and the Lighthouse Board of Directors for audibility and transparency.
 
 ## Outreach and Growth
 

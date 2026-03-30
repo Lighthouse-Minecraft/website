@@ -16,7 +16,7 @@ Reports are attached to a member's account and are part of how staff assess a me
 
 Reports are NOT disciplinary or punishment. Receiving a report simply means the staff has noted something that required some sort of staff interaction.
 
-Staff members even write reports on themselves, such as when FinalAsgard shared an image that included a curse word camouflaged into the image. It required a staff member to delete the photo, which is a staff interaction, therefore requiring a *Trivial* report to be made.
+Staff members even write reports on themselves, such as when a staff member shared an image that included a curse word camouflaged into the image. It required a staff member to delete the photo, which is a staff interaction, therefore requiring a *Trivial* report to be made.
 
 ## Types of Reports
 
