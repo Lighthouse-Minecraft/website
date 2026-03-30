@@ -253,7 +253,9 @@ No new Artisan commands were added. The job is registered directly in the schedu
 **Registration:**
 ```php
 Schedule::job(new \App\Jobs\EscalateUnassignedTickets)
-    ->everyMinute();
+    ->everyMinute()
+    ->withoutOverlapping()
+    ->onOneServer();
 ```
 
 ---

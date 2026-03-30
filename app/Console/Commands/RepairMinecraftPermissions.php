@@ -50,6 +50,7 @@ class RepairMinecraftPermissions extends Command
             $syncstartResult = $rcon->executeCommand('lh syncstart', 'sync', null, null, ['action' => 'syncstart']);
             if (! $syncstartResult['success']) {
                 $this->warn('lh syncstart failed — proceeding with per-account sync anyway');
+                $counts['failures']++;
             }
         }
 
