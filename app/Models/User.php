@@ -543,7 +543,7 @@ class User extends Authenticatable // implements MustVerifyEmail
     /**
      * Whether the onboarding wizard should be shown to this user.
      *
-     * True when the user is Stowaway or Traveler and has not yet dismissed or completed the wizard.
+     * True when the user is Stowaway or above and has not yet dismissed or completed the wizard.
      */
     public function shouldShowOnboardingWizard(): bool
     {

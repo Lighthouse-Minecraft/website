@@ -40,7 +40,7 @@ For details on how all member data is handled, see the [Data Privacy Policy](/li
 All staff members are expected to uphold the following standards when interacting with minor members:
 
 - **No unmonitored private communication.** Staff should not engage in ongoing one-on-one private conversations with minors. When communication is necessary, it should be brief and redirected to official, visible channels (such as tickets) whenever possible.
-- **Transparency.** Interactions with minors involving community matters should always be handled through the website ticket or discussion system. These conversations are visible to select staff leadership so they are never strictly one-on-one.
+- **Transparency.** Interactions with minors involving community matters should always be handled through the website ticket or discussion system. These conversations are visible to select staff leadership so they are never strictly one on one.
 - **No secrecy.** Staff must never ask a minor to keep a conversation secret from parents, staff, or the community.
 - **No inappropriate content.** Staff must not share any content with minor members that would not be appropriate in a public community channel.
 - **No special relationships.** Staff must not develop inappropriate personal relationships with minor members.

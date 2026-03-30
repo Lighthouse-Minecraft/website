@@ -61,14 +61,29 @@ class SyncMinecraftAccount
             ['action' => 'sync_user']
         );
 
-        RecordActivity::run(
+        // Old three-command sequence preserved for fallback reference:
+        // $whitelistResult = $rcon->executeCommand(
+        //     $account->whitelistAddCommand(),
+        //     'whitelist', $account->username, $user, ['action' => 'sync_add_eligible']
+        // );
+        // $rankResult = $rcon->executeCommand(
+        //     "lh setmember {$account->username} {$rank}",
+        //     'rank', $account->username, $user, ['action' => 'sync_rank', 'membership_level' => $user->membership_level->value]
+        // );
+        // if ($staffDepartment !== null) {
+        //     $rcon->executeCommand("lh setstaff {$account->username} {$staffDepartment->value}", 'staff', ...);
+        // } else {
+        //     $rcon->executeCommand("lh removestaff {$account->username}", 'staff', ...);
+        // }
+
+        RecordActivity::handle(
             $user,
             'minecraft_rank_synced',
             "Synced Minecraft rank to {$rank} for {$account->username}"
         );
 
         if ($staffPosition !== 'none') {
-            RecordActivity::run(
+            RecordActivity::handle(
                 $user,
                 'minecraft_staff_position_set',
                 "Set Minecraft staff position to {$staffPosition} for {$account->username}"
@@ -80,7 +95,7 @@ class SyncMinecraftAccount
                 'department' => $staffPosition,
             ];
         } else {
-            RecordActivity::run(
+            RecordActivity::handle(
                 $user,
                 'minecraft_staff_position_removed',
                 "Removed Minecraft staff position for {$account->username}"

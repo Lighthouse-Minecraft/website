@@ -18,7 +18,7 @@ There are two chapters:
 
 We know that parents want to feel confident before allowing their children to participate in an online community. The Safety & Privacy section is written with that in mind.
 
-The [[books/policy-manual/safety-and-privacy/child-safety-policy|Child Safety Policy]] explains the standards we hold staff to when interacting with minors, how safety concerns are handled, and how parents can get in touch with us directly.
+The [Child Safety Policy](/library/books/policy-manual/safety-and-privacy/child-safety-policy/child-safety-policy) explains the standards we hold staff to when interacting with minors, how safety concerns are handled, and how parents can get in touch with us directly.
 
 If you have a concern about your child's safety at any time, don't hesitate to reach out via a [[books/user-handbook/website/getting-help/creating-and-replying|support ticket]] or contact a Command staff member in Discord.
 
@@ -26,4 +26,4 @@ If you have a concern about your child's safety at any time, don't hesitate to r
 
 Lighthouse collects only the information needed to manage your community account -- your email, username, and any linked Minecraft or Discord accounts. We don't sell your data or use it for advertising.
 
-The [[books/policy-manual/safety-and-privacy/data-privacy-policy|Data Privacy Policy]] has the full details on what's collected, how long it's kept, and how to request deletion.
+The [Data Privacy Policy](/library/books/policy-manual/safety-and-privacy/data-privacy-policy/data-privacy-policy) has the full details on what's collected, how long it's kept, and how to request deletion.

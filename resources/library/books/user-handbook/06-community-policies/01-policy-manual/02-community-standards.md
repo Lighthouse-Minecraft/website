@@ -23,7 +23,7 @@ Lighthouse is a faith-based, family-friendly community. That means:
 - Don't grief, steal, cheat, or harass other players.
 - Disagree graciously -- debate is welcome, cruelty is not.
 
-For the full details, read the [[books/policy-manual/community-standards/code-of-conduct|Code of Conduct]] in the Policy Manual.
+For the full details, read the [Code of Conduct](/library/books/policy-manual/community-standards/code-of-conduct/code-of-conduct) in the Policy Manual.
 
 ## What Happens If You Break the Rules?
 
