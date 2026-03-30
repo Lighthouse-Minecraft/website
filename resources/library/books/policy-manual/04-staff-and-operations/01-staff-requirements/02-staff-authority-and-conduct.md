@@ -3,7 +3,7 @@ title: 'Staff Authority & Conduct'
 visibility: public
 order: 2
 last_updated: '2026-03-26'
-summary: ''
+summary: 'The standards staff are held to when exercising their authority within the community.'
 ---
 
 Staff members are entrusted with additional permissions and tools to help maintain, protect, and support the Lighthouse community. These permissions exist to serve the community — not for personal use, entertainment, or advantage.

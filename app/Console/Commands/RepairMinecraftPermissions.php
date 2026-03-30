@@ -114,7 +114,7 @@ class RepairMinecraftPermissions extends Command
 
         $this->printSummary($counts, $dryRun);
 
-        return Command::SUCCESS;
+        return $counts['failures'] > 0 ? Command::FAILURE : Command::SUCCESS;
     }
 
     /**

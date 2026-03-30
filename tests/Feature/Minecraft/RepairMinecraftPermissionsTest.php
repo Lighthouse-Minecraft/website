@@ -212,7 +212,7 @@ test('live mode records failures in summary when RCON returns error', function (
         ->andReturn(['success' => false, 'response' => null, 'error' => 'Server offline']);
 
     $this->artisan('minecraft:repair-permissions', ['--pace' => '0'])
-        ->assertSuccessful()
+        ->assertFailed()
         ->expectsOutputToContain('Failures:');
 });
 

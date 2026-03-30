@@ -152,7 +152,7 @@ describe('View Ticket Component', function () {
         $thread->refresh();
         expect($thread->assigned_to_user_id)->toBeNull()
             ->and($thread->escalated_at)->toBeNull();
-    });
+    })->done();
 
     it('does not reset escalated_at when ticket is assigned to a user #419', function () {
         $officer = User::factory()
@@ -179,7 +179,7 @@ describe('View Ticket Component', function () {
         $thread->refresh();
         expect($thread->assigned_to_user_id)->toBe($assignee->id)
             ->and($thread->escalated_at)->not->toBeNull();
-    });
+    })->done();
 
     // TODO: Re-enable after PRD #280 completion — command officer no longer bypasses before() hook
     it('allows admin to assign tickets to staff from different departments', function () {
