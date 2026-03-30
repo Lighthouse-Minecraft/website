@@ -393,7 +393,7 @@ new class extends Component
         // Allow unassigning (setting to null)
         if ($userId === null) {
             $oldAssignee = $this->thread->assignedTo;
-            $this->thread->update(['assigned_to_user_id' => null]);
+            $this->thread->update(['assigned_to_user_id' => null, 'escalated_at' => null]);
 
             \App\Actions\RecordActivity::run(
                 $this->thread,
