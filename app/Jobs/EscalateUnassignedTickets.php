@@ -45,6 +45,10 @@ class EscalateUnassignedTickets implements ShouldQueue
             ->get()
             ->filter(fn ($user) => $user->can('receive-ticket-escalations'));
 
+        if ($recipients->isEmpty()) {
+            return;
+        }
+
         $systemUser = User::where('email', 'system@lighthouse.local')->first();
 
         foreach ($tickets as $ticket) {

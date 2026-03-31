@@ -31,9 +31,14 @@ class RemoveChildMinecraftAccount
             $username = $account->username;
             $accountType = $account->account_type;
             $statusLabel = strtolower($account->status->label());
+            $wasPrimary = $account->is_primary;
 
             if (! $account->delete()) {
                 return ['success' => false, 'message' => "Failed to remove Minecraft account {$username}."];
+            }
+
+            if ($wasPrimary) {
+                AutoAssignPrimaryAccount::run($child);
             }
 
             RecordActivity::run(

@@ -62,7 +62,7 @@ Schedule::job(new \App\Jobs\PublishScheduledPosts)
 // Escalate unassigned tickets past the configured threshold
 Schedule::job(new \App\Jobs\EscalateUnassignedTickets)
     ->everyMinute()
-    ->withoutOverlapping()
+    ->withoutOverlapping(5)
     ->onOneServer();
 
 // Cleanup unreferenced blog images monthly

@@ -89,11 +89,11 @@ class ParentRegenerateVerificationCode
 
         $originalStatus = $account->status;
 
-        // Set account back to Verifying
-        $account->update(['status' => MinecraftAccountStatus::Verifying]);
-
-        // Create verification record (scoped to child's user ID)
+        // Set account back to Verifying and create verification record inside try so
+        // rollback covers both mutations if either fails.
         try {
+            $account->update(['status' => MinecraftAccountStatus::Verifying]);
+
             MinecraftVerification::create([
                 'user_id' => $child->id,
                 'code' => $code,
@@ -104,7 +104,7 @@ class ParentRegenerateVerificationCode
                 'expires_at' => $expiresAt,
                 'whitelisted_at' => now(),
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             \Log::error('Failed to create MinecraftVerification on parent retry', [
                 'parent_id' => $parent->id,
                 'child_id' => $child->id,
@@ -112,7 +112,7 @@ class ParentRegenerateVerificationCode
                 'error' => $e->getMessage(),
             ]);
 
-            // Rollback: remove whitelist and revert to cancelled
+            // Rollback: remove whitelist and revert to original status
             $rconService->executeCommand(
                 $account->whitelistRemoveCommand(),
                 'whitelist',

@@ -102,3 +102,18 @@ it('blocks MC removal for non-child account', function () {
 
     expect($account->fresh()->status)->toBe(MinecraftAccountStatus::Active);
 });
+
+it('blocks cancelled MC removal for non-child account', function () {
+    $parent = User::factory()->adult()->create();
+    $stranger = User::factory()->create();
+    $account = MinecraftAccount::factory()->cancelled()->create([
+        'user_id' => $stranger->id,
+    ]);
+
+    actingAs($parent);
+
+    Livewire\Volt\Volt::test('parent-portal.index')
+        ->call('removeChildCancelledMcAccount', $account->id);
+
+    $this->assertDatabaseHas('minecraft_accounts', ['id' => $account->id]);
+});

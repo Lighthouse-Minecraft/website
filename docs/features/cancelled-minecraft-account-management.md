@@ -429,8 +429,8 @@ are already off the whitelist.
    If RCON fails (server offline), returns error without changing any state.
 9. Updates account status to `Verifying`.
 10. Creates a `MinecraftVerification` record with the new code, scoped to the child's `user_id`.
-11. **Rollback on DB failure:** If `MinecraftVerification::create()` throws, logs the error,
-    issues a RCON `whitelist remove`, reverts account to `Cancelled`, and returns error.
+11. **Rollback on DB failure:** If either the status update or `MinecraftVerification::create()` throws, logs the error,
+    issues a RCON `whitelist remove`, reverts account to its original status (`Cancelled` or `Cancelling`), and returns error.
 12. Records activity on the child (`minecraft_verification_regenerated`).
 13. Returns success with `code` and `expires_at`.
 
@@ -503,7 +503,7 @@ stored in the `activity_logs` table.
 
 ### Flow 1 — Admin Force-Delete (Cancelled/Cancelling account)
 
-```
+```text
 Admin visits /profile/{slug}
   └─► display-basic-details renders Minecraft account list
         └─► Account with status Cancelled/Cancelling shows "Remove" button
@@ -528,7 +528,7 @@ Admin visits /profile/{slug}
 
 ### Flow 2 — Parent Remove Cancelled/Cancelling Account
 
-```
+```text
 Parent visits /parent-portal
   └─► index.blade.php renders children list
         └─► Each Minecraft account row checks status
@@ -550,7 +550,7 @@ Parent visits /parent-portal
 
 ### Flow 3 — Parent Restart Verification (Cancelled/Cancelling account)
 
-```
+```text
 Parent visits /parent-portal
   └─► index.blade.php renders children list
         └─► Cancelled/Cancelling account shows "Restart" button
@@ -651,7 +651,7 @@ calls are expected.
 
 ## 17. File Map
 
-```
+```text
 app/
   Actions/
     ForceDeleteMinecraftAccount.php        # Admin force-delete action

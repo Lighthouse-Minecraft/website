@@ -239,7 +239,7 @@ The notification follows the exact same channel-selection pattern as `NewTicketN
 
 **Idempotency:** The `escalated_at IS NULL` filter ensures running the job twice in the same minute does not double-notify.
 
-**Performance note:** Step 4 uses `User::all()->filter(...)` — acceptable for a small community application but would need a DB-query approach at scale (see Known Issues).
+**Performance note:** Step 4 pre-filters users at the DB level (admins, all-roles staff, and explicit role holders) before applying the gate check, which limits the in-memory collection. At large scale a fully DB-side query joining `staff_positions`, `role_staff_position`, and `roles` would be more efficient (see Known Issues).
 
 ---
 
@@ -290,7 +290,7 @@ Laravel Scheduler fires every minute
     -> Thread::where(type=Ticket, status=Open, assigned_to_user_id=null,
                      escalated_at=null, created_at <= now()-threshold)->get()
     -> [return if empty]
-    -> User::all()->filter(can('receive-ticket-escalations'))
+    -> User::query()->whereNotNull('admin_granted_at')->orWhereHas(...)->get()->filter(can('receive-ticket-escalations'))
     -> User::where('email','system@lighthouse.local')->first()
     -> foreach ticket:
          foreach recipient:
@@ -431,7 +431,7 @@ Staff clicks "Unassign" in ticket view
 
 ## 18. Known Issues & Improvement Opportunities
 
-1. **`User::all()->filter(...)` in the job** — `EscalateUnassignedTickets` loads all users into memory to filter by gate. For a small community this is fine, but at scale a DB-level query joining `staff_positions`, `role_staff_position`, and `roles` would be more efficient. A HITL issue was noted in PRD #416's out-of-scope section.
+1. **Gate-filtered recipient lookup** — `EscalateUnassignedTickets` pre-filters users at the DB level (admins, all-roles staff, role holders) then applies a gate check in memory. For a small community this is fine, but at scale a fully DB-side query joining `staff_positions`, `role_staff_position`, and `roles` would eliminate the in-memory filter entirely. Noted in PRD #416's out-of-scope section.
 
 2. **No ACP validation for threshold** — The `ticket_escalation_threshold_minutes` config has a `<= 0` guard in the job (returns early, disabling escalation), but there is no validation on the ACP input field itself. An admin could set an unexpectedly large value (e.g., `99999`) with no warning, effectively suppressing escalation without realizing it.
 
