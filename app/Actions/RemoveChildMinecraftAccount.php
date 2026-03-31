@@ -26,6 +26,25 @@ class RemoveChildMinecraftAccount
             return ['success' => false, 'message' => 'You do not have permission to manage this account.'];
         }
 
+        // Cancelled/Cancelling accounts are already off the whitelist — hard-delete directly
+        if ($account->status === MinecraftAccountStatus::Cancelled || $account->status === MinecraftAccountStatus::Cancelling) {
+            $username = $account->username;
+            $accountType = $account->account_type;
+            $statusLabel = strtolower($account->status->label());
+
+            if (! $account->delete()) {
+                return ['success' => false, 'message' => "Failed to remove Minecraft account {$username}."];
+            }
+
+            RecordActivity::run(
+                $child,
+                'minecraft_account_removed_by_parent',
+                "{$parent->name} removed {$statusLabel} {$accountType->label()} account: {$username}"
+            );
+
+            return ['success' => true, 'message' => "Minecraft account {$username} has been removed."];
+        }
+
         if ($account->status !== MinecraftAccountStatus::Active) {
             return ['success' => false, 'message' => 'This account cannot be removed in its current state.'];
         }

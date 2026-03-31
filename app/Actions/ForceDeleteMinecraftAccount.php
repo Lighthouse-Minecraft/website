@@ -26,10 +26,13 @@ class ForceDeleteMinecraftAccount
             ];
         }
 
-        if ($account->status !== MinecraftAccountStatus::Removed && $account->status !== MinecraftAccountStatus::Verifying) {
+        if ($account->status !== MinecraftAccountStatus::Removed
+            && $account->status !== MinecraftAccountStatus::Verifying
+            && $account->status !== MinecraftAccountStatus::Cancelled
+            && $account->status !== MinecraftAccountStatus::Cancelling) {
             return [
                 'success' => false,
-                'message' => 'Only removed or verifying accounts can be permanently deleted.',
+                'message' => 'Only removed, verifying, cancelled, or cancelling accounts can be permanently deleted.',
             ];
         }
 

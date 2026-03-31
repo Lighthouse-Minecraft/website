@@ -585,7 +585,17 @@ new class extends Component {
                                             </flux:button>
                                         @endcan
                                     </div>
-                                @elseif($account->status !== \App\Enums\MinecraftAccountStatus::Cancelled && $account->status !== \App\Enums\MinecraftAccountStatus::Cancelling && $account->status !== \App\Enums\MinecraftAccountStatus::Removed)
+                                @elseif($account->status === \App\Enums\MinecraftAccountStatus::Cancelled || $account->status === \App\Enums\MinecraftAccountStatus::Cancelling)
+                                    @can('forceDelete', $account)
+                                        <flux:button
+                                            wire:click="confirmForceDelete({{ $account->id }})"
+                                            variant="ghost"
+                                            size="sm"
+                                            class="hover:!text-red-600 dark:hover:!text-red-400 hover:!bg-red-50 dark:hover:!bg-red-950">
+                                            Remove
+                                        </flux:button>
+                                    @endcan
+                                @elseif($account->status !== \App\Enums\MinecraftAccountStatus::Removed)
                                     @can('revoke', $account)
                                         <flux:button
                                             wire:click="confirmRevoke({{ $account->id }})"

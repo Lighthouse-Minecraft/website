@@ -60,3 +60,30 @@ test('releases UUID so it can be re-registered', function () {
     // UUID should no longer exist in the database
     $this->assertDatabaseMissing('minecraft_accounts', ['uuid' => $uuid]);
 });
+
+test('admin can permanently delete a cancelled account', function () {
+    $account = MinecraftAccount::factory()->for($this->regularUser)->cancelled()->create();
+
+    $result = $this->action->handle($account, $this->admin);
+
+    expect($result['success'])->toBeTrue();
+    $this->assertDatabaseMissing('minecraft_accounts', ['id' => $account->id]);
+});
+
+test('admin can permanently delete a cancelling account', function () {
+    $account = MinecraftAccount::factory()->for($this->regularUser)->cancelling()->create();
+
+    $result = $this->action->handle($account, $this->admin);
+
+    expect($result['success'])->toBeTrue();
+    $this->assertDatabaseMissing('minecraft_accounts', ['id' => $account->id]);
+});
+
+test('non-admin cannot permanently delete a cancelled account', function () {
+    $account = MinecraftAccount::factory()->for($this->regularUser)->cancelled()->create();
+
+    $result = $this->action->handle($account, $this->regularUser);
+
+    expect($result['success'])->toBeFalse();
+    $this->assertDatabaseHas('minecraft_accounts', ['id' => $account->id]);
+});
