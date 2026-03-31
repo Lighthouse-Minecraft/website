@@ -178,7 +178,7 @@ describe('View Ticket Component', function () {
 
         $thread->refresh();
         expect($thread->assigned_to_user_id)->toBe($assignee->id)
-            ->and($thread->escalated_at)->not->toBeNull();
+            ->and($thread->escalated_at->toDateTimeString())->toBe($escalatedAt->toDateTimeString());
     })->done();
 
     // TODO: Re-enable after PRD #280 completion — command officer no longer bypasses before() hook

@@ -84,6 +84,8 @@ it('records activity after removal', function () {
 });
 
 it('hard-deletes a cancelled child minecraft account without rcon', function () {
+    $this->mock(MinecraftRconService::class)->shouldNotReceive('executeCommand');
+
     $parent = User::factory()->adult()->create();
     $child = User::factory()->minor()->create();
     ParentChildLink::factory()->create(['parent_user_id' => $parent->id, 'child_user_id' => $child->id]);
@@ -101,6 +103,8 @@ it('hard-deletes a cancelled child minecraft account without rcon', function () 
 });
 
 it('hard-deletes a cancelling child minecraft account without rcon', function () {
+    $this->mock(MinecraftRconService::class)->shouldNotReceive('executeCommand');
+
     $parent = User::factory()->adult()->create();
     $child = User::factory()->minor()->create();
     ParentChildLink::factory()->create(['parent_user_id' => $parent->id, 'child_user_id' => $child->id]);

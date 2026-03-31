@@ -454,6 +454,13 @@ new class extends Component {
             return;
         }
 
+        $account = \App\Models\MinecraftAccount::findOrFail($accountId);
+
+        if (! in_array($account->status, [\App\Enums\MinecraftAccountStatus::Cancelled, \App\Enums\MinecraftAccountStatus::Cancelling])) {
+            Flux::toast('This account cannot be removed in this way.', 'Error', variant: 'danger');
+            return;
+        }
+
         $parent = $this->getTargetUser();
 
         $result = RemoveChildMinecraftAccount::run($parent, $accountId);

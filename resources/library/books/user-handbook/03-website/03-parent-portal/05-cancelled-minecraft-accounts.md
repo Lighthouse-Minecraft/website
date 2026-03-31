@@ -20,7 +20,7 @@ When a child's Minecraft account shows **Cancelled** or **Cancelling Verificatio
 - **Restart Verification** (the arrow icon) -- Starts the verification process over with a fresh code
 - **Remove** (the X icon) -- Permanently deletes the account record so you can start fresh
 
-Both actions ask you to confirm before anything happens.
+Removing the account asks you to confirm before anything happens. Restart Verification runs immediately when you click the button.
 
 ## Restarting Verification
 
