@@ -445,6 +445,25 @@ new class extends Component {
             Flux::toast($result['message'], 'Error', variant: 'danger');
         }
     }
+
+    public function removeChildCancelledMcAccount(int $accountId): void
+    {
+        if ($this->isStaffViewing) {
+            Flux::toast('This view is read-only.', 'Unauthorized', variant: 'danger');
+            return;
+        }
+
+        $parent = $this->getTargetUser();
+
+        $result = RemoveChildMinecraftAccount::run($parent, $accountId);
+
+        if ($result['success']) {
+            unset($this->children);
+            Flux::toast($result['message'], 'Account Removed', variant: 'success');
+        } else {
+            Flux::toast($result['message'], 'Error', variant: 'danger');
+        }
+    }
 }; ?>
 
 <div>
@@ -573,6 +592,15 @@ new class extends Component {
                                         @if(! $isStaffViewing && $mc->status === \App\Enums\MinecraftAccountStatus::Active)
                                             <flux:button
                                                 wire:click="confirmRemoveChildMcAccount({{ $mc->id }})"
+                                                variant="ghost"
+                                                size="sm"
+                                                icon="x-mark"
+                                                class="text-red-500"
+                                            />
+                                        @elseif(! $isStaffViewing && ($mc->status === \App\Enums\MinecraftAccountStatus::Cancelled || $mc->status === \App\Enums\MinecraftAccountStatus::Cancelling))
+                                            <flux:button
+                                                wire:click="removeChildCancelledMcAccount({{ $mc->id }})"
+                                                wire:confirm="Remove {{ $mc->username }} from {{ $child->name }}'s account? This cannot be undone."
                                                 variant="ghost"
                                                 size="sm"
                                                 icon="x-mark"
