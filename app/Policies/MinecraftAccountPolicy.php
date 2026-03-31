@@ -106,7 +106,9 @@ class MinecraftAccountPolicy
     public function forceDelete(User $user, MinecraftAccount $minecraftAccount): bool
     {
         return ($minecraftAccount->status === MinecraftAccountStatus::Removed
-                || $minecraftAccount->status === MinecraftAccountStatus::Verifying)
+                || $minecraftAccount->status === MinecraftAccountStatus::Verifying
+                || $minecraftAccount->status === MinecraftAccountStatus::Cancelled
+                || $minecraftAccount->status === MinecraftAccountStatus::Cancelling)
             && $user->isAdmin();
     }
 }

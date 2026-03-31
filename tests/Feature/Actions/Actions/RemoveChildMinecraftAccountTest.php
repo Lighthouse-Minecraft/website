@@ -82,3 +82,62 @@ it('records activity after removal', function () {
         'action' => 'minecraft_account_removed_by_parent',
     ]);
 });
+
+it('hard-deletes a cancelled child minecraft account without rcon', function () {
+    $this->mock(MinecraftRconService::class)->shouldNotReceive('executeCommand');
+
+    $parent = User::factory()->adult()->create();
+    $child = User::factory()->minor()->create();
+    ParentChildLink::factory()->create(['parent_user_id' => $parent->id, 'child_user_id' => $child->id]);
+    $account = MinecraftAccount::factory()->cancelled()->create(['user_id' => $child->id]);
+
+    $result = RemoveChildMinecraftAccount::run($parent, $account->id);
+
+    expect($result['success'])->toBeTrue();
+    $this->assertDatabaseMissing('minecraft_accounts', ['id' => $account->id]);
+    $this->assertDatabaseHas('activity_logs', [
+        'subject_type' => User::class,
+        'subject_id' => $child->id,
+        'action' => 'minecraft_account_removed_by_parent',
+    ]);
+});
+
+it('hard-deletes a cancelling child minecraft account without rcon', function () {
+    $this->mock(MinecraftRconService::class)->shouldNotReceive('executeCommand');
+
+    $parent = User::factory()->adult()->create();
+    $child = User::factory()->minor()->create();
+    ParentChildLink::factory()->create(['parent_user_id' => $parent->id, 'child_user_id' => $child->id]);
+    $account = MinecraftAccount::factory()->cancelling()->create(['user_id' => $child->id]);
+
+    $result = RemoveChildMinecraftAccount::run($parent, $account->id);
+
+    expect($result['success'])->toBeTrue();
+    $this->assertDatabaseMissing('minecraft_accounts', ['id' => $account->id]);
+});
+
+it('rejects cancelled account removal by non-parent', function () {
+    $notParent = User::factory()->adult()->create();
+    $child = User::factory()->minor()->create();
+    $account = MinecraftAccount::factory()->cancelled()->create(['user_id' => $child->id]);
+
+    $result = RemoveChildMinecraftAccount::run($notParent, $account->id);
+
+    expect($result['success'])->toBeFalse()
+        ->and($result['message'])->toContain('permission');
+    $this->assertDatabaseHas('minecraft_accounts', ['id' => $account->id]);
+});
+
+it('active account path is unaffected by cancelled account changes', function () {
+    $this->mock(MinecraftRconService::class)->shouldReceive('executeCommand')->twice()->andReturn(['success' => true, 'response' => null, 'error' => null]);
+
+    $parent = User::factory()->adult()->create();
+    $child = User::factory()->minor()->create();
+    ParentChildLink::factory()->create(['parent_user_id' => $parent->id, 'child_user_id' => $child->id]);
+    $account = MinecraftAccount::factory()->active()->create(['user_id' => $child->id]);
+
+    $result = RemoveChildMinecraftAccount::run($parent, $account->id);
+
+    expect($result['success'])->toBeTrue()
+        ->and($account->fresh()->status)->toBe(MinecraftAccountStatus::Removed);
+});

@@ -98,4 +98,26 @@ class MinecraftAccountFactory extends Factory
             'verified_at' => now()->subDay(),
         ]);
     }
+
+    /**
+     * Indicate that the account has been cancelled (verification never completed).
+     */
+    public function cancelled(): static
+    {
+        return $this->state(fn () => [
+            'status' => MinecraftAccountStatus::Cancelled,
+            'verified_at' => null,
+        ]);
+    }
+
+    /**
+     * Indicate that the account is in the process of being cancelled.
+     */
+    public function cancelling(): static
+    {
+        return $this->state(fn () => [
+            'status' => MinecraftAccountStatus::Cancelling,
+            'verified_at' => null,
+        ]);
+    }
 }

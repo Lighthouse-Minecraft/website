@@ -208,7 +208,11 @@ describe('EscalateUnassignedTickets Job', function () {
     it('posts a system message in the thread when escalating', function () {
         Notification::fake();
 
-        // System user is seeded by migration; the job uses it to post system messages
+        User::firstOrCreate(
+            ['email' => 'system@lighthouse.local'],
+            ['name' => 'System', 'password' => 'n/a']
+        );
+
         User::factory()
             ->withRole('Ticket Escalation - Receiver')
             ->create(['notification_preferences' => ['staff_alerts' => ['email' => true]]]);
