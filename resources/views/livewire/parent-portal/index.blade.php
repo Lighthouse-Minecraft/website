@@ -455,13 +455,17 @@ new class extends Component {
         }
 
         $account = \App\Models\MinecraftAccount::findOrFail($accountId);
+        $parent = $this->getTargetUser();
+
+        if (! $parent->children()->where('child_user_id', $account->user_id)->exists()) {
+            Flux::toast('You do not have permission to manage this account.', 'Unauthorized', variant: 'danger');
+            return;
+        }
 
         if (! in_array($account->status, [\App\Enums\MinecraftAccountStatus::Cancelled, \App\Enums\MinecraftAccountStatus::Cancelling])) {
             Flux::toast('This account cannot be removed in this way.', 'Error', variant: 'danger');
             return;
         }
-
-        $parent = $this->getTargetUser();
 
         $result = RemoveChildMinecraftAccount::run($parent, $accountId);
 
