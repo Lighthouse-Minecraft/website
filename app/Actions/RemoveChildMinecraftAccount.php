@@ -30,13 +30,16 @@ class RemoveChildMinecraftAccount
         if ($account->status === MinecraftAccountStatus::Cancelled || $account->status === MinecraftAccountStatus::Cancelling) {
             $username = $account->username;
             $accountType = $account->account_type;
+            $statusLabel = strtolower($account->status->label());
 
-            $account->delete();
+            if (! $account->delete()) {
+                return ['success' => false, 'message' => "Failed to remove Minecraft account {$username}."];
+            }
 
             RecordActivity::run(
                 $child,
                 'minecraft_account_removed_by_parent',
-                "{$parent->name} removed cancelled {$accountType->label()} account: {$username}"
+                "{$parent->name} removed {$statusLabel} {$accountType->label()} account: {$username}"
             );
 
             return ['success' => true, 'message' => "Minecraft account {$username} has been removed."];

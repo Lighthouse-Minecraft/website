@@ -87,6 +87,8 @@ class ParentRegenerateVerificationCode
             return ['success' => false, 'code' => null, 'expires_at' => null, 'error' => 'Server is currently offline. Please try again later.'];
         }
 
+        $originalStatus = $account->status;
+
         // Set account back to Verifying
         $account->update(['status' => MinecraftAccountStatus::Verifying]);
 
@@ -118,7 +120,7 @@ class ParentRegenerateVerificationCode
                 $parent,
                 ['action' => 'cleanup_failed_parent_retry']
             );
-            $account->update(['status' => MinecraftAccountStatus::Cancelled]);
+            $account->update(['status' => $originalStatus]);
 
             return ['success' => false, 'code' => null, 'expires_at' => null, 'error' => 'An error occurred. Please try again later.'];
         }

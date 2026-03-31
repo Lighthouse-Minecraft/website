@@ -32,7 +32,7 @@ class ForceDeleteMinecraftAccount
             && $account->status !== MinecraftAccountStatus::Cancelling) {
             return [
                 'success' => false,
-                'message' => 'Only removed, verifying, or cancelled accounts can be permanently deleted.',
+                'message' => 'Only removed, verifying, cancelled, or cancelling accounts can be permanently deleted.',
             ];
         }
 
