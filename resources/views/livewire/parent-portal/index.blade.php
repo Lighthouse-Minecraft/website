@@ -3,6 +3,7 @@
 use App\Actions\CreateChildAccount;
 use App\Actions\GenerateVerificationCode;
 use App\Actions\ReleaseChildToAdult;
+use App\Actions\ParentRegenerateVerificationCode;
 use App\Actions\RemoveChildMinecraftAccount;
 use App\Actions\UpdateChildPermission;
 use App\Enums\MinecraftAccountType;
@@ -464,6 +465,29 @@ new class extends Component {
             Flux::toast($result['message'], 'Error', variant: 'danger');
         }
     }
+
+    public function restartChildMinecraftVerification(int $accountId): void
+    {
+        if ($this->isStaffViewing) {
+            Flux::toast('This view is read-only.', 'Unauthorized', variant: 'danger');
+            return;
+        }
+
+        $account = \App\Models\MinecraftAccount::findOrFail($accountId);
+        $parent = $this->getTargetUser();
+
+        $result = ParentRegenerateVerificationCode::run($account, $parent);
+
+        if ($result['success']) {
+            $childId = $account->user_id;
+            $this->childMcVerificationCodes[$childId] = $result['code'];
+            $this->childMcExpiresAt[$childId] = $result['expires_at']->toIso8601String();
+            unset($this->children);
+            Flux::toast('Verification restarted! Have the child run /verify ' . $result['code'] . ' in-game.', 'Verification Restarted', variant: 'success');
+        } else {
+            Flux::toast($result['error'], 'Error', variant: 'danger');
+        }
+    }
 }; ?>
 
 <div>
@@ -598,6 +622,12 @@ new class extends Component {
                                                 class="text-red-500"
                                             />
                                         @elseif(! $isStaffViewing && ($mc->status === \App\Enums\MinecraftAccountStatus::Cancelled || $mc->status === \App\Enums\MinecraftAccountStatus::Cancelling))
+                                            <flux:button
+                                                wire:click="restartChildMinecraftVerification({{ $mc->id }})"
+                                                variant="ghost"
+                                                size="sm"
+                                                icon="arrow-path"
+                                            >Restart</flux:button>
                                             <flux:button
                                                 wire:click="removeChildCancelledMcAccount({{ $mc->id }})"
                                                 wire:confirm="Remove {{ $mc->username }} from {{ $child->name }}'s account? This cannot be undone."
