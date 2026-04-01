@@ -559,9 +559,17 @@ new class extends Component {
         <div class="flex items-center justify-between mb-6">
             <flux:heading size="xl">Parent Portal</flux:heading>
             @if(! $isStaffViewing)
-                <flux:modal.trigger name="create-child-modal">
-                    <flux:button variant="primary" icon="plus" size="sm">Add Child Account</flux:button>
-                </flux:modal.trigger>
+                @if($this->getTargetUser()->isAtLeastLevel(\App\Enums\MembershipLevel::Traveler))
+                    <flux:modal.trigger name="create-child-modal">
+                        <flux:button variant="primary" icon="plus" size="sm">Add Child Account</flux:button>
+                    </flux:modal.trigger>
+                @else
+                    <flux:tooltip content="You can create your child's account once staff has approved your account">
+                        <div>
+                            <flux:button variant="primary" icon="plus" size="sm" disabled>Add Child Account</flux:button>
+                        </div>
+                    </flux:tooltip>
+                @endif
             @endif
         </div>
 
