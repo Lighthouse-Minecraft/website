@@ -9,6 +9,7 @@ use App\Enums\MembershipLevel;
 use App\Enums\StaffDepartment;
 use App\Enums\StaffRank;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -33,6 +34,7 @@ class User extends Authenticatable // implements MustVerifyEmail
         'email',
         'password',
         'rules_accepted_at',
+        'rules_accepted_by_user_id',
         'staff_rank',
         'staff_department',
         'staff_title',
@@ -278,6 +280,11 @@ class User extends Authenticatable // implements MustVerifyEmail
         $hash = md5(strtolower(trim($this->email)));
 
         return "https://www.gravatar.com/avatar/{$hash}?d=mp&s=64";
+    }
+
+    public function rulesAcceptedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'rules_accepted_by_user_id');
     }
 
     public function children(): BelongsToMany

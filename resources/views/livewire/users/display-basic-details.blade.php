@@ -467,6 +467,24 @@ new class extends Component {
                 <flux:text>Member Rank: {{ $user->membership_level->label() }}</flux:text>
                 <flux:text>Joined on {{ $user->created_at->format('F j, Y') }}</flux:text>
                 @can('manage-stowaway-users')
+                    <div class="flex items-center gap-2 text-sm">
+                        <flux:text class="text-zinc-500 dark:text-zinc-400 shrink-0">Rules Agreed By:</flux:text>
+                        @if(is_null($user->rules_accepted_by_user_id))
+                            <flux:text class="italic text-zinc-400">Not yet agreed</flux:text>
+                        @elseif($user->rules_accepted_by_user_id === $user->id)
+                            <flux:text>Self</flux:text>
+                        @else
+                            @php $agreedBy = $user->rulesAcceptedBy; @endphp
+                            @if($agreedBy)
+                                <flux:link href="{{ route('profile.show', $agreedBy) }}">{{ $agreedBy->name }}</flux:link>
+                                <flux:text>(parent) — {{ $agreedBy->email }}</flux:text>
+                            @else
+                                <flux:text class="italic text-zinc-400">Unknown (user not found)</flux:text>
+                            @endif
+                        @endif
+                    </div>
+                @endcan
+                @can('manage-stowaway-users')
                     @if($user->registration_answer)
                         <div class="flex items-center gap-2">
                             <flux:text>Registration Question</flux:text>
