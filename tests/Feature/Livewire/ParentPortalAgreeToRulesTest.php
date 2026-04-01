@@ -52,7 +52,7 @@ it('shows the Minecraft linking UI for a Traveler child', function () {
         ->assertDontSee('Awaiting Staff Review');
 });
 
-it('does not show the Drifter card when Minecraft is disabled', function () {
+it('shows the Drifter rules agreement card even when Minecraft is disabled', function () {
     $parent = User::factory()->adult()->create();
     $child = User::factory()->minor()->withMembershipLevel(MembershipLevel::Drifter)->create([
         'parent_allows_minecraft' => false,
@@ -61,7 +61,8 @@ it('does not show the Drifter card when Minecraft is disabled', function () {
     actingAs($parent);
 
     Livewire\Volt\Volt::test('parent-portal.index')
-        ->assertDontSee('Rules Agreement Required');
+        ->assertSee('Rules Agreement Required')
+        ->assertSee('I agree to the community rules on behalf of');
 });
 
 // ─── agreeToRulesOnBehalf method ─────────────────────────────────────────────
