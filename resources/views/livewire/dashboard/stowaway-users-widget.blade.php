@@ -243,7 +243,9 @@ new class extends Component {
                             <dt class="text-zinc-500 dark:text-zinc-400 font-medium shrink-0">Parent Email</dt>
                             <dd>{{ $selectedUser->parent_email ?? 'None' }}</dd>
                         </div>
+                    @endcan
 
+                    @can('manage-stowaway-users')
                         <div class="flex justify-between gap-4">
                             <dt class="text-zinc-500 dark:text-zinc-400 font-medium shrink-0">Rules Agreed By</dt>
                             <dd>

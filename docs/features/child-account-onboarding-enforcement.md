@@ -465,7 +465,7 @@ Not applicable for this feature. This feature uses existing services (RecordActi
 
 ### User Agrees to Rules Themselves
 
-```
+```text
 [User views rules modal]
          ↓
 [Clicks "I Have Read the Rules and Agree to Follow Them"]
@@ -489,7 +489,7 @@ Not applicable for this feature. This feature uses existing services (RecordActi
 
 ### Parent Agrees on Behalf of Drifter Child
 
-```
+```text
 [Parent views Parent Portal]
          ↓
 [Sees child at Drifter level + Minecraft enabled]
@@ -530,7 +530,7 @@ Not applicable for this feature. This feature uses existing services (RecordActi
 ### Child Attempts Minecraft Link (Guard Enforcement)
 
 **Scenario 1: Drifter child**
-```
+```text
 [Parent tries generateChildMcCode for Drifter child]
          ↓
 [parent-portal/index.blade.php generateChildMcCode() line 267]
@@ -545,7 +545,7 @@ Toast: "This child must agree to the community rules..."
 ```
 
 **Scenario 2: Stowaway child (awaiting staff review)**
-```
+```text
 [Parent tries generateChildMcCode for Stowaway child]
          ↓
 [parent-portal/index.blade.php generateChildMcCode() line 273]
@@ -560,7 +560,7 @@ Toast: "This child is awaiting staff review before they can link a Minecraft acc
 ```
 
 **Scenario 3: Traveler+ child (allowed to proceed)**
-```
+```text
 [Parent tries generateChildMcCode for Traveler child]
          ↓
 [parent-portal/index.blade.php generateChildMcCode() line 267, 273]
@@ -618,7 +618,7 @@ Not applicable for this feature. No configuration files or environment variables
 
 ### Parent Portal Livewire Tests
 
-**File:** `tests/Feature/Livewire/ParentPortalAgreeToRulesTest.php` (5 tests)
+**File:** `tests/Feature/Livewire/ParentPortalAgreeToRulesTest.php` (8 tests)
 
 1. **Blade rendering: Drifter rules card**
    - `it('shows the Drifter rules agreement card when child is Drifter and Minecraft is enabled')`
@@ -735,7 +735,7 @@ Not applicable for this feature. No configuration files or environment variables
 ### Tests
 
 - `tests/Feature/Actions/Actions/AgreeToRulesTest.php` — Unit tests for AgreeToRules action (8 tests)
-- `tests/Feature/Livewire/ParentPortalAgreeToRulesTest.php` — Parent portal agreement and UI state tests (5 tests)
+- `tests/Feature/Livewire/ParentPortalAgreeToRulesTest.php` — Parent portal agreement and UI state tests (8 tests)
 - `tests/Feature/Livewire/ParentPortalMcCodeGuardTest.php` — MC code generation guards for Drifter/Stowaway (3 tests)
 - `tests/Feature/Livewire/ProfileRulesAgreedByTest.php` — Profile display tests for "Rules Agreed By" visibility and gate protection (5 tests)
 - `tests/Feature/Livewire/Dashboard/StowawayUsersWidgetTest.php` — Stowaway widget tests, including "Rules Agreed By" describe block (4 tests in Rules Agreed By section)

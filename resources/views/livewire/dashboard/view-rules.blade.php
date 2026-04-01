@@ -33,7 +33,7 @@ new class extends Component {
     </flux:modal.trigger>
 
     <flux:modal name=”view-rules-modal” size=”lg” variant=”flyout” class=”w-full md:w-2/3”>
-        <div id=”editor_content”>
+        <div class=”editor_content”>
     <h1>Lighthouse Community Rules</h1>
 
     <blockquote>

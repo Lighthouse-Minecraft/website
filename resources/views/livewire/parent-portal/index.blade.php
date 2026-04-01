@@ -317,6 +317,18 @@ new class extends Component {
             return;
         }
 
+        if (! $child->parent_allows_minecraft) {
+            Flux::toast('Minecraft access is currently disabled for this child.', 'Not Allowed', variant: 'danger');
+
+            return;
+        }
+
+        if ($child->isInBrig()) {
+            Flux::toast('This child cannot agree to the rules right now.', 'Not Allowed', variant: 'danger');
+
+            return;
+        }
+
         if ($child->isAtLeastLevel(\App\Enums\MembershipLevel::Stowaway)) {
             return;
         }
