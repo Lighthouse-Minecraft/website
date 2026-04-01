@@ -290,6 +290,35 @@ new class extends Component {
         }
     }
 
+    public function agreeToRulesOnBehalf(int $childId): void
+    {
+        if ($this->isStaffViewing) {
+            return;
+        }
+
+        $child = User::findOrFail($childId);
+        $parent = $this->getTargetUser();
+
+        if (! $parent->children()->where('child_user_id', $child->id)->exists()) {
+            Flux::toast('You do not have permission to manage this account.', 'Unauthorized', variant: 'danger');
+
+            return;
+        }
+
+        if ($child->isAtLeastLevel(\App\Enums\MembershipLevel::Stowaway)) {
+            return;
+        }
+
+        $result = \App\Actions\AgreeToRules::run($child, $parent);
+
+        if ($result['success']) {
+            unset($this->children);
+            Flux::toast("{$child->name} has agreed to the community rules and has been promoted to Stowaway.", 'Rules Agreed', variant: 'success');
+        } else {
+            Flux::toast($result['message'], 'Error', variant: 'danger');
+        }
+    }
+
     public function checkChildVerification(int $childId): void
     {
         $code = $this->childMcVerificationCodes[$childId] ?? null;
@@ -665,46 +694,93 @@ new class extends Component {
                                 <flux:text variant="subtle" class="text-sm">No Discord accounts linked</flux:text>
                             @endif
 
-                            {{-- Link Minecraft Account --}}
+                            {{-- Minecraft Account Section --}}
                             @if(! $isStaffViewing && $child->parent_allows_minecraft && ! $child->isInBrig())
                                 <div class="mt-3 pt-3 border-t border-zinc-200 dark:border-zinc-700">
-                                    <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 mb-2">Link Minecraft Account</flux:text>
 
-                                    @if(isset($this->childMcVerificationCodes[$child->id]))
-                                        <div class="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
-                                            <flux:text class="text-sm mb-1">Verification code for {{ $child->name }}:</flux:text>
-                                            <div class="font-mono text-2xl font-bold text-blue-600 dark:text-blue-400 tracking-wider my-2">
-                                                {{ $this->childMcVerificationCodes[$child->id] }}
-                                            </div>
-                                            <flux:text class="text-sm">
-                                                Have {{ $child->name }} join the server and run:
-                                                <code class="px-2 py-0.5 bg-zinc-200 dark:bg-zinc-700 rounded text-xs">/verify {{ $this->childMcVerificationCodes[$child->id] }}</code>
+                                    @if($child->isLevel(\App\Enums\MembershipLevel::Drifter))
+                                        {{-- Drifter state: rules agreement required --}}
+                                        <flux:card class="border border-amber-500/40 bg-amber-950/20">
+                                            <flux:heading size="sm" class="text-amber-300">Rules Agreement Required</flux:heading>
+                                            <flux:separator variant="subtle" class="my-3" />
+                                            <flux:text class="mb-2">
+                                                Before {{ $child->name }} can link a Minecraft account, they must agree to the Lighthouse Community Rules.
                                             </flux:text>
-                                            <div class="mt-2">
-                                                <flux:button wire:click="checkChildVerification({{ $child->id }})" variant="ghost" size="sm">
-                                                    Check Status
+                                            <flux:text variant="subtle" class="text-sm mb-3">
+                                                {{ $child->name }} can log in to their own account and agree to the rules directly, or you can agree on their behalf below.
+                                            </flux:text>
+
+                                            <details class="mb-3">
+                                                <summary class="cursor-pointer text-sm text-zinc-400 hover:text-zinc-200">View full community rules</summary>
+                                                <div class="mt-3 p-3 bg-zinc-900/50 rounded text-sm">
+                                                    @include('partials.community-rules')
+                                                </div>
+                                            </details>
+
+                                            <flux:button
+                                                wire:click="agreeToRulesOnBehalf({{ $child->id }})"
+                                                wire:confirm="By clicking confirm, you agree to the Lighthouse Community Rules on behalf of {{ $child->name }}. This means you have read the rules above and agree that {{ $child->name }} will follow them."
+                                                variant="primary"
+                                                color="amber"
+                                                size="sm"
+                                            >
+                                                I agree to the community rules on behalf of {{ $child->name }}
+                                            </flux:button>
+                                        </flux:card>
+
+                                    @elseif($child->isLevel(\App\Enums\MembershipLevel::Stowaway))
+                                        {{-- Stowaway state: awaiting staff review --}}
+                                        <flux:card class="border border-zinc-700 bg-zinc-900/50">
+                                            <flux:heading size="sm">Awaiting Staff Review</flux:heading>
+                                            <flux:separator variant="subtle" class="my-3" />
+                                            <flux:text class="mb-2">
+                                                {{ $child->name }} has agreed to the community rules and is now waiting for a staff member to review their account.
+                                            </flux:text>
+                                            <flux:text variant="subtle" class="text-sm">
+                                                Once a staff member promotes {{ $child->name }} to Traveler, they will be able to link a Minecraft account. This usually happens within a few hours.
+                                            </flux:text>
+                                        </flux:card>
+
+                                    @else
+                                        {{-- Traveler+ state: existing Minecraft linking UI --}}
+                                        <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 mb-2">Link Minecraft Account</flux:text>
+
+                                        @if(isset($this->childMcVerificationCodes[$child->id]))
+                                            <div class="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                                                <flux:text class="text-sm mb-1">Verification code for {{ $child->name }}:</flux:text>
+                                                <div class="font-mono text-2xl font-bold text-blue-600 dark:text-blue-400 tracking-wider my-2">
+                                                    {{ $this->childMcVerificationCodes[$child->id] }}
+                                                </div>
+                                                <flux:text class="text-sm">
+                                                    Have {{ $child->name }} join the server and run:
+                                                    <code class="px-2 py-0.5 bg-zinc-200 dark:bg-zinc-700 rounded text-xs">/verify {{ $this->childMcVerificationCodes[$child->id] }}</code>
+                                                </flux:text>
+                                                <div class="mt-2">
+                                                    <flux:button wire:click="checkChildVerification({{ $child->id }})" variant="ghost" size="sm">
+                                                        Check Status
+                                                    </flux:button>
+                                                </div>
+                                            </div>
+                                        @else
+                                            <div class="flex items-end gap-2 flex-wrap">
+                                                <div class="flex-1 min-w-[150px]">
+                                                    <flux:input
+                                                        wire:model="childMcUsernames.{{ $child->id }}"
+                                                        placeholder="Minecraft username"
+                                                        size="sm"
+                                                    />
+                                                </div>
+                                                <flux:select wire:model="childMcAccountTypes.{{ $child->id }}" size="sm" class="w-28">
+                                                    <option value="java">Java</option>
+                                                    <option value="bedrock">Bedrock</option>
+                                                </flux:select>
+                                                <flux:button wire:click="generateChildMcCode({{ $child->id }})" variant="primary" size="sm">
+                                                    Generate Code
                                                 </flux:button>
                                             </div>
-                                        </div>
-                                    @else
-                                        <div class="flex items-end gap-2 flex-wrap">
-                                            <div class="flex-1 min-w-[150px]">
-                                                <flux:input
-                                                    wire:model="childMcUsernames.{{ $child->id }}"
-                                                    placeholder="Minecraft username"
-                                                    size="sm"
-                                                />
-                                            </div>
-                                            <flux:select wire:model="childMcAccountTypes.{{ $child->id }}" size="sm" class="w-28">
-                                                <option value="java">Java</option>
-                                                <option value="bedrock">Bedrock</option>
-                                            </flux:select>
-                                            <flux:button wire:click="generateChildMcCode({{ $child->id }})" variant="primary" size="sm">
-                                                Generate Code
-                                            </flux:button>
-                                        </div>
-                                        @if(isset($this->childMcErrors[$child->id]))
-                                            <flux:text class="text-sm text-red-500 mt-1">{{ $this->childMcErrors[$child->id] }}</flux:text>
+                                            @if(isset($this->childMcErrors[$child->id]))
+                                                <flux:text class="text-sm text-red-500 mt-1">{{ $this->childMcErrors[$child->id] }}</flux:text>
+                                            @endif
                                         @endif
                                     @endif
                                 </div>
