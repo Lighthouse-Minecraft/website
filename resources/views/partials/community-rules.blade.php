@@ -1,4 +1,4 @@
-<div id="editor_content">
+<div class="editor_content">
     <h1>Lighthouse Community Rules</h1>
 
     <blockquote>

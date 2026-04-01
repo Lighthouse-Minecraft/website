@@ -78,6 +78,7 @@ select:focus[data-flux-control] {
 
 .editor_content {
   @apply space-y-8 leading-relaxed text-base;
+
   font-family: 'Roboto Condensed', sans-serif;
 }
 
@@ -106,7 +107,7 @@ select:focus[data-flux-control] {
   @apply list-disc list-inside mb-4 dark:text-gray-300 text-gray-500;
 }
 
-.editor_content blockquote p{
+.editor_content blockquote {
   @apply border-l-4 border-cyan-400 bg-gray-800/50 pl-4 italic text-cyan-400 my-6;
 }
 
