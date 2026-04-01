@@ -317,12 +317,6 @@ new class extends Component {
             return;
         }
 
-        if (! $child->parent_allows_minecraft) {
-            Flux::toast('Minecraft access is currently disabled for this child.', 'Not Allowed', variant: 'danger');
-
-            return;
-        }
-
         if ($child->isInBrig()) {
             Flux::toast('This child cannot agree to the rules right now.', 'Not Allowed', variant: 'danger');
 
@@ -719,41 +713,44 @@ new class extends Component {
                                 <flux:text variant="subtle" class="text-sm">To link a Discord account, {{ $child->name }} must log in to their own account and connect it through their settings.</flux:text>
                             @endif
 
-                            {{-- Minecraft Account Section --}}
-                            @if(! $isStaffViewing && $child->parent_allows_minecraft && ! $child->isInBrig())
+                            {{-- Drifter state: rules agreement required (shown regardless of minecraft permission) --}}
+                            @if(! $isStaffViewing && $child->isLevel(\App\Enums\MembershipLevel::Drifter) && ! $child->isInBrig())
+                                <div class="mt-3 pt-3 border-t border-zinc-200 dark:border-zinc-700">
+                                    <flux:card class="border border-amber-500/40 bg-amber-950/20">
+                                        <flux:heading size="sm" class="text-amber-300">Rules Agreement Required</flux:heading>
+                                        <flux:separator variant="subtle" class="my-3" />
+                                        <flux:text class="mb-2">
+                                            Before {{ $child->name }} can participate in the Lighthouse MC Community, they must agree to the Lighthouse Community Rules.
+                                        </flux:text>
+                                        <flux:text variant="subtle" class="text-sm mb-3">
+                                            {{ $child->name }} can log in to their own account and agree to the rules directly, or you can agree on their behalf below.
+                                        </flux:text>
+
+                                        <details class="mb-3">
+                                            <summary class="cursor-pointer text-sm text-zinc-400 hover:text-zinc-200">View full community rules</summary>
+                                            <div class="mt-3 p-3 bg-zinc-900/50 rounded text-sm">
+                                                @include('partials.community-rules')
+                                            </div>
+                                        </details>
+
+                                        <flux:button
+                                            wire:click="agreeToRulesOnBehalf({{ $child->id }})"
+                                            wire:confirm="By clicking confirm, you agree to the Lighthouse Community Rules on behalf of {{ $child->name }}. This means you have read the rules above and agree that {{ $child->name }} will follow them."
+                                            variant="primary"
+                                            color="amber"
+                                            size="sm"
+                                        >
+                                            I agree to the community rules on behalf of {{ $child->name }}
+                                        </flux:button>
+                                    </flux:card>
+                                </div>
+                            @endif
+
+                            {{-- Minecraft Account Section (Stowaway+ only) --}}
+                            @if(! $isStaffViewing && $child->parent_allows_minecraft && ! $child->isInBrig() && ! $child->isLevel(\App\Enums\MembershipLevel::Drifter))
                                 <div class="mt-3 pt-3 border-t border-zinc-200 dark:border-zinc-700">
 
-                                    @if($child->isLevel(\App\Enums\MembershipLevel::Drifter))
-                                        {{-- Drifter state: rules agreement required --}}
-                                        <flux:card class="border border-amber-500/40 bg-amber-950/20">
-                                            <flux:heading size="sm" class="text-amber-300">Rules Agreement Required</flux:heading>
-                                            <flux:separator variant="subtle" class="my-3" />
-                                            <flux:text class="mb-2">
-                                                Before {{ $child->name }} can link a Minecraft account, they must agree to the Lighthouse Community Rules.
-                                            </flux:text>
-                                            <flux:text variant="subtle" class="text-sm mb-3">
-                                                {{ $child->name }} can log in to their own account and agree to the rules directly, or you can agree on their behalf below.
-                                            </flux:text>
-
-                                            <details class="mb-3">
-                                                <summary class="cursor-pointer text-sm text-zinc-400 hover:text-zinc-200">View full community rules</summary>
-                                                <div class="mt-3 p-3 bg-zinc-900/50 rounded text-sm">
-                                                    @include('partials.community-rules')
-                                                </div>
-                                            </details>
-
-                                            <flux:button
-                                                wire:click="agreeToRulesOnBehalf({{ $child->id }})"
-                                                wire:confirm="By clicking confirm, you agree to the Lighthouse Community Rules on behalf of {{ $child->name }}. This means you have read the rules above and agree that {{ $child->name }} will follow them."
-                                                variant="primary"
-                                                color="amber"
-                                                size="sm"
-                                            >
-                                                I agree to the community rules on behalf of {{ $child->name }}
-                                            </flux:button>
-                                        </flux:card>
-
-                                    @elseif($child->isLevel(\App\Enums\MembershipLevel::Stowaway))
+                                    @if($child->isLevel(\App\Enums\MembershipLevel::Stowaway))
                                         {{-- Stowaway state: awaiting staff review --}}
                                         <flux:card class="border border-zinc-700 bg-zinc-900/50">
                                             <flux:heading size="sm">Awaiting Staff Review</flux:heading>
