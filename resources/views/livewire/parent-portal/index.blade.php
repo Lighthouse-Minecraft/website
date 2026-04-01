@@ -564,11 +564,10 @@ new class extends Component {
                         <flux:button variant="primary" icon="plus" size="sm">Add Child Account</flux:button>
                     </flux:modal.trigger>
                 @else
-                    <flux:tooltip content="You can create your child's account once staff has approved your account">
-                        <div>
-                            <flux:button variant="primary" icon="plus" size="sm" disabled>Add Child Account</flux:button>
-                        </div>
-                    </flux:tooltip>
+                    <div class="text-right">
+                        <flux:button variant="primary" icon="plus" size="sm" disabled>Add Child Account</flux:button>
+                        <flux:text variant="subtle" class="text-xs mt-1">Available once staff approves your account</flux:text>
+                    </div>
                 @endif
             @endif
         </div>
@@ -724,8 +723,8 @@ new class extends Component {
                             {{-- Drifter state: rules agreement required (shown regardless of minecraft permission) --}}
                             @if(! $isStaffViewing && $child->isLevel(\App\Enums\MembershipLevel::Drifter) && ! $child->isInBrig())
                                 <div class="mt-3 pt-3 border-t border-zinc-200 dark:border-zinc-700">
-                                    <flux:card class="border border-amber-500/40 bg-amber-950/20">
-                                        <flux:heading size="sm" class="text-amber-300">Rules Agreement Required</flux:heading>
+                                    <flux:card class="border border-amber-300 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-950/20">
+                                        <flux:heading size="sm" class="text-amber-800 dark:text-amber-300">Rules Agreement Required</flux:heading>
                                         <flux:separator variant="subtle" class="my-3" />
                                         <flux:text class="mb-2">
                                             Before {{ $child->name }} can participate in the Lighthouse MC Community, they must agree to the Lighthouse Community Rules.
@@ -735,8 +734,8 @@ new class extends Component {
                                         </flux:text>
 
                                         <details class="mb-3">
-                                            <summary class="cursor-pointer text-sm text-zinc-400 hover:text-zinc-200">View full community rules</summary>
-                                            <div class="mt-3 p-3 bg-zinc-900/50 rounded text-sm">
+                                            <summary class="cursor-pointer text-sm text-zinc-600 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200">View full community rules</summary>
+                                            <div class="mt-3 rounded bg-zinc-50 p-3 text-sm text-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-100">
                                                 @include('partials.community-rules')
                                             </div>
                                         </details>
