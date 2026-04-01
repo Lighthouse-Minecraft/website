@@ -28,29 +28,29 @@ new class extends Component {
         @if (auth()->user()->rules_accepted_at)
             <flux:button size="xs">View Rules</flux:button>
         @else
-            <flux:button variant="primary">Read & Accept Rules</flux:button>
+            <flux:button variant="primary">Read &amp; Accept Rules</flux:button>
         @endif
     </flux:modal.trigger>
 
-    <flux:modal name=”view-rules-modal” size=”lg” variant=”flyout” class=”w-full md:w-2/3”>
-        <div class=”editor_content”>
+    <flux:modal name="view-rules-modal" size="lg" variant="flyout" class="w-full md:w-2/3">
+        <div class="editor_content">
     <h1>Lighthouse Community Rules</h1>
 
     <blockquote>
-        “Love one another with brotherly affection. Outdo one another in showing honor.”
+        &ldquo;Love one another with brotherly affection. Outdo one another in showing honor.&rdquo;
         <br>
-        <span class=”block text-sm text-gray-500”>Romans 12:10 (ESV)</span>
+        <span class="block text-sm text-gray-500">Romans 12:10 (ESV)</span>
     </blockquote>
 
     <blockquote>
-        “You shall love the Lord your God with all your heart and with all your soul and with all your mind. This is the great and first commandment. And a second is like it: You shall love your neighbor as yourself.”
+        &ldquo;You shall love the Lord your God with all your heart and with all your soul and with all your mind. This is the great and first commandment. And a second is like it: You shall love your neighbor as yourself.&rdquo;
         <br>
-        <span class=”block text-sm text-gray-500”>Matthew 22:37–39 (ESV)</span>
+        <span class="block text-sm text-gray-500">Matthew 22:37&ndash;39 (ESV)</span>
     </blockquote>
 
     <h2>Honor God</h2>
     <ul>
-        <li>No using God’s name in an inappropriate manner</li>
+        <li>No using God&rsquo;s name in an inappropriate manner</li>
         <li>No sharing images that depict God or Jesus in a disrespectful way</li>
         <li>No promoting or encouraging any sinful lifestyle (as defined by a traditional view of Scripture)</li>
     </ul>
@@ -87,7 +87,7 @@ new class extends Component {
     <ul>
         <li>No advertising or promoting other Minecraft or Discord servers</li>
         <li>No videos/music with inappropriate images or language</li>
-        <li>No sermons or teachings from false teachers (e.g. Bethel, prosperity gospel, “Name it and claim it”)</li>
+        <li>No sermons or teachings from false teachers (e.g. Bethel, prosperity gospel, &ldquo;Name it and claim it&rdquo;)</li>
     </ul>
 
     <h2>Moderation</h2>
@@ -96,19 +96,19 @@ new class extends Component {
         <li>If you disagree, contact the officers privately</li>
     </ul>
 
-    <p class=”italic text-gray-500”>The Officers reserve the right to remove individuals from the community that we feel are harmful or a bad influence on members of Lighthouse.</p>
+    <p class="italic text-gray-500">The Officers reserve the right to remove individuals from the community that we feel are harmful or a bad influence on members of Lighthouse.</p>
 
     <h2>In-Game Conduct</h2>
-    <p>This is a Christ-Centered, Family-Friendly, Modded Survival Server. As such…</p>
+    <p>This is a Christ-Centered, Family-Friendly, Modded Survival Server. As such&hellip;</p>
     <ul>
         <li>No begging for handouts</li>
-        <li>No stealing from others’ chests or property</li>
+        <li>No stealing from others&rsquo; chests or property</li>
         <li>No auto clickers or auto aiming</li>
         <li>No XRay mods or exploits</li>
         <li>Keep farms server-friendly (turn off when not in use, avoid hopper/entity lag)</li>
         <li>Only PvP with willing participants</li>
         <li>No tunnel bores or mass destruction</li>
-        <li>No using other people’s farms without permission</li>
+        <li>No using other people&rsquo;s farms without permission</li>
     </ul>
 
     <h2>Duping Rules</h2>
