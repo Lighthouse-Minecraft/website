@@ -264,6 +264,18 @@ new class extends Component {
             return;
         }
 
+        if ($child->isLevel(\App\Enums\MembershipLevel::Drifter)) {
+            Flux::toast('This child must agree to the community rules before linking a Minecraft account.', 'Rules Required', variant: 'danger');
+
+            return;
+        }
+
+        if ($child->isLevel(\App\Enums\MembershipLevel::Stowaway)) {
+            Flux::toast('This child is awaiting staff review before they can link a Minecraft account.', 'Awaiting Review', variant: 'danger');
+
+            return;
+        }
+
         $username = $this->childMcUsernames[$childId] ?? '';
         $accountTypeStr = $this->childMcAccountTypes[$childId] ?? 'java';
 
