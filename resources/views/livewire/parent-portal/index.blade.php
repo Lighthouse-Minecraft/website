@@ -716,6 +716,7 @@ new class extends Component {
                                 @endforeach
                             @else
                                 <flux:text variant="subtle" class="text-sm">No Discord accounts linked</flux:text>
+                                <flux:text variant="subtle" class="text-sm">To link a Discord account, {{ $child->name }} must log in to their own account and connect it through their settings.</flux:text>
                             @endif
 
                             {{-- Minecraft Account Section --}}
