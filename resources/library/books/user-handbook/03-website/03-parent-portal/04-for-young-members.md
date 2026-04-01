@@ -23,10 +23,19 @@ Your parent can view:
 Your parent has the ability to:
 
 - **Enable or disable** your access to the website, Minecraft server, and Discord server
+- **Agree to the community rules** on your behalf if you're a new member
 - **Link Minecraft accounts** on your behalf
 - **Edit** your username, email, or other account details
 
 If your parent disables access to something, you'll see a message on your settings page letting you know. You won't be able to use that service until your parent turns it back on.
+
+## Agreeing to the Community Rules
+
+Before you can link a Minecraft account or get server access, you need to agree to the **Lighthouse Community Rules**. You can do this yourself by clicking the **Read & Accept Rules** button on your Dashboard.
+
+Your parent can also agree on your behalf from the Parent Portal -- so you don't have to do this step alone if you'd rather go through it together.
+
+Once the rules are accepted, your account will move to **Stowaway** status and staff will review your account. You'll be promoted to **Traveler** once a staff member approves you, which usually happens within a few hours.
 
 ## If Something Is Disabled
 
