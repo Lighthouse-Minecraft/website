@@ -243,6 +243,25 @@ new class extends Component {
                             <dt class="text-zinc-500 dark:text-zinc-400 font-medium shrink-0">Parent Email</dt>
                             <dd>{{ $selectedUser->parent_email ?? 'None' }}</dd>
                         </div>
+
+                        <div class="flex justify-between gap-4">
+                            <dt class="text-zinc-500 dark:text-zinc-400 font-medium shrink-0">Rules Agreed By</dt>
+                            <dd>
+                                @if(is_null($selectedUser->rules_accepted_by_user_id))
+                                    <span class="text-zinc-400 italic">Not yet agreed</span>
+                                @elseif($selectedUser->rules_accepted_by_user_id === $selectedUser->id)
+                                    Self
+                                @else
+                                    @php $agreedBy = $selectedUser->rulesAcceptedBy; @endphp
+                                    @if($agreedBy)
+                                        <flux:link href="{{ route('profile.show', $agreedBy) }}">{{ $agreedBy->name }}</flux:link>
+                                        (parent) — {{ $agreedBy->email }}
+                                    @else
+                                        <span class="text-zinc-400 italic">Unknown (user not found)</span>
+                                    @endif
+                                @endif
+                            </dd>
+                        </div>
                     @endcan
 
                     @if($selectedUser->rules_accepted_at)
