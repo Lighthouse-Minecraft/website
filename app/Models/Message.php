@@ -22,12 +22,14 @@ class Message extends Model
         'image_was_purged',
         'is_pending_moderation',
         'deleted_by',
+        'guest_email_sent',
     ];
 
     protected $casts = [
         'kind' => MessageKind::class,
         'image_was_purged' => 'boolean',
         'is_pending_moderation' => 'boolean',
+        'guest_email_sent' => 'boolean',
     ];
 
     public function imageUrl(): ?string
