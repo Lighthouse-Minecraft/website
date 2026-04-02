@@ -85,7 +85,7 @@
                     <flux:navlist.item icon="book-open" :href="route('library.books.index')" :current="request()->routeIs('library.books.*') || request()->routeIs('library.guides.*')" wire:navigate>Help</flux:navlist.item>
                 </flux:navlist.group>
 
-                @canany(['view-ready-room', 'view-acp', 'view-contact-inquiries'])
+                @canany(['view-ready-room', 'view-acp'])
                 <flux:navlist.group heading="Management" class="grid">
                     @can('view-ready-room')
                         <flux:navlist.item
@@ -95,17 +95,6 @@
                             wire:navigate
                         >
                             Staff Ready Room
-                        </flux:navlist.item>
-                    @endcan
-
-                    @can('view-contact-inquiries')
-                        <flux:navlist.item
-                            icon="envelope"
-                            :href="route('contact-inquiries.index')"
-                            :current="request()->routeIs('contact-inquiries.*')"
-                            wire:navigate
-                        >
-                            Contact Inquiries
                         </flux:navlist.item>
                     @endcan
 
