@@ -18,6 +18,8 @@ Route::view('dashboard', 'dashboard')
     ->middleware(['auth', 'verified', 'ensure-dob'])
     ->name('dashboard');
 
+Volt::route('/contact', 'contact.contact-form')->name('contact.index');
+
 Volt::route('/birthdate', 'auth.collect-birthdate')
     ->name('birthdate.show')
     ->middleware(['auth']);
