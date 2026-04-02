@@ -2,7 +2,7 @@
     <div class="w-full space-y-6">
         <flux:heading size="xl">{{ $page->title }}</flux:heading>
 
-        <div id="editor_content" class="prose max-w-none">
+        <div class="editor_content prose max-w-none">
             {!! $page->content !!}
         </div>
 
