@@ -61,7 +61,8 @@ class CreateContactInquiry
                 ->orWhereHas('staffPosition', fn ($q) => $q->whereNotNull('has_all_roles_at'))
                 ->orWhereHas('staffPosition.roles', fn ($q) => $q->where('name', 'Contact - Receive Submissions'))
             )
-            ->get();
+            ->get()
+            ->unique('id');
 
         $notificationService = app(TicketNotificationService::class);
         $notification = new NewContactInquiryNotification($thread);

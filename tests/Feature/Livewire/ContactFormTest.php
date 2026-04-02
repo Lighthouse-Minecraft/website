@@ -82,6 +82,7 @@ describe('Contact Form', function () {
         // Shows submitted state (to fool the bot) but creates no thread
         $component->assertSet('submitted', true);
         expect(Thread::where('guest_email', 'bot@example.com')->exists())->toBeFalse();
+        Notification::assertNothingSent();
     });
 
     it('shows success message after valid submission', function () {

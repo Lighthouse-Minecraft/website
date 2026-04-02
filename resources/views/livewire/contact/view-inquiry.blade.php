@@ -117,6 +117,9 @@ new class extends Component {
 
             $notificationService = app(TicketNotificationService::class);
             foreach ($participants as $participant) {
+                if (! $participant->user) {
+                    continue;
+                }
                 $notificationService->send(
                     $participant->user,
                     new NewContactInquiryNotification($this->thread),
