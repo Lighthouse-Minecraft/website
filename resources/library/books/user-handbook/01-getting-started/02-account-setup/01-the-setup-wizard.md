@@ -11,6 +11,14 @@ When you're a brand-new member, your **Dashboard** shows a setup wizard instead 
 
 The wizard appears for **Stowaway** and **Traveler** members and disappears automatically once you've finished -- or if you choose to dismiss it.
 
+## Before the Wizard: Accepting the Community Rules
+
+When you first create an account, you'll see a **Read & Accept Rules** button on your Dashboard. You need to read and accept the Lighthouse Community Rules before the setup wizard begins.
+
+Click the button to open the rules. Once you've read them, click **I Have Read the Rules and Agree to Follow Them** at the bottom. Your account will move to **Stowaway** status right away and the wizard will appear on your next visit.
+
+If you're a younger member, your parent can also accept the rules on your behalf from the Parent Portal.
+
 ## The Steps
 
 The wizard takes you through up to three steps in order:

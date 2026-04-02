@@ -112,6 +112,72 @@ describe('Stowaway Users Widget', function () {
     });
 });
 
+describe('Stowaway Users Widget - Rules Agreed By', function () {
+    it('shows Self when rules_accepted_by_user_id matches the user', function () {
+        loginAsAdmin();
+
+        $stowaway = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create([
+            'rules_accepted_at' => now(),
+        ]);
+        $stowaway->update(['rules_accepted_by_user_id' => $stowaway->id]);
+
+        Volt::test('dashboard.stowaway-users-widget')
+            ->call('viewUser', $stowaway->id)
+            ->assertSee('Rules Agreed By')
+            ->assertSee('Self');
+    });
+
+    it('shows parent name, email and profile link when a parent agreed', function () {
+        loginAsAdmin();
+
+        $parent = User::factory()->adult()->create(['name' => 'Parent User', 'email' => 'parent@example.com']);
+        $stowaway = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create([
+            'rules_accepted_at' => now(),
+            'rules_accepted_by_user_id' => $parent->id,
+        ]);
+
+        Volt::test('dashboard.stowaway-users-widget')
+            ->call('viewUser', $stowaway->id)
+            ->assertSee('Rules Agreed By')
+            ->assertSee('Parent User')
+            ->assertSee('parent@example.com')
+            ->assertSee('(parent)');
+    });
+
+    it('shows Not yet agreed when rules_accepted_by_user_id is null', function () {
+        loginAsAdmin();
+
+        $stowaway = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create([
+            'rules_accepted_at' => null,
+            'rules_accepted_by_user_id' => null,
+        ]);
+
+        Volt::test('dashboard.stowaway-users-widget')
+            ->call('viewUser', $stowaway->id)
+            ->assertSee('Rules Agreed By')
+            ->assertSee('Not yet agreed');
+    });
+
+    it('shows Not yet agreed when parent who agreed is later deleted (nullOnDelete cascade)', function () {
+        loginAsAdmin();
+
+        $parent = User::factory()->adult()->create();
+        $stowaway = User::factory()->withMembershipLevel(MembershipLevel::Stowaway)->create([
+            'rules_accepted_at' => now(),
+            'rules_accepted_by_user_id' => $parent->id,
+        ]);
+
+        // Deleting the parent nullifies rules_accepted_by_user_id via nullOnDelete cascade
+        $parent->delete();
+        $stowaway->refresh();
+
+        Volt::test('dashboard.stowaway-users-widget')
+            ->call('viewUser', $stowaway->id)
+            ->assertSee('Rules Agreed By')
+            ->assertSee('Not yet agreed');
+    });
+});
+
 describe('Stowaway Users Widget - Permissions', function () {
     it('can be seen by user with Membership Level - Manager role', function () {
         $user = User::factory()
