@@ -18,6 +18,18 @@ Route::view('dashboard', 'dashboard')
     ->middleware(['auth', 'verified', 'ensure-dob'])
     ->name('dashboard');
 
+Volt::route('/contact', 'contact.contact-form')->name('contact.index');
+Volt::route('/contact/thread/{token}', 'contact.guest-thread')->name('contact.thread');
+
+// Contact Inquiry Routes (staff-only management)
+Route::prefix('contact-inquiries')
+    ->name('contact-inquiries.')
+    ->middleware(['auth', 'can:view-contact-inquiries'])
+    ->group(function () {
+        Volt::route('/', 'contact.inquiry-list')->name('index');
+        Volt::route('/{thread}', 'contact.view-inquiry')->name('show');
+    });
+
 Volt::route('/birthdate', 'auth.collect-birthdate')
     ->name('birthdate.show')
     ->middleware(['auth']);

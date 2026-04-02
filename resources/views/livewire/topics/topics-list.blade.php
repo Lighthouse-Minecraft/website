@@ -3,6 +3,7 @@
 use App\Actions\ApproveBlogComment;
 use App\Actions\RejectBlogComment;
 use App\Enums\MessageKind;
+use App\Enums\ThreadStatus;
 use App\Enums\ThreadType;
 use App\Models\Message;
 use App\Models\Thread;
@@ -15,6 +16,12 @@ new class extends Component
     public bool $showArchive = false;
 
     public string $filter = 'active';
+
+    #[Computed]
+    public function canViewContactInquiries(): bool
+    {
+        return auth()->user()->can('view-contact-inquiries');
+    }
 
     #[Computed]
     public function canViewFlagged(): bool
@@ -71,6 +78,49 @@ new class extends Component
             ->whereHas('participants', fn ($q) => $q->where('user_id', $user->id)->where('is_viewer', false))
             ->orderBy('last_message_at', 'desc')
             ->get();
+    }
+
+    #[Computed]
+    public function contactInquiries()
+    {
+        if (! $this->canViewContactInquiries) {
+            return collect();
+        }
+
+        return Thread::with(['participants' => function ($q) {
+            $q->where('user_id', auth()->id());
+        }])
+            ->where('type', ThreadType::ContactInquiry)
+            ->whereNotIn('status', [ThreadStatus::Closed->value, ThreadStatus::Resolved->value])
+            ->orderBy('last_message_at', 'desc')
+            ->get();
+    }
+
+    public function isUnreadInquiry(Thread $thread): bool
+    {
+        $participant = $thread->participants
+            ->where('user_id', auth()->id())
+            ->first();
+
+        if (! $participant || ! $participant->last_read_at) {
+            return true;
+        }
+
+        return $thread->last_message_at > $participant->last_read_at;
+    }
+
+    public function inquiryCategory(Thread $thread): string
+    {
+        if (preg_match('/^\[([^\]]+)\]/', $thread->subject, $matches)) {
+            return $matches[1];
+        }
+
+        return '';
+    }
+
+    public function inquirySubject(Thread $thread): string
+    {
+        return preg_replace('/^\[[^\]]+\]\s*/', '', $thread->subject);
     }
 
     #[Computed]
@@ -146,6 +196,14 @@ new class extends Component
         <flux:button wire:click="$set('filter', 'active')" :variant="$filter === 'active' ? 'primary' : 'ghost'" size="sm">
             My Discussions
         </flux:button>
+        @if($this->canViewContactInquiries)
+            <flux:button wire:click="$set('filter', 'contact')" :variant="$filter === 'contact' ? 'primary' : 'ghost'" size="sm">
+                Contact Inquiries
+                @if($this->contactInquiries->count() > 0)
+                    <flux:badge color="blue" size="sm">{{ $this->contactInquiries->count() }}</flux:badge>
+                @endif
+            </flux:button>
+        @endif
         @if($this->canViewFlagged)
             <flux:button wire:click="$set('filter', 'flagged')" :variant="$filter === 'flagged' ? 'danger' : 'ghost'" size="sm">
                 Flagged Messages
@@ -237,6 +295,49 @@ new class extends Component
                 <flux:text class="mt-2">There are no flagged messages awaiting review.</flux:text>
             </div>
         @endif
+    @elseif($filter === 'contact' && $this->canViewContactInquiries)
+        {{-- Contact Inquiries --}}
+        @if($this->contactInquiries->isNotEmpty())
+            <div class="rounded-lg border border-zinc-200 dark:border-zinc-700 divide-y divide-zinc-200 dark:divide-zinc-700">
+                @foreach($this->contactInquiries as $inquiry)
+                    <a
+                        href="{{ route('contact-inquiries.show', $inquiry) }}"
+                        wire:navigate
+                        wire:key="inquiry-{{ $inquiry->id }}"
+                        class="block p-4 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition"
+                    >
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2">
+                                    <flux:heading size="sm">{{ $this->inquirySubject($inquiry) }}</flux:heading>
+                                    @if($this->isUnreadInquiry($inquiry))
+                                        <flux:badge color="blue" size="sm">New</flux:badge>
+                                    @endif
+                                    @if($this->inquiryCategory($inquiry))
+                                        <flux:badge color="zinc" size="sm">{{ $this->inquiryCategory($inquiry) }}</flux:badge>
+                                    @endif
+                                </div>
+                                <div class="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                                    <span>From: {{ $inquiry->guest_name ?? $inquiry->guest_email }}</span>
+                                    <span class="mx-2">&bull;</span>
+                                    <span>{{ $inquiry->created_at->diffForHumans() }}</span>
+                                    @if($inquiry->last_message_at)
+                                        <span class="mx-2">&bull;</span>
+                                        <span>Last activity {{ $inquiry->last_message_at->diffForHumans() }}</span>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                @endforeach
+            </div>
+        @else
+            <div class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-8 text-center text-zinc-500 dark:text-zinc-400">
+                <flux:heading size="lg" class="text-zinc-500 dark:text-zinc-400">No Open Inquiries</flux:heading>
+                <flux:text class="mt-2">There are no open contact inquiries at this time.</flux:text>
+            </div>
+        @endif
+
     @else
 
     {{-- Active Topics --}}
