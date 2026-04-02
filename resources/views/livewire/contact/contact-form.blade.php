@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
 
-new #[Layout('components.layouts.app.sidebar')] class extends Component {
+new #[Layout('components.layouts.app')] class extends Component {
     public string $name = '';
     public string $email = '';
     public string $category = '';
@@ -91,10 +91,6 @@ new #[Layout('components.layouts.app.sidebar')] class extends Component {
         $this->submitted = true;
     }
 }; ?>
-
-<x-slot name="header">
-    <flux:heading>Contact Us</flux:heading>
-</x-slot>
 
 <div class="max-w-2xl mx-auto py-8 px-4">
     @if($submitted)

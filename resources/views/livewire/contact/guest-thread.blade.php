@@ -12,7 +12,7 @@ use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
 
-new #[Layout('components.layouts.app.sidebar')] class extends Component {
+new #[Layout('components.layouts.app')] class extends Component {
     public Thread $thread;
     public string $replyBody = '';
 
