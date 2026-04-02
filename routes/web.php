@@ -19,6 +19,7 @@ Route::view('dashboard', 'dashboard')
     ->name('dashboard');
 
 Volt::route('/contact', 'contact.contact-form')->name('contact.index');
+Volt::route('/contact/thread/{token}', 'contact.guest-thread')->name('contact.thread');
 
 // Contact Inquiry Routes (staff-only management)
 Route::prefix('contact-inquiries')
