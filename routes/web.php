@@ -26,6 +26,7 @@ Route::prefix('contact-inquiries')
     ->middleware(['auth', 'can:view-contact-inquiries'])
     ->group(function () {
         Volt::route('/', 'contact.inquiry-list')->name('index');
+        Volt::route('/{thread}', 'contact.view-inquiry')->name('show');
     });
 
 Volt::route('/birthdate', 'auth.collect-birthdate')
