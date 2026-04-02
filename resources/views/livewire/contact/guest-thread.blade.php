@@ -36,6 +36,7 @@ new #[Layout('components.layouts.app')] class extends Component {
             ->with('user')
             ->where('kind', '!=', MessageKind::InternalNote->value)
             ->orderBy('created_at')
+            ->orderBy('id')
             ->get();
     }
 
@@ -64,6 +65,14 @@ new #[Layout('components.layouts.app')] class extends Component {
 
     public function submitReply(): void
     {
+        $this->thread->refresh();
+
+        if (! in_array($this->thread->status, [ThreadStatus::Open, ThreadStatus::Pending], true)) {
+            Flux::toast('This conversation has already been closed.', variant: 'danger');
+
+            return;
+        }
+
         $this->validate([
             'replyBody' => ['required', 'string', 'min:1'],
         ]);

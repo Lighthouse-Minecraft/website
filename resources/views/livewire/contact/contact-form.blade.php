@@ -42,12 +42,14 @@ new #[Layout('components.layouts.app')] class extends Component {
             return;
         }
 
-        // IP rate limiting
+        // IP rate limiting — count every attempt (including invalid ones)
         $key = 'contact-form:'.request()->ip();
         if (RateLimiter::tooManyAttempts($key, 5)) {
             $this->addError('email', 'Too many submissions. Please try again later.');
             return;
         }
+
+        RateLimiter::hit($key, 3600);
 
         $this->validate([
             'name' => ['nullable', 'string', 'max:255'],
@@ -78,8 +80,6 @@ new #[Layout('components.layouts.app')] class extends Component {
             }
         }
 
-        RateLimiter::hit($key, 3600);
-
         CreateContactInquiry::run(
             name: $this->name,
             email: $this->email,
@@ -87,6 +87,14 @@ new #[Layout('components.layouts.app')] class extends Component {
             subject: $this->subject,
             body: $this->message,
         );
+
+        // Clear PII from component state after successful submission
+        $this->name = '';
+        $this->email = '';
+        $this->category = '';
+        $this->subject = '';
+        $this->message = '';
+        $this->hcaptchaToken = '';
 
         $this->submitted = true;
     }
@@ -168,9 +176,9 @@ new #[Layout('components.layouts.app')] class extends Component {
                         </div>
                     @endif
 
-                    <flux:button type="submit" variant="primary" wire:loading.attr="disabled">
-                        <span wire:loading.remove>Send Message</span>
-                        <span wire:loading>Sending...</span>
+                    <flux:button type="submit" variant="primary" wire:loading.attr="disabled" wire:target="submit" wire:loading.remove.attr="disabled">
+                        <span wire:loading.remove wire:target="submit">Send Message</span>
+                        <span wire:loading wire:target="submit">Sending...</span>
                     </flux:button>
                 </div>
             </form>
