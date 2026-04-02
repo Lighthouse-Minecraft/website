@@ -255,8 +255,6 @@
 
         {{ $slot }}
 
-        @include('partials.footer')
-
         @fluxScripts
         @persist('toast')
             <flux:toast position="top end" />
