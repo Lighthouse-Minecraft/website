@@ -20,6 +20,14 @@ Route::view('dashboard', 'dashboard')
 
 Volt::route('/contact', 'contact.contact-form')->name('contact.index');
 
+// Contact Inquiry Routes (staff-only management)
+Route::prefix('contact-inquiries')
+    ->name('contact-inquiries.')
+    ->middleware(['auth', 'can:view-contact-inquiries'])
+    ->group(function () {
+        Volt::route('/', 'contact.inquiry-list')->name('index');
+    });
+
 Volt::route('/birthdate', 'auth.collect-birthdate')
     ->name('birthdate.show')
     ->middleware(['auth']);
