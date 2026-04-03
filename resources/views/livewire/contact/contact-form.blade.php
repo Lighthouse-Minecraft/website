@@ -12,7 +12,7 @@ new #[Layout('components.layouts.app')] class extends Component {
     public string $category = '';
     public string $subject = '';
     public string $message = '';
-    public string $honeypot = '';
+    public string $website = '';
     public string $hcaptchaToken = '';
 
     public bool $submitted = false;
@@ -37,7 +37,7 @@ new #[Layout('components.layouts.app')] class extends Component {
     public function submit(): void
     {
         // Honeypot check — bots fill hidden fields
-        if ($this->honeypot !== '') {
+        if ($this->website !== '') {
             $this->submitted = true;
             return;
         }
@@ -118,7 +118,7 @@ new #[Layout('components.layouts.app')] class extends Component {
             <form wire:submit="submit">
                 {{-- Honeypot --}}
                 <div style="display:none" aria-hidden="true">
-                    <input type="text" wire:model="honeypot" name="website" tabindex="-1" autocomplete="off">
+                    <input type="text" wire:model="website" name="website" tabindex="-1" autocomplete="off">
                 </div>
 
                 <div class="space-y-4">
