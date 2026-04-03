@@ -192,7 +192,7 @@ new class extends Component {
                 <span>{{ $thread->created_at->diffForHumans() }}</span>
             </div>
         </div>
-        <flux:button href="{{ route('contact-inquiries.index') }}" variant="ghost" size="sm" wire:navigate>← Back to Inquiries</flux:button>
+        <flux:button href="{{ route('discussions.index', ['filter' => 'contact']) }}" variant="ghost" size="sm" wire:navigate>← Back to Inquiries</flux:button>
     </div>
 
     {{-- Status Management --}}
@@ -210,48 +210,89 @@ new class extends Component {
     </div>
 
     {{-- Messages --}}
-    <div class="flex flex-col gap-4 mb-6">
+    <div class="mx-auto w-full max-w-3xl mb-6">
+    <div class="flex flex-col gap-4">
+        @php $tz = auth()->user()->timezone ?? 'UTC'; @endphp
         @foreach($this->threadMessages as $message)
+            @php $isOwn = $message->user_id === auth()->id(); @endphp
+
             @if($message->kind === MessageKind::InternalNote)
-                {{-- Internal Note --}}
-                <div wire:key="msg-{{ $message->id }}" class="rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 p-4">
-                    <div class="flex items-center gap-2 mb-2">
-                        <flux:badge color="amber" size="sm">Internal Note</flux:badge>
-                        <span class="text-sm font-medium text-zinc-700 dark:text-zinc-300">{{ $message->user?->name ?? 'Staff' }}</span>
-                        <span class="text-xs text-zinc-400 dark:text-zinc-500">{{ $message->created_at->diffForHumans() }}</span>
-                    </div>
-                    <div class="prose prose-sm dark:prose-invert max-w-none">
-                        {!! Str::markdown($message->body, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
+                {{-- Internal Note — always left-aligned, amber --}}
+                <div wire:key="msg-{{ $message->id }}" class="chat-message chat-message-start">
+                    <flux:avatar size="sm" :src="$message->user?->avatarUrl()" :initials="$message->user?->initials() ?? 'S'" class="shrink-0 mt-1" />
+                    <div class="min-w-0">
+                        <div class="flex items-baseline gap-2 mb-1">
+                            <span class="font-semibold text-sm text-zinc-700 dark:text-zinc-300">{{ $message->user?->name ?? 'Staff' }}</span>
+                            <span class="text-xs text-zinc-400 dark:text-zinc-500">{{ $message->created_at->setTimezone($tz)->format('M j, Y g:i A') }}</span>
+                            <flux:badge size="sm" color="amber">Internal Note</flux:badge>
+                        </div>
+                        <div class="chat-bubble chat-bubble-start border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30">
+                            <div class="prose prose-sm dark:prose-invert max-w-none">
+                                {!! Str::markdown($message->body, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
+                            </div>
+                        </div>
                     </div>
                 </div>
+
+            @elseif($message->user_id && $isOwn)
+                {{-- Own staff reply — right-aligned, cyan --}}
+                <div wire:key="msg-{{ $message->id }}" class="chat-message chat-message-end">
+                    <flux:avatar size="sm" :src="$message->user?->avatarUrl()" :initials="$message->user?->initials() ?? 'S'" class="shrink-0 mt-1" />
+                    <div class="min-w-0">
+                        <div class="flex items-baseline gap-2 mb-1 justify-end">
+                            <span class="text-xs text-zinc-400 dark:text-zinc-500">{{ $message->created_at->setTimezone($tz)->format('M j, Y g:i A') }}</span>
+                            @if($message->guest_email_sent)
+                                <flux:badge color="blue" size="sm" icon="envelope">Emailed to guest</flux:badge>
+                            @endif
+                        </div>
+                        <div class="chat-bubble chat-bubble-end bg-cyan-50 dark:bg-cyan-950/40 border border-cyan-200 dark:border-cyan-800">
+                            <div class="prose prose-sm dark:prose-invert max-w-none">
+                                {!! Str::markdown($message->body, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             @elseif($message->user_id)
-                {{-- Staff reply --}}
-                <div wire:key="msg-{{ $message->id }}" class="rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 p-4">
-                    <div class="flex items-center gap-2 mb-2">
-                        <span class="text-sm font-medium text-zinc-700 dark:text-zinc-300">{{ $message->user?->name ?? 'Staff' }}</span>
-                        <span class="text-xs text-zinc-400 dark:text-zinc-500">{{ $message->created_at->diffForHumans() }}</span>
-                        @if($message->guest_email_sent)
-                            <flux:badge color="blue" size="sm" icon="envelope">Emailed to guest</flux:badge>
-                        @endif
-                    </div>
-                    <div class="prose prose-sm dark:prose-invert max-w-none">
-                        {!! Str::markdown($message->body, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
+                {{-- Other staff reply — left-aligned, neutral --}}
+                <div wire:key="msg-{{ $message->id }}" class="chat-message chat-message-start">
+                    <flux:avatar size="sm" :src="$message->user?->avatarUrl()" :initials="$message->user?->initials() ?? 'S'" class="shrink-0 mt-1" />
+                    <div class="min-w-0">
+                        <div class="flex items-baseline gap-2 mb-1">
+                            <span class="font-semibold text-sm text-blue-600 dark:text-blue-400">{{ $message->user?->name ?? 'Staff' }}</span>
+                            <span class="text-xs text-zinc-400 dark:text-zinc-500">{{ $message->created_at->setTimezone($tz)->format('M j, Y g:i A') }}</span>
+                            @if($message->guest_email_sent)
+                                <flux:badge color="blue" size="sm" icon="envelope">Emailed to guest</flux:badge>
+                            @endif
+                        </div>
+                        <div class="chat-bubble chat-bubble-start bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
+                            <div class="prose prose-sm dark:prose-invert max-w-none">
+                                {!! Str::markdown($message->body, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
+                            </div>
+                        </div>
                     </div>
                 </div>
+
             @else
-                {{-- Guest message --}}
-                <div wire:key="msg-{{ $message->id }}" class="rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 p-4">
-                    <div class="flex items-center gap-2 mb-2">
-                        <flux:badge color="blue" size="sm">Guest</flux:badge>
-                        <span class="text-sm font-medium text-zinc-700 dark:text-zinc-300">{{ $thread->guest_name ?? 'Anonymous' }}</span>
-                        <span class="text-xs text-zinc-400 dark:text-zinc-500">{{ $message->created_at->diffForHumans() }}</span>
-                    </div>
-                    <div class="prose prose-sm dark:prose-invert max-w-none">
-                        {!! Str::markdown($message->body, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
+                {{-- Guest message — left-aligned, blue --}}
+                <div wire:key="msg-{{ $message->id }}" class="chat-message chat-message-start">
+                    <flux:avatar size="sm" :initials="Str::upper(Str::substr($thread->guest_name ?? 'G', 0, 1))" class="shrink-0 mt-1" />
+                    <div class="min-w-0">
+                        <div class="flex items-baseline gap-2 mb-1">
+                            <span class="font-semibold text-sm text-zinc-700 dark:text-zinc-300">{{ $thread->guest_name ?? 'Guest' }}</span>
+                            <span class="text-xs text-zinc-400 dark:text-zinc-500">{{ $message->created_at->setTimezone($tz)->format('M j, Y g:i A') }}</span>
+                            <flux:badge size="sm" color="blue">Guest</flux:badge>
+                        </div>
+                        <div class="chat-bubble chat-bubble-start bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
+                            <div class="prose prose-sm dark:prose-invert max-w-none">
+                                {!! Str::markdown($message->body, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
+                            </div>
+                        </div>
                     </div>
                 </div>
             @endif
         @endforeach
+    </div>
     </div>
 
     {{-- Reply Composer --}}
