@@ -76,7 +76,7 @@ describe('Contact Form', function () {
             ->set('category', 'General Inquiry')
             ->set('subject', 'Bot submission')
             ->set('message', 'This is a bot message.')
-            ->set('honeypot', 'bot-filled-this')
+            ->set('website', 'bot-filled-this')
             ->call('submit');
 
         // Shows submitted state (to fool the bot) but creates no thread
