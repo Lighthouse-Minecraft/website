@@ -10,7 +10,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('messages', function (Blueprint $table) {
-            $table->foreignId('user_id')->nullable()->change();
+            $table->unsignedBigInteger('user_id')->nullable()->change();
         });
     }
 
@@ -23,7 +23,7 @@ return new class extends Migration
         }
 
         Schema::table('messages', function (Blueprint $table) {
-            $table->foreignId('user_id')->nullable(false)->change();
+            $table->unsignedBigInteger('user_id')->nullable(false)->change();
         });
     }
 };

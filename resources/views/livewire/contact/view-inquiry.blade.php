@@ -79,6 +79,14 @@ new class extends Component {
     {
         $this->authorize('view-contact-inquiries');
 
+        $this->thread->refresh();
+
+        if (! $this->canReply) {
+            Flux::toast('This inquiry is already closed.', variant: 'danger');
+
+            return;
+        }
+
         $this->validate([
             'replyBody' => ['required', 'string', 'min:1'],
         ]);
