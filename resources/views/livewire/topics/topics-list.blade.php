@@ -9,12 +9,14 @@ use App\Models\Message;
 use App\Models\Thread;
 use Flux\Flux;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Url;
 use Livewire\Volt\Component;
 
 new class extends Component
 {
     public bool $showArchive = false;
 
+    #[Url]
     public string $filter = 'active';
 
     #[Computed]
