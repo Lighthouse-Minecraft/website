@@ -93,7 +93,7 @@ new class extends Component
             $q->where('user_id', auth()->id());
         }])
             ->where('type', ThreadType::ContactInquiry)
-            ->whereNotIn('status', [ThreadStatus::Closed->value, ThreadStatus::Resolved->value])
+            ->where('status', '!=', ThreadStatus::Closed->value)
             ->orderBy('last_message_at', 'desc')
             ->get();
     }

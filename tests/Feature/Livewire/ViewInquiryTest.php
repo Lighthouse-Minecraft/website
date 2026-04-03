@@ -279,4 +279,17 @@ describe('View Inquiry Component', function () {
 
         expect($thread->fresh()->status)->toBe(ThreadStatus::Closed);
     });
+
+    it('rejects sendReply server-side when thread is closed', function () {
+        $staff = User::factory()->withRole('Contact - Receive Submissions')->create();
+        $this->actingAs($staff);
+
+        $thread = makeContactThread(['status' => ThreadStatus::Closed]);
+
+        $component = Volt::test('contact.view-inquiry', ['thread' => $thread]);
+        $component->set('replyBody', 'Sneaky reply attempt')
+            ->call('sendReply');
+
+        expect(Message::where('thread_id', $thread->id)->where('body', 'Sneaky reply attempt')->exists())->toBeFalse();
+    });
 });
