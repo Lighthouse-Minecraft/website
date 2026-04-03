@@ -233,5 +233,9 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('moderate-blog-comments', function ($user) {
             return $user->hasRole('Moderator') || $user->hasRole('Blog - Author');
         });
+
+        Gate::define('view-contact-inquiries', function ($user) {
+            return $user->hasRole('Contact - Receive Submissions');
+        });
     }
 }

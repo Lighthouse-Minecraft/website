@@ -33,6 +33,9 @@ class Thread extends Model
         'closed_at',
         'locked_at',
         'escalated_at',
+        'guest_name',
+        'guest_email',
+        'conversation_token',
     ];
 
     protected $casts = [
