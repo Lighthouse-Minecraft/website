@@ -182,6 +182,26 @@ Volt::route('/blog/{categorySlug}/{slug}', 'blog.show')->name('blog.show');
 
 require __DIR__.'/auth.php';
 
+// Public finance transparency page (no auth required)
+Volt::route('/finances', 'finances.public')->name('finances.public');
+
+// Finance Routes
+Route::prefix('finances')
+    ->name('finances.')
+    ->middleware(['auth', 'can:financials-view'])
+    ->group(function () {
+        Volt::route('/dashboard', 'finances.dashboard')->name('dashboard');
+        Volt::route('/accounts', 'finances.accounts')->name('accounts');
+        Volt::route('/categories', 'finances.categories')->name('categories');
+        Volt::route('/budget/{month?}', 'finances.budget')->name('budget');
+        Volt::route('/reports', 'finances.reports')->name('reports');
+        Route::get('/reports/{month}/pdf', \App\Http\Controllers\Finances\PeriodReportPdfController::class)->name('reports.pdf');
+        Volt::route('/board-reports', 'finances.board-reports')->name('board-reports');
+        Route::get('/board-reports/income-statement/pdf', \App\Http\Controllers\Finances\IncomeStatementPdfController::class)->name('board-reports.income-statement.pdf');
+        Route::get('/board-reports/balance-sheet/pdf', \App\Http\Controllers\Finances\BalanceSheetPdfController::class)->name('board-reports.balance-sheet.pdf');
+        Route::get('/board-reports/cash-flow/pdf', \App\Http\Controllers\Finances\CashFlowPdfController::class)->name('board-reports.cash-flow.pdf');
+    });
+
 Volt::route('/staff', 'staff.page')->name('staff.index');
 
 // Staff Applications

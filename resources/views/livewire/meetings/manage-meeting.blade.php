@@ -8,6 +8,7 @@ use App\Enums\MeetingStatus;
 use App\Enums\MeetingType;
 use App\Enums\StaffDepartment;
 use App\Enums\StaffRank;
+use App\Models\FinancialPeriodReport;
 use App\Models\Meeting;
 use App\Models\MeetingNote;
 use App\Models\MeetingReport;
@@ -367,9 +368,29 @@ new class extends Component {
         Flux::modal('schedule-next-meeting')->close();
         $this->redirect(route('meeting.edit', $newMeeting), navigate: true);
     }
+
+    public function financeRedFlag(): bool
+    {
+        return ! FinancialPeriodReport::whereNotNull('published_at')
+            ->where('published_at', '>=', now()->subDays(14))
+            ->exists();
+    }
 }; ?>
 
 <div class="space-y-6">
+
+    @if ($this->financeRedFlag())
+        <flux:callout color="red" icon="flag">
+            <flux:callout.heading>Finance Report Overdue</flux:callout.heading>
+            <flux:callout.text>
+                No period report has been published in the last 14 days. The treasury may not be current before this meeting.
+                @can('financials-view')
+                    <flux:link href="{{ route('finances.dashboard') }}">Go to Finance Dashboard</flux:link>
+                @endcan
+            </flux:callout.text>
+        </flux:callout>
+    @endif
+
     <div wire:poll.{{ $pollTime }}s.keep-alive>
         <!-- Polling only affects this section -->
         <flux:heading size="xl" class="mb-6">{{  $meeting->title }} - {{  $meeting->day }}</flux:heading>
