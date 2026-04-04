@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Carbon;
 
 class FinancialTransaction extends Model
 {
@@ -56,5 +57,14 @@ class FinancialTransaction extends Model
             'financial_transaction_id',
             'financial_tag_id'
         )->withTimestamps();
+    }
+
+    public function isInPublishedMonth(): bool
+    {
+        $monthStart = Carbon::parse($this->transacted_at)->startOfMonth()->toDateString();
+
+        return FinancialPeriodReport::whereDate('month', $monthStart)
+            ->whereNotNull('published_at')
+            ->exists();
     }
 }
