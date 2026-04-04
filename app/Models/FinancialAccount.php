@@ -31,4 +31,25 @@ class FinancialAccount extends Model
     {
         return $this->hasMany(FinancialTransaction::class, 'target_account_id');
     }
+
+    public function currentBalance(): int
+    {
+        $credits = $this->transactions()
+            ->where('type', 'income')
+            ->sum('amount');
+
+        $debits = $this->transactions()
+            ->where('type', 'expense')
+            ->sum('amount');
+
+        $transfersOut = $this->transactions()
+            ->where('type', 'transfer')
+            ->sum('amount');
+
+        $transfersIn = $this->incomingTransfers()
+            ->where('type', 'transfer')
+            ->sum('amount');
+
+        return $this->opening_balance + $credits - $debits - $transfersOut + $transfersIn;
+    }
 }
