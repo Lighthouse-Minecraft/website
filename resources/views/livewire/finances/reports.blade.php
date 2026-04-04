@@ -8,9 +8,11 @@ use App\Models\FinancialTransaction;
 use App\Models\MonthlyBudget;
 use Flux\Flux;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Livewire\Volt\Component;
 
-new class extends Component {
+new class extends Component
+{
     // ── Publish modal state ───────────────────────────────────────────────────
     public ?string $publishMonth = null;
 
@@ -59,9 +61,15 @@ new class extends Component {
         }
 
         // Collect all distinct months that have at least one transaction
-        $months = FinancialTransaction::selectRaw("strftime('%Y-%m', transacted_at) as ym")
-            ->groupByRaw("strftime('%Y-%m', transacted_at)")
-            ->orderByRaw("strftime('%Y-%m', transacted_at) DESC")
+        $ymExpr = match (DB::getDriverName()) {
+            'pgsql' => "to_char(transacted_at, 'YYYY-MM')",
+            'mysql' => "DATE_FORMAT(transacted_at, '%Y-%m')",
+            default => "strftime('%Y-%m', transacted_at)",
+        };
+
+        $months = FinancialTransaction::selectRaw("{$ymExpr} as ym")
+            ->groupByRaw($ymExpr)
+            ->orderByRaw("{$ymExpr} DESC")
             ->pluck('ym');
 
         $reports = FinancialPeriodReport::all()->keyBy(
