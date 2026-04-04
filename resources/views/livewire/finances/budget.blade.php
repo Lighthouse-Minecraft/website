@@ -2,6 +2,7 @@
 
 use App\Actions\SaveMonthlyBudget;
 use App\Models\FinancialCategory;
+use App\Models\FinancialPeriodReport;
 use App\Models\FinancialTransaction;
 use App\Models\MonthlyBudget;
 use Flux\Flux;
@@ -105,6 +106,47 @@ new class extends Component {
             ->sum('amount');
     }
 
+    /**
+     * The three most recently published FinancialPeriodReport month date strings.
+     *
+     * @return \Illuminate\Support\Collection<int, string>
+     */
+    public function publishedMonths(): \Illuminate\Support\Collection
+    {
+        return FinancialPeriodReport::whereNotNull('published_at')
+            ->orderBy('month', 'desc')
+            ->limit(3)
+            ->pluck('month')
+            ->map(fn ($m) => $m instanceof Carbon ? $m->toDateString() : (string) $m);
+    }
+
+    /**
+     * 3-month rolling average of actual spending for a category across published months.
+     * Returns null when no published months exist.
+     */
+    public function trendForCategory(int $categoryId): ?int
+    {
+        $months = $this->publishedMonths();
+
+        if ($months->isEmpty()) {
+            return null;
+        }
+
+        $subIds = FinancialCategory::where('parent_id', $categoryId)->pluck('id');
+        $ids = $subIds->prepend($categoryId);
+
+        $total = 0;
+        foreach ($months as $monthStart) {
+            $monthEnd = Carbon::parse($monthStart)->endOfMonth()->toDateString();
+            $total += (int) FinancialTransaction::whereIn('financial_category_id', $ids)
+                ->whereBetween('transacted_at', [$monthStart, $monthEnd])
+                ->whereIn('type', ['income', 'expense'])
+                ->sum('amount');
+        }
+
+        return (int) round($total / $months->count());
+    }
+
     public function budgetRows(): array
     {
         $rows = [];
@@ -114,12 +156,14 @@ new class extends Component {
                 : 0;
             $actual = $this->actualForCategory($category->id);
             $variance = $planned - $actual;
+            $trend = $this->trendForCategory($category->id);
 
             $rows[] = [
                 'category' => $category,
                 'planned' => $planned,
                 'actual' => $actual,
                 'variance' => $variance,
+                'trend' => $trend,
             ];
         }
 
@@ -161,6 +205,7 @@ new class extends Component {
             <flux:table.column>Planned ($)</flux:table.column>
             <flux:table.column>Actual ($)</flux:table.column>
             <flux:table.column>Variance ($)</flux:table.column>
+            <flux:table.column>3-Mo Trend ($)</flux:table.column>
         </flux:table.columns>
         <flux:table.rows>
             @foreach ($this->budgetRows() as $row)
@@ -193,6 +238,13 @@ new class extends Component {
                             <span class="{{ $v >= 0 ? 'text-green-500' : 'text-red-500' }}">
                                 {{ $v >= 0 ? '+' : '' }}${{ number_format(abs($v) / 100, 2) }}
                             </span>
+                        @else
+                            —
+                        @endif
+                    </flux:table.cell>
+                    <flux:table.cell>
+                        @if ($row['trend'] !== null)
+                            ${{ number_format($row['trend'] / 100, 2) }}
                         @else
                             —
                         @endif
