@@ -10,34 +10,55 @@ use App\Models\FinancialTransaction;
 use Flux\Flux;
 use Livewire\Volt\Component;
 
-new class extends Component {
+new class extends Component
+{
     // ── Entry form ────────────────────────────────────────────────────────────
     public string $type = 'expense';
+
     public string $accountId = '';
+
     public string $targetAccountId = '';
+
     public string $amount = '';
+
     public string $transactedAt = '';
+
     public string $categoryId = '';
+
     public string $subcategoryId = '';
+
     public string $notes = '';
+
     public array $selectedTagIds = [];
 
     // ── Ledger filters ────────────────────────────────────────────────────────
     public string $filterDateFrom = '';
+
     public string $filterDateTo = '';
+
     public string $filterAccountId = '';
+
     public string $filterCategoryId = '';
+
     public string $filterTagId = '';
 
     // ── Edit transaction ──────────────────────────────────────────────────────
     public ?int $editTxId = null;
+
     public string $editType = 'expense';
+
     public string $editAccountId = '';
+
     public string $editAmount = '';
+
     public string $editDate = '';
+
     public string $editCategoryId = '';
+
     public string $editSubcategoryId = '';
+
     public string $editNotes = '';
+
     public array $editTagIds = [];
 
     public function mount(): void
@@ -294,6 +315,7 @@ new class extends Component {
                 (int) $this->editAmount,
                 $this->editDate,
                 $effectiveCategoryId,
+                null,
                 $this->editNotes ?: null,
                 $this->editTagIds,
             );

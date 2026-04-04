@@ -120,10 +120,9 @@ new class extends Component
             ->whereBetween('transacted_at', [$monthStart, $monthEnd])
             ->sum('amount');
 
-        // Account balances as of end of month
-        $accounts = FinancialAccount::where('is_archived', false)
-            ->orderBy('name')
-            ->get();
+        // Account balances as of end of month — include all accounts regardless of archived
+        // status so that archiving an account later doesn't silently drop it from historical reports
+        $accounts = FinancialAccount::orderBy('name')->get();
 
         $accountBalances = $accounts->map(function ($account) use ($monthEnd) {
             $credits = (int) $account->transactions()->where('type', 'income')
@@ -139,9 +138,9 @@ new class extends Component
             return ['name' => $account->name, 'balance' => $balance];
         });
 
-        // Budget variance per top-level category
+        // Budget variance per top-level category — include all categories regardless of archived
+        // status so that archiving a category later doesn't silently drop it from historical reports
         $categories = FinancialCategory::whereNull('parent_id')
-            ->where('is_archived', false)
             ->orderBy('type')
             ->orderBy('sort_order')
             ->get();
@@ -165,7 +164,10 @@ new class extends Component
                     'type' => $cat->type,
                     'planned' => $planned,
                     'actual' => $actual,
-                    'variance' => $planned - $actual,
+                    // For expenses: positive variance = under budget (good). For income: positive = beat target (good).
+                    'variance' => $cat->type === 'income'
+                        ? $actual - $planned
+                        : $planned - $actual,
                 ];
             }
         }
@@ -182,8 +184,23 @@ new class extends Component
     public function openViewModal(string $monthStart): void
     {
         $this->authorize('financials-view');
+
+        $isPublished = FinancialPeriodReport::whereDate('month', $monthStart)
+            ->whereNotNull('published_at')
+            ->exists();
+
+        if (! $isPublished) {
+            abort(404);
+        }
+
         $this->viewMonth = $monthStart;
         Flux::modal('view-report-modal')->show();
+    }
+
+    public function closeViewModal(): void
+    {
+        $this->viewMonth = null;
+        Flux::modal('view-report-modal')->close();
     }
 
     public function openPublishModal(string $monthStart): void
@@ -191,6 +208,12 @@ new class extends Component
         $this->authorize('financials-treasurer');
         $this->publishMonth = $monthStart;
         Flux::modal('publish-report-modal')->show();
+    }
+
+    public function closePublishModal(): void
+    {
+        $this->publishMonth = null;
+        Flux::modal('publish-report-modal')->close();
     }
 
     public function confirmPublish(): void
@@ -340,7 +363,7 @@ new class extends Component
 
             <div class="flex gap-3 pt-2">
                 <flux:button href="{{ route('finances.reports.pdf', ['month' => \Illuminate\Support\Carbon::parse($viewMonth)->format('Y-m')]) }}" target="_blank" icon="arrow-down-tray">Download PDF</flux:button>
-                <flux:button x-on:click="$flux.modal('view-report-modal').close()" variant="ghost">Close</flux:button>
+                <flux:button wire:click="closeViewModal" variant="ghost">Close</flux:button>
             </div>
         @endif
     </flux:modal>
@@ -417,7 +440,7 @@ new class extends Component
 
                 <div class="flex gap-3 pt-2">
                     <flux:button wire:click="confirmPublish" variant="primary" icon="lock-closed">Confirm & Publish</flux:button>
-                    <flux:button x-on:click="$flux.modal('publish-report-modal').close()" variant="ghost">Cancel</flux:button>
+                    <flux:button wire:click="closePublishModal" variant="ghost">Cancel</flux:button>
                 </div>
             @endif
         </flux:modal>

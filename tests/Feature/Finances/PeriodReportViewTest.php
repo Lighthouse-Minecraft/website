@@ -88,6 +88,24 @@ it('view-only user can open view modal for a published month', function () {
         ->assertSet('viewMonth', '2026-03-01');
 });
 
+it('view-only user cannot open view modal for an unpublished month', function () {
+    $user = User::factory()->withRole('Financials - View')->create();
+    $account = FinancialAccount::factory()->create();
+    $this->actingAs($user);
+
+    FinancialTransaction::factory()->create([
+        'account_id' => $account->id,
+        'transacted_at' => '2026-03-15',
+        'entered_by' => $user->id,
+    ]);
+
+    // No published report for March
+
+    livewire('finances.reports')
+        ->call('openViewModal', '2026-03-01')
+        ->assertNotFound();
+});
+
 // == PDF download route == //
 
 it('financials-view user can download a PDF for a published month', function () {

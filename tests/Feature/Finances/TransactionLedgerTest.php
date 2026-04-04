@@ -353,3 +353,34 @@ it('financials-view user cannot open edit modal', function () {
         ->call('openEditModal', $tx->id)
         ->assertForbidden();
 });
+
+it('treasurer cannot move a transaction date into a published month', function () {
+    $user = User::factory()->withRole('Financials - Treasurer')->create();
+    $account = FinancialAccount::factory()->create();
+    $category = FinancialCategory::factory()->expense()->create();
+    $this->actingAs($user);
+
+    $tx = FinancialTransaction::factory()->create([
+        'account_id' => $account->id,
+        'financial_category_id' => $category->id,
+        'entered_by' => $user->id,
+        'transacted_at' => '2026-03-15',
+        'amount' => 1000,
+    ]);
+
+    FinancialPeriodReport::factory()->published()->forMonth('2026-02-01')->create();
+
+    livewire('finances.dashboard')
+        ->set('editTxId', $tx->id)
+        ->set('editType', 'expense')
+        ->set('editAccountId', (string) $account->id)
+        ->set('editAmount', '1000')
+        ->set('editDate', '2026-02-15')
+        ->set('editCategoryId', (string) $category->id)
+        ->set('editSubcategoryId', '')
+        ->set('editNotes', '')
+        ->set('editTagIds', [])
+        ->call('updateTransaction');
+
+    expect($tx->fresh()->transacted_at->format('Y-m-d'))->toBe('2026-03-15');
+});
