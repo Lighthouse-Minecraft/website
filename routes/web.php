@@ -182,6 +182,9 @@ Volt::route('/blog/{categorySlug}/{slug}', 'blog.show')->name('blog.show');
 
 require __DIR__.'/auth.php';
 
+// Public finance transparency page (no auth required)
+Volt::route('/finances', 'finances.public')->name('finances.public');
+
 // Finance Routes
 Route::prefix('finances')
     ->name('finances.')
