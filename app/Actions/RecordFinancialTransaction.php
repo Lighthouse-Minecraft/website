@@ -18,7 +18,8 @@ class RecordFinancialTransaction
         string $transactedAt,
         ?int $categoryId,
         ?string $notes,
-        array $tagIds = []
+        array $tagIds = [],
+        ?int $targetAccountId = null
     ): FinancialTransaction {
         $transaction = FinancialTransaction::create([
             'account_id' => $accountId,
@@ -26,7 +27,7 @@ class RecordFinancialTransaction
             'amount' => $amount,
             'transacted_at' => $transactedAt,
             'financial_category_id' => $categoryId,
-            'target_account_id' => null,
+            'target_account_id' => $targetAccountId,
             'notes' => $notes ?: null,
             'entered_by' => $enteredBy->id,
             'external_reference' => null,

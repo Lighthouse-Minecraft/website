@@ -14,6 +14,7 @@ new class extends Component {
     // ── Entry form ────────────────────────────────────────────────────────────
     public string $type = 'expense';
     public string $accountId = '';
+    public string $targetAccountId = '';
     public string $amount = '';
     public string $transactedAt = '';
     public string $categoryId = '';
@@ -118,6 +119,7 @@ new class extends Component {
     {
         $query = FinancialTransaction::with([
             'account',
+            'targetAccount',
             'category.parent',
             'tags',
             'enteredBy',
@@ -149,7 +151,7 @@ new class extends Component {
 
     public function updatedType(): void
     {
-        $this->reset(['categoryId', 'subcategoryId']);
+        $this->reset(['categoryId', 'subcategoryId', 'targetAccountId']);
     }
 
     public function updatedCategoryId(): void
@@ -173,33 +175,56 @@ new class extends Component {
     {
         $this->authorize('financials-treasurer');
 
-        $this->validate([
-            'type' => 'required|in:income,expense',
+        $isTransfer = $this->type === 'transfer';
+
+        $rules = [
+            'type' => 'required|in:income,expense,transfer',
             'accountId' => 'required|integer|exists:financial_accounts,id',
             'amount' => 'required|integer|min:1',
             'transactedAt' => 'required|date',
-            'categoryId' => 'required|integer|exists:financial_categories,id',
-            'subcategoryId' => 'nullable|integer|exists:financial_categories,id',
             'notes' => 'nullable|string|max:1000',
-            'selectedTagIds' => 'array',
-            'selectedTagIds.*' => 'integer|exists:financial_tags,id',
-        ]);
+        ];
 
-        $effectiveCategoryId = $this->subcategoryId !== '' ? (int) $this->subcategoryId : (int) $this->categoryId;
+        if ($isTransfer) {
+            $rules['targetAccountId'] = 'required|integer|exists:financial_accounts,id|different:accountId';
+        } else {
+            $rules['categoryId'] = 'required|integer|exists:financial_categories,id';
+            $rules['subcategoryId'] = 'nullable|integer|exists:financial_categories,id';
+            $rules['selectedTagIds'] = 'array';
+            $rules['selectedTagIds.*'] = 'integer|exists:financial_tags,id';
+        }
 
-        RecordFinancialTransaction::run(
-            auth()->user(),
-            (int) $this->accountId,
-            $this->type,
-            (int) $this->amount,
-            $this->transactedAt,
-            $effectiveCategoryId,
-            $this->notes ?: null,
-            $this->selectedTagIds,
-        );
+        $this->validate($rules);
+
+        if ($isTransfer) {
+            RecordFinancialTransaction::run(
+                auth()->user(),
+                (int) $this->accountId,
+                'transfer',
+                (int) $this->amount,
+                $this->transactedAt,
+                null,
+                $this->notes ?: null,
+                [],
+                (int) $this->targetAccountId,
+            );
+        } else {
+            $effectiveCategoryId = $this->subcategoryId !== '' ? (int) $this->subcategoryId : (int) $this->categoryId;
+
+            RecordFinancialTransaction::run(
+                auth()->user(),
+                (int) $this->accountId,
+                $this->type,
+                (int) $this->amount,
+                $this->transactedAt,
+                $effectiveCategoryId,
+                $this->notes ?: null,
+                $this->selectedTagIds,
+            );
+        }
 
         Flux::toast('Transaction recorded.', 'Success', variant: 'success');
-        $this->reset(['accountId', 'amount', 'categoryId', 'subcategoryId', 'notes', 'selectedTagIds']);
+        $this->reset(['accountId', 'targetAccountId', 'amount', 'categoryId', 'subcategoryId', 'notes', 'selectedTagIds']);
         $this->transactedAt = now()->format('Y-m-d');
     }
 
@@ -334,12 +359,13 @@ new class extends Component {
                         <flux:select wire:model.live="type">
                             <flux:select.option value="expense">Expense</flux:select.option>
                             <flux:select.option value="income">Income</flux:select.option>
+                            <flux:select.option value="transfer">Transfer</flux:select.option>
                         </flux:select>
                         <flux:error name="type" />
                     </flux:field>
 
                     <flux:field>
-                        <flux:label>Account <span class="text-red-500">*</span></flux:label>
+                        <flux:label>{{ $type === 'transfer' ? 'From Account' : 'Account' }} <span class="text-red-500">*</span></flux:label>
                         <flux:select wire:model="accountId">
                             <flux:select.option value="">— Select Account —</flux:select.option>
                             @foreach ($this->accounts() as $account)
@@ -349,6 +375,19 @@ new class extends Component {
                         <flux:error name="accountId" />
                     </flux:field>
                 </div>
+
+                @if ($type === 'transfer')
+                    <flux:field>
+                        <flux:label>To Account <span class="text-red-500">*</span></flux:label>
+                        <flux:select wire:model="targetAccountId">
+                            <flux:select.option value="">— Select Account —</flux:select.option>
+                            @foreach ($this->accounts() as $account)
+                                <flux:select.option value="{{ $account->id }}">{{ $account->name }}</flux:select.option>
+                            @endforeach
+                        </flux:select>
+                        <flux:error name="targetAccountId" />
+                    </flux:field>
+                @endif
 
                 <div class="grid grid-cols-2 gap-4">
                     <flux:field>
@@ -365,33 +404,35 @@ new class extends Component {
                     </flux:field>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
-                    <flux:field>
-                        <flux:label>Category <span class="text-red-500">*</span></flux:label>
-                        <flux:select wire:model.live="categoryId">
-                            <flux:select.option value="">— Select Category —</flux:select.option>
-                            @foreach ($this->topLevelCategories() as $category)
-                                <flux:select.option value="{{ $category->id }}">{{ $category->name }}</flux:select.option>
-                            @endforeach
-                        </flux:select>
-                        <flux:error name="categoryId" />
-                    </flux:field>
-
-                    @if ($categoryId !== '' && $this->subcategories()->isNotEmpty())
+                @if ($type !== 'transfer')
+                    <div class="grid grid-cols-2 gap-4">
                         <flux:field>
-                            <flux:label>Subcategory</flux:label>
-                            <flux:select wire:model="subcategoryId">
-                                <flux:select.option value="">— None —</flux:select.option>
-                                @foreach ($this->subcategories() as $sub)
-                                    <flux:select.option value="{{ $sub->id }}">{{ $sub->name }}</flux:select.option>
+                            <flux:label>Category <span class="text-red-500">*</span></flux:label>
+                            <flux:select wire:model.live="categoryId">
+                                <flux:select.option value="">— Select Category —</flux:select.option>
+                                @foreach ($this->topLevelCategories() as $category)
+                                    <flux:select.option value="{{ $category->id }}">{{ $category->name }}</flux:select.option>
                                 @endforeach
                             </flux:select>
-                            <flux:error name="subcategoryId" />
+                            <flux:error name="categoryId" />
                         </flux:field>
-                    @endif
-                </div>
 
-                @if ($this->tags()->isNotEmpty())
+                        @if ($categoryId !== '' && $this->subcategories()->isNotEmpty())
+                            <flux:field>
+                                <flux:label>Subcategory</flux:label>
+                                <flux:select wire:model="subcategoryId">
+                                    <flux:select.option value="">— None —</flux:select.option>
+                                    @foreach ($this->subcategories() as $sub)
+                                        <flux:select.option value="{{ $sub->id }}">{{ $sub->name }}</flux:select.option>
+                                    @endforeach
+                                </flux:select>
+                                <flux:error name="subcategoryId" />
+                            </flux:field>
+                        @endif
+                    </div>
+                @endif
+
+                @if ($type !== 'transfer' && $this->tags()->isNotEmpty())
                     <flux:field>
                         <flux:label>Tags</flux:label>
                         <div class="flex flex-wrap gap-2 mt-1">
@@ -479,11 +520,21 @@ new class extends Component {
                 @forelse ($this->ledger() as $tx)
                     <flux:table.row wire:key="tx-{{ $tx->id }}">
                         <flux:table.cell>{{ $tx->transacted_at->format('Y-m-d') }}</flux:table.cell>
-                        <flux:table.cell>{{ $tx->account?->name }}</flux:table.cell>
                         <flux:table.cell>
-                            <flux:badge variant="{{ $tx->type === 'income' ? 'success' : 'danger' }}">
-                                {{ ucfirst($tx->type) }}
-                            </flux:badge>
+                            @if ($tx->type === 'transfer')
+                                {{ $tx->account?->name }} → {{ $tx->targetAccount?->name }}
+                            @else
+                                {{ $tx->account?->name }}
+                            @endif
+                        </flux:table.cell>
+                        <flux:table.cell>
+                            @if ($tx->type === 'income')
+                                <flux:badge variant="success">Income</flux:badge>
+                            @elseif ($tx->type === 'expense')
+                                <flux:badge variant="danger">Expense</flux:badge>
+                            @else
+                                <flux:badge variant="zinc">Transfer</flux:badge>
+                            @endif
                         </flux:table.cell>
                         <flux:table.cell>
                             @if ($tx->category)
