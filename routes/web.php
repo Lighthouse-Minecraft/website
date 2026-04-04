@@ -192,6 +192,7 @@ Route::prefix('finances')
         Volt::route('/categories', 'finances.categories')->name('categories');
         Volt::route('/budget/{month?}', 'finances.budget')->name('budget');
         Volt::route('/reports', 'finances.reports')->name('reports');
+        Route::get('/reports/{month}/pdf', \App\Http\Controllers\Finances\PeriodReportPdfController::class)->name('reports.pdf');
     });
 
 Volt::route('/staff', 'staff.page')->name('staff.index');
