@@ -105,7 +105,7 @@ it('treasurer can publish a month via confirmPublish', function () {
     ]);
 
     livewire('finances.reports')
-        ->set('publishMonth', '2026-03-01')
+        ->call('openPublishModal', '2026-03-01')
         ->call('confirmPublish');
 
     expect(FinancialPeriodReport::whereDate('month', '2026-03-01')->first()?->isPublished())->toBeTrue();
@@ -143,8 +143,7 @@ it('view-only user cannot publish a month', function () {
     ]);
 
     livewire('finances.reports')
-        ->set('publishMonth', '2026-03-01')
-        ->call('confirmPublish')
+        ->call('openPublishModal', '2026-03-01')
         ->assertForbidden();
 
     expect(FinancialPeriodReport::count())->toBe(0);

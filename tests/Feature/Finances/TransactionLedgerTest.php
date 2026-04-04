@@ -198,17 +198,6 @@ it('treasurer can edit an unpublished-month transaction', function () {
     ]);
 
     livewire('finances.dashboard')
-        ->call('updateTransaction', [
-            'editTxId' => $tx->id,
-            'editType' => 'expense',
-            'editAccountId' => (string) $account->id,
-            'editAmount' => '2000',
-            'editDate' => '2026-03-15',
-            'editCategoryId' => (string) $category->id,
-            'editSubcategoryId' => '',
-            'editNotes' => 'Updated note',
-            'editTagIds' => [],
-        ])
         ->set('editTxId', $tx->id)
         ->set('editType', 'expense')
         ->set('editAccountId', (string) $account->id)

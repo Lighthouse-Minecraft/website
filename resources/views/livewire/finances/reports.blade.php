@@ -9,14 +9,17 @@ use App\Models\MonthlyBudget;
 use Flux\Flux;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Livewire\Attributes\Locked;
 use Livewire\Volt\Component;
 
 new class extends Component
 {
     // ── Publish modal state ───────────────────────────────────────────────────
+    #[Locked]
     public ?string $publishMonth = null;
 
     // ── View detail modal state ───────────────────────────────────────────────
+    #[Locked]
     public ?string $viewMonth = null;
 
     // ── Report list ───────────────────────────────────────────────────────────

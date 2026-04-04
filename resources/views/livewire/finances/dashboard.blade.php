@@ -263,6 +263,12 @@ new class extends Component
             return;
         }
 
+        if ($tx->type === 'transfer') {
+            Flux::toast('Transfer transactions cannot be edited. Delete and re-enter if needed.', 'Error', variant: 'danger');
+
+            return;
+        }
+
         $this->editTxId = $id;
         $this->editType = $tx->type;
         $this->editAccountId = (string) $tx->account_id;
@@ -581,7 +587,9 @@ new class extends Component
                             <flux:table.cell>
                                 @unless ($tx->isInPublishedMonth())
                                     <div class="flex gap-2">
-                                        <flux:button size="sm" icon="pencil-square" wire:click="openEditModal({{ $tx->id }})">Edit</flux:button>
+                                        @unless ($tx->type === 'transfer')
+                                            <flux:button size="sm" icon="pencil-square" wire:click="openEditModal({{ $tx->id }})">Edit</flux:button>
+                                        @endunless
                                         <flux:button size="sm" variant="danger" icon="trash"
                                             wire:click="deleteTransaction({{ $tx->id }})"
                                             wire:confirm="Delete this transaction? This cannot be undone.">
