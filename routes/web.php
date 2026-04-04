@@ -182,6 +182,14 @@ Volt::route('/blog/{categorySlug}/{slug}', 'blog.show')->name('blog.show');
 
 require __DIR__.'/auth.php';
 
+// Finance Routes
+Route::prefix('finances')
+    ->name('finances.')
+    ->middleware(['auth', 'can:financials-view'])
+    ->group(function () {
+        Volt::route('/accounts', 'finances.accounts')->name('accounts');
+    });
+
 Volt::route('/staff', 'staff.page')->name('staff.index');
 
 // Staff Applications
