@@ -191,6 +191,7 @@ Route::prefix('finances')
         Volt::route('/accounts', 'finances.accounts')->name('accounts');
         Volt::route('/categories', 'finances.categories')->name('categories');
         Volt::route('/budget/{month?}', 'finances.budget')->name('budget');
+        Volt::route('/reports', 'finances.reports')->name('reports');
     });
 
 Volt::route('/staff', 'staff.page')->name('staff.index');
