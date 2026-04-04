@@ -17,7 +17,7 @@ class FinancialPeriodReport extends Model
     ];
 
     protected $casts = [
-        'month' => 'date',
+        'month' => 'date:Y-m-d',
         'published_at' => 'datetime',
     ];
 

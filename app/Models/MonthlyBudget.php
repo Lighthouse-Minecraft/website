@@ -17,7 +17,7 @@ class MonthlyBudget extends Model
     ];
 
     protected $casts = [
-        'month' => 'date',
+        'month' => 'date:Y-m-d',
         'planned_amount' => 'integer',
     ];
 
