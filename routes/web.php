@@ -188,6 +188,7 @@ Route::prefix('finances')
     ->middleware(['auth', 'can:financials-view'])
     ->group(function () {
         Volt::route('/accounts', 'finances.accounts')->name('accounts');
+        Volt::route('/categories', 'finances.categories')->name('categories');
     });
 
 Volt::route('/staff', 'staff.page')->name('staff.index');
