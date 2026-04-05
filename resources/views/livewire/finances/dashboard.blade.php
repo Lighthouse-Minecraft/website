@@ -247,6 +247,7 @@ new class extends Component
         Flux::toast('Transaction recorded.', 'Success', variant: 'success');
         $this->reset(['accountId', 'targetAccountId', 'amount', 'categoryId', 'subcategoryId', 'notes', 'selectedTagIds']);
         $this->transactedAt = now()->format('Y-m-d');
+        Flux::modal('record-transaction')->close();
     }
 
     // ── Edit transaction ──────────────────────────────────────────────────────
@@ -386,9 +387,18 @@ new class extends Component
         </div>
     </div>
 
-    {{-- Transaction Entry Form (treasurer only) --}}
+    {{-- Add Transaction Button (treasurer only) --}}
     @can('financials-treasurer')
-        <flux:card class="space-y-5">
+        <div>
+            <flux:button wire:click="$flux.modal('record-transaction').show()" variant="primary" icon="plus">
+                Add Transaction
+            </flux:button>
+        </div>
+    @endcan
+
+    {{-- Record Transaction Modal --}}
+    @can('financials-treasurer')
+        <flux:modal name="record-transaction" class="w-full max-w-2xl space-y-5">
             <flux:heading size="lg">Record Transaction</flux:heading>
 
             <form wire:submit.prevent="submitTransaction" class="space-y-4">
@@ -472,7 +482,7 @@ new class extends Component
                     </div>
                 @endif
 
-                @if ($type !== 'transfer' && $this->tags()->isNotEmpty())
+                @if ($type !== 'transfer')
                     <flux:field>
                         <flux:label>Tags</flux:label>
                         <div class="flex flex-wrap gap-2 mt-1">
@@ -494,9 +504,12 @@ new class extends Component
                     <flux:error name="notes" />
                 </flux:field>
 
-                <flux:button type="submit" variant="primary" icon="plus">Record Transaction</flux:button>
+                <div class="flex gap-3 pt-2">
+                    <flux:button type="submit" variant="primary" icon="plus">Record Transaction</flux:button>
+                    <flux:button x-on:click="$flux.modal('record-transaction').close()" variant="ghost">Cancel</flux:button>
+                </div>
             </form>
-        </flux:card>
+        </flux:modal>
     @endcan
 
     {{-- Transaction Ledger --}}
