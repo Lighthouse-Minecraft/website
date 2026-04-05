@@ -1,6 +1,5 @@
 <?php
 
-use App\Actions\ArchiveFinancialOrganization;
 use App\Actions\ArchiveFinancialTag;
 use App\Actions\CreateFinancialOrganization;
 use App\Actions\CreateFinancialTag;
@@ -51,6 +50,8 @@ new class extends Component
     public string $filterCategoryId = '';
 
     public string $filterTagId = '';
+
+    public string $filterOrganizationId = '';
 
     // ── Edit transaction ──────────────────────────────────────────────────────
     public ?int $editTxId = null;
@@ -128,12 +129,6 @@ new class extends Component
         return FinancialTag::where('is_archived', false)->orderBy('name')->get();
     }
 
-    #[Computed]
-    public function organizations(): \Illuminate\Database\Eloquent\Collection
-    {
-        return FinancialOrganization::where('is_archived', false)->orderBy('name')->get();
-    }
-
     public function filteredOrganizations(string $search): \Illuminate\Database\Eloquent\Collection
     {
         return FinancialOrganization::where('is_archived', false)
@@ -181,6 +176,9 @@ new class extends Component
         }
         if ($this->filterTagId !== '') {
             $query->whereHas('tags', fn ($q) => $q->where('financial_tags.id', (int) $this->filterTagId));
+        }
+        if ($this->filterOrganizationId !== '') {
+            $query->where('organization_id', (int) $this->filterOrganizationId);
         }
 
         return $query->get();
@@ -468,17 +466,6 @@ new class extends Component
         $this->selectEditOrganization($org->id);
     }
 
-    // ── Organization management ───────────────────────────────────────────────
-
-    public function archiveOrganization(int $id): void
-    {
-        $this->authorize('financials-manage');
-
-        $org = FinancialOrganization::findOrFail($id);
-        ArchiveFinancialOrganization::run($org);
-
-        Flux::toast('Organization archived.', 'Success', variant: 'success');
-    }
 }; ?>
 
 <div class="space-y-8">
@@ -517,38 +504,6 @@ new class extends Component
                 Add Transaction
             </flux:button>
         </div>
-    @endcan
-
-    {{-- Manage Organizations (financials-manage only) --}}
-    @can('financials-manage')
-        <flux:card class="space-y-4">
-            <flux:heading size="lg">Manage Organizations</flux:heading>
-
-            @if ($this->organizations->isNotEmpty())
-                <flux:table>
-                    <flux:table.columns>
-                        <flux:table.column>Name</flux:table.column>
-                        <flux:table.column>Actions</flux:table.column>
-                    </flux:table.columns>
-                    <flux:table.rows>
-                        @foreach ($this->organizations as $org)
-                            <flux:table.row wire:key="org-{{ $org->id }}">
-                                <flux:table.cell>{{ $org->name }}</flux:table.cell>
-                                <flux:table.cell>
-                                    <flux:button size="sm" variant="danger" icon="archive-box"
-                                        wire:click="archiveOrganization({{ $org->id }})"
-                                        wire:confirm="Archive '{{ $org->name }}'? It will no longer appear in the picker.">
-                                        Archive
-                                    </flux:button>
-                                </flux:table.cell>
-                            </flux:table.row>
-                        @endforeach
-                    </flux:table.rows>
-                </flux:table>
-            @else
-                <flux:text variant="subtle">No organizations yet. Add one when recording a transaction.</flux:text>
-            @endif
-        </flux:card>
     @endcan
 
     {{-- Record Transaction Modal --}}
@@ -745,6 +700,16 @@ new class extends Component
                 <flux:select.option value="">All Tags</flux:select.option>
                 @foreach ($this->tags as $tag)
                     <flux:select.option value="{{ $tag->id }}">{{ $tag->name }}</flux:select.option>
+                @endforeach
+            </flux:select>
+        </flux:field>
+
+        <flux:field class="w-48">
+            <flux:label>Organization</flux:label>
+            <flux:select wire:model.live="filterOrganizationId">
+                <flux:select.option value="">All Organizations</flux:select.option>
+                @foreach ($this->filteredOrganizations('') as $org)
+                    <flux:select.option value="{{ $org->id }}">{{ $org->name }}</flux:select.option>
                 @endforeach
             </flux:select>
         </flux:field>

@@ -2,9 +2,14 @@
 
 namespace App\Actions;
 
+use App\Enums\DiscordAccountStatus;
 use App\Enums\MinecraftAccountStatus;
 use App\Models\MinecraftAccount;
 use App\Models\MinecraftVerification;
+use App\Models\Role;
+use App\Models\User;
+use App\Notifications\AccountLinkedNotification;
+use App\Services\TicketNotificationService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -166,6 +171,7 @@ class CompleteVerification
                 );
 
                 $this->completedAccount = $account;
+                $this->sendAccountLinkedNotifications($verification->user, $verification->minecraft_username, 'Minecraft');
             });
 
             // Sync permissions OUTSIDE the transaction so the service sees committed data.
@@ -208,6 +214,35 @@ class CompleteVerification
                 'success' => false,
                 'message' => 'An error occurred while linking your account. Please try again.',
             ];
+        }
+    }
+
+    private function sendAccountLinkedNotifications(User $user, string $accountName, string $accountType): void
+    {
+        $activeMinecraft = $user->minecraftAccounts()->where('status', MinecraftAccountStatus::Active)->count();
+        $disabledMinecraft = $user->minecraftAccounts()->where('status', '!=', MinecraftAccountStatus::Active->value)->count();
+        $activeDiscord = $user->discordAccounts()->where('status', DiscordAccountStatus::Active)->count();
+        $disabledDiscord = $user->discordAccounts()->where('status', '!=', DiscordAccountStatus::Active->value)->count();
+
+        $notification = new AccountLinkedNotification(
+            $user, $accountName, $accountType,
+            $activeMinecraft, $disabledMinecraft, $activeDiscord, $disabledDiscord
+        );
+
+        $service = app(TicketNotificationService::class);
+
+        // Notify parent (mail only, unconditional)
+        foreach ($user->parents as $parent) {
+            $parent->notify((clone $notification)->setChannels(['mail']));
+        }
+
+        // Notify staff with 'User - Manager' role via their staff_alerts preferences
+        $userManagerRoleId = Role::where('name', 'User - Manager')->value('id');
+        if ($userManagerRoleId) {
+            $managers = User::whereHas('staffPosition.roles', fn ($r) => $r->where('roles.id', $userManagerRoleId))->get();
+            foreach ($managers as $manager) {
+                $service->send($manager, clone $notification, 'staff_alerts');
+            }
         }
     }
 }
