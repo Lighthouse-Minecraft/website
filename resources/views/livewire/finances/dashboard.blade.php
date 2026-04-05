@@ -1,12 +1,15 @@
 <?php
 
+use App\Actions\ArchiveFinancialOrganization;
 use App\Actions\ArchiveFinancialTag;
+use App\Actions\CreateFinancialOrganization;
 use App\Actions\CreateFinancialTag;
 use App\Actions\DeleteFinancialTransaction;
 use App\Actions\RecordFinancialTransaction;
 use App\Actions\UpdateFinancialTransaction;
 use App\Models\FinancialAccount;
 use App\Models\FinancialCategory;
+use App\Models\FinancialOrganization;
 use App\Models\FinancialTag;
 use App\Models\FinancialTransaction;
 use Flux\Flux;
@@ -30,6 +33,12 @@ new class extends Component
     public string $notes = '';
 
     public array $selectedTagIds = [];
+
+    public ?int $organizationId = null;
+
+    public string $organizationName = '';
+
+    public string $organizationSearch = '';
 
     // ── Ledger filters ────────────────────────────────────────────────────────
     public string $filterDateFrom = '';
@@ -58,6 +67,12 @@ new class extends Component
     public string $editNotes = '';
 
     public array $editTagIds = [];
+
+    public ?int $editOrganizationId = null;
+
+    public string $editOrganizationName = '';
+
+    public string $editOrganizationSearch = '';
 
     // ── Tag management ────────────────────────────────────────────────────────
     public string $newTagName = '';
@@ -111,6 +126,19 @@ new class extends Component
         return FinancialTag::where('is_archived', false)->orderBy('name')->get();
     }
 
+    public function organizations(): \Illuminate\Database\Eloquent\Collection
+    {
+        return FinancialOrganization::where('is_archived', false)->orderBy('name')->get();
+    }
+
+    public function filteredOrganizations(string $search): \Illuminate\Database\Eloquent\Collection
+    {
+        return FinancialOrganization::where('is_archived', false)
+            ->when($search !== '', fn ($q) => $q->where('name', 'like', '%'.$search.'%'))
+            ->orderBy('name')
+            ->get();
+    }
+
     public function allTopLevelCategories(): \Illuminate\Database\Eloquent\Collection
     {
         return FinancialCategory::whereNull('parent_id')
@@ -130,6 +158,7 @@ new class extends Component
             'category.parent',
             'tags',
             'enteredBy',
+            'organization',
         ])->orderBy('transacted_at', 'desc')->orderBy('id', 'desc');
 
         if ($this->filterDateFrom !== '') {
@@ -216,11 +245,13 @@ new class extends Component
                 (int) $this->categoryId,
                 $this->notes ?: null,
                 $this->selectedTagIds,
+                null,
+                $this->organizationId,
             );
         }
 
         Flux::toast('Transaction recorded.', 'Success', variant: 'success');
-        $this->reset(['accountId', 'targetAccountId', 'amount', 'categoryId', 'notes', 'selectedTagIds']);
+        $this->reset(['accountId', 'targetAccountId', 'amount', 'categoryId', 'notes', 'selectedTagIds', 'organizationId', 'organizationName', 'organizationSearch']);
         $this->transactedAt = now()->format('Y-m-d');
         Flux::modal('record-transaction')->close();
     }
@@ -257,6 +288,11 @@ new class extends Component
             $this->editCategoryId = (string) $tx->financial_category_id;
         }
 
+        if ($tx->organization_id !== null) {
+            $this->editOrganizationId = $tx->organization_id;
+            $this->editOrganizationName = $tx->organization?->name ?? '';
+        }
+
         Flux::modal('edit-tx-modal')->show();
     }
 
@@ -289,6 +325,7 @@ new class extends Component
                 null,
                 $this->editNotes ?: null,
                 $this->editTagIds,
+                $this->editOrganizationId,
             );
         } catch (\RuntimeException $e) {
             Flux::toast($e->getMessage(), 'Error', variant: 'danger');
@@ -298,7 +335,7 @@ new class extends Component
 
         Flux::modal('edit-tx-modal')->close();
         Flux::toast('Transaction updated.', 'Success', variant: 'success');
-        $this->reset(['editTxId', 'editType', 'editAccountId', 'editAmount', 'editDate', 'editCategoryId', 'editNotes', 'editTagIds']);
+        $this->reset(['editTxId', 'editType', 'editAccountId', 'editAmount', 'editDate', 'editCategoryId', 'editNotes', 'editTagIds', 'editOrganizationId', 'editOrganizationName', 'editOrganizationSearch']);
         $this->editType = 'expense';
     }
 
@@ -345,6 +382,74 @@ new class extends Component
         ArchiveFinancialTag::run($tag);
 
         Flux::toast('Tag archived.', 'Success', variant: 'success');
+    }
+
+    // ── Organization picker ───────────────────────────────────────────────────
+
+    public function selectOrganization(int $id, string $name): void
+    {
+        $this->organizationId = $id;
+        $this->organizationName = $name;
+        $this->organizationSearch = '';
+        Flux::modal('org-picker')->close();
+    }
+
+    public function clearOrganization(): void
+    {
+        $this->organizationId = null;
+        $this->organizationName = '';
+    }
+
+    public function createOrganizationInline(): void
+    {
+        $this->authorize('financials-treasurer');
+
+        $this->validate([
+            'organizationSearch' => 'required|string|max:255|unique:financial_organizations,name',
+        ]);
+
+        $org = CreateFinancialOrganization::run($this->organizationSearch, auth()->user());
+
+        $this->selectOrganization($org->id, $org->name);
+    }
+
+    public function selectEditOrganization(int $id, string $name): void
+    {
+        $this->editOrganizationId = $id;
+        $this->editOrganizationName = $name;
+        $this->editOrganizationSearch = '';
+        Flux::modal('edit-org-picker')->close();
+    }
+
+    public function clearEditOrganization(): void
+    {
+        $this->editOrganizationId = null;
+        $this->editOrganizationName = '';
+    }
+
+    public function createEditOrganizationInline(): void
+    {
+        $this->authorize('financials-treasurer');
+
+        $this->validate([
+            'editOrganizationSearch' => 'required|string|max:255|unique:financial_organizations,name',
+        ]);
+
+        $org = CreateFinancialOrganization::run($this->editOrganizationSearch, auth()->user());
+
+        $this->selectEditOrganization($org->id, $org->name);
+    }
+
+    // ── Organization management ───────────────────────────────────────────────
+
+    public function archiveOrganization(int $id): void
+    {
+        $this->authorize('financials-manage');
+
+        $org = FinancialOrganization::findOrFail($id);
+        ArchiveFinancialOrganization::run($org);
+
+        Flux::toast('Organization archived.', 'Success', variant: 'success');
     }
 }; ?>
 
@@ -423,6 +528,38 @@ new class extends Component
                 </flux:table>
             @else
                 <flux:text variant="subtle">No tags yet. Create one above.</flux:text>
+            @endif
+        </flux:card>
+    @endcan
+
+    {{-- Manage Organizations (financials-manage only) --}}
+    @can('financials-manage')
+        <flux:card class="space-y-4">
+            <flux:heading size="lg">Manage Organizations</flux:heading>
+
+            @if ($this->organizations()->isNotEmpty())
+                <flux:table>
+                    <flux:table.columns>
+                        <flux:table.column>Name</flux:table.column>
+                        <flux:table.column>Actions</flux:table.column>
+                    </flux:table.columns>
+                    <flux:table.rows>
+                        @foreach ($this->organizations() as $org)
+                            <flux:table.row wire:key="org-{{ $org->id }}">
+                                <flux:table.cell>{{ $org->name }}</flux:table.cell>
+                                <flux:table.cell>
+                                    <flux:button size="sm" variant="danger" icon="archive-box"
+                                        wire:click="archiveOrganization({{ $org->id }})"
+                                        wire:confirm="Archive '{{ $org->name }}'? It will no longer appear in the picker.">
+                                        Archive
+                                    </flux:button>
+                                </flux:table.cell>
+                            </flux:table.row>
+                        @endforeach
+                    </flux:table.rows>
+                </flux:table>
+            @else
+                <flux:text variant="subtle">No organizations yet. Add one when recording a transaction.</flux:text>
             @endif
         </flux:card>
     @endcan
@@ -522,6 +659,20 @@ new class extends Component
                     </flux:field>
                 @endif
 
+                @if ($type !== 'transfer')
+                    <flux:field>
+                        <flux:label>Organization</flux:label>
+                        <div class="flex gap-2 items-center">
+                            @if ($organizationId)
+                                <flux:badge>{{ $organizationName }}</flux:badge>
+                                <flux:button size="sm" variant="ghost" wire:click="clearOrganization" icon="x-mark">Clear</flux:button>
+                            @else
+                                <flux:button size="sm" wire:click="$flux.modal('org-picker').show()" icon="building-office">Add Organization</flux:button>
+                            @endif
+                        </div>
+                    </flux:field>
+                @endif
+
                 <flux:field>
                     <flux:label>Notes</flux:label>
                     <flux:textarea wire:model="notes" rows="2" placeholder="Optional notes…" />
@@ -533,6 +684,38 @@ new class extends Component
                     <flux:button x-on:click="$flux.modal('record-transaction').close()" variant="ghost">Cancel</flux:button>
                 </div>
             </form>
+        </flux:modal>
+
+        {{-- Organization Picker Modal (for new transaction) --}}
+        <flux:modal name="org-picker" class="w-full max-w-lg space-y-4">
+            <flux:heading size="lg">Select Organization</flux:heading>
+
+            <flux:field>
+                <flux:label>Search</flux:label>
+                <flux:input wire:model.live="organizationSearch" placeholder="Type to search…" autofocus />
+            </flux:field>
+
+            @php $filtered = $this->filteredOrganizations($organizationSearch); @endphp
+
+            @if ($filtered->isNotEmpty())
+                <div class="space-y-1 max-h-64 overflow-y-auto">
+                    @foreach ($filtered as $org)
+                        <button type="button"
+                            wire:click="selectOrganization({{ $org->id }}, '{{ addslashes($org->name) }}')"
+                            class="w-full text-left px-3 py-2 rounded hover:bg-zinc-100 dark:hover:bg-zinc-700 text-sm">
+                            {{ $org->name }}
+                        </button>
+                    @endforeach
+                </div>
+            @elseif ($organizationSearch !== '')
+                <flux:text variant="subtle">No match found.</flux:text>
+                <flux:button wire:click="createOrganizationInline" variant="primary" size="sm" icon="plus">
+                    Add "{{ $organizationSearch }}"
+                </flux:button>
+                <flux:error name="organizationSearch" />
+            @else
+                <flux:text variant="subtle">No organizations yet. Type a name to create one.</flux:text>
+            @endif
         </flux:modal>
     @endcan
 
@@ -586,6 +769,7 @@ new class extends Component
                 <flux:table.column>Type</flux:table.column>
                 <flux:table.column>Category</flux:table.column>
                 <flux:table.column>Amount</flux:table.column>
+                <flux:table.column>Organization</flux:table.column>
                 <flux:table.column>Tags</flux:table.column>
                 <flux:table.column>Notes</flux:table.column>
                 <flux:table.column>By</flux:table.column>
@@ -624,6 +808,11 @@ new class extends Component
                         </flux:table.cell>
                         <flux:table.cell>${{ number_format($tx->amount / 100, 2) }}</flux:table.cell>
                         <flux:table.cell>
+                            @if ($tx->organization)
+                                <flux:badge size="sm" variant="zinc">{{ $tx->organization->name }}</flux:badge>
+                            @endif
+                        </flux:table.cell>
+                        <flux:table.cell>
                             <div class="flex flex-wrap gap-1">
                                 @foreach ($tx->tags as $tag)
                                     <flux:badge size="sm">{{ $tag->name }}</flux:badge>
@@ -653,7 +842,7 @@ new class extends Component
                     </flux:table.row>
                 @empty
                     <flux:table.row>
-                        <flux:table.cell colspan="9">
+                        <flux:table.cell colspan="10">
                             <flux:text variant="subtle">No transactions found.</flux:text>
                         </flux:table.cell>
                     </flux:table.row>
@@ -739,6 +928,18 @@ new class extends Component
                 </flux:field>
 
                 <flux:field>
+                    <flux:label>Organization</flux:label>
+                    <div class="flex gap-2 items-center">
+                        @if ($editOrganizationId)
+                            <flux:badge>{{ $editOrganizationName }}</flux:badge>
+                            <flux:button size="sm" variant="ghost" wire:click="clearEditOrganization" icon="x-mark">Clear</flux:button>
+                        @else
+                            <flux:button size="sm" wire:click="$flux.modal('edit-org-picker').show()" icon="building-office">Add Organization</flux:button>
+                        @endif
+                    </div>
+                </flux:field>
+
+                <flux:field>
                     <flux:label>Notes</flux:label>
                     <flux:textarea wire:model="editNotes" rows="2" />
                     <flux:error name="editNotes" />
@@ -749,6 +950,38 @@ new class extends Component
                     <flux:button x-on:click="$flux.modal('edit-tx-modal').close()" variant="ghost">Cancel</flux:button>
                 </div>
             </form>
+        </flux:modal>
+
+        {{-- Organization Picker Modal (for edit transaction) --}}
+        <flux:modal name="edit-org-picker" class="w-full max-w-lg space-y-4">
+            <flux:heading size="lg">Select Organization</flux:heading>
+
+            <flux:field>
+                <flux:label>Search</flux:label>
+                <flux:input wire:model.live="editOrganizationSearch" placeholder="Type to search…" />
+            </flux:field>
+
+            @php $editFiltered = $this->filteredOrganizations($editOrganizationSearch); @endphp
+
+            @if ($editFiltered->isNotEmpty())
+                <div class="space-y-1 max-h-64 overflow-y-auto">
+                    @foreach ($editFiltered as $org)
+                        <button type="button"
+                            wire:click="selectEditOrganization({{ $org->id }}, '{{ addslashes($org->name) }}')"
+                            class="w-full text-left px-3 py-2 rounded hover:bg-zinc-100 dark:hover:bg-zinc-700 text-sm">
+                            {{ $org->name }}
+                        </button>
+                    @endforeach
+                </div>
+            @elseif ($editOrganizationSearch !== '')
+                <flux:text variant="subtle">No match found.</flux:text>
+                <flux:button wire:click="createEditOrganizationInline" variant="primary" size="sm" icon="plus">
+                    Add "{{ $editOrganizationSearch }}"
+                </flux:button>
+                <flux:error name="editOrganizationSearch" />
+            @else
+                <flux:text variant="subtle">No organizations yet. Type a name to create one.</flux:text>
+            @endif
         </flux:modal>
     @endcan
 
