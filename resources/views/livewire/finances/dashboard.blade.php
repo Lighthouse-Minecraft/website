@@ -778,7 +778,9 @@ new class extends Component
                                     <div class="flex gap-2">
                                         @if ($tx->type === 'transfer')
                                             <flux:tooltip content="Transfers cannot be edited — delete and re-enter if needed.">
-                                                <flux:button size="sm" icon="pencil-square" disabled>Edit</flux:button>
+                                                <span class="inline-flex">
+                                                    <flux:button size="sm" icon="pencil-square" disabled class="pointer-events-none">Edit</flux:button>
+                                                </span>
                                             </flux:tooltip>
                                         @else
                                             <flux:button size="sm" icon="pencil-square" wire:click="openEditModal({{ $tx->id }})">Edit</flux:button>
