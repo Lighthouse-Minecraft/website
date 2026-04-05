@@ -92,7 +92,7 @@ it('expense transaction decreases account balance', function () {
     expect($account->fresh()->currentBalance())->toBe(6000);
 });
 
-it('uses subcategory as category when both are selected', function () {
+it('saves a subcategory directly when selected from flat dropdown', function () {
     $user = User::factory()->withRole('Financials - Treasurer')->create();
     $account = FinancialAccount::factory()->create();
     $parent = FinancialCategory::factory()->expense()->create();
@@ -104,8 +104,7 @@ it('uses subcategory as category when both are selected', function () {
         ->set('accountId', (string) $account->id)
         ->set('amount', '10.00')
         ->set('transactedAt', '2026-04-01')
-        ->set('categoryId', (string) $parent->id)
-        ->set('subcategoryId', (string) $sub->id)
+        ->set('categoryId', (string) $sub->id)
         ->call('submitTransaction');
 
     $this->assertDatabaseHas('financial_transactions', [

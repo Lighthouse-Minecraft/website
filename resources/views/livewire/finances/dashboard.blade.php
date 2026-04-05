@@ -27,8 +27,6 @@ new class extends Component
 
     public string $categoryId = '';
 
-    public string $subcategoryId = '';
-
     public string $notes = '';
 
     public array $selectedTagIds = [];
@@ -57,8 +55,6 @@ new class extends Component
 
     public string $editCategoryId = '';
 
-    public string $editSubcategoryId = '';
-
     public string $editNotes = '';
 
     public array $editTagIds = [];
@@ -83,46 +79,31 @@ new class extends Component
         return FinancialAccount::orderBy('name')->get();
     }
 
-    public function topLevelCategories(): \Illuminate\Database\Eloquent\Collection
+    public function groupedCategoriesForType(string $type): array
     {
-        return FinancialCategory::whereNull('parent_id')
-            ->where('type', $this->type)
-            ->where('is_archived', false)
+        $all = FinancialCategory::where('is_archived', false)
+            ->where('type', $type)
             ->orderBy('sort_order')
             ->get();
-    }
 
-    public function editTopLevelCategories(): \Illuminate\Database\Eloquent\Collection
-    {
-        return FinancialCategory::whereNull('parent_id')
-            ->where('type', $this->editType)
-            ->where('is_archived', false)
-            ->orderBy('sort_order')
-            ->get();
-    }
+        $topLevel = $all->whereNull('parent_id');
+        $byParent = $all->whereNotNull('parent_id')->groupBy('parent_id');
 
-    public function subcategories(): \Illuminate\Database\Eloquent\Collection
-    {
-        if ($this->categoryId === '') {
-            return collect();
+        $groups = [];
+        foreach ($topLevel as $parent) {
+            $children = $byParent->get($parent->id, collect());
+            if ($children->isEmpty()) {
+                $groups[] = ['type' => 'option', 'id' => $parent->id, 'name' => $parent->name];
+            } else {
+                $groups[] = [
+                    'type' => 'group',
+                    'label' => $parent->name,
+                    'options' => $children->map(fn ($c) => ['id' => $c->id, 'name' => $c->name])->values()->all(),
+                ];
+            }
         }
 
-        return FinancialCategory::where('parent_id', (int) $this->categoryId)
-            ->where('is_archived', false)
-            ->orderBy('sort_order')
-            ->get();
-    }
-
-    public function editSubcategories(): \Illuminate\Database\Eloquent\Collection
-    {
-        if ($this->editCategoryId === '') {
-            return collect();
-        }
-
-        return FinancialCategory::where('parent_id', (int) $this->editCategoryId)
-            ->where('is_archived', false)
-            ->orderBy('sort_order')
-            ->get();
+        return $groups;
     }
 
     public function tags(): \Illuminate\Database\Eloquent\Collection
@@ -177,22 +158,12 @@ new class extends Component
 
     public function updatedType(): void
     {
-        $this->reset(['categoryId', 'subcategoryId', 'targetAccountId']);
-    }
-
-    public function updatedCategoryId(): void
-    {
-        $this->subcategoryId = '';
+        $this->reset(['categoryId', 'targetAccountId']);
     }
 
     public function updatedEditType(): void
     {
-        $this->reset(['editCategoryId', 'editSubcategoryId']);
-    }
-
-    public function updatedEditCategoryId(): void
-    {
-        $this->editSubcategoryId = '';
+        $this->editCategoryId = '';
     }
 
     // ── Submit new transaction ────────────────────────────────────────────────
@@ -215,7 +186,6 @@ new class extends Component
             $rules['targetAccountId'] = 'required|integer|exists:financial_accounts,id|different:accountId';
         } else {
             $rules['categoryId'] = 'required|integer|exists:financial_categories,id';
-            $rules['subcategoryId'] = 'nullable|integer|exists:financial_categories,id';
             $rules['selectedTagIds'] = 'array';
             $rules['selectedTagIds.*'] = 'integer|exists:financial_tags,id';
         }
@@ -237,22 +207,20 @@ new class extends Component
                 (int) $this->targetAccountId,
             );
         } else {
-            $effectiveCategoryId = $this->subcategoryId !== '' ? (int) $this->subcategoryId : (int) $this->categoryId;
-
             RecordFinancialTransaction::run(
                 auth()->user(),
                 (int) $this->accountId,
                 $this->type,
                 $amountCents,
                 $this->transactedAt,
-                $effectiveCategoryId,
+                (int) $this->categoryId,
                 $this->notes ?: null,
                 $this->selectedTagIds,
             );
         }
 
         Flux::toast('Transaction recorded.', 'Success', variant: 'success');
-        $this->reset(['accountId', 'targetAccountId', 'amount', 'categoryId', 'subcategoryId', 'notes', 'selectedTagIds']);
+        $this->reset(['accountId', 'targetAccountId', 'amount', 'categoryId', 'notes', 'selectedTagIds']);
         $this->transactedAt = now()->format('Y-m-d');
         Flux::modal('record-transaction')->close();
     }
@@ -285,18 +253,8 @@ new class extends Component
         $this->editNotes = $tx->notes ?? '';
         $this->editTagIds = $tx->tags->pluck('id')->toArray();
 
-        // Resolve category/subcategory
         if ($tx->financial_category_id !== null) {
-            $cat = FinancialCategory::find($tx->financial_category_id);
-            if ($cat) {
-                if ($cat->parent_id !== null) {
-                    $this->editCategoryId = (string) $cat->parent_id;
-                    $this->editSubcategoryId = (string) $cat->id;
-                } else {
-                    $this->editCategoryId = (string) $cat->id;
-                    $this->editSubcategoryId = '';
-                }
-            }
+            $this->editCategoryId = (string) $tx->financial_category_id;
         }
 
         Flux::modal('edit-tx-modal')->show();
@@ -312,14 +270,12 @@ new class extends Component
             'editAmount' => 'required|numeric|min:0.01',
             'editDate' => 'required|date',
             'editCategoryId' => 'required|integer|exists:financial_categories,id',
-            'editSubcategoryId' => 'nullable|integer|exists:financial_categories,id',
             'editNotes' => 'nullable|string|max:1000',
             'editTagIds' => 'array',
             'editTagIds.*' => 'integer|exists:financial_tags,id',
         ]);
 
         $tx = FinancialTransaction::findOrFail($this->editTxId);
-        $effectiveCategoryId = $this->editSubcategoryId !== '' ? (int) $this->editSubcategoryId : (int) $this->editCategoryId;
         $editAmountCents = (int) round((float) $this->editAmount * 100);
 
         try {
@@ -329,7 +285,7 @@ new class extends Component
                 $this->editType,
                 $editAmountCents,
                 $this->editDate,
-                $effectiveCategoryId,
+                (int) $this->editCategoryId,
                 null,
                 $this->editNotes ?: null,
                 $this->editTagIds,
@@ -342,7 +298,7 @@ new class extends Component
 
         Flux::modal('edit-tx-modal')->close();
         Flux::toast('Transaction updated.', 'Success', variant: 'success');
-        $this->reset(['editTxId', 'editType', 'editAccountId', 'editAmount', 'editDate', 'editCategoryId', 'editSubcategoryId', 'editNotes', 'editTagIds']);
+        $this->reset(['editTxId', 'editType', 'editAccountId', 'editAmount', 'editDate', 'editCategoryId', 'editNotes', 'editTagIds']);
         $this->editType = 'expense';
     }
 
@@ -529,31 +485,25 @@ new class extends Component
                 </div>
 
                 @if ($type !== 'transfer')
-                    <div class="grid grid-cols-2 gap-4">
-                        <flux:field>
-                            <flux:label>Category <span class="text-red-500">*</span></flux:label>
-                            <flux:select wire:model.live="categoryId">
-                                <flux:select.option value="">— Select Category —</flux:select.option>
-                                @foreach ($this->topLevelCategories() as $category)
-                                    <flux:select.option value="{{ $category->id }}">{{ $category->name }}</flux:select.option>
-                                @endforeach
-                            </flux:select>
-                            <flux:error name="categoryId" />
-                        </flux:field>
-
-                        @if ($categoryId !== '' && $this->subcategories()->isNotEmpty())
-                            <flux:field>
-                                <flux:label>Subcategory</flux:label>
-                                <flux:select wire:model="subcategoryId">
-                                    <flux:select.option value="">— None —</flux:select.option>
-                                    @foreach ($this->subcategories() as $sub)
-                                        <flux:select.option value="{{ $sub->id }}">{{ $sub->name }}</flux:select.option>
-                                    @endforeach
-                                </flux:select>
-                                <flux:error name="subcategoryId" />
-                            </flux:field>
-                        @endif
-                    </div>
+                    <flux:field>
+                        <flux:label>Category <span class="text-red-500">*</span></flux:label>
+                        <select wire:model="categoryId"
+                            class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800">
+                            <option value="">— Select Category —</option>
+                            @foreach ($this->groupedCategoriesForType($type) as $item)
+                                @if ($item['type'] === 'group')
+                                    <optgroup label="{{ $item['label'] }}">
+                                        @foreach ($item['options'] as $opt)
+                                            <option value="{{ $opt['id'] }}">{{ $opt['name'] }}</option>
+                                        @endforeach
+                                    </optgroup>
+                                @else
+                                    <option value="{{ $item['id'] }}">{{ $item['name'] }}</option>
+                                @endif
+                            @endforeach
+                        </select>
+                        <flux:error name="categoryId" />
+                    </flux:field>
                 @endif
 
                 @if ($type !== 'transfer')
@@ -754,47 +704,39 @@ new class extends Component
                     </flux:field>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
-                    <flux:field>
-                        <flux:label>Category <span class="text-red-500">*</span></flux:label>
-                        <flux:select wire:model.live="editCategoryId">
-                            <flux:select.option value="">— Select Category —</flux:select.option>
-                            @foreach ($this->editTopLevelCategories() as $category)
-                                <flux:select.option value="{{ $category->id }}">{{ $category->name }}</flux:select.option>
-                            @endforeach
-                        </flux:select>
-                        <flux:error name="editCategoryId" />
-                    </flux:field>
+                <flux:field>
+                    <flux:label>Category <span class="text-red-500">*</span></flux:label>
+                    <select wire:model="editCategoryId"
+                        class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800">
+                        <option value="">— Select Category —</option>
+                        @foreach ($this->groupedCategoriesForType($editType) as $item)
+                            @if ($item['type'] === 'group')
+                                <optgroup label="{{ $item['label'] }}">
+                                    @foreach ($item['options'] as $opt)
+                                        <option value="{{ $opt['id'] }}">{{ $opt['name'] }}</option>
+                                    @endforeach
+                                </optgroup>
+                            @else
+                                <option value="{{ $item['id'] }}">{{ $item['name'] }}</option>
+                            @endif
+                        @endforeach
+                    </select>
+                    <flux:error name="editCategoryId" />
+                </flux:field>
 
-                    @if ($editCategoryId !== '' && $this->editSubcategories()->isNotEmpty())
-                        <flux:field>
-                            <flux:label>Subcategory</flux:label>
-                            <flux:select wire:model="editSubcategoryId">
-                                <flux:select.option value="">— None —</flux:select.option>
-                                @foreach ($this->editSubcategories() as $sub)
-                                    <flux:select.option value="{{ $sub->id }}">{{ $sub->name }}</flux:select.option>
-                                @endforeach
-                            </flux:select>
-                            <flux:error name="editSubcategoryId" />
-                        </flux:field>
-                    @endif
-                </div>
-
-                @if ($this->tags()->isNotEmpty())
-                    <flux:field>
-                        <flux:label>Tags</flux:label>
-                        <div class="flex flex-wrap gap-2 mt-1">
-                            @foreach ($this->tags() as $tag)
-                                <label class="flex items-center gap-1 text-sm cursor-pointer">
-                                    <input type="checkbox" wire:model="editTagIds" value="{{ $tag->id }}"
-                                        class="rounded border-zinc-600" />
-                                    {{ $tag->name }}
-                                </label>
-                            @endforeach
-                        </div>
-                        <flux:error name="editTagIds" />
-                    </flux:field>
-                @endif
+                <flux:field>
+                    <flux:label>Tags</flux:label>
+                    <div class="flex flex-wrap gap-2 mt-1">
+                        @foreach ($this->tags() as $tag)
+                            <label class="flex items-center gap-1 text-sm cursor-pointer">
+                                <input type="checkbox" wire:model="editTagIds" value="{{ $tag->id }}"
+                                    class="rounded border-zinc-600" />
+                                {{ $tag->name }}
+                            </label>
+                        @endforeach
+                    </div>
+                    <flux:error name="editTagIds" />
+                </flux:field>
 
                 <flux:field>
                     <flux:label>Notes</flux:label>
