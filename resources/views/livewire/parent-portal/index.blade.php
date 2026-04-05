@@ -111,16 +111,33 @@ new class extends Component
         // Batch-load recent tickets for all children to avoid N+1
         if ($children->isNotEmpty()) {
             $childIds = $children->pluck('id');
-            $tickets = Thread::whereIn('created_by_user_id', $childIds)
-                ->where('type', ThreadType::Ticket)
+
+            // Include admin tickets where the child is a participant (not just creator)
+            $tickets = Thread::where('type', ThreadType::Ticket)
                 ->whereIn('status', [ThreadStatus::Open, ThreadStatus::Closed, ThreadStatus::Resolved])
+                ->where(function ($q) use ($childIds) {
+                    $q->whereIn('created_by_user_id', $childIds)
+                      ->orWhereHas('participants', fn ($p) => $p->whereIn('user_id', $childIds));
+                })
+                ->with(['participants' => fn ($q) => $q->whereIn('user_id', $childIds)])
                 ->latest()
-                ->get()
-                ->groupBy('created_by_user_id');
+                ->get();
+
+            // Map tickets to children — via creator for support tickets, via participant for admin tickets
+            $ticketsByChild = [];
+            foreach ($tickets as $ticket) {
+                if ($childIds->contains($ticket->created_by_user_id)) {
+                    $ticketsByChild[$ticket->created_by_user_id][] = $ticket;
+                } else {
+                    foreach ($ticket->participants as $participant) {
+                        $ticketsByChild[$participant->user_id][] = $ticket;
+                    }
+                }
+            }
 
             foreach ($children as $child) {
                 $child->setRelation('recentTickets',
-                    ($tickets->get($child->id) ?? collect())->take(10)
+                    collect($ticketsByChild[$child->id] ?? [])->take(10)
                 );
             }
 
