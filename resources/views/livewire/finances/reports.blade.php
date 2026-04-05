@@ -113,6 +113,19 @@ new class extends Component
 
     public function summaryForMonth(string $monthStart): array
     {
+        // For published months, return the immutable snapshot stored at publish time.
+        $report = FinancialPeriodReport::whereDate('month', $monthStart)
+            ->whereNotNull('published_at')
+            ->first();
+
+        if ($report && $report->summary_snapshot !== null) {
+            $snap = $report->summary_snapshot;
+            // Ensure accountBalances is a Collection for template compatibility.
+            $snap['accountBalances'] = collect($snap['accountBalances']);
+
+            return $snap;
+        }
+
         $monthEnd = Carbon::parse($monthStart)->endOfMonth()->toDateString();
 
         $income = (int) FinancialTransaction::where('type', 'income')
