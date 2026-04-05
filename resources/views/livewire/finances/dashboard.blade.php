@@ -13,6 +13,7 @@ use App\Models\FinancialOrganization;
 use App\Models\FinancialTag;
 use App\Models\FinancialTransaction;
 use Flux\Flux;
+use Livewire\Attributes\Computed;
 use Livewire\Volt\Component;
 
 new class extends Component
@@ -121,11 +122,13 @@ new class extends Component
         return $groups;
     }
 
+    #[Computed]
     public function tags(): \Illuminate\Database\Eloquent\Collection
     {
         return FinancialTag::where('is_archived', false)->orderBy('name')->get();
     }
 
+    #[Computed]
     public function organizations(): \Illuminate\Database\Eloquent\Collection
     {
         return FinancialOrganization::where('is_archived', false)->orderBy('name')->get();
@@ -510,14 +513,14 @@ new class extends Component
                 <flux:button type="submit" variant="primary" icon="plus">Create Tag</flux:button>
             </form>
 
-            @if ($this->tags()->isNotEmpty())
+            @if ($this->tags->isNotEmpty())
                 <flux:table>
                     <flux:table.columns>
                         <flux:table.column>Name</flux:table.column>
                         <flux:table.column>Actions</flux:table.column>
                     </flux:table.columns>
                     <flux:table.rows>
-                        @foreach ($this->tags() as $tag)
+                        @foreach ($this->tags as $tag)
                             <flux:table.row wire:key="tag-{{ $tag->id }}">
                                 <flux:table.cell>{{ $tag->name }}</flux:table.cell>
                                 <flux:table.cell>
@@ -542,14 +545,14 @@ new class extends Component
         <flux:card class="space-y-4">
             <flux:heading size="lg">Manage Organizations</flux:heading>
 
-            @if ($this->organizations()->isNotEmpty())
+            @if ($this->organizations->isNotEmpty())
                 <flux:table>
                     <flux:table.columns>
                         <flux:table.column>Name</flux:table.column>
                         <flux:table.column>Actions</flux:table.column>
                     </flux:table.columns>
                     <flux:table.rows>
-                        @foreach ($this->organizations() as $org)
+                        @foreach ($this->organizations as $org)
                             <flux:table.row wire:key="org-{{ $org->id }}">
                                 <flux:table.cell>{{ $org->name }}</flux:table.cell>
                                 <flux:table.cell>
@@ -652,7 +655,7 @@ new class extends Component
                     <flux:field>
                         <flux:label>Tags</flux:label>
                         <div class="flex flex-wrap gap-2 mt-1">
-                            @foreach ($this->tags() as $tag)
+                            @foreach ($this->tags as $tag)
                                 <label class="flex items-center gap-1 text-sm cursor-pointer">
                                     <input type="checkbox" wire:model="selectedTagIds" value="{{ $tag->id }}"
                                         class="rounded border-zinc-600" />
@@ -761,7 +764,7 @@ new class extends Component
             <flux:label>Tag</flux:label>
             <flux:select wire:model.live="filterTagId">
                 <flux:select.option value="">All Tags</flux:select.option>
-                @foreach ($this->tags() as $tag)
+                @foreach ($this->tags as $tag)
                     <flux:select.option value="{{ $tag->id }}">{{ $tag->name }}</flux:select.option>
                 @endforeach
             </flux:select>
@@ -921,7 +924,7 @@ new class extends Component
                 <flux:field>
                     <flux:label>Tags</flux:label>
                     <div class="flex flex-wrap gap-2 mt-1">
-                        @foreach ($this->tags() as $tag)
+                        @foreach ($this->tags as $tag)
                             <label class="flex items-center gap-1 text-sm cursor-pointer">
                                 <input type="checkbox" wire:model="editTagIds" value="{{ $tag->id }}"
                                     class="rounded border-zinc-600" />
