@@ -201,7 +201,7 @@ new class extends Component
         $rules = [
             'type' => 'required|in:income,expense,transfer',
             'accountId' => 'required|integer|exists:financial_accounts,id',
-            'amount' => 'required|integer|min:1',
+            'amount' => 'required|numeric|min:0.01',
             'transactedAt' => 'required|date',
             'notes' => 'nullable|string|max:1000',
         ];
@@ -217,12 +217,14 @@ new class extends Component
 
         $this->validate($rules);
 
+        $amountCents = (int) round((float) $this->amount * 100);
+
         if ($isTransfer) {
             RecordFinancialTransaction::run(
                 auth()->user(),
                 (int) $this->accountId,
                 'transfer',
-                (int) $this->amount,
+                $amountCents,
                 $this->transactedAt,
                 null,
                 $this->notes ?: null,
@@ -236,7 +238,7 @@ new class extends Component
                 auth()->user(),
                 (int) $this->accountId,
                 $this->type,
-                (int) $this->amount,
+                $amountCents,
                 $this->transactedAt,
                 $effectiveCategoryId,
                 $this->notes ?: null,
@@ -273,7 +275,7 @@ new class extends Component
         $this->editTxId = $id;
         $this->editType = $tx->type;
         $this->editAccountId = (string) $tx->account_id;
-        $this->editAmount = (string) $tx->amount;
+        $this->editAmount = number_format($tx->amount / 100, 2);
         $this->editDate = $tx->transacted_at->format('Y-m-d');
         $this->editNotes = $tx->notes ?? '';
         $this->editTagIds = $tx->tags->pluck('id')->toArray();
@@ -302,7 +304,7 @@ new class extends Component
         $this->validate([
             'editType' => 'required|in:income,expense',
             'editAccountId' => 'required|integer|exists:financial_accounts,id',
-            'editAmount' => 'required|integer|min:1',
+            'editAmount' => 'required|numeric|min:0.01',
             'editDate' => 'required|date',
             'editCategoryId' => 'required|integer|exists:financial_categories,id',
             'editSubcategoryId' => 'nullable|integer|exists:financial_categories,id',
@@ -313,13 +315,14 @@ new class extends Component
 
         $tx = FinancialTransaction::findOrFail($this->editTxId);
         $effectiveCategoryId = $this->editSubcategoryId !== '' ? (int) $this->editSubcategoryId : (int) $this->editCategoryId;
+        $editAmountCents = (int) round((float) $this->editAmount * 100);
 
         try {
             UpdateFinancialTransaction::run(
                 $tx,
                 (int) $this->editAccountId,
                 $this->editType,
-                (int) $this->editAmount,
+                $editAmountCents,
                 $this->editDate,
                 $effectiveCategoryId,
                 null,
@@ -441,9 +444,8 @@ new class extends Component
 
                 <div class="grid grid-cols-2 gap-4">
                     <flux:field>
-                        <flux:label>Amount (cents) <span class="text-red-500">*</span></flux:label>
-                        <flux:description>e.g. 1000 = $10.00</flux:description>
-                        <flux:input wire:model="amount" type="number" min="1" placeholder="1000" />
+                        <flux:label>Amount ($) <span class="text-red-500">*</span></flux:label>
+                        <flux:input wire:model="amount" type="number" step="0.01" min="0.01" placeholder="10.00" />
                         <flux:error name="amount" />
                     </flux:field>
 
@@ -668,8 +670,8 @@ new class extends Component
 
                 <div class="grid grid-cols-2 gap-4">
                     <flux:field>
-                        <flux:label>Amount (cents) <span class="text-red-500">*</span></flux:label>
-                        <flux:input wire:model="editAmount" type="number" min="1" />
+                        <flux:label>Amount ($) <span class="text-red-500">*</span></flux:label>
+                        <flux:input wire:model="editAmount" type="number" step="0.01" min="0.01" />
                         <flux:error name="editAmount" />
                     </flux:field>
 

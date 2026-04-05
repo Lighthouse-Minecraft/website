@@ -201,7 +201,7 @@ it('treasurer can edit an unpublished-month transaction', function () {
         ->set('editTxId', $tx->id)
         ->set('editType', 'expense')
         ->set('editAccountId', (string) $account->id)
-        ->set('editAmount', '2000')
+        ->set('editAmount', '20.00')
         ->set('editDate', '2026-03-15')
         ->set('editCategoryId', (string) $category->id)
         ->set('editSubcategoryId', '')
