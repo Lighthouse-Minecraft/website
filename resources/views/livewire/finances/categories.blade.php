@@ -1,12 +1,14 @@
 <?php
 
 use App\Actions\ArchiveFinancialCategory;
+use App\Actions\ArchiveFinancialOrganization;
 use App\Actions\ArchiveFinancialTag;
 use App\Actions\CreateFinancialCategory;
 use App\Actions\CreateFinancialTag;
 use App\Actions\ReorderFinancialCategory;
 use App\Actions\UpdateFinancialCategory;
 use App\Models\FinancialCategory;
+use App\Models\FinancialOrganization;
 use App\Models\FinancialTag;
 use Flux\Flux;
 use Livewire\Volt\Component;
@@ -149,6 +151,21 @@ new class extends Component {
 
         Flux::toast('Tag archived.', 'Success', variant: 'success');
     }
+
+    public function organizations(): \Illuminate\Database\Eloquent\Collection
+    {
+        return FinancialOrganization::orderBy('name')->get();
+    }
+
+    public function archiveOrganization(int $id): void
+    {
+        $this->authorize('financials-manage');
+
+        $org = FinancialOrganization::findOrFail($id);
+        ArchiveFinancialOrganization::run($org);
+
+        Flux::toast('Organization archived.', 'Success', variant: 'success');
+    }
 }; ?>
 
 <div class="space-y-8">
@@ -161,7 +178,7 @@ new class extends Component {
         @can('financials-manage')
             <flux:button href="{{ route('finances.board-reports') }}" wire:navigate size="sm" icon="chart-bar">Board Reports</flux:button>
             <flux:button href="{{ route('finances.accounts') }}" wire:navigate size="sm" icon="building-library">Accounts</flux:button>
-            <flux:button href="{{ route('finances.categories') }}" wire:navigate size="sm" icon="tag">Categories</flux:button>
+            <flux:button href="{{ route('finances.categories') }}" wire:navigate size="sm" icon="tag">Categories &amp; Tags</flux:button>
         @endcan
     </div>
 
@@ -299,6 +316,50 @@ new class extends Component {
             </flux:table.rows>
         </flux:table>
     </div>
+
+    {{-- ===== ORGANIZATIONS ===== --}}
+    @can('financials-manage')
+        <div class="space-y-4">
+            <flux:heading size="xl">Organizations</flux:heading>
+
+            <flux:table>
+                <flux:table.columns>
+                    <flux:table.column>Name</flux:table.column>
+                    <flux:table.column>Status</flux:table.column>
+                    <flux:table.column>Actions</flux:table.column>
+                </flux:table.columns>
+                <flux:table.rows>
+                    @forelse ($this->organizations() as $org)
+                        <flux:table.row wire:key="org-{{ $org->id }}">
+                            <flux:table.cell>{{ $org->name }}</flux:table.cell>
+                            <flux:table.cell>
+                                @if ($org->is_archived)
+                                    <flux:badge variant="warning">Archived</flux:badge>
+                                @else
+                                    <flux:badge variant="success">Active</flux:badge>
+                                @endif
+                            </flux:table.cell>
+                            <flux:table.cell>
+                                @unless ($org->is_archived)
+                                    <flux:button size="sm" variant="danger" icon="archive-box"
+                                        wire:click="archiveOrganization({{ $org->id }})"
+                                        wire:confirm="Archive '{{ $org->name }}'? It will no longer appear in the picker.">
+                                        Archive
+                                    </flux:button>
+                                @endunless
+                            </flux:table.cell>
+                        </flux:table.row>
+                    @empty
+                        <flux:table.row>
+                            <flux:table.cell colspan="3">
+                                <flux:text variant="subtle">No organizations yet. Add one when recording a transaction.</flux:text>
+                            </flux:table.cell>
+                        </flux:table.row>
+                    @endforelse
+                </flux:table.rows>
+            </flux:table>
+        </div>
+    @endcan
 
     {{-- ===== MODALS ===== --}}
     @can('financials-manage')
