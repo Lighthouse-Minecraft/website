@@ -1,5 +1,7 @@
 <?php
 
+use App\Actions\ArchiveFinancialTag;
+use App\Actions\CreateFinancialTag;
 use App\Actions\DeleteFinancialTransaction;
 use App\Actions\RecordFinancialTransaction;
 use App\Actions\UpdateFinancialTransaction;
@@ -60,6 +62,9 @@ new class extends Component
     public string $editNotes = '';
 
     public array $editTagIds = [];
+
+    // ── Tag management ────────────────────────────────────────────────────────
+    public string $newTagName = '';
 
     public function mount(): void
     {
@@ -359,6 +364,32 @@ new class extends Component
 
         Flux::toast('Transaction deleted.', 'Success', variant: 'success');
     }
+
+    // ── Tag management ────────────────────────────────────────────────────────
+
+    public function createTag(): void
+    {
+        $this->authorize('financials-manage');
+
+        $this->validate([
+            'newTagName' => 'required|string|max:100|unique:financial_tags,name',
+        ]);
+
+        CreateFinancialTag::run($this->newTagName, auth()->user());
+
+        Flux::toast('Tag created.', 'Success', variant: 'success');
+        $this->newTagName = '';
+    }
+
+    public function archiveTag(int $id): void
+    {
+        $this->authorize('financials-manage');
+
+        $tag = FinancialTag::findOrFail($id);
+        ArchiveFinancialTag::run($tag);
+
+        Flux::toast('Tag archived.', 'Success', variant: 'success');
+    }
 }; ?>
 
 <div class="space-y-8">
@@ -397,6 +428,47 @@ new class extends Component
                 Add Transaction
             </flux:button>
         </div>
+    @endcan
+
+    {{-- Manage Tags (financials-manage only) --}}
+    @can('financials-manage')
+        <flux:card class="space-y-4">
+            <flux:heading size="lg">Manage Tags</flux:heading>
+
+            <form wire:submit.prevent="createTag" class="flex gap-3 items-end">
+                <flux:field class="flex-1">
+                    <flux:label>New Tag Name</flux:label>
+                    <flux:input wire:model="newTagName" placeholder="Tag name…" />
+                    <flux:error name="newTagName" />
+                </flux:field>
+                <flux:button type="submit" variant="primary" icon="plus">Create Tag</flux:button>
+            </form>
+
+            @if ($this->tags()->isNotEmpty())
+                <flux:table>
+                    <flux:table.columns>
+                        <flux:table.column>Name</flux:table.column>
+                        <flux:table.column>Actions</flux:table.column>
+                    </flux:table.columns>
+                    <flux:table.rows>
+                        @foreach ($this->tags() as $tag)
+                            <flux:table.row wire:key="tag-{{ $tag->id }}">
+                                <flux:table.cell>{{ $tag->name }}</flux:table.cell>
+                                <flux:table.cell>
+                                    <flux:button size="sm" variant="danger" icon="archive-box"
+                                        wire:click="archiveTag({{ $tag->id }})"
+                                        wire:confirm="Archive tag '{{ $tag->name }}'? It will no longer appear on the transaction form.">
+                                        Archive
+                                    </flux:button>
+                                </flux:table.cell>
+                            </flux:table.row>
+                        @endforeach
+                    </flux:table.rows>
+                </flux:table>
+            @else
+                <flux:text variant="subtle">No tags yet. Create one above.</flux:text>
+            @endif
+        </flux:card>
     @endcan
 
     {{-- Record Transaction Modal --}}

@@ -169,6 +169,57 @@ it('user without financials-view cannot access finance dashboard route', functio
         ->assertForbidden();
 });
 
+// == Tag Management on Dashboard == //
+
+it('financials-manage user can create a tag from the dashboard', function () {
+    $user = User::factory()->withRole('Financials - Manage')->create();
+    $this->actingAs($user);
+
+    livewire('finances.dashboard')
+        ->set('newTagName', 'minecraft-hosting')
+        ->call('createTag');
+
+    $this->assertDatabaseHas('financial_tags', [
+        'name' => 'minecraft-hosting',
+        'created_by' => $user->id,
+        'is_archived' => false,
+    ]);
+});
+
+it('financials-manage user can archive a tag from the dashboard', function () {
+    $user = User::factory()->withRole('Financials - Manage')->create();
+    $tag = FinancialTag::factory()->create(['is_archived' => false, 'created_by' => $user->id]);
+    $this->actingAs($user);
+
+    livewire('finances.dashboard')
+        ->call('archiveTag', $tag->id);
+
+    expect($tag->fresh()->is_archived)->toBeTrue();
+});
+
+it('financials-treasurer cannot create a tag from the dashboard', function () {
+    $user = User::factory()->withRole('Financials - Treasurer')->create();
+    $this->actingAs($user);
+
+    livewire('finances.dashboard')
+        ->set('newTagName', 'unauthorized-tag')
+        ->call('createTag')
+        ->assertForbidden();
+
+    $this->assertDatabaseMissing('financial_tags', ['name' => 'unauthorized-tag']);
+});
+
+it('duplicate tag names are rejected', function () {
+    $user = User::factory()->withRole('Financials - Manage')->create();
+    FinancialTag::factory()->create(['name' => 'existing-tag', 'created_by' => $user->id]);
+    $this->actingAs($user);
+
+    livewire('finances.dashboard')
+        ->set('newTagName', 'existing-tag')
+        ->call('createTag')
+        ->assertHasErrors(['newTagName']);
+});
+
 // == Ready Room Finance Button == //
 
 it('finance button appears in ready room for financials-view users', function () {
