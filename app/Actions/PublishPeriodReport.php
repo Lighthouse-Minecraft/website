@@ -9,6 +9,7 @@ use App\Models\FinancialTransaction;
 use App\Models\MonthlyBudget;
 use App\Models\User;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class PublishPeriodReport
@@ -17,6 +18,33 @@ class PublishPeriodReport
 
     public function handle(string $monthStart, User $publishedBy): FinancialPeriodReport
     {
+        // Reject publishing if earlier months with transactions haven't been published
+        $ymExpr = match (DB::getDriverName()) {
+            'pgsql' => "to_char(transacted_at, 'YYYY-MM')",
+            'mysql' => "DATE_FORMAT(transacted_at, '%Y-%m')",
+            default => "strftime('%Y-%m', transacted_at)",
+        };
+
+        $priorMonthsWithTransactions = FinancialTransaction::where('transacted_at', '<', $monthStart)
+            ->selectRaw("{$ymExpr} as ym")
+            ->groupByRaw($ymExpr)
+            ->pluck('ym');
+
+        if ($priorMonthsWithTransactions->isNotEmpty()) {
+            $publishedMonths = FinancialPeriodReport::whereNotNull('published_at')
+                ->get()
+                ->map(fn ($r) => Carbon::parse($r->month)->format('Y-m'))
+                ->all();
+
+            $hasUnpublishedPrior = $priorMonthsWithTransactions->filter(
+                fn ($ym) => ! in_array($ym, $publishedMonths)
+            )->isNotEmpty();
+
+            if ($hasUnpublishedPrior) {
+                throw new \RuntimeException('Cannot publish this month — there are earlier months with transactions that have not been published yet.');
+            }
+        }
+
         // Reject double-publish
         $existing = FinancialPeriodReport::whereDate('month', $monthStart)->first();
         if ($existing && $existing->isPublished()) {

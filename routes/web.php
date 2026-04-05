@@ -195,6 +195,7 @@ Route::prefix('finances')
         Volt::route('/categories', 'finances.categories')->name('categories');
         Volt::route('/budget/{month?}', 'finances.budget')->name('budget');
         Volt::route('/reports', 'finances.reports')->name('reports');
+        Volt::route('/reports/{month}', 'finances.reports.show')->name('reports.show');
         Route::get('/reports/{month}/pdf', \App\Http\Controllers\Finances\PeriodReportPdfController::class)->name('reports.pdf');
         Volt::route('/board-reports', 'finances.board-reports')->name('board-reports');
         Route::get('/board-reports/income-statement/pdf', \App\Http\Controllers\Finances\IncomeStatementPdfController::class)->name('board-reports.income-statement.pdf');
