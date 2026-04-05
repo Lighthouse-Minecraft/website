@@ -389,10 +389,11 @@ new class extends Component
 
     // ── Organization picker ───────────────────────────────────────────────────
 
-    public function selectOrganization(int $id, string $name): void
+    public function selectOrganization(int $id): void
     {
-        $this->organizationId = $id;
-        $this->organizationName = $name;
+        $org = FinancialOrganization::findOrFail($id);
+        $this->organizationId = $org->id;
+        $this->organizationName = $org->name;
         $this->organizationSearch = '';
         Flux::modal('org-picker')->close();
     }
@@ -413,13 +414,14 @@ new class extends Component
 
         $org = CreateFinancialOrganization::run($this->organizationSearch, auth()->user());
 
-        $this->selectOrganization($org->id, $org->name);
+        $this->selectOrganization($org->id);
     }
 
-    public function selectEditOrganization(int $id, string $name): void
+    public function selectEditOrganization(int $id): void
     {
-        $this->editOrganizationId = $id;
-        $this->editOrganizationName = $name;
+        $org = FinancialOrganization::findOrFail($id);
+        $this->editOrganizationId = $org->id;
+        $this->editOrganizationName = $org->name;
         $this->editOrganizationSearch = '';
         Flux::modal('edit-org-picker')->close();
     }
@@ -440,7 +442,7 @@ new class extends Component
 
         $org = CreateFinancialOrganization::run($this->editOrganizationSearch, auth()->user());
 
-        $this->selectEditOrganization($org->id, $org->name);
+        $this->selectEditOrganization($org->id);
     }
 
     // ── Organization management ───────────────────────────────────────────────
@@ -704,7 +706,7 @@ new class extends Component
                 <div class="space-y-1 max-h-64 overflow-y-auto">
                     @foreach ($filtered as $org)
                         <button type="button"
-                            wire:click="selectOrganization({{ $org->id }}, '{{ addslashes($org->name) }}')"
+                            wire:click="selectOrganization({{ $org->id }})"
                             class="w-full text-left px-3 py-2 rounded hover:bg-zinc-100 dark:hover:bg-zinc-700 text-sm">
                             {{ $org->name }}
                         </button>
@@ -970,7 +972,7 @@ new class extends Component
                 <div class="space-y-1 max-h-64 overflow-y-auto">
                     @foreach ($editFiltered as $org)
                         <button type="button"
-                            wire:click="selectEditOrganization({{ $org->id }}, '{{ addslashes($org->name) }}')"
+                            wire:click="selectEditOrganization({{ $org->id }})"
                             class="w-full text-left px-3 py-2 rounded hover:bg-zinc-100 dark:hover:bg-zinc-700 text-sm">
                             {{ $org->name }}
                         </button>

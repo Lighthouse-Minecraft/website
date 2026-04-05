@@ -138,7 +138,7 @@ it('selectOrganization sets organizationId and organizationName', function () {
     $this->actingAs($user);
 
     livewire('finances.dashboard')
-        ->call('selectOrganization', $org->id, $org->name)
+        ->call('selectOrganization', $org->id)
         ->assertSet('organizationId', $org->id)
         ->assertSet('organizationName', 'Hope Ministry');
 });
