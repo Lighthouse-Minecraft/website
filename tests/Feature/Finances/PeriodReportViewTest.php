@@ -71,7 +71,7 @@ it('treasurer sees both published and unpublished months', function () {
 
 // == View modal == //
 
-it('view-only user can open view modal for a published month', function () {
+it('view-only user can access the detail page for a published month', function () {
     $user = User::factory()->withRole('Financials - View')->create();
     $account = FinancialAccount::factory()->create();
     $this->actingAs($user);
@@ -83,12 +83,12 @@ it('view-only user can open view modal for a published month', function () {
     ]);
     FinancialPeriodReport::factory()->published()->forMonth('2026-03-01')->create();
 
-    livewire('finances.reports')
-        ->call('openViewModal', '2026-03-01')
-        ->assertSet('viewMonth', '2026-03-01');
+    livewire('finances.reports.show', ['month' => '2026-03'])
+        ->assertOk()
+        ->assertSet('isPublished', true);
 });
 
-it('view-only user cannot open view modal for an unpublished month', function () {
+it('view-only user cannot access the detail page for an unpublished month', function () {
     $user = User::factory()->withRole('Financials - View')->create();
     $account = FinancialAccount::factory()->create();
     $this->actingAs($user);
@@ -100,10 +100,8 @@ it('view-only user cannot open view modal for an unpublished month', function ()
     ]);
 
     // No published report for March
-
-    livewire('finances.reports')
-        ->call('openViewModal', '2026-03-01')
-        ->assertNotFound();
+    livewire('finances.reports.show', ['month' => '2026-03'])
+        ->assertForbidden();
 });
 
 // == PDF download route == //

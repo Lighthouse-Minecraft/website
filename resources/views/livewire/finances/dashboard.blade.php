@@ -76,6 +76,8 @@ new class extends Component
 
     public string $editOrganizationSearch = '';
 
+    public string $editTagSearch = '';
+
     // ── Tag management ────────────────────────────────────────────────────────
     public string $newTagName = '';
 
@@ -216,6 +218,48 @@ new class extends Component
         Flux::modal('edit-org-picker')->show();
     }
 
+    public function openEditTagPickerModal(): void
+    {
+        $this->authorize('financials-treasurer');
+        Flux::modal('edit-tag-picker')->show();
+    }
+
+    public function selectEditTag(int $id): void
+    {
+        $this->authorize('financials-treasurer');
+        if (! in_array($id, $this->editTagIds)) {
+            $this->editTagIds[] = $id;
+        }
+        $this->editTagSearch = '';
+        Flux::modal('edit-tag-picker')->close();
+    }
+
+    public function removeEditTag(int $id): void
+    {
+        $this->authorize('financials-treasurer');
+        $this->editTagIds = array_values(array_filter($this->editTagIds, fn ($t) => $t !== $id));
+    }
+
+    public function createEditTagInline(): void
+    {
+        $this->authorize('financials-treasurer');
+
+        $this->validate([
+            'editTagSearch' => 'required|string|max:100|unique:financial_tags,name',
+        ]);
+
+        $tag = CreateFinancialTag::run($this->editTagSearch, auth()->user());
+        $this->selectEditTag($tag->id);
+    }
+
+    public function filteredEditTags(): \Illuminate\Database\Eloquent\Collection
+    {
+        return FinancialTag::where('is_archived', false)
+            ->when($this->editTagSearch !== '', fn ($q) => $q->where('name', 'like', '%'.$this->editTagSearch.'%'))
+            ->orderBy('name')
+            ->get();
+    }
+
     // ── Submit new transaction ────────────────────────────────────────────────
 
     public function submitTransaction(): void
@@ -307,6 +351,7 @@ new class extends Component
         $this->editOrganizationId = null;
         $this->editOrganizationName = '';
         $this->editOrganizationSearch = '';
+        $this->editTagSearch = '';
 
         if ($tx->financial_category_id !== null) {
             $this->editCategoryId = (string) $tx->financial_category_id;
@@ -359,7 +404,7 @@ new class extends Component
 
         Flux::modal('edit-tx-modal')->close();
         Flux::toast('Transaction updated.', 'Success', variant: 'success');
-        $this->reset(['editTxId', 'editType', 'editAccountId', 'editAmount', 'editDate', 'editCategoryId', 'editNotes', 'editTagIds', 'editOrganizationId', 'editOrganizationName', 'editOrganizationSearch']);
+        $this->reset(['editTxId', 'editType', 'editAccountId', 'editAmount', 'editDate', 'editCategoryId', 'editNotes', 'editTagIds', 'editOrganizationId', 'editOrganizationName', 'editOrganizationSearch', 'editTagSearch']);
         $this->editType = 'expense';
     }
 
@@ -778,7 +823,9 @@ new class extends Component
                                     <div class="flex gap-2">
                                         @if ($tx->type === 'transfer')
                                             <flux:tooltip content="Transfers cannot be edited — delete and re-enter if needed.">
-                                                <flux:button size="sm" icon="pencil-square" disabled>Edit</flux:button>
+                                                <span class="inline-flex">
+                                                    <flux:button size="sm" icon="pencil-square" disabled class="pointer-events-none">Edit</flux:button>
+                                                </span>
                                             </flux:tooltip>
                                         @else
                                             <flux:button size="sm" icon="pencil-square" wire:click="openEditModal({{ $tx->id }})">Edit</flux:button>
@@ -868,31 +915,36 @@ new class extends Component
                     <flux:error name="editCategoryId" />
                 </flux:field>
 
-                <flux:field>
-                    <flux:label>Tags</flux:label>
-                    <div class="flex flex-wrap gap-2 mt-1">
-                        @foreach ($this->tags as $tag)
-                            <label class="flex items-center gap-1 text-sm cursor-pointer">
-                                <input type="checkbox" wire:model="editTagIds" value="{{ $tag->id }}"
-                                    class="rounded border-zinc-600" />
-                                {{ $tag->name }}
-                            </label>
-                        @endforeach
-                    </div>
-                    <flux:error name="editTagIds" />
-                </flux:field>
+                <div class="grid grid-cols-2 gap-4">
+                    <flux:field>
+                        <flux:label>Tags</flux:label>
+                        <div class="flex flex-wrap gap-1 mb-1">
+                            @foreach ($this->editTagIds as $tagId)
+                                @php $tag = $this->filteredEditTags()->firstWhere('id', $tagId) ?? \App\Models\FinancialTag::find($tagId); @endphp
+                                @if ($tag)
+                                    <flux:badge>
+                                        {{ $tag->name }}
+                                        <button type="button" wire:click="removeEditTag({{ $tag->id }})" class="ml-1 opacity-70 hover:opacity-100">&times;</button>
+                                    </flux:badge>
+                                @endif
+                            @endforeach
+                        </div>
+                        <flux:button size="sm" wire:click="openEditTagPickerModal" icon="tag">Add Tag</flux:button>
+                        <flux:error name="editTagIds" />
+                    </flux:field>
 
-                <flux:field>
-                    <flux:label>Organization</flux:label>
-                    <div class="flex gap-2 items-center">
-                        @if ($editOrganizationId)
-                            <flux:badge>{{ $editOrganizationName }}</flux:badge>
-                            <flux:button size="sm" variant="ghost" wire:click="clearEditOrganization" icon="x-mark">Clear</flux:button>
-                        @else
-                            <flux:button size="sm" wire:click="openEditOrgPickerModal" icon="building-office">Add Organization</flux:button>
-                        @endif
-                    </div>
-                </flux:field>
+                    <flux:field>
+                        <flux:label>Organization</flux:label>
+                        <div class="flex gap-2 items-center mt-1">
+                            @if ($editOrganizationId)
+                                <flux:badge>{{ $editOrganizationName }}</flux:badge>
+                                <flux:button size="sm" variant="ghost" wire:click="clearEditOrganization" icon="x-mark">Clear</flux:button>
+                            @else
+                                <flux:button size="sm" wire:click="openEditOrgPickerModal" icon="building-office">Add Organization</flux:button>
+                            @endif
+                        </div>
+                    </flux:field>
+                </div>
 
                 <flux:field>
                     <flux:label>Notes</flux:label>
@@ -936,6 +988,38 @@ new class extends Component
                 <flux:error name="editOrganizationSearch" />
             @else
                 <flux:text variant="subtle">No organizations yet. Type a name to create one.</flux:text>
+            @endif
+        </flux:modal>
+
+        {{-- Tag Picker Modal (for edit transaction) --}}
+        <flux:modal name="edit-tag-picker" class="w-full max-w-lg space-y-4">
+            <flux:heading size="lg">Select Tag</flux:heading>
+
+            <flux:field>
+                <flux:label>Search</flux:label>
+                <flux:input wire:model.live="editTagSearch" placeholder="Type to search…" />
+            </flux:field>
+
+            @php $editTagsFiltered = $this->filteredEditTags(); @endphp
+
+            @if ($editTagsFiltered->isNotEmpty())
+                <div class="space-y-1 max-h-64 overflow-y-auto">
+                    @foreach ($editTagsFiltered as $tag)
+                        <button type="button"
+                            wire:click="selectEditTag({{ $tag->id }})"
+                            class="w-full text-left px-3 py-2 rounded hover:bg-zinc-100 dark:hover:bg-zinc-700 text-sm">
+                            {{ $tag->name }}
+                        </button>
+                    @endforeach
+                </div>
+            @elseif ($editTagSearch !== '')
+                <flux:text variant="subtle">No match found.</flux:text>
+                <flux:button wire:click="createEditTagInline" variant="primary" size="sm" icon="plus">
+                    Create "{{ $editTagSearch }}"
+                </flux:button>
+                <flux:error name="editTagSearch" />
+            @else
+                <flux:text variant="subtle">Start typing to search or create a tag.</flux:text>
             @endif
         </flux:modal>
     @endcan

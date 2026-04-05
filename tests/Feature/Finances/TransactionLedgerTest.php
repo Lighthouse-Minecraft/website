@@ -340,6 +340,64 @@ it('financials-view user cannot open edit modal', function () {
         ->assertForbidden();
 });
 
+// == Edit Tag Picker == //
+
+it('opening the edit-tag-picker modal calls openEditTagPickerModal', function () {
+    $user = User::factory()->withRole('Financials - Treasurer')->create();
+    $this->actingAs($user);
+
+    livewire('finances.dashboard')
+        ->call('openEditTagPickerModal')
+        ->assertDispatched('modal-show', name: 'edit-tag-picker');
+});
+
+it('selectEditTag adds tag id to editTagIds and closes modal', function () {
+    $user = User::factory()->withRole('Financials - Treasurer')->create();
+    $tag = FinancialTag::factory()->create();
+    $this->actingAs($user);
+
+    livewire('finances.dashboard')
+        ->call('selectEditTag', $tag->id)
+        ->assertSet('editTagIds', [$tag->id])
+        ->assertSet('editTagSearch', '');
+});
+
+it('selectEditTag does not add duplicate tag ids', function () {
+    $user = User::factory()->withRole('Financials - Treasurer')->create();
+    $tag = FinancialTag::factory()->create();
+    $this->actingAs($user);
+
+    livewire('finances.dashboard')
+        ->set('editTagIds', [$tag->id])
+        ->call('selectEditTag', $tag->id)
+        ->assertSet('editTagIds', [$tag->id]);
+});
+
+it('removeEditTag removes the tag id from editTagIds', function () {
+    $user = User::factory()->withRole('Financials - Treasurer')->create();
+    $tag1 = FinancialTag::factory()->create();
+    $tag2 = FinancialTag::factory()->create();
+    $this->actingAs($user);
+
+    livewire('finances.dashboard')
+        ->set('editTagIds', [$tag1->id, $tag2->id])
+        ->call('removeEditTag', $tag1->id)
+        ->assertSet('editTagIds', [$tag2->id]);
+});
+
+it('createEditTagInline creates a new tag and adds it to editTagIds', function () {
+    $user = User::factory()->withRole('Financials - Treasurer')->create();
+    $this->actingAs($user);
+
+    $component = livewire('finances.dashboard')
+        ->set('editTagSearch', 'Brand New Tag')
+        ->call('createEditTagInline');
+
+    $tag = \App\Models\FinancialTag::where('name', 'Brand New Tag')->first();
+    expect($tag)->not->toBeNull();
+    $component->assertSet('editTagIds', [$tag->id]);
+});
+
 it('treasurer cannot move a transaction date into a published month', function () {
     $user = User::factory()->withRole('Financials - Treasurer')->create();
     $account = FinancialAccount::factory()->create();

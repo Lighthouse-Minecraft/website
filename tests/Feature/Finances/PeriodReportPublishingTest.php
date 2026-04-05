@@ -72,7 +72,7 @@ it('publish action stores a summary snapshot', function () {
         ->and($report->summary_snapshot['net'])->toBe(5000);
 });
 
-it('summaryForMonth returns snapshot for published month instead of live queries', function () {
+it('detail page summary returns snapshot for published month instead of live queries', function () {
     $user = User::factory()->withRole('Financials - Treasurer')->create();
     $account = FinancialAccount::factory()->create(['opening_balance' => 0, 'name' => 'Original Name']);
     $category = FinancialCategory::factory()->income()->create();
@@ -92,8 +92,8 @@ it('summaryForMonth returns snapshot for published month instead of live queries
     // Rename the account after publication
     $account->update(['name' => 'Renamed After Publish']);
 
-    $component = livewire('finances.reports');
-    $summary = $component->instance()->summaryForMonth('2026-03-01');
+    $component = livewire('finances.reports.show', ['month' => '2026-03']);
+    $summary = $component->instance()->summary();
 
     // Snapshot should preserve the name at publish time, not the renamed value
     $names = collect($summary['accountBalances'])->pluck('name')->all();
@@ -145,7 +145,7 @@ it('treasurer sees publish button for unpublished month with transactions', func
         ->and($march['published'])->toBeFalse();
 });
 
-it('treasurer can publish a month via confirmPublish', function () {
+it('treasurer can publish a month via the detail page', function () {
     $user = User::factory()->withRole('Financials - Treasurer')->create();
     $account = FinancialAccount::factory()->create();
     $this->actingAs($user);
@@ -156,9 +156,8 @@ it('treasurer can publish a month via confirmPublish', function () {
         'entered_by' => $user->id,
     ]);
 
-    livewire('finances.reports')
-        ->call('openPublishModal', '2026-03-01')
-        ->call('confirmPublish');
+    livewire('finances.reports.show', ['month' => '2026-03'])
+        ->call('publish');
 
     expect(FinancialPeriodReport::whereDate('month', '2026-03-01')->first()?->isPublished())->toBeTrue();
 });
@@ -183,7 +182,7 @@ it('published month shows as published in report list', function () {
     expect($march['published'])->toBeTrue();
 });
 
-it('view-only user cannot publish a month', function () {
+it('view-only user cannot access the detail page for an unpublished month', function () {
     $user = User::factory()->withRole('Financials - View')->create();
     $account = FinancialAccount::factory()->create();
     $this->actingAs($user);
@@ -194,8 +193,7 @@ it('view-only user cannot publish a month', function () {
         'entered_by' => $user->id,
     ]);
 
-    livewire('finances.reports')
-        ->call('openPublishModal', '2026-03-01')
+    livewire('finances.reports.show', ['month' => '2026-03'])
         ->assertForbidden();
 
     expect(FinancialPeriodReport::count())->toBe(0);
