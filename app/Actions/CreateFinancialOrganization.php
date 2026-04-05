@@ -12,10 +12,14 @@ class CreateFinancialOrganization
 
     public function handle(string $name, User $createdBy): FinancialOrganization
     {
-        return FinancialOrganization::create([
+        $organization = FinancialOrganization::create([
             'name' => $name,
             'created_by' => $createdBy->id,
             'is_archived' => false,
         ]);
+
+        RecordActivity::run($organization, 'created_financial_organization', 'Created financial organization.');
+
+        return $organization;
     }
 }

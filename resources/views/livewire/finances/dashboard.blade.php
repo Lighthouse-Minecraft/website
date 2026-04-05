@@ -283,6 +283,9 @@ new class extends Component
         $this->editDate = $tx->transacted_at->format('Y-m-d');
         $this->editNotes = $tx->notes ?? '';
         $this->editTagIds = $tx->tags->pluck('id')->toArray();
+        $this->editOrganizationId = null;
+        $this->editOrganizationName = '';
+        $this->editOrganizationSearch = '';
 
         if ($tx->financial_category_id !== null) {
             $this->editCategoryId = (string) $tx->financial_category_id;

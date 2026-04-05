@@ -13,5 +13,7 @@ class ArchiveFinancialOrganization
     {
         $organization->is_archived = true;
         $organization->save();
+
+        RecordActivity::run($organization, 'archived_financial_organization', 'Archived financial organization.');
     }
 }
