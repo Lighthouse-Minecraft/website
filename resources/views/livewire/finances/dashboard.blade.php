@@ -198,6 +198,14 @@ new class extends Component
         $this->editCategoryId = '';
     }
 
+    // ── Open record transaction modal ─────────────────────────────────────────
+
+    public function openRecordTransactionModal(): void
+    {
+        $this->authorize('financials-treasurer');
+        Flux::modal('record-transaction')->show();
+    }
+
     // ── Submit new transaction ────────────────────────────────────────────────
 
     public function submitTransaction(): void
@@ -493,51 +501,10 @@ new class extends Component
     {{-- Add Transaction Button (treasurer only) --}}
     @can('financials-treasurer')
         <div>
-            <flux:button wire:click="$flux.modal('record-transaction').show()" variant="primary" icon="plus">
+            <flux:button wire:click="openRecordTransactionModal" variant="primary" icon="plus">
                 Add Transaction
             </flux:button>
         </div>
-    @endcan
-
-    {{-- Manage Tags (financials-manage only) --}}
-    @can('financials-manage')
-        <flux:card class="space-y-4">
-            <flux:heading size="lg">Manage Tags</flux:heading>
-
-            <form wire:submit.prevent="createTag" class="flex gap-3 items-end">
-                <flux:field class="flex-1">
-                    <flux:label>New Tag Name</flux:label>
-                    <flux:input wire:model="newTagName" placeholder="Tag name…" />
-                    <flux:error name="newTagName" />
-                </flux:field>
-                <flux:button type="submit" variant="primary" icon="plus">Create Tag</flux:button>
-            </form>
-
-            @if ($this->tags->isNotEmpty())
-                <flux:table>
-                    <flux:table.columns>
-                        <flux:table.column>Name</flux:table.column>
-                        <flux:table.column>Actions</flux:table.column>
-                    </flux:table.columns>
-                    <flux:table.rows>
-                        @foreach ($this->tags as $tag)
-                            <flux:table.row wire:key="tag-{{ $tag->id }}">
-                                <flux:table.cell>{{ $tag->name }}</flux:table.cell>
-                                <flux:table.cell>
-                                    <flux:button size="sm" variant="danger" icon="archive-box"
-                                        wire:click="archiveTag({{ $tag->id }})"
-                                        wire:confirm="Archive tag '{{ $tag->name }}'? It will no longer appear on the transaction form.">
-                                        Archive
-                                    </flux:button>
-                                </flux:table.cell>
-                            </flux:table.row>
-                        @endforeach
-                    </flux:table.rows>
-                </flux:table>
-            @else
-                <flux:text variant="subtle">No tags yet. Create one above.</flux:text>
-            @endif
-        </flux:card>
     @endcan
 
     {{-- Manage Organizations (financials-manage only) --}}
