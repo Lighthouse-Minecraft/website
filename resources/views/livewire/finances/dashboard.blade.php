@@ -833,9 +833,11 @@ new class extends Component
                             <flux:table.cell>
                                 @unless ($tx->isInPublishedMonth())
                                     <div class="flex gap-2">
-                                        @unless ($tx->type === 'transfer')
+                                        @if ($tx->type === 'transfer')
+                                            <flux:text variant="subtle" class="text-xs">Transfers cannot be edited — delete and re-enter if needed.</flux:text>
+                                        @else
                                             <flux:button size="sm" icon="pencil-square" wire:click="openEditModal({{ $tx->id }})">Edit</flux:button>
-                                        @endunless
+                                        @endif
                                         <flux:button size="sm" variant="danger" icon="trash"
                                             wire:click="deleteTransaction({{ $tx->id }})"
                                             wire:confirm="Delete this transaction? This cannot be undone.">
