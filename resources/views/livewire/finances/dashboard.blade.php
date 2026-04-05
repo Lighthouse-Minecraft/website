@@ -300,7 +300,7 @@ new class extends Component
         $this->editTxId = $id;
         $this->editType = $tx->type;
         $this->editAccountId = (string) $tx->account_id;
-        $this->editAmount = number_format($tx->amount / 100, 2);
+        $this->editAmount = number_format($tx->amount / 100, 2, '.', '');
         $this->editDate = $tx->transacted_at->format('Y-m-d');
         $this->editNotes = $tx->notes ?? '';
         $this->editTagIds = $tx->tags->pluck('id')->toArray();
@@ -666,7 +666,7 @@ new class extends Component
         <flux:heading size="lg">Transaction Ledger</flux:heading>
 
         {{-- Filters --}}
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3">
             <flux:field>
                 <flux:label>From</flux:label>
                 <flux:input wire:model.live="filterDateFrom" type="date" />
@@ -693,26 +693,25 @@ new class extends Component
                     @endforeach
                 </flux:select>
             </flux:field>
+            <flux:field>
+                <flux:label>Tag</flux:label>
+                <flux:select wire:model.live="filterTagId">
+                    <flux:select.option value="">All Tags</flux:select.option>
+                    @foreach ($this->tags as $tag)
+                        <flux:select.option value="{{ $tag->id }}">{{ $tag->name }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+            </flux:field>
+            <flux:field>
+                <flux:label>Organization</flux:label>
+                <flux:select wire:model.live="filterOrganizationId">
+                    <flux:select.option value="">All Organizations</flux:select.option>
+                    @foreach ($this->filteredOrganizations('') as $org)
+                        <flux:select.option value="{{ $org->id }}">{{ $org->name }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+            </flux:field>
         </div>
-        <flux:field class="w-48">
-            <flux:label>Tag</flux:label>
-            <flux:select wire:model.live="filterTagId">
-                <flux:select.option value="">All Tags</flux:select.option>
-                @foreach ($this->tags as $tag)
-                    <flux:select.option value="{{ $tag->id }}">{{ $tag->name }}</flux:select.option>
-                @endforeach
-            </flux:select>
-        </flux:field>
-
-        <flux:field class="w-48">
-            <flux:label>Organization</flux:label>
-            <flux:select wire:model.live="filterOrganizationId">
-                <flux:select.option value="">All Organizations</flux:select.option>
-                @foreach ($this->filteredOrganizations('') as $org)
-                    <flux:select.option value="{{ $org->id }}">{{ $org->name }}</flux:select.option>
-                @endforeach
-            </flux:select>
-        </flux:field>
 
         <flux:table>
             <flux:table.columns>
@@ -778,7 +777,9 @@ new class extends Component
                                 @unless ($tx->isInPublishedMonth())
                                     <div class="flex gap-2">
                                         @if ($tx->type === 'transfer')
-                                            <flux:text variant="subtle" class="text-xs">Transfers cannot be edited — delete and re-enter if needed.</flux:text>
+                                            <flux:tooltip content="Transfers cannot be edited — delete and re-enter if needed.">
+                                                <flux:button size="sm" icon="pencil-square" disabled>Edit</flux:button>
+                                            </flux:tooltip>
                                         @else
                                             <flux:button size="sm" icon="pencil-square" wire:click="openEditModal({{ $tx->id }})">Edit</flux:button>
                                         @endif
