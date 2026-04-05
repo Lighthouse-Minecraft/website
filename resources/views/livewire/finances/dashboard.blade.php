@@ -206,6 +206,18 @@ new class extends Component
         Flux::modal('record-transaction')->show();
     }
 
+    public function openOrgPickerModal(): void
+    {
+        $this->authorize('financials-treasurer');
+        Flux::modal('org-picker')->show();
+    }
+
+    public function openEditOrgPickerModal(): void
+    {
+        $this->authorize('financials-treasurer');
+        Flux::modal('edit-org-picker')->show();
+    }
+
     // ── Submit new transaction ────────────────────────────────────────────────
 
     public function submitTransaction(): void
@@ -479,7 +491,7 @@ new class extends Component
         @can('financials-manage')
             <flux:button href="{{ route('finances.board-reports') }}" wire:navigate size="sm" icon="chart-bar">Board Reports</flux:button>
             <flux:button href="{{ route('finances.accounts') }}" wire:navigate size="sm" icon="building-library">Accounts</flux:button>
-            <flux:button href="{{ route('finances.categories') }}" wire:navigate size="sm" icon="tag">Categories</flux:button>
+            <flux:button href="{{ route('finances.categories') }}" wire:navigate size="sm" icon="tag">Categories &amp; Tags</flux:button>
         @endcan
     </div>
 
@@ -642,7 +654,7 @@ new class extends Component
                                 <flux:badge>{{ $organizationName }}</flux:badge>
                                 <flux:button size="sm" variant="ghost" wire:click="clearOrganization" icon="x-mark">Clear</flux:button>
                             @else
-                                <flux:button size="sm" wire:click="$flux.modal('org-picker').show()" icon="building-office">Add Organization</flux:button>
+                                <flux:button size="sm" wire:click="openOrgPickerModal" icon="building-office">Add Organization</flux:button>
                             @endif
                         </div>
                     </flux:field>
@@ -911,7 +923,7 @@ new class extends Component
                             <flux:badge>{{ $editOrganizationName }}</flux:badge>
                             <flux:button size="sm" variant="ghost" wire:click="clearEditOrganization" icon="x-mark">Clear</flux:button>
                         @else
-                            <flux:button size="sm" wire:click="$flux.modal('edit-org-picker').show()" icon="building-office">Add Organization</flux:button>
+                            <flux:button size="sm" wire:click="openEditOrgPickerModal" icon="building-office">Add Organization</flux:button>
                         @endif
                     </div>
                 </flux:field>
