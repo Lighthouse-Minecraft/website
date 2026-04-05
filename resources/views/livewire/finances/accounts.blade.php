@@ -76,6 +76,18 @@ new class extends Component {
 }; ?>
 
 <div class="space-y-6">
+    {{-- Finance Navigation --}}
+    <div class="flex flex-wrap gap-2">
+        <flux:button href="{{ route('finances.dashboard') }}" wire:navigate size="sm" icon="banknotes">Dashboard</flux:button>
+        <flux:button href="{{ route('finances.budget') }}" wire:navigate size="sm" icon="calculator">Budget</flux:button>
+        <flux:button href="{{ route('finances.reports') }}" wire:navigate size="sm" icon="document-text">Period Reports</flux:button>
+        @can('financials-manage')
+            <flux:button href="{{ route('finances.board-reports') }}" wire:navigate size="sm" icon="chart-bar">Board Reports</flux:button>
+            <flux:button href="{{ route('finances.accounts') }}" wire:navigate size="sm" icon="building-library">Accounts</flux:button>
+            <flux:button href="{{ route('finances.categories') }}" wire:navigate size="sm" icon="tag">Categories</flux:button>
+        @endcan
+    </div>
+
     <div class="flex items-center justify-between">
         <flux:heading size="xl">Financial Accounts</flux:heading>
         @can('financials-manage')
