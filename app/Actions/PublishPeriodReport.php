@@ -52,6 +52,8 @@ class PublishPeriodReport
             ->whereBetween('transacted_at', [$monthStart, $monthEnd])
             ->sum('amount');
 
+        // Include all accounts regardless of archived status so that archiving
+        // an account later doesn't silently drop it from historical reports.
         $accounts = FinancialAccount::orderBy('name')->get();
 
         $accountBalances = $accounts->map(function ($account) use ($monthEnd) {
