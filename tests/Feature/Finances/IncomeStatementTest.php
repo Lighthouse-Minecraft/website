@@ -301,36 +301,39 @@ it('trimester 1 sets start and end months correctly', function () {
     $user = User::factory()->withRole('Financials - Manage')->create();
     $this->actingAs($user);
 
-    $year = now()->year;
+    $fyStartYear = now()->month >= 10 ? now()->year : now()->year - 1;
+    $calYear = $fyStartYear + 1;
 
     livewire('finances.board-reports')
         ->call('applyTrimester', 1)
-        ->assertSet('startMonth', $year.'-01')
-        ->assertSet('endMonth', $year.'-04');
+        ->assertSet('startMonth', $fyStartYear.'-10')
+        ->assertSet('endMonth', $calYear.'-01');
 });
 
 it('trimester 2 sets start and end months correctly', function () {
     $user = User::factory()->withRole('Financials - Manage')->create();
     $this->actingAs($user);
 
-    $year = now()->year;
+    $fyStartYear = now()->month >= 10 ? now()->year : now()->year - 1;
+    $calYear = $fyStartYear + 1;
 
     livewire('finances.board-reports')
         ->call('applyTrimester', 2)
-        ->assertSet('startMonth', $year.'-05')
-        ->assertSet('endMonth', $year.'-08');
+        ->assertSet('startMonth', $calYear.'-02')
+        ->assertSet('endMonth', $calYear.'-05');
 });
 
 it('trimester 3 sets start and end months correctly', function () {
     $user = User::factory()->withRole('Financials - Manage')->create();
     $this->actingAs($user);
 
-    $year = now()->year;
+    $fyStartYear = now()->month >= 10 ? now()->year : now()->year - 1;
+    $calYear = $fyStartYear + 1;
 
     livewire('finances.board-reports')
         ->call('applyTrimester', 3)
-        ->assertSet('startMonth', $year.'-09')
-        ->assertSet('endMonth', $year.'-12');
+        ->assertSet('startMonth', $calYear.'-06')
+        ->assertSet('endMonth', $calYear.'-09');
 });
 
 // == PDF download route == //

@@ -1,13 +1,19 @@
 <?php
 
+use App\Actions\ArchiveFinancialOrganization;
+use App\Actions\ArchiveFinancialTag;
+use App\Actions\CreateFinancialOrganization;
+use App\Actions\CreateFinancialTag;
 use App\Actions\DeleteFinancialTransaction;
 use App\Actions\RecordFinancialTransaction;
 use App\Actions\UpdateFinancialTransaction;
 use App\Models\FinancialAccount;
 use App\Models\FinancialCategory;
+use App\Models\FinancialOrganization;
 use App\Models\FinancialTag;
 use App\Models\FinancialTransaction;
 use Flux\Flux;
+use Livewire\Attributes\Computed;
 use Livewire\Volt\Component;
 
 new class extends Component
@@ -25,11 +31,15 @@ new class extends Component
 
     public string $categoryId = '';
 
-    public string $subcategoryId = '';
-
     public string $notes = '';
 
     public array $selectedTagIds = [];
+
+    public ?int $organizationId = null;
+
+    public string $organizationName = '';
+
+    public string $organizationSearch = '';
 
     // ── Ledger filters ────────────────────────────────────────────────────────
     public string $filterDateFrom = '';
@@ -55,11 +65,18 @@ new class extends Component
 
     public string $editCategoryId = '';
 
-    public string $editSubcategoryId = '';
-
     public string $editNotes = '';
 
     public array $editTagIds = [];
+
+    public ?int $editOrganizationId = null;
+
+    public string $editOrganizationName = '';
+
+    public string $editOrganizationSearch = '';
+
+    // ── Tag management ────────────────────────────────────────────────────────
+    public string $newTagName = '';
 
     public function mount(): void
     {
@@ -78,51 +95,51 @@ new class extends Component
         return FinancialAccount::orderBy('name')->get();
     }
 
-    public function topLevelCategories(): \Illuminate\Database\Eloquent\Collection
+    public function groupedCategoriesForType(string $type): array
     {
-        return FinancialCategory::whereNull('parent_id')
-            ->where('type', $this->type)
-            ->where('is_archived', false)
+        $all = FinancialCategory::where('is_archived', false)
+            ->where('type', $type)
             ->orderBy('sort_order')
             ->get();
-    }
 
-    public function editTopLevelCategories(): \Illuminate\Database\Eloquent\Collection
-    {
-        return FinancialCategory::whereNull('parent_id')
-            ->where('type', $this->editType)
-            ->where('is_archived', false)
-            ->orderBy('sort_order')
-            ->get();
-    }
+        $topLevel = $all->whereNull('parent_id');
+        $byParent = $all->whereNotNull('parent_id')->groupBy('parent_id');
 
-    public function subcategories(): \Illuminate\Database\Eloquent\Collection
-    {
-        if ($this->categoryId === '') {
-            return collect();
+        $groups = [];
+        foreach ($topLevel as $parent) {
+            $children = $byParent->get($parent->id, collect());
+            if ($children->isEmpty()) {
+                $groups[] = ['type' => 'option', 'id' => $parent->id, 'name' => $parent->name];
+            } else {
+                $groups[] = [
+                    'type' => 'group',
+                    'label' => $parent->name,
+                    'options' => $children->map(fn ($c) => ['id' => $c->id, 'name' => $c->name])->values()->all(),
+                ];
+            }
         }
 
-        return FinancialCategory::where('parent_id', (int) $this->categoryId)
-            ->where('is_archived', false)
-            ->orderBy('sort_order')
-            ->get();
+        return $groups;
     }
 
-    public function editSubcategories(): \Illuminate\Database\Eloquent\Collection
-    {
-        if ($this->editCategoryId === '') {
-            return collect();
-        }
-
-        return FinancialCategory::where('parent_id', (int) $this->editCategoryId)
-            ->where('is_archived', false)
-            ->orderBy('sort_order')
-            ->get();
-    }
-
+    #[Computed]
     public function tags(): \Illuminate\Database\Eloquent\Collection
     {
         return FinancialTag::where('is_archived', false)->orderBy('name')->get();
+    }
+
+    #[Computed]
+    public function organizations(): \Illuminate\Database\Eloquent\Collection
+    {
+        return FinancialOrganization::where('is_archived', false)->orderBy('name')->get();
+    }
+
+    public function filteredOrganizations(string $search): \Illuminate\Database\Eloquent\Collection
+    {
+        return FinancialOrganization::where('is_archived', false)
+            ->when($search !== '', fn ($q) => $q->where('name', 'like', '%'.$search.'%'))
+            ->orderBy('name')
+            ->get();
     }
 
     public function allTopLevelCategories(): \Illuminate\Database\Eloquent\Collection
@@ -144,6 +161,7 @@ new class extends Component
             'category.parent',
             'tags',
             'enteredBy',
+            'organization',
         ])->orderBy('transacted_at', 'desc')->orderBy('id', 'desc');
 
         if ($this->filterDateFrom !== '') {
@@ -172,22 +190,12 @@ new class extends Component
 
     public function updatedType(): void
     {
-        $this->reset(['categoryId', 'subcategoryId', 'targetAccountId']);
-    }
-
-    public function updatedCategoryId(): void
-    {
-        $this->subcategoryId = '';
+        $this->reset(['categoryId', 'targetAccountId']);
     }
 
     public function updatedEditType(): void
     {
-        $this->reset(['editCategoryId', 'editSubcategoryId']);
-    }
-
-    public function updatedEditCategoryId(): void
-    {
-        $this->editSubcategoryId = '';
+        $this->editCategoryId = '';
     }
 
     // ── Submit new transaction ────────────────────────────────────────────────
@@ -201,7 +209,7 @@ new class extends Component
         $rules = [
             'type' => 'required|in:income,expense,transfer',
             'accountId' => 'required|integer|exists:financial_accounts,id',
-            'amount' => 'required|integer|min:1',
+            'amount' => 'required|numeric|min:0.01',
             'transactedAt' => 'required|date',
             'notes' => 'nullable|string|max:1000',
         ];
@@ -210,19 +218,20 @@ new class extends Component
             $rules['targetAccountId'] = 'required|integer|exists:financial_accounts,id|different:accountId';
         } else {
             $rules['categoryId'] = 'required|integer|exists:financial_categories,id';
-            $rules['subcategoryId'] = 'nullable|integer|exists:financial_categories,id';
             $rules['selectedTagIds'] = 'array';
             $rules['selectedTagIds.*'] = 'integer|exists:financial_tags,id';
         }
 
         $this->validate($rules);
 
+        $amountCents = (int) round((float) $this->amount * 100);
+
         if ($isTransfer) {
             RecordFinancialTransaction::run(
                 auth()->user(),
                 (int) $this->accountId,
                 'transfer',
-                (int) $this->amount,
+                $amountCents,
                 $this->transactedAt,
                 null,
                 $this->notes ?: null,
@@ -230,23 +239,24 @@ new class extends Component
                 (int) $this->targetAccountId,
             );
         } else {
-            $effectiveCategoryId = $this->subcategoryId !== '' ? (int) $this->subcategoryId : (int) $this->categoryId;
-
             RecordFinancialTransaction::run(
                 auth()->user(),
                 (int) $this->accountId,
                 $this->type,
-                (int) $this->amount,
+                $amountCents,
                 $this->transactedAt,
-                $effectiveCategoryId,
+                (int) $this->categoryId,
                 $this->notes ?: null,
                 $this->selectedTagIds,
+                null,
+                $this->organizationId,
             );
         }
 
         Flux::toast('Transaction recorded.', 'Success', variant: 'success');
-        $this->reset(['accountId', 'targetAccountId', 'amount', 'categoryId', 'subcategoryId', 'notes', 'selectedTagIds']);
+        $this->reset(['accountId', 'targetAccountId', 'amount', 'categoryId', 'notes', 'selectedTagIds', 'organizationId', 'organizationName', 'organizationSearch']);
         $this->transactedAt = now()->format('Y-m-d');
+        Flux::modal('record-transaction')->close();
     }
 
     // ── Edit transaction ──────────────────────────────────────────────────────
@@ -272,23 +282,21 @@ new class extends Component
         $this->editTxId = $id;
         $this->editType = $tx->type;
         $this->editAccountId = (string) $tx->account_id;
-        $this->editAmount = (string) $tx->amount;
+        $this->editAmount = number_format($tx->amount / 100, 2);
         $this->editDate = $tx->transacted_at->format('Y-m-d');
         $this->editNotes = $tx->notes ?? '';
         $this->editTagIds = $tx->tags->pluck('id')->toArray();
+        $this->editOrganizationId = null;
+        $this->editOrganizationName = '';
+        $this->editOrganizationSearch = '';
 
-        // Resolve category/subcategory
         if ($tx->financial_category_id !== null) {
-            $cat = FinancialCategory::find($tx->financial_category_id);
-            if ($cat) {
-                if ($cat->parent_id !== null) {
-                    $this->editCategoryId = (string) $cat->parent_id;
-                    $this->editSubcategoryId = (string) $cat->id;
-                } else {
-                    $this->editCategoryId = (string) $cat->id;
-                    $this->editSubcategoryId = '';
-                }
-            }
+            $this->editCategoryId = (string) $tx->financial_category_id;
+        }
+
+        if ($tx->organization_id !== null) {
+            $this->editOrganizationId = $tx->organization_id;
+            $this->editOrganizationName = $tx->organization?->name ?? '';
         }
 
         Flux::modal('edit-tx-modal')->show();
@@ -301,29 +309,29 @@ new class extends Component
         $this->validate([
             'editType' => 'required|in:income,expense',
             'editAccountId' => 'required|integer|exists:financial_accounts,id',
-            'editAmount' => 'required|integer|min:1',
+            'editAmount' => 'required|numeric|min:0.01',
             'editDate' => 'required|date',
             'editCategoryId' => 'required|integer|exists:financial_categories,id',
-            'editSubcategoryId' => 'nullable|integer|exists:financial_categories,id',
             'editNotes' => 'nullable|string|max:1000',
             'editTagIds' => 'array',
             'editTagIds.*' => 'integer|exists:financial_tags,id',
         ]);
 
         $tx = FinancialTransaction::findOrFail($this->editTxId);
-        $effectiveCategoryId = $this->editSubcategoryId !== '' ? (int) $this->editSubcategoryId : (int) $this->editCategoryId;
+        $editAmountCents = (int) round((float) $this->editAmount * 100);
 
         try {
             UpdateFinancialTransaction::run(
                 $tx,
                 (int) $this->editAccountId,
                 $this->editType,
-                (int) $this->editAmount,
+                $editAmountCents,
                 $this->editDate,
-                $effectiveCategoryId,
+                (int) $this->editCategoryId,
                 null,
                 $this->editNotes ?: null,
                 $this->editTagIds,
+                $this->editOrganizationId,
             );
         } catch (\RuntimeException $e) {
             Flux::toast($e->getMessage(), 'Error', variant: 'danger');
@@ -333,7 +341,7 @@ new class extends Component
 
         Flux::modal('edit-tx-modal')->close();
         Flux::toast('Transaction updated.', 'Success', variant: 'success');
-        $this->reset(['editTxId', 'editType', 'editAccountId', 'editAmount', 'editDate', 'editCategoryId', 'editSubcategoryId', 'editNotes', 'editTagIds']);
+        $this->reset(['editTxId', 'editType', 'editAccountId', 'editAmount', 'editDate', 'editCategoryId', 'editNotes', 'editTagIds', 'editOrganizationId', 'editOrganizationName', 'editOrganizationSearch']);
         $this->editType = 'expense';
     }
 
@@ -354,6 +362,102 @@ new class extends Component
         }
 
         Flux::toast('Transaction deleted.', 'Success', variant: 'success');
+    }
+
+    // ── Tag management ────────────────────────────────────────────────────────
+
+    public function createTag(): void
+    {
+        $this->authorize('financials-manage');
+
+        $this->validate([
+            'newTagName' => 'required|string|max:100|unique:financial_tags,name',
+        ]);
+
+        CreateFinancialTag::run($this->newTagName, auth()->user());
+
+        Flux::toast('Tag created.', 'Success', variant: 'success');
+        $this->newTagName = '';
+    }
+
+    public function archiveTag(int $id): void
+    {
+        $this->authorize('financials-manage');
+
+        $tag = FinancialTag::findOrFail($id);
+        ArchiveFinancialTag::run($tag);
+
+        Flux::toast('Tag archived.', 'Success', variant: 'success');
+    }
+
+    // ── Organization picker ───────────────────────────────────────────────────
+
+    public function selectOrganization(int $id): void
+    {
+        $org = FinancialOrganization::findOrFail($id);
+        $this->organizationId = $org->id;
+        $this->organizationName = $org->name;
+        $this->organizationSearch = '';
+        Flux::modal('org-picker')->close();
+    }
+
+    public function clearOrganization(): void
+    {
+        $this->organizationId = null;
+        $this->organizationName = '';
+    }
+
+    public function createOrganizationInline(): void
+    {
+        $this->authorize('financials-treasurer');
+
+        $this->validate([
+            'organizationSearch' => 'required|string|max:255|unique:financial_organizations,name',
+        ]);
+
+        $org = CreateFinancialOrganization::run($this->organizationSearch, auth()->user());
+
+        $this->selectOrganization($org->id);
+    }
+
+    public function selectEditOrganization(int $id): void
+    {
+        $org = FinancialOrganization::findOrFail($id);
+        $this->editOrganizationId = $org->id;
+        $this->editOrganizationName = $org->name;
+        $this->editOrganizationSearch = '';
+        Flux::modal('edit-org-picker')->close();
+    }
+
+    public function clearEditOrganization(): void
+    {
+        $this->editOrganizationId = null;
+        $this->editOrganizationName = '';
+    }
+
+    public function createEditOrganizationInline(): void
+    {
+        $this->authorize('financials-treasurer');
+
+        $this->validate([
+            'editOrganizationSearch' => 'required|string|max:255|unique:financial_organizations,name',
+        ]);
+
+        $org = CreateFinancialOrganization::run($this->editOrganizationSearch, auth()->user());
+
+        $this->selectEditOrganization($org->id);
+    }
+
+    // ── Organization management ───────────────────────────────────────────────
+
+    public function archiveOrganization(int $id): void
+    {
+        $this->authorize('financials-manage');
+
+        $org = FinancialOrganization::findOrFail($id);
+        ArchiveFinancialOrganization::run($org);
+
+        Flux::toast('Organization archived.', 'Success', variant: 'success');
     }
 }; ?>
 
@@ -386,9 +490,91 @@ new class extends Component
         </div>
     </div>
 
-    {{-- Transaction Entry Form (treasurer only) --}}
+    {{-- Add Transaction Button (treasurer only) --}}
     @can('financials-treasurer')
-        <flux:card class="space-y-5">
+        <div>
+            <flux:button wire:click="$flux.modal('record-transaction').show()" variant="primary" icon="plus">
+                Add Transaction
+            </flux:button>
+        </div>
+    @endcan
+
+    {{-- Manage Tags (financials-manage only) --}}
+    @can('financials-manage')
+        <flux:card class="space-y-4">
+            <flux:heading size="lg">Manage Tags</flux:heading>
+
+            <form wire:submit.prevent="createTag" class="flex gap-3 items-end">
+                <flux:field class="flex-1">
+                    <flux:label>New Tag Name</flux:label>
+                    <flux:input wire:model="newTagName" placeholder="Tag name…" />
+                    <flux:error name="newTagName" />
+                </flux:field>
+                <flux:button type="submit" variant="primary" icon="plus">Create Tag</flux:button>
+            </form>
+
+            @if ($this->tags->isNotEmpty())
+                <flux:table>
+                    <flux:table.columns>
+                        <flux:table.column>Name</flux:table.column>
+                        <flux:table.column>Actions</flux:table.column>
+                    </flux:table.columns>
+                    <flux:table.rows>
+                        @foreach ($this->tags as $tag)
+                            <flux:table.row wire:key="tag-{{ $tag->id }}">
+                                <flux:table.cell>{{ $tag->name }}</flux:table.cell>
+                                <flux:table.cell>
+                                    <flux:button size="sm" variant="danger" icon="archive-box"
+                                        wire:click="archiveTag({{ $tag->id }})"
+                                        wire:confirm="Archive tag '{{ $tag->name }}'? It will no longer appear on the transaction form.">
+                                        Archive
+                                    </flux:button>
+                                </flux:table.cell>
+                            </flux:table.row>
+                        @endforeach
+                    </flux:table.rows>
+                </flux:table>
+            @else
+                <flux:text variant="subtle">No tags yet. Create one above.</flux:text>
+            @endif
+        </flux:card>
+    @endcan
+
+    {{-- Manage Organizations (financials-manage only) --}}
+    @can('financials-manage')
+        <flux:card class="space-y-4">
+            <flux:heading size="lg">Manage Organizations</flux:heading>
+
+            @if ($this->organizations->isNotEmpty())
+                <flux:table>
+                    <flux:table.columns>
+                        <flux:table.column>Name</flux:table.column>
+                        <flux:table.column>Actions</flux:table.column>
+                    </flux:table.columns>
+                    <flux:table.rows>
+                        @foreach ($this->organizations as $org)
+                            <flux:table.row wire:key="org-{{ $org->id }}">
+                                <flux:table.cell>{{ $org->name }}</flux:table.cell>
+                                <flux:table.cell>
+                                    <flux:button size="sm" variant="danger" icon="archive-box"
+                                        wire:click="archiveOrganization({{ $org->id }})"
+                                        wire:confirm="Archive '{{ $org->name }}'? It will no longer appear in the picker.">
+                                        Archive
+                                    </flux:button>
+                                </flux:table.cell>
+                            </flux:table.row>
+                        @endforeach
+                    </flux:table.rows>
+                </flux:table>
+            @else
+                <flux:text variant="subtle">No organizations yet. Add one when recording a transaction.</flux:text>
+            @endif
+        </flux:card>
+    @endcan
+
+    {{-- Record Transaction Modal --}}
+    @can('financials-treasurer')
+        <flux:modal name="record-transaction" class="w-full max-w-2xl space-y-5">
             <flux:heading size="lg">Record Transaction</flux:heading>
 
             <form wire:submit.prevent="submitTransaction" class="space-y-4">
@@ -431,9 +617,8 @@ new class extends Component
 
                 <div class="grid grid-cols-2 gap-4">
                     <flux:field>
-                        <flux:label>Amount (cents) <span class="text-red-500">*</span></flux:label>
-                        <flux:description>e.g. 1000 = $10.00</flux:description>
-                        <flux:input wire:model="amount" type="number" min="1" placeholder="1000" />
+                        <flux:label>Amount ($) <span class="text-red-500">*</span></flux:label>
+                        <flux:input wire:model="amount" type="number" step="0.01" min="0.01" placeholder="10.00" />
                         <flux:error name="amount" />
                     </flux:field>
 
@@ -445,38 +630,32 @@ new class extends Component
                 </div>
 
                 @if ($type !== 'transfer')
-                    <div class="grid grid-cols-2 gap-4">
-                        <flux:field>
-                            <flux:label>Category <span class="text-red-500">*</span></flux:label>
-                            <flux:select wire:model.live="categoryId">
-                                <flux:select.option value="">— Select Category —</flux:select.option>
-                                @foreach ($this->topLevelCategories() as $category)
-                                    <flux:select.option value="{{ $category->id }}">{{ $category->name }}</flux:select.option>
-                                @endforeach
-                            </flux:select>
-                            <flux:error name="categoryId" />
-                        </flux:field>
-
-                        @if ($categoryId !== '' && $this->subcategories()->isNotEmpty())
-                            <flux:field>
-                                <flux:label>Subcategory</flux:label>
-                                <flux:select wire:model="subcategoryId">
-                                    <flux:select.option value="">— None —</flux:select.option>
-                                    @foreach ($this->subcategories() as $sub)
-                                        <flux:select.option value="{{ $sub->id }}">{{ $sub->name }}</flux:select.option>
-                                    @endforeach
-                                </flux:select>
-                                <flux:error name="subcategoryId" />
-                            </flux:field>
-                        @endif
-                    </div>
+                    <flux:field>
+                        <flux:label>Category <span class="text-red-500">*</span></flux:label>
+                        <select wire:model="categoryId"
+                            class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800">
+                            <option value="">— Select Category —</option>
+                            @foreach ($this->groupedCategoriesForType($type) as $item)
+                                @if ($item['type'] === 'group')
+                                    <optgroup label="{{ $item['label'] }}">
+                                        @foreach ($item['options'] as $opt)
+                                            <option value="{{ $opt['id'] }}">{{ $opt['name'] }}</option>
+                                        @endforeach
+                                    </optgroup>
+                                @else
+                                    <option value="{{ $item['id'] }}">{{ $item['name'] }}</option>
+                                @endif
+                            @endforeach
+                        </select>
+                        <flux:error name="categoryId" />
+                    </flux:field>
                 @endif
 
-                @if ($type !== 'transfer' && $this->tags()->isNotEmpty())
+                @if ($type !== 'transfer')
                     <flux:field>
                         <flux:label>Tags</flux:label>
                         <div class="flex flex-wrap gap-2 mt-1">
-                            @foreach ($this->tags() as $tag)
+                            @foreach ($this->tags as $tag)
                                 <label class="flex items-center gap-1 text-sm cursor-pointer">
                                     <input type="checkbox" wire:model="selectedTagIds" value="{{ $tag->id }}"
                                         class="rounded border-zinc-600" />
@@ -488,15 +667,64 @@ new class extends Component
                     </flux:field>
                 @endif
 
+                @if ($type !== 'transfer')
+                    <flux:field>
+                        <flux:label>Organization</flux:label>
+                        <div class="flex gap-2 items-center">
+                            @if ($organizationId)
+                                <flux:badge>{{ $organizationName }}</flux:badge>
+                                <flux:button size="sm" variant="ghost" wire:click="clearOrganization" icon="x-mark">Clear</flux:button>
+                            @else
+                                <flux:button size="sm" wire:click="$flux.modal('org-picker').show()" icon="building-office">Add Organization</flux:button>
+                            @endif
+                        </div>
+                    </flux:field>
+                @endif
+
                 <flux:field>
                     <flux:label>Notes</flux:label>
                     <flux:textarea wire:model="notes" rows="2" placeholder="Optional notes…" />
                     <flux:error name="notes" />
                 </flux:field>
 
-                <flux:button type="submit" variant="primary" icon="plus">Record Transaction</flux:button>
+                <div class="flex gap-3 pt-2">
+                    <flux:button type="submit" variant="primary" icon="plus">Record Transaction</flux:button>
+                    <flux:button x-on:click="$flux.modal('record-transaction').close()" variant="ghost">Cancel</flux:button>
+                </div>
             </form>
-        </flux:card>
+        </flux:modal>
+
+        {{-- Organization Picker Modal (for new transaction) --}}
+        <flux:modal name="org-picker" class="w-full max-w-lg space-y-4">
+            <flux:heading size="lg">Select Organization</flux:heading>
+
+            <flux:field>
+                <flux:label>Search</flux:label>
+                <flux:input wire:model.live="organizationSearch" placeholder="Type to search…" autofocus />
+            </flux:field>
+
+            @php $filtered = $this->filteredOrganizations($organizationSearch); @endphp
+
+            @if ($filtered->isNotEmpty())
+                <div class="space-y-1 max-h-64 overflow-y-auto">
+                    @foreach ($filtered as $org)
+                        <button type="button"
+                            wire:click="selectOrganization({{ $org->id }})"
+                            class="w-full text-left px-3 py-2 rounded hover:bg-zinc-100 dark:hover:bg-zinc-700 text-sm">
+                            {{ $org->name }}
+                        </button>
+                    @endforeach
+                </div>
+            @elseif ($organizationSearch !== '')
+                <flux:text variant="subtle">No match found.</flux:text>
+                <flux:button wire:click="createOrganizationInline" variant="primary" size="sm" icon="plus">
+                    Add "{{ $organizationSearch }}"
+                </flux:button>
+                <flux:error name="organizationSearch" />
+            @else
+                <flux:text variant="subtle">No organizations yet. Type a name to create one.</flux:text>
+            @endif
+        </flux:modal>
     @endcan
 
     {{-- Transaction Ledger --}}
@@ -536,7 +764,7 @@ new class extends Component
             <flux:label>Tag</flux:label>
             <flux:select wire:model.live="filterTagId">
                 <flux:select.option value="">All Tags</flux:select.option>
-                @foreach ($this->tags() as $tag)
+                @foreach ($this->tags as $tag)
                     <flux:select.option value="{{ $tag->id }}">{{ $tag->name }}</flux:select.option>
                 @endforeach
             </flux:select>
@@ -549,6 +777,7 @@ new class extends Component
                 <flux:table.column>Type</flux:table.column>
                 <flux:table.column>Category</flux:table.column>
                 <flux:table.column>Amount</flux:table.column>
+                <flux:table.column>Organization</flux:table.column>
                 <flux:table.column>Tags</flux:table.column>
                 <flux:table.column>Notes</flux:table.column>
                 <flux:table.column>By</flux:table.column>
@@ -587,6 +816,11 @@ new class extends Component
                         </flux:table.cell>
                         <flux:table.cell>${{ number_format($tx->amount / 100, 2) }}</flux:table.cell>
                         <flux:table.cell>
+                            @if ($tx->organization)
+                                <flux:badge size="sm" variant="zinc">{{ $tx->organization->name }}</flux:badge>
+                            @endif
+                        </flux:table.cell>
+                        <flux:table.cell>
                             <div class="flex flex-wrap gap-1">
                                 @foreach ($tx->tags as $tag)
                                     <flux:badge size="sm">{{ $tag->name }}</flux:badge>
@@ -616,7 +850,7 @@ new class extends Component
                     </flux:table.row>
                 @empty
                     <flux:table.row>
-                        <flux:table.cell colspan="9">
+                        <flux:table.cell colspan="10">
                             <flux:text variant="subtle">No transactions found.</flux:text>
                         </flux:table.cell>
                     </flux:table.row>
@@ -655,8 +889,8 @@ new class extends Component
 
                 <div class="grid grid-cols-2 gap-4">
                     <flux:field>
-                        <flux:label>Amount (cents) <span class="text-red-500">*</span></flux:label>
-                        <flux:input wire:model="editAmount" type="number" min="1" />
+                        <flux:label>Amount ($) <span class="text-red-500">*</span></flux:label>
+                        <flux:input wire:model="editAmount" type="number" step="0.01" min="0.01" />
                         <flux:error name="editAmount" />
                     </flux:field>
 
@@ -667,47 +901,51 @@ new class extends Component
                     </flux:field>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
-                    <flux:field>
-                        <flux:label>Category <span class="text-red-500">*</span></flux:label>
-                        <flux:select wire:model.live="editCategoryId">
-                            <flux:select.option value="">— Select Category —</flux:select.option>
-                            @foreach ($this->editTopLevelCategories() as $category)
-                                <flux:select.option value="{{ $category->id }}">{{ $category->name }}</flux:select.option>
-                            @endforeach
-                        </flux:select>
-                        <flux:error name="editCategoryId" />
-                    </flux:field>
+                <flux:field>
+                    <flux:label>Category <span class="text-red-500">*</span></flux:label>
+                    <select wire:model="editCategoryId"
+                        class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800">
+                        <option value="">— Select Category —</option>
+                        @foreach ($this->groupedCategoriesForType($editType) as $item)
+                            @if ($item['type'] === 'group')
+                                <optgroup label="{{ $item['label'] }}">
+                                    @foreach ($item['options'] as $opt)
+                                        <option value="{{ $opt['id'] }}">{{ $opt['name'] }}</option>
+                                    @endforeach
+                                </optgroup>
+                            @else
+                                <option value="{{ $item['id'] }}">{{ $item['name'] }}</option>
+                            @endif
+                        @endforeach
+                    </select>
+                    <flux:error name="editCategoryId" />
+                </flux:field>
 
-                    @if ($editCategoryId !== '' && $this->editSubcategories()->isNotEmpty())
-                        <flux:field>
-                            <flux:label>Subcategory</flux:label>
-                            <flux:select wire:model="editSubcategoryId">
-                                <flux:select.option value="">— None —</flux:select.option>
-                                @foreach ($this->editSubcategories() as $sub)
-                                    <flux:select.option value="{{ $sub->id }}">{{ $sub->name }}</flux:select.option>
-                                @endforeach
-                            </flux:select>
-                            <flux:error name="editSubcategoryId" />
-                        </flux:field>
-                    @endif
-                </div>
+                <flux:field>
+                    <flux:label>Tags</flux:label>
+                    <div class="flex flex-wrap gap-2 mt-1">
+                        @foreach ($this->tags as $tag)
+                            <label class="flex items-center gap-1 text-sm cursor-pointer">
+                                <input type="checkbox" wire:model="editTagIds" value="{{ $tag->id }}"
+                                    class="rounded border-zinc-600" />
+                                {{ $tag->name }}
+                            </label>
+                        @endforeach
+                    </div>
+                    <flux:error name="editTagIds" />
+                </flux:field>
 
-                @if ($this->tags()->isNotEmpty())
-                    <flux:field>
-                        <flux:label>Tags</flux:label>
-                        <div class="flex flex-wrap gap-2 mt-1">
-                            @foreach ($this->tags() as $tag)
-                                <label class="flex items-center gap-1 text-sm cursor-pointer">
-                                    <input type="checkbox" wire:model="editTagIds" value="{{ $tag->id }}"
-                                        class="rounded border-zinc-600" />
-                                    {{ $tag->name }}
-                                </label>
-                            @endforeach
-                        </div>
-                        <flux:error name="editTagIds" />
-                    </flux:field>
-                @endif
+                <flux:field>
+                    <flux:label>Organization</flux:label>
+                    <div class="flex gap-2 items-center">
+                        @if ($editOrganizationId)
+                            <flux:badge>{{ $editOrganizationName }}</flux:badge>
+                            <flux:button size="sm" variant="ghost" wire:click="clearEditOrganization" icon="x-mark">Clear</flux:button>
+                        @else
+                            <flux:button size="sm" wire:click="$flux.modal('edit-org-picker').show()" icon="building-office">Add Organization</flux:button>
+                        @endif
+                    </div>
+                </flux:field>
 
                 <flux:field>
                     <flux:label>Notes</flux:label>
@@ -720,6 +958,38 @@ new class extends Component
                     <flux:button x-on:click="$flux.modal('edit-tx-modal').close()" variant="ghost">Cancel</flux:button>
                 </div>
             </form>
+        </flux:modal>
+
+        {{-- Organization Picker Modal (for edit transaction) --}}
+        <flux:modal name="edit-org-picker" class="w-full max-w-lg space-y-4">
+            <flux:heading size="lg">Select Organization</flux:heading>
+
+            <flux:field>
+                <flux:label>Search</flux:label>
+                <flux:input wire:model.live="editOrganizationSearch" placeholder="Type to search…" />
+            </flux:field>
+
+            @php $editFiltered = $this->filteredOrganizations($editOrganizationSearch); @endphp
+
+            @if ($editFiltered->isNotEmpty())
+                <div class="space-y-1 max-h-64 overflow-y-auto">
+                    @foreach ($editFiltered as $org)
+                        <button type="button"
+                            wire:click="selectEditOrganization({{ $org->id }})"
+                            class="w-full text-left px-3 py-2 rounded hover:bg-zinc-100 dark:hover:bg-zinc-700 text-sm">
+                            {{ $org->name }}
+                        </button>
+                    @endforeach
+                </div>
+            @elseif ($editOrganizationSearch !== '')
+                <flux:text variant="subtle">No match found.</flux:text>
+                <flux:button wire:click="createEditOrganizationInline" variant="primary" size="sm" icon="plus">
+                    Add "{{ $editOrganizationSearch }}"
+                </flux:button>
+                <flux:error name="editOrganizationSearch" />
+            @else
+                <flux:text variant="subtle">No organizations yet. Type a name to create one.</flux:text>
+            @endif
         </flux:modal>
     @endcan
 

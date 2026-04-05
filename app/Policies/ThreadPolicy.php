@@ -38,7 +38,8 @@ class ThreadPolicy
      */
     public function viewDepartment(User $user): bool
     {
-        return $user->staff_department !== null && $user->hasRole('Ticket - User');
+        return $user->staff_department !== null
+            && ($user->hasRole('Ticket - User') || $user->hasRole('Ticket - Manager'));
     }
 
     /**

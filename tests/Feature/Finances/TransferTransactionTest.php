@@ -21,7 +21,7 @@ it('treasurer can submit a transfer transaction', function () {
         ->set('type', 'transfer')
         ->set('accountId', (string) $from->id)
         ->set('targetAccountId', (string) $to->id)
-        ->set('amount', '5000')
+        ->set('amount', '50.00')
         ->set('transactedAt', '2026-04-01')
         ->call('submitTransaction');
 
@@ -43,7 +43,7 @@ it('transfer decreases source account balance', function () {
         ->set('type', 'transfer')
         ->set('accountId', (string) $from->id)
         ->set('targetAccountId', (string) $to->id)
-        ->set('amount', '3000')
+        ->set('amount', '30.00')
         ->set('transactedAt', '2026-04-01')
         ->call('submitTransaction');
 
@@ -60,7 +60,7 @@ it('transfer increases destination account balance', function () {
         ->set('type', 'transfer')
         ->set('accountId', (string) $from->id)
         ->set('targetAccountId', (string) $to->id)
-        ->set('amount', '3000')
+        ->set('amount', '30.00')
         ->set('transactedAt', '2026-04-01')
         ->call('submitTransaction');
 
@@ -76,7 +76,7 @@ it('cannot transfer to the same account', function () {
         ->set('type', 'transfer')
         ->set('accountId', (string) $account->id)
         ->set('targetAccountId', (string) $account->id)
-        ->set('amount', '1000')
+        ->set('amount', '10.00')
         ->set('transactedAt', '2026-04-01')
         ->call('submitTransaction')
         ->assertHasErrors(['targetAccountId']);
@@ -93,7 +93,7 @@ it('transfer requires a target account', function () {
         ->set('type', 'transfer')
         ->set('accountId', (string) $account->id)
         ->set('targetAccountId', '')
-        ->set('amount', '1000')
+        ->set('amount', '10.00')
         ->set('transactedAt', '2026-04-01')
         ->call('submitTransaction')
         ->assertHasErrors(['targetAccountId']);
@@ -138,7 +138,7 @@ it('transfer appears in ledger with both account names', function () {
         ->set('type', 'transfer')
         ->set('accountId', (string) $from->id)
         ->set('targetAccountId', (string) $to->id)
-        ->set('amount', '1000')
+        ->set('amount', '10.00')
         ->set('transactedAt', '2026-04-01')
         ->call('submitTransaction');
 

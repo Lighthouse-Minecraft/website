@@ -175,4 +175,39 @@ describe('Thread Authorization', function () {
             ->and($admin->can('assign', $thread))->toBeTrue()
             ->and($admin->can('reroute', $thread))->toBeTrue();
     })->done();
+
+    it('allows Ticket - Manager without Ticket - User to view their department threads', function () {
+        $officer = User::factory()
+            ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::Officer)
+            ->withRole('Ticket - Manager')
+            ->create();
+
+        $ownDeptThread = Thread::factory()
+            ->withDepartment(StaffDepartment::Quartermaster)
+            ->create();
+
+        $otherDeptThread = Thread::factory()
+            ->withDepartment(StaffDepartment::Engineer)
+            ->create();
+
+        actingAs($officer);
+
+        expect($ownDeptThread->isVisibleTo($officer))->toBeTrue()
+            ->and($otherDeptThread->isVisibleTo($officer))->toBeFalse();
+    })->done();
+
+    it('allows the assigned staff member to view a thread even when not a participant', function () {
+        $assignee = User::factory()
+            ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::Officer)
+            ->withRole('Ticket - Manager')
+            ->create();
+
+        $thread = Thread::factory()
+            ->withDepartment(StaffDepartment::Engineer)
+            ->create(['assigned_to_user_id' => $assignee->id]);
+
+        actingAs($assignee);
+
+        expect($thread->isVisibleTo($assignee))->toBeTrue();
+    })->done();
 });

@@ -20,7 +20,8 @@ class UpdateFinancialTransaction
         ?int $categoryId,
         ?int $targetAccountId = null,
         ?string $notes = null,
-        array $tagIds = []
+        array $tagIds = [],
+        ?int $organizationId = null
     ): void {
         if ($transaction->isInPublishedMonth()) {
             throw new \RuntimeException('Cannot edit a transaction in a published month.');
@@ -42,6 +43,7 @@ class UpdateFinancialTransaction
             'amount' => $amount,
             'transacted_at' => $transactedAt,
             'financial_category_id' => $type === 'transfer' ? null : $categoryId,
+            'organization_id' => $type === 'transfer' ? null : $organizationId,
             'target_account_id' => $type === 'transfer' ? $targetAccountId : null,
             'notes' => $notes ?: null,
         ]);

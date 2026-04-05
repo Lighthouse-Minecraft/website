@@ -201,10 +201,9 @@ it('treasurer can edit an unpublished-month transaction', function () {
         ->set('editTxId', $tx->id)
         ->set('editType', 'expense')
         ->set('editAccountId', (string) $account->id)
-        ->set('editAmount', '2000')
+        ->set('editAmount', '20.00')
         ->set('editDate', '2026-03-15')
         ->set('editCategoryId', (string) $category->id)
-        ->set('editSubcategoryId', '')
         ->set('editNotes', 'Updated note')
         ->set('editTagIds', [])
         ->call('updateTransaction');
@@ -254,7 +253,6 @@ it('treasurer cannot edit a transaction in a published month', function () {
         ->set('editAmount', '9999')
         ->set('editDate', '2026-02-15')
         ->set('editCategoryId', (string) $category->id)
-        ->set('editSubcategoryId', '')
         ->set('editNotes', '')
         ->set('editTagIds', [])
         ->call('updateTransaction');
@@ -303,7 +301,6 @@ it('financials-view user cannot edit a transaction', function () {
         ->set('editAmount', '9999')
         ->set('editDate', '2026-03-15')
         ->set('editCategoryId', (string) $category->id)
-        ->set('editSubcategoryId', '')
         ->set('editNotes', '')
         ->set('editTagIds', [])
         ->call('updateTransaction')
@@ -366,7 +363,6 @@ it('treasurer cannot move a transaction date into a published month', function (
         ->set('editAmount', '1000')
         ->set('editDate', '2026-02-15')
         ->set('editCategoryId', (string) $category->id)
-        ->set('editSubcategoryId', '')
         ->set('editNotes', '')
         ->set('editTagIds', [])
         ->call('updateTransaction');

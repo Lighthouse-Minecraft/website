@@ -1,7 +1,7 @@
 <x-layouts.app>
-    <div class="mb-6 flex items-center justify-between">
+    <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <flux:heading size="xl">Staff Ready Room</flux:heading>
-        <div class="flex gap-2">
+        <div class="flex flex-wrap gap-2">
             @can('review-staff-applications')
                 <flux:button href="{{ route('admin.applications.index') }}" wire:navigate icon="document-text">
                     View Applications
