@@ -394,6 +394,96 @@ new class extends Component
     {
         return $this->cashInflows - $this->cashOutflows;
     }
+
+    // ─── Budget vs. Actual Variance ────────────────────────────────────────
+
+    public function getVariancePeriodsProperty()
+    {
+        if (! $this->filterFyYear) {
+            return collect();
+        }
+
+        return FinancialPeriod::where('fiscal_year', $this->filterFyYear)
+            ->orderBy('start_date')
+            ->get();
+    }
+
+    public function getVarianceAccountsProperty()
+    {
+        return FinancialAccount::whereIn('type', ['revenue', 'expense'])
+            ->where('is_active', true)
+            ->orderBy('type')
+            ->orderBy('code')
+            ->get();
+    }
+
+    public function getVarianceBudgetDataProperty(): array
+    {
+        $periodIds = $this->variancePeriods->pluck('id');
+
+        if ($periodIds->isEmpty()) {
+            return [];
+        }
+
+        $budgets = \App\Models\FinancialBudget::whereIn('period_id', $periodIds)->get();
+        $data = [];
+
+        foreach ($budgets as $budget) {
+            $data[$budget->account_id][$budget->period_id] = $budget->amount;
+        }
+
+        return $data;
+    }
+
+    public function getVarianceActualDataProperty(): array
+    {
+        $periodIds = $this->variancePeriods->pluck('id');
+        $accountIds = $this->varianceAccounts->pluck('id');
+
+        if ($periodIds->isEmpty() || $accountIds->isEmpty()) {
+            return [];
+        }
+
+        $rows = DB::table('financial_journal_entry_lines as jel')
+            ->join('financial_journal_entries as je', 'je.id', '=', 'jel.journal_entry_id')
+            ->where('je.status', 'posted')
+            ->whereNot('je.entry_type', 'closing')
+            ->whereIn('je.period_id', $periodIds)
+            ->whereIn('jel.account_id', $accountIds)
+            ->groupBy('jel.account_id', 'je.period_id')
+            ->select(
+                'jel.account_id',
+                'je.period_id',
+                DB::raw('SUM(jel.debit) as total_debit'),
+                DB::raw('SUM(jel.credit) as total_credit')
+            )
+            ->get();
+
+        $data = [];
+
+        foreach ($rows as $row) {
+            $data[$row->account_id][$row->period_id] = [
+                'debit' => (int) $row->total_debit,
+                'credit' => (int) $row->total_credit,
+            ];
+        }
+
+        return $data;
+    }
+
+    private function varianceActualForAccount(FinancialAccount $account, int $periodId): int
+    {
+        $row = $this->varianceActualData[$account->id][$periodId] ?? null;
+
+        if (! $row) {
+            return 0;
+        }
+
+        // Revenue: actual = credits - debits; Expense: actual = debits - credits
+        return $account->type === 'revenue'
+            ? ($row['credit'] - $row['debit'])
+            : ($row['debit'] - $row['credit']);
+    }
 }; ?>
 
 <div class="space-y-6 print:space-y-4">
@@ -420,10 +510,11 @@ new class extends Component
         <flux:tab name="trial">Trial Balance</flux:tab>
         <flux:tab name="balance-sheet">Balance Sheet</flux:tab>
         <flux:tab name="cash-flow">Cash Flow</flux:tab>
+        <flux:tab name="variance">Budget vs. Actual</flux:tab>
     </flux:tabs>
 
-    {{-- Shared filters (FY/period/date) for Activities, Trial Balance, and Cash Flow --}}
-    @if (in_array($activeTab, ['activities', 'trial', 'cash-flow']))
+    {{-- Shared filters (FY/period/date) for Activities, Trial Balance, Cash Flow, and Variance --}}
+    @if (in_array($activeTab, ['activities', 'trial', 'cash-flow', 'variance']))
         <flux:card>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <flux:field>
@@ -792,6 +883,97 @@ new class extends Component
                     </div>
                 </div>
             </div>
+        </flux:card>
+    @endif
+
+    {{-- Budget vs. Actual Variance --}}
+    @if ($activeTab === 'variance')
+        @php
+            $variancePeriods = $this->variancePeriods;
+            $varianceAccounts = $this->varianceAccounts;
+            $varianceBudgetData = $this->varianceBudgetData;
+        @endphp
+        <flux:card>
+            @if ($variancePeriods->isEmpty() || $varianceAccounts->isEmpty())
+                <p class="text-sm text-zinc-500 py-8 text-center">Select a fiscal year to view the Budget vs. Actual report.</p>
+            @else
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm border-collapse">
+                        <thead>
+                            <tr class="border-b border-zinc-200 dark:border-zinc-700">
+                                <th class="text-left py-2 px-3 font-medium text-zinc-600 dark:text-zinc-400 min-w-48">Account</th>
+                                @foreach ($variancePeriods as $vPeriod)
+                                    <th class="text-right py-2 px-2 font-medium text-zinc-600 dark:text-zinc-400 min-w-24 text-xs" colspan="3">
+                                        {{ $vPeriod->start_date->format('M y') }}
+                                    </th>
+                                @endforeach
+                            </tr>
+                            <tr class="border-b border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50">
+                                <th class="py-1 px-3 text-xs text-zinc-500"></th>
+                                @foreach ($variancePeriods as $vPeriod)
+                                    <th class="py-1 px-1 text-xs text-right text-zinc-500 min-w-16">Budget</th>
+                                    <th class="py-1 px-1 text-xs text-right text-zinc-500 min-w-16">Actual</th>
+                                    <th class="py-1 px-1 text-xs text-right text-zinc-500 min-w-16">Var</th>
+                                @endforeach
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @php $prevType = null; @endphp
+                            @foreach ($varianceAccounts as $vAccount)
+                                @if ($prevType !== $vAccount->type)
+                                    <tr>
+                                        <td colspan="{{ count($variancePeriods) * 3 + 1 }}" class="py-1 px-3 text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 bg-zinc-50 dark:bg-zinc-800/50">
+                                            {{ ucfirst($vAccount->type) }}
+                                        </td>
+                                    </tr>
+                                    @php $prevType = $vAccount->type; @endphp
+                                @endif
+                                <tr class="border-b border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/30">
+                                    <td class="py-1.5 px-3 text-zinc-700 dark:text-zinc-300">
+                                        <span class="text-xs text-zinc-400 mr-1">{{ $vAccount->code }}</span>
+                                        {{ $vAccount->name }}
+                                    </td>
+                                    @foreach ($variancePeriods as $vPeriod)
+                                        @php
+                                            $vBudget   = $varianceBudgetData[$vAccount->id][$vPeriod->id] ?? 0;
+                                            $vActual   = $this->varianceActualForAccount($vAccount, $vPeriod->id);
+                                            $vVariance = $vActual - $vBudget;
+                                            $vFavorable = ($vAccount->type === 'revenue')
+                                                ? $vVariance >= 0
+                                                : $vVariance <= 0;
+                                        @endphp
+                                        <td class="py-1.5 px-1 text-right text-xs font-mono">
+                                            @if ($vBudget > 0)
+                                                ${{ number_format($vBudget / 100, 2) }}
+                                            @else
+                                                <span class="text-zinc-300">—</span>
+                                            @endif
+                                        </td>
+                                        <td class="py-1.5 px-1 text-right text-xs font-mono">
+                                            @if ($vActual !== 0)
+                                                ${{ number_format($vActual / 100, 2) }}
+                                            @else
+                                                <span class="text-zinc-300">—</span>
+                                            @endif
+                                        </td>
+                                        <td class="py-1.5 px-1 text-right text-xs font-mono {{ $vFavorable ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
+                                            @if ($vVariance !== 0 || $vBudget > 0 || $vActual !== 0)
+                                                {{ $vVariance >= 0 ? '+' : '' }}${{ number_format($vVariance / 100, 2) }}
+                                            @else
+                                                <span class="text-zinc-300">—</span>
+                                            @endif
+                                        </td>
+                                    @endforeach
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                <flux:text variant="subtle" class="text-xs mt-3">
+                    Actual amounts reflect posted journal entries only. Drafts excluded.
+                    Green = favorable (revenue ≥ budget, expenses ≤ budget). Red = unfavorable.
+                </flux:text>
+            @endif
         </flux:card>
     @endif
 </div>
