@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class FinancialJournalEntry extends Model
 {
@@ -46,6 +47,11 @@ class FinancialJournalEntry extends Model
     public function reversesEntry(): BelongsTo
     {
         return $this->belongsTo(FinancialJournalEntry::class, 'reverses_entry_id');
+    }
+
+    public function reversedBy(): HasOne
+    {
+        return $this->hasOne(FinancialJournalEntry::class, 'reverses_entry_id');
     }
 
     public function vendor(): BelongsTo

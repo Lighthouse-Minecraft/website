@@ -1,9 +1,11 @@
 <?php
 
+use App\Actions\CreateReversingEntry;
 use App\Models\FinancialAccount;
 use App\Models\FinancialJournalEntry;
 use App\Models\FinancialTag;
 use App\Models\FinancialVendor;
+use Flux\Flux;
 use Livewire\Volt\Component;
 use Livewire\WithPagination;
 
@@ -61,7 +63,7 @@ new class extends Component
 
     public function getEntriesProperty()
     {
-        $query = FinancialJournalEntry::with(['vendor', 'lines.account', 'tags', 'period'])
+        $query = FinancialJournalEntry::with(['vendor', 'lines.account', 'tags', 'period', 'reversesEntry', 'reversedBy'])
             ->orderByDesc('date')
             ->orderByDesc('id');
 
@@ -116,6 +118,20 @@ new class extends Component
         $this->filterVendorId = '';
         $this->filterTagId = '';
         $this->resetPage();
+    }
+
+    public function reverse(int $entryId): void
+    {
+        $this->authorize('finance-record');
+
+        $entry = FinancialJournalEntry::with('lines')->findOrFail($entryId);
+
+        try {
+            CreateReversingEntry::run(auth()->user(), $entry);
+            Flux::toast('Reversing entry created as draft.', 'Done', variant: 'success');
+        } catch (\RuntimeException $e) {
+            Flux::toast($e->getMessage(), 'Error', variant: 'danger');
+        }
     }
 }; ?>
 
@@ -211,6 +227,7 @@ new class extends Component
                     <flux:table.column>Amount</flux:table.column>
                     <flux:table.column>Status</flux:table.column>
                     <flux:table.column>Lines</flux:table.column>
+                    <flux:table.column></flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>
                     @foreach ($this->entries as $entry)
@@ -275,7 +292,28 @@ new class extends Component
                                             <span class="font-mono">${{ number_format(($line->debit ?: $line->credit) / 100, 2) }}</span>
                                         </div>
                                     @endforeach
+                                    @if ($entry->reversesEntry)
+                                        <div class="text-zinc-400 mt-1">Reverses #{{ $entry->reversesEntry->id }}</div>
+                                    @endif
+                                    @if ($entry->reversedBy)
+                                        <div class="text-zinc-400 mt-1">Reversed by #{{ $entry->reversedBy->id }}</div>
+                                    @endif
                                 </div>
+                            </flux:table.cell>
+
+                            <flux:table.cell>
+                                @if ($entry->status === 'posted' && ! $entry->reversedBy)
+                                    @can('finance-record')
+                                        <flux:button
+                                            variant="ghost"
+                                            size="sm"
+                                            wire:click="reverse({{ $entry->id }})"
+                                            wire:confirm="Create a reversing entry for this posted transaction?"
+                                        >
+                                            Reverse
+                                        </flux:button>
+                                    @endcan
+                                @endif
                             </flux:table.cell>
                         </flux:table.row>
                     @endforeach
