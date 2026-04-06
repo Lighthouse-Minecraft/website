@@ -233,6 +233,7 @@ Route::prefix('finance')
         Volt::route('/tags', 'finance.tags')->name('tags.index');
         Volt::route('/journal', 'finance.journal-entries')->name('journal.index');
         Volt::route('/journal/create', 'finance.create-journal-entry')->name('journal.create');
+        Volt::route('/budgets', 'finance.budgets')->name('budgets.index');
     });
 
 Route::get('/{slug}', [PageController::class, 'show'])->name('pages.show');
