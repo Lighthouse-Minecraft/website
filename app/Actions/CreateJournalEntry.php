@@ -50,7 +50,11 @@ class CreateJournalEntry
         array $tagIds = [],
         ?string $reference = null,
     ): FinancialJournalEntry {
-        FinancialPeriod::findOrFail($periodId);
+        $period = FinancialPeriod::findOrFail($periodId);
+
+        if ($period->status === 'closed') {
+            throw new \RuntimeException('Cannot create journal entries for a closed period.');
+        }
 
         [$debitAccountId, $creditAccountId] = match ($type) {
             'income' => [$bankAccountId, $primaryAccountId],

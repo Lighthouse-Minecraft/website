@@ -1,14 +1,16 @@
 <?php
 
+use App\Actions\CloseFinancialPeriod;
 use App\Actions\GenerateFinancialPeriods;
 use App\Models\FinancialAccount;
 use App\Models\FinancialPeriod;
 use App\Models\FinancialReconciliation;
 use App\Models\SiteConfig;
+use Flux\Flux;
 use Livewire\Volt\Component;
 
-new class extends Component {
-
+new class extends Component
+{
     public function mount(): void
     {
         $this->authorize('finance-view');
@@ -58,6 +60,20 @@ new class extends Component {
 
         return $recs->toArray();
     }
+
+    public function closePeriod(int $periodId): void
+    {
+        $this->authorize('finance-record');
+
+        $period = FinancialPeriod::findOrFail($periodId);
+
+        try {
+            CloseFinancialPeriod::run($period, auth()->user());
+            Flux::toast("Period {$period->name} has been closed.", 'Period Closed', variant: 'success');
+        } catch (\RuntimeException $e) {
+            Flux::toast($e->getMessage(), 'Cannot Close Period', variant: 'danger');
+        }
+    }
 }; ?>
 
 <div class="space-y-8">
@@ -80,6 +96,7 @@ new class extends Component {
                     <flux:table.column>Status</flux:table.column>
                     <flux:table.column>Reconciliation</flux:table.column>
                     <flux:table.column>Closed</flux:table.column>
+                    <flux:table.column></flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>
                     @foreach ($this->currentFyPeriods as $period)
@@ -144,6 +161,20 @@ new class extends Component {
                                 @else
                                     <span class="text-zinc-400">—</span>
                                 @endif
+                            </flux:table.cell>
+                            <flux:table.cell>
+                                @can('finance-record')
+                                    @if ($period->status !== 'closed')
+                                        <flux:button
+                                            variant="ghost"
+                                            size="sm"
+                                            wire:click="closePeriod({{ $period->id }})"
+                                            wire:confirm="Close {{ $period->name }}? This will generate closing entries and lock the period."
+                                        >
+                                            Close Period
+                                        </flux:button>
+                                    @endif
+                                @endcan
                             </flux:table.cell>
                         </flux:table.row>
                     @endforeach
