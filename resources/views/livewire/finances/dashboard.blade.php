@@ -198,26 +198,6 @@ new class extends Component
         $this->editCategoryId = '';
     }
 
-    // ── Open record transaction modal ─────────────────────────────────────────
-
-    public function openRecordTransactionModal(): void
-    {
-        $this->authorize('financials-treasurer');
-        Flux::modal('record-transaction')->show();
-    }
-
-    public function openOrgPickerModal(): void
-    {
-        $this->authorize('financials-treasurer');
-        Flux::modal('org-picker')->show();
-    }
-
-    public function openEditOrgPickerModal(): void
-    {
-        $this->authorize('financials-treasurer');
-        Flux::modal('edit-org-picker')->show();
-    }
-
     // ── Submit new transaction ────────────────────────────────────────────────
 
     public function submitTransaction(): void
@@ -491,7 +471,7 @@ new class extends Component
         @can('financials-manage')
             <flux:button href="{{ route('finances.board-reports') }}" wire:navigate size="sm" icon="chart-bar">Board Reports</flux:button>
             <flux:button href="{{ route('finances.accounts') }}" wire:navigate size="sm" icon="building-library">Accounts</flux:button>
-            <flux:button href="{{ route('finances.categories') }}" wire:navigate size="sm" icon="tag">Categories &amp; Tags</flux:button>
+            <flux:button href="{{ route('finances.categories') }}" wire:navigate size="sm" icon="tag">Categories</flux:button>
         @endcan
     </div>
 
@@ -513,10 +493,51 @@ new class extends Component
     {{-- Add Transaction Button (treasurer only) --}}
     @can('financials-treasurer')
         <div>
-            <flux:button wire:click="openRecordTransactionModal" variant="primary" icon="plus">
+            <flux:button wire:click="$flux.modal('record-transaction').show()" variant="primary" icon="plus">
                 Add Transaction
             </flux:button>
         </div>
+    @endcan
+
+    {{-- Manage Tags (financials-manage only) --}}
+    @can('financials-manage')
+        <flux:card class="space-y-4">
+            <flux:heading size="lg">Manage Tags</flux:heading>
+
+            <form wire:submit.prevent="createTag" class="flex gap-3 items-end">
+                <flux:field class="flex-1">
+                    <flux:label>New Tag Name</flux:label>
+                    <flux:input wire:model="newTagName" placeholder="Tag name…" />
+                    <flux:error name="newTagName" />
+                </flux:field>
+                <flux:button type="submit" variant="primary" icon="plus">Create Tag</flux:button>
+            </form>
+
+            @if ($this->tags->isNotEmpty())
+                <flux:table>
+                    <flux:table.columns>
+                        <flux:table.column>Name</flux:table.column>
+                        <flux:table.column>Actions</flux:table.column>
+                    </flux:table.columns>
+                    <flux:table.rows>
+                        @foreach ($this->tags as $tag)
+                            <flux:table.row wire:key="tag-{{ $tag->id }}">
+                                <flux:table.cell>{{ $tag->name }}</flux:table.cell>
+                                <flux:table.cell>
+                                    <flux:button size="sm" variant="danger" icon="archive-box"
+                                        wire:click="archiveTag({{ $tag->id }})"
+                                        wire:confirm="Archive tag '{{ $tag->name }}'? It will no longer appear on the transaction form.">
+                                        Archive
+                                    </flux:button>
+                                </flux:table.cell>
+                            </flux:table.row>
+                        @endforeach
+                    </flux:table.rows>
+                </flux:table>
+            @else
+                <flux:text variant="subtle">No tags yet. Create one above.</flux:text>
+            @endif
+        </flux:card>
     @endcan
 
     {{-- Manage Organizations (financials-manage only) --}}
@@ -654,7 +675,7 @@ new class extends Component
                                 <flux:badge>{{ $organizationName }}</flux:badge>
                                 <flux:button size="sm" variant="ghost" wire:click="clearOrganization" icon="x-mark">Clear</flux:button>
                             @else
-                                <flux:button size="sm" wire:click="openOrgPickerModal" icon="building-office">Add Organization</flux:button>
+                                <flux:button size="sm" wire:click="$flux.modal('org-picker').show()" icon="building-office">Add Organization</flux:button>
                             @endif
                         </div>
                     </flux:field>
@@ -812,11 +833,9 @@ new class extends Component
                             <flux:table.cell>
                                 @unless ($tx->isInPublishedMonth())
                                     <div class="flex gap-2">
-                                        @if ($tx->type === 'transfer')
-                                            <flux:text variant="subtle" class="text-xs">Transfers cannot be edited — delete and re-enter if needed.</flux:text>
-                                        @else
+                                        @unless ($tx->type === 'transfer')
                                             <flux:button size="sm" icon="pencil-square" wire:click="openEditModal({{ $tx->id }})">Edit</flux:button>
-                                        @endif
+                                        @endunless
                                         <flux:button size="sm" variant="danger" icon="trash"
                                             wire:click="deleteTransaction({{ $tx->id }})"
                                             wire:confirm="Delete this transaction? This cannot be undone.">
@@ -923,7 +942,7 @@ new class extends Component
                             <flux:badge>{{ $editOrganizationName }}</flux:badge>
                             <flux:button size="sm" variant="ghost" wire:click="clearEditOrganization" icon="x-mark">Clear</flux:button>
                         @else
-                            <flux:button size="sm" wire:click="openEditOrgPickerModal" icon="building-office">Add Organization</flux:button>
+                            <flux:button size="sm" wire:click="$flux.modal('edit-org-picker').show()" icon="building-office">Add Organization</flux:button>
                         @endif
                     </div>
                 </flux:field>
