@@ -222,6 +222,9 @@ Route::prefix('library')->name('library.')->group(function () {
     });
 });
 
+// Finance — Public dashboard (no auth required)
+Volt::route('/finance', 'finance.public-dashboard')->name('finance.public.index');
+
 // Finance — Community view (Resident+)
 Route::prefix('finance')
     ->name('finance.')
