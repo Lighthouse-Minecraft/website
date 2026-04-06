@@ -1,13 +1,27 @@
 <?php
 
+use App\Actions\PublishPeriodReport;
+use App\Models\FinancialAccount;
+use App\Models\FinancialCategory;
 use App\Models\FinancialPeriodReport;
 use App\Models\FinancialTransaction;
+use App\Models\MonthlyBudget;
+use Flux\Flux;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Livewire\Attributes\Locked;
 use Livewire\Volt\Component;
 
 new class extends Component
 {
+    // ── Publish modal state ───────────────────────────────────────────────────
+    #[Locked]
+    public ?string $publishMonth = null;
+
+    // ── View detail modal state ───────────────────────────────────────────────
+    #[Locked]
+    public ?string $viewMonth = null;
+
     // ── Report list ───────────────────────────────────────────────────────────
 
     public function months(): array
@@ -94,6 +108,150 @@ new class extends Component
 
         return $result;
     }
+
+    // ── Pre-publish summary ───────────────────────────────────────────────────
+
+    public function summaryForMonth(string $monthStart): array
+    {
+        // For published months, return the immutable snapshot stored at publish time.
+        $report = FinancialPeriodReport::whereDate('month', $monthStart)
+            ->whereNotNull('published_at')
+            ->first();
+
+        if ($report && $report->summary_snapshot !== null) {
+            $snap = $report->summary_snapshot;
+            // Ensure accountBalances is a Collection for template compatibility.
+            $snap['accountBalances'] = collect($snap['accountBalances']);
+
+            return $snap;
+        }
+
+        $monthEnd = Carbon::parse($monthStart)->endOfMonth()->toDateString();
+
+        $income = (int) FinancialTransaction::where('type', 'income')
+            ->whereBetween('transacted_at', [$monthStart, $monthEnd])
+            ->sum('amount');
+
+        $expense = (int) FinancialTransaction::where('type', 'expense')
+            ->whereBetween('transacted_at', [$monthStart, $monthEnd])
+            ->sum('amount');
+
+        // Account balances as of end of month — include all accounts regardless of archived
+        // status so that archiving an account later doesn't silently drop it from historical reports
+        $accounts = FinancialAccount::orderBy('name')->get();
+
+        $accountBalances = $accounts->map(function ($account) use ($monthEnd) {
+            $credits = (int) $account->transactions()->where('type', 'income')
+                ->where('transacted_at', '<=', $monthEnd)->sum('amount');
+            $debits = (int) $account->transactions()->where('type', 'expense')
+                ->where('transacted_at', '<=', $monthEnd)->sum('amount');
+            $transfersOut = (int) $account->transactions()->where('type', 'transfer')
+                ->where('transacted_at', '<=', $monthEnd)->sum('amount');
+            $transfersIn = (int) $account->incomingTransfers()->where('type', 'transfer')
+                ->where('transacted_at', '<=', $monthEnd)->sum('amount');
+            $balance = $account->opening_balance + $credits - $debits - $transfersOut + $transfersIn;
+
+            return ['name' => $account->name, 'balance' => $balance];
+        });
+
+        // Budget variance per top-level category — include all categories regardless of archived
+        // status so that archiving a category later doesn't silently drop it from historical reports
+        $categories = FinancialCategory::whereNull('parent_id')
+            ->orderBy('type')
+            ->orderBy('sort_order')
+            ->get();
+
+        $budgetVariances = [];
+        foreach ($categories as $cat) {
+            $planned = (int) optional(MonthlyBudget::whereDate('month', $monthStart)
+                ->where('financial_category_id', $cat->id)
+                ->first())->planned_amount;
+
+            $subIds = FinancialCategory::where('parent_id', $cat->id)->pluck('id');
+            $ids = $subIds->prepend($cat->id);
+            $actual = (int) FinancialTransaction::whereIn('financial_category_id', $ids)
+                ->whereBetween('transacted_at', [$monthStart, $monthEnd])
+                ->whereIn('type', ['income', 'expense'])
+                ->sum('amount');
+
+            if ($planned > 0 || $actual > 0) {
+                $budgetVariances[] = [
+                    'name' => $cat->name,
+                    'type' => $cat->type,
+                    'planned' => $planned,
+                    'actual' => $actual,
+                    // For expenses: positive variance = under budget (good). For income: positive = beat target (good).
+                    'variance' => $cat->type === 'income'
+                        ? $actual - $planned
+                        : $planned - $actual,
+                ];
+            }
+        }
+
+        return [
+            'income' => $income,
+            'expense' => $expense,
+            'net' => $income - $expense,
+            'accountBalances' => $accountBalances,
+            'budgetVariances' => $budgetVariances,
+        ];
+    }
+
+    public function openViewModal(string $monthStart): void
+    {
+        $this->authorize('financials-view');
+
+        $isPublished = FinancialPeriodReport::whereDate('month', $monthStart)
+            ->whereNotNull('published_at')
+            ->exists();
+
+        if (! $isPublished) {
+            abort(404);
+        }
+
+        $this->viewMonth = $monthStart;
+        Flux::modal('view-report-modal')->show();
+    }
+
+    public function closeViewModal(): void
+    {
+        $this->viewMonth = null;
+        Flux::modal('view-report-modal')->close();
+    }
+
+    public function openPublishModal(string $monthStart): void
+    {
+        $this->authorize('financials-treasurer');
+        $this->publishMonth = $monthStart;
+        Flux::modal('publish-report-modal')->show();
+    }
+
+    public function closePublishModal(): void
+    {
+        $this->publishMonth = null;
+        Flux::modal('publish-report-modal')->close();
+    }
+
+    public function confirmPublish(): void
+    {
+        $this->authorize('financials-treasurer');
+
+        if ($this->publishMonth === null) {
+            return;
+        }
+
+        try {
+            PublishPeriodReport::run($this->publishMonth, auth()->user());
+        } catch (\RuntimeException $e) {
+            Flux::toast($e->getMessage(), 'Error', variant: 'danger');
+
+            return;
+        }
+
+        Flux::modal('publish-report-modal')->close();
+        Flux::toast('Period report published.', 'Success', variant: 'success');
+        $this->publishMonth = null;
+    }
 }; ?>
 
 <div class="space-y-6">
@@ -124,13 +282,7 @@ new class extends Component
         <flux:table.rows>
             @forelse ($this->months() as $row)
                 <flux:table.row wire:key="report-{{ $row['ym'] }}">
-                    <flux:table.cell>
-                        <a href="{{ route('finances.reports.show', ['month' => $row['ym']]) }}"
-                            wire:navigate
-                            class="text-blue-600 hover:underline dark:text-blue-400">
-                            {{ $row['label'] }}
-                        </a>
-                    </flux:table.cell>
+                    <flux:table.cell>{{ $row['label'] }}</flux:table.cell>
                     <flux:table.cell class="text-green-500">${{ number_format($row['income'] / 100, 2) }}</flux:table.cell>
                     <flux:table.cell class="text-red-500">${{ number_format($row['expense'] / 100, 2) }}</flux:table.cell>
                     <flux:table.cell>
@@ -148,7 +300,12 @@ new class extends Component
                     <flux:table.cell>
                         <div class="flex gap-2">
                             @if ($row['published'])
+                                <flux:button size="sm" icon="eye" wire:click="openViewModal('{{ $row['monthStart'] }}')">View</flux:button>
                                 <flux:button size="sm" icon="arrow-down-tray" href="{{ route('finances.reports.pdf', ['month' => $row['ym']]) }}" target="_blank">PDF</flux:button>
+                            @else
+                                @can('financials-treasurer')
+                                    <flux:button size="sm" wire:click="openPublishModal('{{ $row['monthStart'] }}')">Publish</flux:button>
+                                @endcan
                             @endif
                         </div>
                     </flux:table.cell>
@@ -162,5 +319,159 @@ new class extends Component
             @endforelse
         </flux:table.rows>
     </flux:table>
+
+    {{-- View Report Modal --}}
+    <flux:modal name="view-report-modal" class="w-full max-w-2xl space-y-5">
+        @if ($viewMonth !== null)
+            @php $viewSummary = $this->summaryForMonth($viewMonth); @endphp
+
+            <flux:heading size="lg">
+                Period Report — {{ \Illuminate\Support\Carbon::parse($viewMonth)->format('F Y') }}
+            </flux:heading>
+
+            <div class="grid grid-cols-3 gap-4">
+                <flux:card class="text-center">
+                    <flux:text variant="subtle" class="text-sm">Total Income</flux:text>
+                    <flux:heading size="lg" class="text-green-500">${{ number_format($viewSummary['income'] / 100, 2) }}</flux:heading>
+                </flux:card>
+                <flux:card class="text-center">
+                    <flux:text variant="subtle" class="text-sm">Total Expenses</flux:text>
+                    <flux:heading size="lg" class="text-red-500">${{ number_format($viewSummary['expense'] / 100, 2) }}</flux:heading>
+                </flux:card>
+                <flux:card class="text-center">
+                    <flux:text variant="subtle" class="text-sm">Net Change</flux:text>
+                    <flux:heading size="lg" class="{{ $viewSummary['net'] >= 0 ? 'text-green-500' : 'text-red-500' }}">
+                        {{ $viewSummary['net'] >= 0 ? '+' : '' }}${{ number_format(abs($viewSummary['net']) / 100, 2) }}
+                    </flux:heading>
+                </flux:card>
+            </div>
+
+            @if ($viewSummary['accountBalances']->isNotEmpty())
+                <div>
+                    <flux:heading size="sm" class="mb-2">Account Balances</flux:heading>
+                    <div class="grid grid-cols-2 gap-2">
+                        @foreach ($viewSummary['accountBalances'] as $ab)
+                            <div class="flex justify-between text-sm">
+                                <span>{{ $ab['name'] }}</span>
+                                <span>${{ number_format($ab['balance'] / 100, 2) }}</span>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
+            @if (!empty($viewSummary['budgetVariances']))
+                <div>
+                    <flux:heading size="sm" class="mb-2">Budget Variance</flux:heading>
+                    <flux:table>
+                        <flux:table.columns>
+                            <flux:table.column>Category</flux:table.column>
+                            <flux:table.column>Planned</flux:table.column>
+                            <flux:table.column>Actual</flux:table.column>
+                            <flux:table.column>Variance</flux:table.column>
+                        </flux:table.columns>
+                        <flux:table.rows>
+                            @foreach ($viewSummary['budgetVariances'] as $bv)
+                                <flux:table.row>
+                                    <flux:table.cell>{{ $bv['name'] }}</flux:table.cell>
+                                    <flux:table.cell>{{ $bv['planned'] > 0 ? '$' . number_format($bv['planned'] / 100, 2) : '—' }}</flux:table.cell>
+                                    <flux:table.cell>{{ $bv['actual'] > 0 ? '$' . number_format($bv['actual'] / 100, 2) : '—' }}</flux:table.cell>
+                                    <flux:table.cell>
+                                        @php $v = $bv['variance']; @endphp
+                                        <span class="{{ $v >= 0 ? 'text-green-500' : 'text-red-500' }}">
+                                            {{ $v >= 0 ? '+' : '' }}${{ number_format(abs($v) / 100, 2) }}
+                                        </span>
+                                    </flux:table.cell>
+                                </flux:table.row>
+                            @endforeach
+                        </flux:table.rows>
+                    </flux:table>
+                </div>
+            @endif
+
+            <div class="flex gap-3 pt-2">
+                <flux:button href="{{ route('finances.reports.pdf', ['month' => \Illuminate\Support\Carbon::parse($viewMonth)->format('Y-m')]) }}" target="_blank" icon="arrow-down-tray">Download PDF</flux:button>
+                <flux:button wire:click="closeViewModal" variant="ghost">Close</flux:button>
+            </div>
+        @endif
+    </flux:modal>
+
+    {{-- Publish Modal --}}
+    @can('financials-treasurer')
+        <flux:modal name="publish-report-modal" class="w-full max-w-2xl space-y-5">
+            @if ($publishMonth !== null)
+                @php $summary = $this->summaryForMonth($publishMonth); @endphp
+
+                <flux:heading size="lg">Publish Report — {{ \Illuminate\Support\Carbon::parse($publishMonth)->format('F Y') }}</flux:heading>
+
+                <flux:text variant="subtle">Review this summary before publishing. Once published, all transactions in this month become read-only.</flux:text>
+
+                <div class="grid grid-cols-3 gap-4">
+                    <flux:card class="text-center">
+                        <flux:text variant="subtle" class="text-sm">Total Income</flux:text>
+                        <flux:heading size="lg" class="text-green-500">${{ number_format($summary['income'] / 100, 2) }}</flux:heading>
+                    </flux:card>
+                    <flux:card class="text-center">
+                        <flux:text variant="subtle" class="text-sm">Total Expenses</flux:text>
+                        <flux:heading size="lg" class="text-red-500">${{ number_format($summary['expense'] / 100, 2) }}</flux:heading>
+                    </flux:card>
+                    <flux:card class="text-center">
+                        <flux:text variant="subtle" class="text-sm">Net Change</flux:text>
+                        <flux:heading size="lg" class="{{ $summary['net'] >= 0 ? 'text-green-500' : 'text-red-500' }}">
+                            {{ $summary['net'] >= 0 ? '+' : '' }}${{ number_format(abs($summary['net']) / 100, 2) }}
+                        </flux:heading>
+                    </flux:card>
+                </div>
+
+                @if ($summary['accountBalances']->isNotEmpty())
+                    <div>
+                        <flux:heading size="sm" class="mb-2">Account Balances (as of end of month)</flux:heading>
+                        <div class="grid grid-cols-2 gap-2">
+                            @foreach ($summary['accountBalances'] as $ab)
+                                <div class="flex justify-between text-sm">
+                                    <span>{{ $ab['name'] }}</span>
+                                    <span>${{ number_format($ab['balance'] / 100, 2) }}</span>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+
+                @if (!empty($summary['budgetVariances']))
+                    <div>
+                        <flux:heading size="sm" class="mb-2">Budget Variance</flux:heading>
+                        <flux:table>
+                            <flux:table.columns>
+                                <flux:table.column>Category</flux:table.column>
+                                <flux:table.column>Planned</flux:table.column>
+                                <flux:table.column>Actual</flux:table.column>
+                                <flux:table.column>Variance</flux:table.column>
+                            </flux:table.columns>
+                            <flux:table.rows>
+                                @foreach ($summary['budgetVariances'] as $bv)
+                                    <flux:table.row>
+                                        <flux:table.cell>{{ $bv['name'] }}</flux:table.cell>
+                                        <flux:table.cell>{{ $bv['planned'] > 0 ? '$' . number_format($bv['planned'] / 100, 2) : '—' }}</flux:table.cell>
+                                        <flux:table.cell>{{ $bv['actual'] > 0 ? '$' . number_format($bv['actual'] / 100, 2) : '—' }}</flux:table.cell>
+                                        <flux:table.cell>
+                                            @php $v = $bv['variance']; @endphp
+                                            <span class="{{ $v >= 0 ? 'text-green-500' : 'text-red-500' }}">
+                                                {{ $v >= 0 ? '+' : '' }}${{ number_format(abs($v) / 100, 2) }}
+                                            </span>
+                                        </flux:table.cell>
+                                    </flux:table.row>
+                                @endforeach
+                            </flux:table.rows>
+                        </flux:table>
+                    </div>
+                @endif
+
+                <div class="flex gap-3 pt-2">
+                    <flux:button wire:click="confirmPublish" variant="primary" icon="lock-closed">Confirm & Publish</flux:button>
+                    <flux:button wire:click="closePublishModal" variant="ghost">Cancel</flux:button>
+                </div>
+            @endif
+        </flux:modal>
+    @endcan
 
 </div>
