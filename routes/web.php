@@ -228,6 +228,7 @@ Route::prefix('finance')
     ->middleware(['auth', 'can:finance-view'])
     ->group(function () {
         Volt::route('/accounts', 'finance.chart-of-accounts')->name('accounts.index');
+        Volt::route('/periods', 'finance.fiscal-periods')->name('periods.index');
     });
 
 Route::get('/{slug}', [PageController::class, 'show'])->name('pages.show');
