@@ -190,11 +190,15 @@ new class extends Component
 
         $lines = $query->get();
 
-        // Compute running balance (debit increases balance, credit decreases)
+        // Compute running balance, adjusting sign for account's normal balance
+        $account = FinancialAccount::find($this->glAccountId);
+        $isDebitNormal = $account?->normal_balance === 'debit';
         $runningBalance = 0;
 
-        return $lines->map(function ($line) use (&$runningBalance) {
-            $runningBalance += $line->debit - $line->credit;
+        return $lines->map(function ($line) use (&$runningBalance, $isDebitNormal) {
+            $runningBalance += $isDebitNormal
+                ? ($line->debit - $line->credit)
+                : ($line->credit - $line->debit);
 
             return (object) [
                 'id' => $line->id,
@@ -334,6 +338,24 @@ new class extends Component
         return $this->getCumulativeBalance('asset');
     }
 
+    public function getBsLiabilityRowsProperty()
+    {
+        return $this->getCumulativeBalance('liability');
+    }
+
+    public function getBsTotalLiabilitiesProperty(): int
+    {
+        // Liabilities have credit normal balance: use credit - debit
+        return (int) DB::table('financial_journal_entry_lines as jel')
+            ->join('financial_journal_entries as je', 'je.id', '=', 'jel.journal_entry_id')
+            ->join('financial_accounts as fa', 'fa.id', '=', 'jel.account_id')
+            ->where('fa.type', 'liability')
+            ->where('je.status', 'posted')
+            ->where('je.date', '<=', $this->bsAsOfDateValue)
+            ->selectRaw('COALESCE(SUM(jel.credit) - SUM(jel.debit), 0) as balance')
+            ->value('balance');
+    }
+
     public function getBsNetAssetsUnrestrictedProperty(): int
     {
         // Net Assets — Unrestricted: cumulative credit − debit (credit normal balance)
@@ -373,7 +395,7 @@ new class extends Component
 
     public function getBsIsBalancedProperty(): bool
     {
-        return $this->bsTotalAssets === $this->bsTotalNetAssets;
+        return $this->bsTotalAssets === ($this->bsTotalLiabilities + $this->bsTotalNetAssets);
     }
 
     // ─── Statement of Cash Flows ──────────────────────────────────────────
@@ -566,7 +588,7 @@ new class extends Component
                         </flux:table.columns>
                         <flux:table.rows>
                             @foreach ($this->revenueRows as $row)
-                                <flux:table.row>
+                                <flux:table.row wire:key="revenue-{{ $row['account_id'] }}">
                                     <flux:table.cell>
                                         <span class="text-zinc-500 text-xs mr-2">{{ $row['code'] }}</span>
                                         {{ $row['name'] }}
@@ -600,7 +622,7 @@ new class extends Component
                         </flux:table.columns>
                         <flux:table.rows>
                             @foreach ($this->expenseRows as $row)
-                                <flux:table.row>
+                                <flux:table.row wire:key="expense-{{ $row['account_id'] }}">
                                     <flux:table.cell>
                                         <span class="text-zinc-500 text-xs mr-2">{{ $row['code'] }}</span>
                                         {{ $row['name'] }}
@@ -754,7 +776,7 @@ new class extends Component
                     </flux:table.columns>
                     <flux:table.rows>
                         @foreach ($this->trialBalanceRows as $row)
-                            <flux:table.row>
+                            <flux:table.row wire:key="trial-{{ $row['account_id'] }}">
                                 <flux:table.cell>
                                     <span class="text-zinc-500 text-xs mr-2">{{ $row['code'] }}</span>
                                     {{ $row['name'] }}
@@ -800,7 +822,7 @@ new class extends Component
                 <flux:heading size="md">Statement of Financial Position</flux:heading>
                 <div class="flex items-center gap-3">
                     @if ($this->bsIsBalanced)
-                        <flux:badge color="green" size="sm">✓ Assets = Net Assets</flux:badge>
+                        <flux:badge color="green" size="sm">✓ Assets = Liabilities + Net Assets</flux:badge>
                     @endif
                     <flux:field class="flex items-center gap-2 m-0">
                         <flux:label class="text-sm whitespace-nowrap">As of</flux:label>
@@ -818,7 +840,7 @@ new class extends Component
                     @else
                         <div class="space-y-1">
                             @foreach ($this->bsAssetRows as $row)
-                                <div class="flex justify-between py-1 text-sm">
+                                <div wire:key="bs-asset-{{ $row['account_id'] }}" class="flex justify-between py-1 text-sm">
                                     <span>
                                         <span class="text-zinc-400 mr-2">{{ $row['code'] }}</span>
                                         {{ $row['name'] }}
@@ -835,6 +857,30 @@ new class extends Component
                         </div>
                     @endif
                 </div>
+
+                {{-- Liabilities --}}
+                @if ($this->bsLiabilityRows->isNotEmpty())
+                    <div>
+                        <h3 class="text-sm font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wide mb-2">Liabilities</h3>
+                        <div class="space-y-1">
+                            @foreach ($this->bsLiabilityRows as $row)
+                                <div wire:key="bs-liability-{{ $row['account_id'] }}" class="flex justify-between py-1 text-sm">
+                                    <span>
+                                        <span class="text-zinc-400 mr-2">{{ $row['code'] }}</span>
+                                        {{ $row['name'] }}
+                                    </span>
+                                    <span class="font-mono">
+                                        {{ $row['balance'] >= 0 ? '' : '-' }}${{ number_format(abs($row['balance']) / 100, 2) }}
+                                    </span>
+                                </div>
+                            @endforeach
+                            <div class="flex justify-between py-1 text-sm font-semibold border-t border-zinc-200 dark:border-zinc-700 mt-2 pt-2">
+                                <span>Total Liabilities</span>
+                                <span class="font-mono">${{ number_format($this->bsTotalLiabilities / 100, 2) }}</span>
+                            </div>
+                        </div>
+                    </div>
+                @endif
 
                 {{-- Net Assets --}}
                 <div>
@@ -928,7 +974,7 @@ new class extends Component
                                     </tr>
                                     @php $prevType = $vAccount->type; @endphp
                                 @endif
-                                <tr class="border-b border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/30">
+                                <tr wire:key="variance-{{ $vAccount->id }}" class="border-b border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/30">
                                     <td class="py-1.5 px-3 text-zinc-700 dark:text-zinc-300">
                                         <span class="text-xs text-zinc-400 mr-1">{{ $vAccount->code }}</span>
                                         {{ $vAccount->name }}

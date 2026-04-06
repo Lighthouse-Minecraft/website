@@ -198,7 +198,7 @@ it('general ledger shows posted lines for selected account', function () {
 it('general ledger computes running balance correctly', function () {
     $user = User::factory()->withRole('Finance - Record')->create();
     $period = FinancialPeriod::factory()->create();
-    $bank = FinancialAccount::factory()->create(['type' => 'asset', 'is_bank_account' => true]);
+    $bank = FinancialAccount::factory()->create(['type' => 'asset', 'is_bank_account' => true, 'normal_balance' => 'debit']);
     $revenue = FinancialAccount::factory()->create(['type' => 'revenue', 'normal_balance' => 'credit']);
     $expense = FinancialAccount::factory()->create(['type' => 'expense', 'normal_balance' => 'debit']);
 

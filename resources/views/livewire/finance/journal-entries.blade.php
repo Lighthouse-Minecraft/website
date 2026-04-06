@@ -194,7 +194,7 @@ new class extends Component
                 <flux:select wire:model.live="filterAccountId">
                     <flux:select.option value="">All accounts</flux:select.option>
                     @foreach ($this->accounts as $account)
-                        <flux:select.option value="{{ $account->id }}">
+                        <flux:select.option wire:key="account-{{ $account->id }}" value="{{ $account->id }}">
                             {{ $account->code }} — {{ $account->name }}
                         </flux:select.option>
                     @endforeach
@@ -206,7 +206,7 @@ new class extends Component
                 <flux:select wire:model.live="filterVendorId">
                     <flux:select.option value="">All vendors</flux:select.option>
                     @foreach ($this->vendors as $vendor)
-                        <flux:select.option value="{{ $vendor->id }}">{{ $vendor->name }}</flux:select.option>
+                        <flux:select.option wire:key="vendor-{{ $vendor->id }}" value="{{ $vendor->id }}">{{ $vendor->name }}</flux:select.option>
                     @endforeach
                 </flux:select>
             </flux:field>
@@ -216,7 +216,7 @@ new class extends Component
                 <flux:select wire:model.live="filterTagId">
                     <flux:select.option value="">All tags</flux:select.option>
                     @foreach ($this->tags as $tag)
-                        <flux:select.option value="{{ $tag->id }}">{{ $tag->name }}</flux:select.option>
+                        <flux:select.option wire:key="tag-filter-{{ $tag->id }}" value="{{ $tag->id }}">{{ $tag->name }}</flux:select.option>
                     @endforeach
                 </flux:select>
             </flux:field>
@@ -260,7 +260,7 @@ new class extends Component
                                     @if ($entry->tags->isNotEmpty())
                                         <div class="flex flex-wrap gap-1 mt-1">
                                             @foreach ($entry->tags as $tag)
-                                                <flux:badge color="{{ $tag->color }}" size="sm">{{ $tag->name }}</flux:badge>
+                                                <flux:badge wire:key="entry-tag-{{ $entry->id }}-{{ $tag->id }}" color="{{ $tag->color }}" size="sm">{{ $tag->name }}</flux:badge>
                                             @endforeach
                                         </div>
                                     @endif
@@ -297,7 +297,7 @@ new class extends Component
                             <flux:table.cell>
                                 <div class="text-xs space-y-0.5">
                                     @foreach ($entry->lines as $line)
-                                        <div class="flex gap-2">
+                                        <div wire:key="line-{{ $line->id }}" class="flex gap-2">
                                             @if ($line->debit > 0)
                                                 <span class="text-blue-600 dark:text-blue-400 w-12">Dr</span>
                                             @else
