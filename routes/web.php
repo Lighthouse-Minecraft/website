@@ -222,4 +222,12 @@ Route::prefix('library')->name('library.')->group(function () {
     });
 });
 
+// Finance Routes
+Route::prefix('finance')
+    ->name('finance.')
+    ->middleware(['auth', 'can:finance-view'])
+    ->group(function () {
+        Volt::route('/accounts', 'finance.chart-of-accounts')->name('accounts.index');
+    });
+
 Route::get('/{slug}', [PageController::class, 'show'])->name('pages.show');

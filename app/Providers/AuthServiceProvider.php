@@ -237,5 +237,21 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('view-contact-inquiries', function ($user) {
             return $user->hasRole('Contact - Receive Submissions');
         });
+
+        // Finance gates (tiered: Manage > Record > View)
+        Gate::define('finance-view', function ($user) {
+            return $user->hasRole('Finance - View')
+                || $user->hasRole('Finance - Record')
+                || $user->hasRole('Finance - Manage');
+        });
+
+        Gate::define('finance-record', function ($user) {
+            return $user->hasRole('Finance - Record')
+                || $user->hasRole('Finance - Manage');
+        });
+
+        Gate::define('finance-manage', function ($user) {
+            return $user->hasRole('Finance - Manage');
+        });
     }
 }
