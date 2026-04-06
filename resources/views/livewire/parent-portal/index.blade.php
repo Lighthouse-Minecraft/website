@@ -2,8 +2,8 @@
 
 use App\Actions\CreateChildAccount;
 use App\Actions\GenerateVerificationCode;
-use App\Actions\ParentRegenerateVerificationCode;
 use App\Actions\ReleaseChildToAdult;
+use App\Actions\ParentRegenerateVerificationCode;
 use App\Actions\RemoveChildMinecraftAccount;
 use App\Actions\UpdateChildPermission;
 use App\Enums\MinecraftAccountType;
@@ -19,8 +19,7 @@ use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Volt\Component;
 
-new class extends Component
-{
+new class extends Component {
     #[Locked]
     public int $targetUserId = 0;
 
@@ -28,29 +27,20 @@ new class extends Component
     public bool $isStaffViewing = false;
 
     public string $newChildName = '';
-
     public string $newChildEmail = '';
-
     public string $newChildDob = '';
 
     public ?int $accountToRemoveId = null;
-
     public string $accountToRemoveName = '';
-
     public string $accountToRemoveChildName = '';
 
     public array $childMcUsernames = [];
-
     public array $childMcAccountTypes = [];
-
     public array $childMcVerificationCodes = [];
-
     public array $childMcExpiresAt = [];
-
     public array $childMcErrors = [];
 
     public ?int $editingChildId = null;
-
     public array $editChildData = [
         'name' => '',
         'email' => '',
@@ -66,7 +56,7 @@ new class extends Component
             if (! Auth::user()->isAtLeastRank(\App\Enums\StaffRank::Officer)) {
                 abort(403);
             }
-            $targetUser = $user instanceof User ? $user : User::where('slug', $user)->firstOrFail();
+            $targetUser = $user instanceof User ? $user : User::findOrFail($user);
             $this->targetUserId = $targetUser->id;
             $this->isStaffViewing = true;
         } else {
@@ -157,7 +147,6 @@ new class extends Component
 
         if (! $parent->children()->where('child_user_id', $child->id)->exists()) {
             Flux::toast('You do not have permission to manage this account.', 'Unauthorized', variant: 'danger');
-
             return;
         }
 
@@ -220,7 +209,6 @@ new class extends Component
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error('Failed to create child account', ['error' => $e->getMessage()]);
             Flux::toast('Could not create child account. Please try again.', 'Error', variant: 'danger');
-
             return;
         }
 
@@ -241,13 +229,11 @@ new class extends Component
 
         if (! $parent->children()->where('child_user_id', $child->id)->exists()) {
             Flux::toast('You do not have permission to manage this account.', 'Unauthorized', variant: 'danger');
-
             return;
         }
 
         if ($child->age() === null || $child->age() < 17) {
             Flux::toast('Child must be at least 17 to be released to an adult account.', 'Not Eligible', variant: 'danger');
-
             return;
         }
 
@@ -390,7 +376,6 @@ new class extends Component
 
         if (! $parent->children()->where('child_user_id', $child->id)->exists()) {
             Flux::toast('You do not have permission to edit this account.', 'Unauthorized', variant: 'danger');
-
             return;
         }
 
@@ -418,7 +403,6 @@ new class extends Component
         $childAge = \Carbon\Carbon::parse($this->editChildData['date_of_birth'])->age;
         if ($childAge > 16) {
             $this->addError('editChildData.date_of_birth', 'Child accounts are intended for ages 16 and under.');
-
             return;
         }
 
@@ -427,7 +411,6 @@ new class extends Component
 
         if (! $parent->children()->where('child_user_id', $child->id)->exists()) {
             Flux::toast('You do not have permission to edit this account.', 'Unauthorized', variant: 'danger');
-
             return;
         }
 
@@ -470,7 +453,6 @@ new class extends Component
     {
         if ($this->isStaffViewing) {
             Flux::toast('This view is read-only.', 'Unauthorized', variant: 'danger');
-
             return;
         }
 
@@ -480,7 +462,6 @@ new class extends Component
         // Verify the parent owns this child before exposing account info
         if (! $parent->children()->where('child_user_id', $account->user_id)->exists()) {
             Flux::toast('You do not have permission to manage this account.', 'Unauthorized', variant: 'danger');
-
             return;
         }
 
@@ -517,7 +498,6 @@ new class extends Component
     {
         if ($this->isStaffViewing) {
             Flux::toast('This view is read-only.', 'Unauthorized', variant: 'danger');
-
             return;
         }
 
@@ -526,13 +506,11 @@ new class extends Component
 
         if (! $parent->children()->where('child_user_id', $account->user_id)->exists()) {
             Flux::toast('You do not have permission to manage this account.', 'Unauthorized', variant: 'danger');
-
             return;
         }
 
         if (! in_array($account->status, [\App\Enums\MinecraftAccountStatus::Cancelled, \App\Enums\MinecraftAccountStatus::Cancelling])) {
             Flux::toast('This account cannot be removed in this way.', 'Error', variant: 'danger');
-
             return;
         }
 
@@ -550,7 +528,6 @@ new class extends Component
     {
         if ($this->isStaffViewing) {
             Flux::toast('This view is read-only.', 'Unauthorized', variant: 'danger');
-
             return;
         }
 
@@ -564,7 +541,7 @@ new class extends Component
             $this->childMcVerificationCodes[$childId] = $result['code'];
             $this->childMcExpiresAt[$childId] = $result['expires_at']->toIso8601String();
             unset($this->children);
-            Flux::toast('Verification restarted! Have the child run /verify '.$result['code'].' in-game.', 'Verification Restarted', variant: 'success');
+            Flux::toast('Verification restarted! Have the child run /verify ' . $result['code'] . ' in-game.', 'Verification Restarted', variant: 'success');
         } else {
             Flux::toast($result['error'], 'Error', variant: 'danger');
         }
