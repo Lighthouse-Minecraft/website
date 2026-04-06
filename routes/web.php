@@ -229,6 +229,8 @@ Route::prefix('finance')
     ->group(function () {
         Volt::route('/accounts', 'finance.chart-of-accounts')->name('accounts.index');
         Volt::route('/periods', 'finance.fiscal-periods')->name('periods.index');
+        Volt::route('/vendors', 'finance.vendors')->name('vendors.index');
+        Volt::route('/tags', 'finance.tags')->name('tags.index');
     });
 
 Route::get('/{slug}', [PageController::class, 'show'])->name('pages.show');
