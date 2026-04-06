@@ -1,7 +1,9 @@
 <?php
 
 use App\Actions\GenerateFinancialPeriods;
+use App\Models\FinancialAccount;
 use App\Models\FinancialPeriod;
+use App\Models\FinancialReconciliation;
 use App\Models\SiteConfig;
 use Livewire\Volt\Component;
 
@@ -38,6 +40,24 @@ new class extends Component {
             ->get()
             ->groupBy('fiscal_year');
     }
+
+    public function getBankAccountsProperty()
+    {
+        return FinancialAccount::where('is_bank_account', true)->where('is_active', true)->orderBy('code')->get();
+    }
+
+    public function getReconciliationStatusProperty(): array
+    {
+        if ($this->bankAccounts->isEmpty()) {
+            return [];
+        }
+
+        $recs = FinancialReconciliation::whereIn('account_id', $this->bankAccounts->pluck('id'))
+            ->get()
+            ->groupBy(fn ($r) => "{$r->account_id}_{$r->period_id}");
+
+        return $recs->toArray();
+    }
 }; ?>
 
 <div class="space-y-8">
@@ -58,6 +78,7 @@ new class extends Component {
                     <flux:table.column>Period</flux:table.column>
                     <flux:table.column>Date Range</flux:table.column>
                     <flux:table.column>Status</flux:table.column>
+                    <flux:table.column>Reconciliation</flux:table.column>
                     <flux:table.column>Closed</flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>
@@ -76,6 +97,40 @@ new class extends Component {
                                     <flux:badge color="yellow" size="sm">Reconciling</flux:badge>
                                 @else
                                     <flux:badge color="zinc" size="sm">Closed</flux:badge>
+                                @endif
+                            </flux:table.cell>
+                            <flux:table.cell>
+                                @if ($this->bankAccounts->isNotEmpty())
+                                    <div class="space-y-1">
+                                        @foreach ($this->bankAccounts as $account)
+                                            @php
+                                                $recKey = "{$account->id}_{$period->id}";
+                                                $rec = isset($this->reconciliationStatus[$recKey])
+                                                    ? collect($this->reconciliationStatus[$recKey])->first()
+                                                    : null;
+                                                $recStatus = $rec['status'] ?? null;
+                                            @endphp
+                                            <div class="flex items-center gap-2 text-xs">
+                                                @can('finance-record')
+                                                    <a href="{{ route('finance.reconciliation.show', ['accountId' => $account->id, 'periodId' => $period->id]) }}"
+                                                       class="text-blue-600 dark:text-blue-400 hover:underline">
+                                                        {{ $account->name }}
+                                                    </a>
+                                                @else
+                                                    <span>{{ $account->name }}</span>
+                                                @endcan
+                                                @if ($recStatus === 'completed')
+                                                    <flux:badge color="green" size="sm">✓</flux:badge>
+                                                @elseif ($recStatus === 'in_progress')
+                                                    <flux:badge color="yellow" size="sm">In Progress</flux:badge>
+                                                @else
+                                                    <flux:badge color="zinc" size="sm">Not Started</flux:badge>
+                                                @endif
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @else
+                                    <span class="text-zinc-400 text-xs">No bank accounts</span>
                                 @endif
                             </flux:table.cell>
                             <flux:table.cell>
