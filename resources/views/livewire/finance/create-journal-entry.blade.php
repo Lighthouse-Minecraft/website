@@ -4,6 +4,7 @@ use App\Actions\CreateJournalEntry;
 use App\Actions\ParseDollarAmount;
 use App\Models\FinancialAccount;
 use App\Models\FinancialPeriod;
+use App\Models\FinancialRestrictedFund;
 use App\Models\FinancialTag;
 use Flux\Flux;
 use Livewire\Volt\Component;
@@ -29,6 +30,9 @@ new class extends Component
     public ?int $revenueAccountId = null;
 
     public ?int $bankAccountId = null;
+
+    // Restricted fund (shared for income + expense)
+    public ?int $restrictedFundId = null;
 
     // Expense-specific
     public ?int $expenseAccountId = null;
@@ -82,6 +86,11 @@ new class extends Component
             ->where('is_active', true)
             ->orderBy('code')
             ->get();
+    }
+
+    public function getActiveFundsProperty()
+    {
+        return FinancialRestrictedFund::where('is_active', true)->orderBy('name')->get();
     }
 
     public function getAllActiveAccountsProperty()
@@ -164,6 +173,7 @@ new class extends Component
             status: $saveStatus,
             donorEmail: $this->entryType === 'income' ? ($this->donorEmail ?: null) : null,
             vendorId: $this->entryType === 'expense' ? $this->vendorId : null,
+            restrictedFundId: in_array($this->entryType, ['income', 'expense']) ? $this->restrictedFundId : null,
             tagIds: $this->tagIds,
             reference: $this->reference ?: null,
         );
@@ -348,6 +358,16 @@ new class extends Component
                         <flux:label>Donor Email <flux:badge size="sm" color="zinc">Optional</flux:badge></flux:label>
                         <flux:input type="email" wire:model="donorEmail" placeholder="donor@example.com" />
                     </flux:field>
+
+                    <flux:field>
+                        <flux:label>Restricted Fund <flux:badge size="sm" color="zinc">Optional</flux:badge></flux:label>
+                        <flux:select wire:model="restrictedFundId">
+                            <flux:select.option value="">None (unrestricted)</flux:select.option>
+                            @foreach ($this->activeFunds as $fund)
+                                <flux:select.option value="{{ $fund->id }}">{{ $fund->name }}</flux:select.option>
+                            @endforeach
+                        </flux:select>
+                    </flux:field>
                 @endif
 
                 {{-- Expense-specific fields --}}
@@ -392,6 +412,16 @@ new class extends Component
                                 </flux:button>
                             @endif
                         </div>
+                    </flux:field>
+
+                    <flux:field>
+                        <flux:label>Restricted Fund <flux:badge size="sm" color="zinc">Optional</flux:badge></flux:label>
+                        <flux:select wire:model="restrictedFundId">
+                            <flux:select.option value="">None</flux:select.option>
+                            @foreach ($this->activeFunds as $fund)
+                                <flux:select.option value="{{ $fund->id }}">{{ $fund->name }}</flux:select.option>
+                            @endforeach
+                        </flux:select>
                     </flux:field>
                 @endif
 
