@@ -538,14 +538,6 @@ new class extends Component {
                                     </flux:menu.item>
                                 @endif
                             @endcan
-
-                            @can('createAsStaff', \App\Models\Thread::class)
-                                @if($user->id !== Auth::id())
-                                    <flux:menu.item icon="ticket" href="{{ route('tickets.create-admin', ['user_id' => $user->id]) }}">
-                                        Open Admin Ticket
-                                    </flux:menu.item>
-                                @endif
-                            @endcan
                         </flux:menu>
                     </flux:dropdown>
                 </div>
