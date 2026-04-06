@@ -15,11 +15,6 @@
                     Blog Management
                 </flux:button>
             @endcan
-            @can('financials-view')
-                <flux:button href="{{ route('finances.dashboard') }}" wire:navigate icon="banknotes">
-                    Finance
-                </flux:button>
-            @endcan
         </div>
     </div>
 
