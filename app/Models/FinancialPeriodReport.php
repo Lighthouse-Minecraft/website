@@ -14,13 +14,11 @@ class FinancialPeriodReport extends Model
         'month',
         'published_at',
         'published_by',
-        'summary_snapshot',
     ];
 
     protected $casts = [
         'month' => 'date:Y-m-d',
         'published_at' => 'datetime',
-        'summary_snapshot' => 'array',
     ];
 
     public function publishedBy(): BelongsTo

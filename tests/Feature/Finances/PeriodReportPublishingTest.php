@@ -49,58 +49,6 @@ it('publish action creates a period report with published_at set', function () {
         ->and($report->published_by)->toBe($user->id);
 });
 
-it('publish action stores a summary snapshot', function () {
-    $user = User::factory()->withRole('Financials - Treasurer')->create();
-    $account = FinancialAccount::factory()->create(['opening_balance' => 0]);
-    $category = FinancialCategory::factory()->income()->create();
-
-    FinancialTransaction::factory()->create([
-        'account_id' => $account->id,
-        'financial_category_id' => $category->id,
-        'type' => 'income',
-        'amount' => 5000,
-        'transacted_at' => '2026-03-15',
-        'entered_by' => $user->id,
-    ]);
-
-    PublishPeriodReport::run('2026-03-01', $user);
-
-    $report = FinancialPeriodReport::whereDate('month', '2026-03-01')->first();
-    expect($report->summary_snapshot)->not->toBeNull()
-        ->and($report->summary_snapshot['income'])->toBe(5000)
-        ->and($report->summary_snapshot['expense'])->toBe(0)
-        ->and($report->summary_snapshot['net'])->toBe(5000);
-});
-
-it('summaryForMonth returns snapshot for published month instead of live queries', function () {
-    $user = User::factory()->withRole('Financials - Treasurer')->create();
-    $account = FinancialAccount::factory()->create(['opening_balance' => 0, 'name' => 'Original Name']);
-    $category = FinancialCategory::factory()->income()->create();
-    $this->actingAs($user);
-
-    FinancialTransaction::factory()->create([
-        'account_id' => $account->id,
-        'financial_category_id' => $category->id,
-        'type' => 'income',
-        'amount' => 3000,
-        'transacted_at' => '2026-03-15',
-        'entered_by' => $user->id,
-    ]);
-
-    PublishPeriodReport::run('2026-03-01', $user);
-
-    // Rename the account after publication
-    $account->update(['name' => 'Renamed After Publish']);
-
-    $component = livewire('finances.reports');
-    $summary = $component->instance()->summaryForMonth('2026-03-01');
-
-    // Snapshot should preserve the name at publish time, not the renamed value
-    $names = collect($summary['accountBalances'])->pluck('name')->all();
-    expect($names)->toContain('Original Name')
-        ->not->toContain('Renamed After Publish');
-});
-
 it('publish action fails when no transactions exist in the month', function () {
     $user = User::factory()->withRole('Financials - Treasurer')->create();
 
