@@ -23,7 +23,7 @@ it('financials-treasurer can submit an income transaction', function () {
     livewire('finances.dashboard')
         ->set('type', 'income')
         ->set('accountId', (string) $account->id)
-        ->set('amount', '50.00')
+        ->set('amount', '5000')
         ->set('transactedAt', '2026-04-01')
         ->set('categoryId', (string) $category->id)
         ->call('submitTransaction');
@@ -46,7 +46,7 @@ it('financials-treasurer can submit an expense transaction', function () {
     livewire('finances.dashboard')
         ->set('type', 'expense')
         ->set('accountId', (string) $account->id)
-        ->set('amount', '25.00')
+        ->set('amount', '2500')
         ->set('transactedAt', '2026-04-01')
         ->set('categoryId', (string) $category->id)
         ->call('submitTransaction');
@@ -67,7 +67,7 @@ it('income transaction updates account balance', function () {
     livewire('finances.dashboard')
         ->set('type', 'income')
         ->set('accountId', (string) $account->id)
-        ->set('amount', '30.00')
+        ->set('amount', '3000')
         ->set('transactedAt', '2026-04-01')
         ->set('categoryId', (string) $category->id)
         ->call('submitTransaction');
@@ -84,7 +84,7 @@ it('expense transaction decreases account balance', function () {
     livewire('finances.dashboard')
         ->set('type', 'expense')
         ->set('accountId', (string) $account->id)
-        ->set('amount', '40.00')
+        ->set('amount', '4000')
         ->set('transactedAt', '2026-04-01')
         ->set('categoryId', (string) $category->id)
         ->call('submitTransaction');
@@ -92,7 +92,7 @@ it('expense transaction decreases account balance', function () {
     expect($account->fresh()->currentBalance())->toBe(6000);
 });
 
-it('saves a subcategory directly when selected from flat dropdown', function () {
+it('uses subcategory as category when both are selected', function () {
     $user = User::factory()->withRole('Financials - Treasurer')->create();
     $account = FinancialAccount::factory()->create();
     $parent = FinancialCategory::factory()->expense()->create();
@@ -102,9 +102,10 @@ it('saves a subcategory directly when selected from flat dropdown', function () 
     livewire('finances.dashboard')
         ->set('type', 'expense')
         ->set('accountId', (string) $account->id)
-        ->set('amount', '10.00')
+        ->set('amount', '1000')
         ->set('transactedAt', '2026-04-01')
-        ->set('categoryId', (string) $sub->id)
+        ->set('categoryId', (string) $parent->id)
+        ->set('subcategoryId', (string) $sub->id)
         ->call('submitTransaction');
 
     $this->assertDatabaseHas('financial_transactions', [
@@ -123,7 +124,7 @@ it('attaches tags to a transaction', function () {
     livewire('finances.dashboard')
         ->set('type', 'expense')
         ->set('accountId', (string) $account->id)
-        ->set('amount', '10.00')
+        ->set('amount', '1000')
         ->set('transactedAt', '2026-04-01')
         ->set('categoryId', (string) $category->id)
         ->set('selectedTagIds', [$tag1->id, $tag2->id])
@@ -146,7 +147,7 @@ it('financials-view user cannot submit a transaction', function () {
     livewire('finances.dashboard')
         ->set('type', 'expense')
         ->set('accountId', (string) $account->id)
-        ->set('amount', '10.00')
+        ->set('amount', '1000')
         ->set('transactedAt', '2026-04-01')
         ->set('categoryId', (string) $category->id)
         ->call('submitTransaction')
@@ -166,57 +167,6 @@ it('user without financials-view cannot access finance dashboard route', functio
 
     $this->get(route('finances.dashboard'))
         ->assertForbidden();
-});
-
-// == Tag Management on Dashboard == //
-
-it('financials-manage user can create a tag from the dashboard', function () {
-    $user = User::factory()->withRole('Financials - Manage')->create();
-    $this->actingAs($user);
-
-    livewire('finances.dashboard')
-        ->set('newTagName', 'minecraft-hosting')
-        ->call('createTag');
-
-    $this->assertDatabaseHas('financial_tags', [
-        'name' => 'minecraft-hosting',
-        'created_by' => $user->id,
-        'is_archived' => false,
-    ]);
-});
-
-it('financials-manage user can archive a tag from the dashboard', function () {
-    $user = User::factory()->withRole('Financials - Manage')->create();
-    $tag = FinancialTag::factory()->create(['is_archived' => false, 'created_by' => $user->id]);
-    $this->actingAs($user);
-
-    livewire('finances.dashboard')
-        ->call('archiveTag', $tag->id);
-
-    expect($tag->fresh()->is_archived)->toBeTrue();
-});
-
-it('financials-treasurer cannot create a tag from the dashboard', function () {
-    $user = User::factory()->withRole('Financials - Treasurer')->create();
-    $this->actingAs($user);
-
-    livewire('finances.dashboard')
-        ->set('newTagName', 'unauthorized-tag')
-        ->call('createTag')
-        ->assertForbidden();
-
-    $this->assertDatabaseMissing('financial_tags', ['name' => 'unauthorized-tag']);
-});
-
-it('duplicate tag names are rejected', function () {
-    $user = User::factory()->withRole('Financials - Manage')->create();
-    FinancialTag::factory()->create(['name' => 'existing-tag', 'created_by' => $user->id]);
-    $this->actingAs($user);
-
-    livewire('finances.dashboard')
-        ->set('newTagName', 'existing-tag')
-        ->call('createTag')
-        ->assertHasErrors(['newTagName']);
 });
 
 // == Ready Room Finance Button == //

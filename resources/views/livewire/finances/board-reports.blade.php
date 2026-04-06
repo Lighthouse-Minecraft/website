@@ -14,8 +14,7 @@ new class extends Component {
     {
         $this->authorize('financials-manage');
 
-        $fyStartYear = now()->month >= 10 ? now()->year : now()->year - 1;
-        $this->startMonth = $fyStartYear.'-10';
+        $this->startMonth = now()->startOfYear()->format('Y-m');
         $this->endMonth = now()->format('Y-m');
     }
 
@@ -23,19 +22,17 @@ new class extends Component {
     {
         $this->authorize('financials-manage');
 
-        // Fiscal year starts in October. T1: Oct–Jan, T2: Feb–May, T3: Jun–Sep.
-        $fyStartYear = now()->month >= 10 ? now()->year : now()->year - 1;
-        $calYear = $fyStartYear + 1;
+        $year = now()->year;
 
         if ($trimester === 1) {
-            $this->startMonth = $fyStartYear.'-10';
-            $this->endMonth = $calYear.'-01';
+            $this->startMonth = $year.'-01';
+            $this->endMonth = $year.'-04';
         } elseif ($trimester === 2) {
-            $this->startMonth = $calYear.'-02';
-            $this->endMonth = $calYear.'-05';
+            $this->startMonth = $year.'-05';
+            $this->endMonth = $year.'-08';
         } else {
-            $this->startMonth = $calYear.'-06';
-            $this->endMonth = $calYear.'-09';
+            $this->startMonth = $year.'-09';
+            $this->endMonth = $year.'-12';
         }
     }
 
@@ -246,9 +243,9 @@ new class extends Component {
             </flux:field>
 
             <div class="flex gap-2">
-                <flux:button size="sm" wire:click="applyTrimester(1)">T1 (Oct–Jan)</flux:button>
-                <flux:button size="sm" wire:click="applyTrimester(2)">T2 (Feb–May)</flux:button>
-                <flux:button size="sm" wire:click="applyTrimester(3)">T3 (Jun–Sep)</flux:button>
+                <flux:button size="sm" wire:click="applyTrimester(1)">T1 (Jan–Apr)</flux:button>
+                <flux:button size="sm" wire:click="applyTrimester(2)">T2 (May–Aug)</flux:button>
+                <flux:button size="sm" wire:click="applyTrimester(3)">T3 (Sep–Dec)</flux:button>
             </div>
         </div>
     </flux:card>

@@ -19,17 +19,15 @@ class RecordFinancialTransaction
         ?int $categoryId,
         ?string $notes,
         array $tagIds = [],
-        ?int $targetAccountId = null,
-        ?int $organizationId = null
+        ?int $targetAccountId = null
     ): FinancialTransaction {
         $transaction = FinancialTransaction::create([
             'account_id' => $accountId,
             'type' => $type,
             'amount' => $amount,
             'transacted_at' => $transactedAt,
-            'financial_category_id' => $type === 'transfer' ? null : $categoryId,
-            'organization_id' => $type === 'transfer' ? null : $organizationId,
-            'target_account_id' => $type === 'transfer' ? $targetAccountId : null,
+            'financial_category_id' => $categoryId,
+            'target_account_id' => $targetAccountId,
             'notes' => $notes ?: null,
             'entered_by' => $enteredBy->id,
             'external_reference' => null,

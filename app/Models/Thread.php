@@ -158,11 +158,6 @@ class Thread extends Model
             return true;
         }
 
-        // Check if user is assigned to the thread
-        if ($this->assigned_to_user_id === $user->id) {
-            return true;
-        }
-
         // Check if user is a participant
         if ($this->participants()->where('user_id', $user->id)->exists()) {
             return true;

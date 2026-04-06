@@ -227,6 +227,7 @@ it('transactions in a published month cannot be edited via dashboard', function 
         ->set('editAmount', '9999')
         ->set('editDate', '2026-03-15')
         ->set('editCategoryId', (string) $category->id)
+        ->set('editSubcategoryId', '')
         ->set('editNotes', '')
         ->set('editTagIds', [])
         ->call('updateTransaction');
