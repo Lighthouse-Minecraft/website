@@ -231,6 +231,8 @@ Route::prefix('finance')
         Volt::route('/periods', 'finance.fiscal-periods')->name('periods.index');
         Volt::route('/vendors', 'finance.vendors')->name('vendors.index');
         Volt::route('/tags', 'finance.tags')->name('tags.index');
+        Volt::route('/journal', 'finance.journal-entries')->name('journal.index');
+        Volt::route('/journal/create', 'finance.create-journal-entry')->name('journal.create');
     });
 
 Route::get('/{slug}', [PageController::class, 'show'])->name('pages.show');
