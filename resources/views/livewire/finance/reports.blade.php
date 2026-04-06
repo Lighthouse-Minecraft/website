@@ -293,25 +293,137 @@ new class extends Component
     {
         return $this->trialBalanceTotalDebit === $this->trialBalanceTotalCredit;
     }
+
+    // ─── Statement of Financial Position (Balance Sheet) ──────────────────
+
+    // Cumulative "as of date" — default to today
+    public string $bsAsOfDate = '';
+
+    public function getBsAsOfDateValueProperty(): string
+    {
+        return $this->bsAsOfDate ?: now()->toDateString();
+    }
+
+    /**
+     * Cumulative balance for an account from all posted entries up to (and including) asOfDate.
+     * debit − credit for each account.
+     */
+    private function getCumulativeBalance(string $type): object
+    {
+        return DB::table('financial_journal_entry_lines as jel')
+            ->join('financial_journal_entries as je', 'je.id', '=', 'jel.journal_entry_id')
+            ->join('financial_accounts as fa', 'fa.id', '=', 'jel.account_id')
+            ->where('fa.type', $type)
+            ->where('je.status', 'posted')
+            ->where('je.date', '<=', $this->bsAsOfDateValue)
+            ->select('fa.id as account_id', 'fa.code', 'fa.name')
+            ->selectRaw('COALESCE(SUM(jel.debit) - SUM(jel.credit), 0) as balance')
+            ->groupBy('fa.id', 'fa.code', 'fa.name')
+            ->orderBy('fa.code')
+            ->get()
+            ->map(fn ($row) => [
+                'account_id' => $row->account_id,
+                'code' => $row->code,
+                'name' => $row->name,
+                'balance' => (int) $row->balance,
+            ]);
+    }
+
+    public function getBsAssetRowsProperty()
+    {
+        return $this->getCumulativeBalance('asset');
+    }
+
+    public function getBsNetAssetsUnrestrictedProperty(): int
+    {
+        // Net Assets — Unrestricted: cumulative credit − debit (credit normal balance)
+        return (int) DB::table('financial_journal_entry_lines as jel')
+            ->join('financial_journal_entries as je', 'je.id', '=', 'jel.journal_entry_id')
+            ->join('financial_accounts as fa', 'fa.id', '=', 'jel.account_id')
+            ->where('fa.type', 'net_assets')
+            ->where('fa.subtype', 'unrestricted')
+            ->where('je.status', 'posted')
+            ->where('je.date', '<=', $this->bsAsOfDateValue)
+            ->selectRaw('COALESCE(SUM(jel.credit) - SUM(jel.debit), 0) as balance')
+            ->value('balance');
+    }
+
+    public function getBsNetAssetsRestrictedProperty(): int
+    {
+        return (int) DB::table('financial_journal_entry_lines as jel')
+            ->join('financial_journal_entries as je', 'je.id', '=', 'jel.journal_entry_id')
+            ->join('financial_accounts as fa', 'fa.id', '=', 'jel.account_id')
+            ->where('fa.type', 'net_assets')
+            ->where('fa.subtype', 'restricted')
+            ->where('je.status', 'posted')
+            ->where('je.date', '<=', $this->bsAsOfDateValue)
+            ->selectRaw('COALESCE(SUM(jel.credit) - SUM(jel.debit), 0) as balance')
+            ->value('balance');
+    }
+
+    public function getBsTotalAssetsProperty(): int
+    {
+        return (int) $this->bsAssetRows->sum('balance');
+    }
+
+    public function getBsTotalNetAssetsProperty(): int
+    {
+        return $this->bsNetAssetsUnrestricted + $this->bsNetAssetsRestricted;
+    }
+
+    public function getBsIsBalancedProperty(): bool
+    {
+        return $this->bsTotalAssets === $this->bsTotalNetAssets;
+    }
+
+    // ─── Statement of Cash Flows ──────────────────────────────────────────
+
+    public function getCashInflowsProperty(): int
+    {
+        // Cash received = total revenue posted in the filtered period/date range
+        return $this->totalRevenue;
+    }
+
+    public function getCashOutflowsProperty(): int
+    {
+        // Cash paid = total expenses posted in the filtered period/date range
+        return $this->totalExpenses;
+    }
+
+    public function getNetCashChangeProperty(): int
+    {
+        return $this->cashInflows - $this->cashOutflows;
+    }
 }; ?>
 
-<div class="space-y-6">
-    <div class="flex items-center justify-between">
+<div class="space-y-6 print:space-y-4">
+    <div class="flex items-center justify-between print:hidden">
         <div>
             <flux:heading size="xl">Financial Reports</flux:heading>
-            <flux:text variant="subtle">Statement of Activities, General Ledger, and Trial Balance. All figures are based on posted entries only.</flux:text>
+            <flux:text variant="subtle">Statement of Activities, General Ledger, Trial Balance, and more. All figures are based on posted entries only.</flux:text>
         </div>
+        <flux:button variant="ghost" size="sm" icon="printer" onclick="window.print()">
+            Print / PDF
+        </flux:button>
+    </div>
+
+    {{-- Print header (only visible when printing) --}}
+    <div class="hidden print:block mb-4">
+        <h1 class="text-xl font-bold">Financial Report</h1>
+        <p class="text-sm text-zinc-500">Generated {{ now()->format('M j, Y') }}</p>
     </div>
 
     {{-- Tabs --}}
-    <flux:tabs wire:model="activeTab">
+    <flux:tabs wire:model="activeTab" class="print:hidden">
         <flux:tab name="activities">Statement of Activities</flux:tab>
         <flux:tab name="ledger">General Ledger</flux:tab>
         <flux:tab name="trial">Trial Balance</flux:tab>
+        <flux:tab name="balance-sheet">Balance Sheet</flux:tab>
+        <flux:tab name="cash-flow">Cash Flow</flux:tab>
     </flux:tabs>
 
-    {{-- Shared filters (FY/period/date) for Activities and Trial Balance --}}
-    @if ($activeTab !== 'ledger')
+    {{-- Shared filters (FY/period/date) for Activities, Trial Balance, and Cash Flow --}}
+    @if (in_array($activeTab, ['activities', 'trial', 'cash-flow']))
         <flux:card>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <flux:field>
@@ -587,6 +699,99 @@ new class extends Component
                     </flux:table.rows>
                 </flux:table>
             @endif
+        </flux:card>
+    @endif
+
+    {{-- Statement of Financial Position (Balance Sheet) --}}
+    @if ($activeTab === 'balance-sheet')
+        <flux:card>
+            <div class="flex items-center justify-between mb-4">
+                <flux:heading size="md">Statement of Financial Position</flux:heading>
+                <div class="flex items-center gap-3">
+                    @if ($this->bsIsBalanced)
+                        <flux:badge color="green" size="sm">✓ Assets = Net Assets</flux:badge>
+                    @endif
+                    <flux:field class="flex items-center gap-2 m-0">
+                        <flux:label class="text-sm whitespace-nowrap">As of</flux:label>
+                        <flux:input type="date" wire:model.live="bsAsOfDate" size="sm" />
+                    </flux:field>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                {{-- Assets --}}
+                <div>
+                    <h3 class="text-sm font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wide mb-2">Assets</h3>
+                    @if ($this->bsAssetRows->isEmpty())
+                        <p class="text-sm text-zinc-500 py-2 text-center">No posted asset entries as of this date.</p>
+                    @else
+                        <div class="space-y-1">
+                            @foreach ($this->bsAssetRows as $row)
+                                <div class="flex justify-between py-1 text-sm">
+                                    <span>
+                                        <span class="text-zinc-400 mr-2">{{ $row['code'] }}</span>
+                                        {{ $row['name'] }}
+                                    </span>
+                                    <span class="font-mono">
+                                        {{ $row['balance'] >= 0 ? '' : '-' }}${{ number_format(abs($row['balance']) / 100, 2) }}
+                                    </span>
+                                </div>
+                            @endforeach
+                            <div class="flex justify-between py-1 text-sm font-semibold border-t border-zinc-200 dark:border-zinc-700 mt-2 pt-2">
+                                <span>Total Assets</span>
+                                <span class="font-mono">${{ number_format($this->bsTotalAssets / 100, 2) }}</span>
+                            </div>
+                        </div>
+                    @endif
+                </div>
+
+                {{-- Net Assets --}}
+                <div>
+                    <h3 class="text-sm font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wide mb-2">Net Assets</h3>
+                    <div class="space-y-1">
+                        <div class="flex justify-between py-1 text-sm">
+                            <span>Net Assets — Unrestricted</span>
+                            <span class="font-mono">${{ number_format($this->bsNetAssetsUnrestricted / 100, 2) }}</span>
+                        </div>
+                        <div class="flex justify-between py-1 text-sm">
+                            <span>Net Assets — Restricted</span>
+                            <span class="font-mono">${{ number_format($this->bsNetAssetsRestricted / 100, 2) }}</span>
+                        </div>
+                        <div class="flex justify-between py-1 text-sm font-semibold border-t border-zinc-200 dark:border-zinc-700 mt-2 pt-2">
+                            <span>Total Net Assets</span>
+                            <span class="font-mono">${{ number_format($this->bsTotalNetAssets / 100, 2) }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </flux:card>
+    @endif
+
+    {{-- Statement of Cash Flows --}}
+    @if ($activeTab === 'cash-flow')
+        <flux:card>
+            <flux:heading size="md" class="mb-4">Statement of Cash Flows</flux:heading>
+            <div class="space-y-4">
+                <div>
+                    <h3 class="text-sm font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wide mb-2">Operating Activities</h3>
+                    <div class="space-y-1">
+                        <div class="flex justify-between py-1 text-sm">
+                            <span>Cash Received (Revenue)</span>
+                            <span class="font-mono text-green-600 dark:text-green-400">+${{ number_format($this->cashInflows / 100, 2) }}</span>
+                        </div>
+                        <div class="flex justify-between py-1 text-sm">
+                            <span>Cash Paid (Expenses)</span>
+                            <span class="font-mono text-red-600 dark:text-red-400">-${{ number_format($this->cashOutflows / 100, 2) }}</span>
+                        </div>
+                        <div class="flex justify-between py-1 text-sm font-semibold border-t border-zinc-200 dark:border-zinc-700 mt-2 pt-2">
+                            <span>Net Change in Cash</span>
+                            <span class="font-mono {{ $this->netCashChange >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
+                                {{ $this->netCashChange >= 0 ? '+' : '-' }}${{ number_format(abs($this->netCashChange) / 100, 2) }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </flux:card>
     @endif
 </div>
