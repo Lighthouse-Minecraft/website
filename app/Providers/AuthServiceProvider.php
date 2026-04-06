@@ -237,21 +237,5 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('view-contact-inquiries', function ($user) {
             return $user->hasRole('Contact - Receive Submissions');
         });
-
-        // Finance gates — hierarchical: manage implies treasurer implies view
-        Gate::define('financials-view', function ($user) {
-            return $user->hasRole('Financials - View')
-                || $user->hasRole('Financials - Treasurer')
-                || $user->hasRole('Financials - Manage');
-        });
-
-        Gate::define('financials-treasurer', function ($user) {
-            return $user->hasRole('Financials - Treasurer')
-                || $user->hasRole('Financials - Manage');
-        });
-
-        Gate::define('financials-manage', function ($user) {
-            return $user->hasRole('Financials - Manage');
-        });
     }
 }
