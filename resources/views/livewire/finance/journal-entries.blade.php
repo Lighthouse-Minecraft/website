@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\CreateReversingEntry;
+use App\Actions\PostJournalEntry;
 use App\Models\FinancialAccount;
 use App\Models\FinancialJournalEntry;
 use App\Models\FinancialTag;
@@ -129,6 +130,20 @@ new class extends Component
         try {
             CreateReversingEntry::run(auth()->user(), $entry);
             Flux::toast('Reversing entry created as draft.', 'Done', variant: 'success');
+        } catch (\RuntimeException $e) {
+            Flux::toast($e->getMessage(), 'Error', variant: 'danger');
+        }
+    }
+
+    public function postEntry(int $entryId): void
+    {
+        $this->authorize('finance-record');
+
+        $entry = FinancialJournalEntry::with(['lines', 'period'])->findOrFail($entryId);
+
+        try {
+            PostJournalEntry::run(auth()->user(), $entry);
+            Flux::toast('Entry has been posted.', 'Posted', variant: 'success');
         } catch (\RuntimeException $e) {
             Flux::toast($e->getMessage(), 'Error', variant: 'danger');
         }
@@ -311,6 +326,17 @@ new class extends Component
                                             wire:confirm="Create a reversing entry for this posted transaction?"
                                         >
                                             Reverse
+                                        </flux:button>
+                                    @endcan
+                                @elseif ($entry->status === 'draft')
+                                    @can('finance-record')
+                                        <flux:button
+                                            variant="ghost"
+                                            size="sm"
+                                            wire:click="postEntry({{ $entry->id }})"
+                                            wire:confirm="Post this draft entry? It will become permanent and cannot be edited."
+                                        >
+                                            Post
                                         </flux:button>
                                     @endcan
                                 @endif

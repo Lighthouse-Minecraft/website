@@ -504,7 +504,7 @@ new class extends Component
     </div>
 
     {{-- Tabs --}}
-    <flux:tabs wire:model="activeTab" class="print:hidden">
+    <flux:tabs wire:model.live="activeTab" class="print:hidden">
         <flux:tab name="activities">Statement of Activities</flux:tab>
         <flux:tab name="ledger">General Ledger</flux:tab>
         <flux:tab name="trial">Trial Balance</flux:tab>

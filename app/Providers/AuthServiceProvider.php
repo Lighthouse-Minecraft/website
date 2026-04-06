@@ -256,7 +256,7 @@ class AuthServiceProvider extends ServiceProvider
 
         // Community finance view — Resident+ members can see closed period summaries
         Gate::define('finance-community-view', function ($user) {
-            return ! $user->in_brig && $user->isAtLeastLevel(MembershipLevel::Resident);
+            return $user->isAdmin() || (! $user->in_brig && $user->isAtLeastLevel(MembershipLevel::Resident));
         });
     }
 }
