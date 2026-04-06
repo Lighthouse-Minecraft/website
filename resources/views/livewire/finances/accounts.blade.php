@@ -69,14 +69,7 @@ new class extends Component {
         $this->authorize('financials-manage');
 
         $account = FinancialAccount::findOrFail($id);
-
-        try {
-            ArchiveFinancialAccount::run($account);
-        } catch (\RuntimeException $e) {
-            Flux::toast($e->getMessage(), 'Error', variant: 'danger');
-
-            return;
-        }
+        ArchiveFinancialAccount::run($account);
 
         Flux::toast('Account archived.', 'Success', variant: 'success');
     }
