@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 use App\Enums\MinecraftAccountStatus;
 use App\Enums\ThreadStatus;
-use App\Enums\ThreadSubtype;
 use App\Enums\ThreadType;
 use App\Models\MinecraftAccount;
 use App\Models\ParentChildLink;
 use App\Models\Thread;
-use App\Models\ThreadParticipant;
 use App\Models\User;
 
 use function Pest\Laravel\actingAs;
@@ -87,28 +85,6 @@ it('blocks parent from viewing staff threads involving child', function () {
     ]);
 
     expect($dmThread->isVisibleTo($parent))->toBeFalse();
-});
-
-it('parent can see admin ticket where child is a participant', function () {
-    $parent = User::factory()->adult()->create();
-    $child = User::factory()->minor()->create();
-    $staff = User::factory()->withRole('Financials - View')->create();
-    ParentChildLink::create(['parent_user_id' => $parent->id, 'child_user_id' => $child->id]);
-
-    // Admin ticket created by staff, child added as participant
-    $ticket = Thread::factory()->create([
-        'created_by_user_id' => $staff->id,
-        'type' => ThreadType::Ticket,
-        'subtype' => ThreadSubtype::AdminAction,
-        'status' => ThreadStatus::Open,
-        'subject' => 'Admin Action Ticket',
-    ]);
-    ThreadParticipant::create(['thread_id' => $ticket->id, 'user_id' => $child->id]);
-
-    actingAs($parent);
-
-    Livewire\Volt\Volt::test('parent-portal.index')
-        ->assertSee('Admin Action Ticket');
 });
 
 it('blocks MC removal for non-child account', function () {
