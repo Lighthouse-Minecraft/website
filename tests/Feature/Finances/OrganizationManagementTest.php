@@ -186,7 +186,7 @@ it('financials-manage user can archive an organization', function () {
     $org = FinancialOrganization::factory()->create(['is_archived' => false, 'created_by' => $user->id]);
     $this->actingAs($user);
 
-    livewire('finances.categories')
+    livewire('finances.dashboard')
         ->call('archiveOrganization', $org->id);
 
     expect($org->fresh()->is_archived)->toBeTrue();
@@ -197,7 +197,7 @@ it('financials-treasurer cannot archive an organization', function () {
     $org = FinancialOrganization::factory()->create(['is_archived' => false, 'created_by' => $user->id]);
     $this->actingAs($user);
 
-    livewire('finances.categories')
+    livewire('finances.dashboard')
         ->call('archiveOrganization', $org->id)
         ->assertForbidden();
 
@@ -209,7 +209,7 @@ it('financials-view user cannot archive an organization', function () {
     $org = FinancialOrganization::factory()->create(['is_archived' => false, 'created_by' => $user->id]);
     $this->actingAs($user);
 
-    livewire('finances.categories')
+    livewire('finances.dashboard')
         ->call('archiveOrganization', $org->id)
         ->assertForbidden();
 
