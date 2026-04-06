@@ -222,7 +222,15 @@ Route::prefix('library')->name('library.')->group(function () {
     });
 });
 
-// Finance Routes
+// Finance — Community view (Resident+)
+Route::prefix('finance')
+    ->name('finance.')
+    ->middleware(['auth', 'can:finance-community-view'])
+    ->group(function () {
+        Volt::route('/overview', 'finance.community-finance')->name('community.index');
+    });
+
+// Finance — Staff routes (Finance - View+)
 Route::prefix('finance')
     ->name('finance.')
     ->middleware(['auth', 'can:finance-view'])

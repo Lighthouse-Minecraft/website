@@ -253,5 +253,10 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('finance-manage', function ($user) {
             return $user->hasRole('Finance - Manage');
         });
+
+        // Community finance view — Resident+ members can see closed period summaries
+        Gate::define('finance-community-view', function ($user) {
+            return ! $user->in_brig && $user->isAtLeastLevel(MembershipLevel::Resident);
+        });
     }
 }
