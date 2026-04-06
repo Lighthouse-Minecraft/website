@@ -113,19 +113,6 @@ new class extends Component
 
     public function summaryForMonth(string $monthStart): array
     {
-        // For published months, return the immutable snapshot stored at publish time.
-        $report = FinancialPeriodReport::whereDate('month', $monthStart)
-            ->whereNotNull('published_at')
-            ->first();
-
-        if ($report && $report->summary_snapshot !== null) {
-            $snap = $report->summary_snapshot;
-            // Ensure accountBalances is a Collection for template compatibility.
-            $snap['accountBalances'] = collect($snap['accountBalances']);
-
-            return $snap;
-        }
-
         $monthEnd = Carbon::parse($monthStart)->endOfMonth()->toDateString();
 
         $income = (int) FinancialTransaction::where('type', 'income')
@@ -255,18 +242,6 @@ new class extends Component
 }; ?>
 
 <div class="space-y-6">
-
-    {{-- Finance Navigation --}}
-    <div class="flex flex-wrap gap-2">
-        <flux:button href="{{ route('finances.dashboard') }}" wire:navigate size="sm" icon="banknotes">Dashboard</flux:button>
-        <flux:button href="{{ route('finances.budget') }}" wire:navigate size="sm" icon="calculator">Budget</flux:button>
-        <flux:button href="{{ route('finances.reports') }}" wire:navigate size="sm" icon="document-text">Period Reports</flux:button>
-        @can('financials-manage')
-            <flux:button href="{{ route('finances.board-reports') }}" wire:navigate size="sm" icon="chart-bar">Board Reports</flux:button>
-            <flux:button href="{{ route('finances.accounts') }}" wire:navigate size="sm" icon="building-library">Accounts</flux:button>
-            <flux:button href="{{ route('finances.categories') }}" wire:navigate size="sm" icon="tag">Categories</flux:button>
-        @endcan
-    </div>
 
     <flux:heading size="xl">Period Reports</flux:heading>
 

@@ -34,19 +34,19 @@ class FinancialAccount extends Model
 
     public function currentBalance(): int
     {
-        $credits = (int) $this->transactions()
+        $credits = $this->transactions()
             ->where('type', 'income')
             ->sum('amount');
 
-        $debits = (int) $this->transactions()
+        $debits = $this->transactions()
             ->where('type', 'expense')
             ->sum('amount');
 
-        $transfersOut = (int) $this->transactions()
+        $transfersOut = $this->transactions()
             ->where('type', 'transfer')
             ->sum('amount');
 
-        $transfersIn = (int) $this->incomingTransfers()
+        $transfersIn = $this->incomingTransfers()
             ->where('type', 'transfer')
             ->sum('amount');
 
