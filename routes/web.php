@@ -237,6 +237,7 @@ Route::prefix('finance')
         Volt::route('/budgets', 'finance.budgets')->name('budgets.index');
         Volt::route('/restricted-funds', 'finance.restricted-funds')->name('restricted-funds.index');
         Volt::route('/reconciliation/{accountId}/{periodId}', 'finance.bank-reconciliation')->name('reconciliation.show');
+        Volt::route('/reports', 'finance.reports')->name('reports.index');
     });
 
 Route::get('/{slug}', [PageController::class, 'show'])->name('pages.show');
