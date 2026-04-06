@@ -18,7 +18,6 @@ class FinancialTransaction extends Model
         'amount',
         'transacted_at',
         'financial_category_id',
-        'organization_id',
         'target_account_id',
         'notes',
         'entered_by',
@@ -48,11 +47,6 @@ class FinancialTransaction extends Model
     public function enteredBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'entered_by');
-    }
-
-    public function organization(): BelongsTo
-    {
-        return $this->belongsTo(FinancialOrganization::class, 'organization_id');
     }
 
     public function tags(): BelongsToMany
