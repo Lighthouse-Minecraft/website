@@ -200,7 +200,9 @@ new class extends Component
             <flux:text variant="subtle">Named funds for donor-restricted gifts. Track received, spent, and remaining balances.</flux:text>
         </div>
         @can('finance-manage')
-            <flux:button variant="primary" wire:click="$flux.modal('add-fund-modal').show()">New Fund</flux:button>
+            <flux:modal.trigger name="add-fund-modal">
+                <flux:button variant="primary">New Fund</flux:button>
+            </flux:modal.trigger>
         @endcan
     </div>
 
@@ -303,7 +305,9 @@ new class extends Component
         </div>
 
         <div class="flex justify-end gap-3 mt-4">
-            <flux:button variant="ghost" wire:click="$flux.modal('add-fund-modal').close()">Cancel</flux:button>
+            <flux:modal.close>
+                <flux:button variant="ghost">Cancel</flux:button>
+            </flux:modal.close>
             <flux:button variant="primary" wire:click="createFund">Create Fund</flux:button>
         </div>
     </flux:modal>
@@ -326,7 +330,9 @@ new class extends Component
         </div>
 
         <div class="flex justify-end gap-3 mt-4">
-            <flux:button variant="ghost" wire:click="$flux.modal('edit-fund-modal').close()">Cancel</flux:button>
+            <flux:modal.close>
+                <flux:button variant="ghost">Cancel</flux:button>
+            </flux:modal.close>
             <flux:button variant="primary" wire:click="updateFund">Save Changes</flux:button>
         </div>
     </flux:modal>
