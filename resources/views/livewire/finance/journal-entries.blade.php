@@ -178,9 +178,14 @@ new class extends Component
             <flux:text variant="subtle">All income, expense, and transfer transactions.</flux:text>
         </div>
         @can('finance-record')
-            <flux:button variant="primary" href="{{ route('finance.journal.create') }}" wire:navigate>
-                New Entry
-            </flux:button>
+            <div class="flex gap-2">
+                <flux:button variant="outline" href="{{ route('finance.journal.create-manual') }}" wire:navigate>
+                    Manual Entry
+                </flux:button>
+                <flux:button variant="primary" href="{{ route('finance.journal.create') }}" wire:navigate>
+                    New Entry
+                </flux:button>
+            </div>
         @endcan
     </div>
 

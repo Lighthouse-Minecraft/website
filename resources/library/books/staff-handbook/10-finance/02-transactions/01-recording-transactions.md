@@ -77,4 +77,4 @@ The system won't let you post to a closed fiscal period. If the date falls in a 
 
 ## Complex Entries
 
-For transactions that don't fit the income/expense/transfer pattern (e.g., depreciation, adjusting entries, or anything requiring more than two lines), use **Journal → Create Manual Entry** instead. See [[books/staff-handbook/finance/transactions/viewing-and-managing-entries|Viewing and Managing Entries]] for details on that workflow.
+For transactions that don't fit the income/expense/transfer pattern (e.g., depreciation, adjusting entries, or anything requiring more than two lines), use the **Manual Entry** button on the Journal page instead. See [[books/staff-handbook/finance/transactions/viewing-and-managing-entries|Viewing and Managing Entries]] for details on that workflow.

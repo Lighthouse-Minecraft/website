@@ -41,7 +41,7 @@ You need **Finance - Record** to post entries.
 
 For complex entries with more than two lines (or entries that don't fit income/expense/transfer):
 
-1. Click **New Entry** in the top-right, then select **Manual Entry**
+1. Click **Manual Entry** in the top-right of the Journal page (next to **New Entry**)
 2. Add lines one at a time — each line needs an account, a side (debit or credit), and an amount
 3. Add as many lines as needed. The form shows running totals for total debits and total credits.
 4. The entry must be **balanced** (total debits = total credits) before you can post it. The balance indicator shows whether you're balanced.
