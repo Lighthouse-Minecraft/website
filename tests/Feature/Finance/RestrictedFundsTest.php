@@ -82,7 +82,8 @@ it('Finance - Manage user can deactivate a restricted fund', function () {
 
     Volt::actingAs($user)
         ->test('finance.restricted-funds')
-        ->call('deactivate', $fund->id);
+        ->call('showDeactivateConfirm', $fund->id)
+        ->call('deactivate');
 
     expect($fund->fresh()->is_active)->toBeFalse();
 });

@@ -21,6 +21,8 @@ new class extends Component
 
     public bool $showInactive = false;
 
+    public ?int $pendingDeactivateFundId = null;
+
     public function mount(): void
     {
         $this->authorize('finance-view');
@@ -152,9 +154,24 @@ new class extends Component
         Flux::toast('Restricted fund updated.', 'Done', variant: 'success');
     }
 
-    public function deactivate(int $id): void
+    public function showDeactivateConfirm(int $id): void
     {
         $this->authorize('finance-manage');
+        $this->pendingDeactivateFundId = $id;
+        Flux::modal('confirm-deactivate-fund')->show();
+    }
+
+    public function deactivate(): void
+    {
+        $this->authorize('finance-manage');
+
+        if (! $this->pendingDeactivateFundId) {
+            return;
+        }
+
+        $id = $this->pendingDeactivateFundId;
+        $this->pendingDeactivateFundId = null;
+        Flux::modal('confirm-deactivate-fund')->close();
 
         DB::transaction(function () use ($id) {
             $fund = FinancialRestrictedFund::findOrFail($id);
@@ -273,7 +290,7 @@ new class extends Component
                                     <div class="flex items-center gap-2">
                                         <flux:button variant="ghost" size="sm" wire:click="startEdit({{ $fund->id }})">Edit</flux:button>
                                         @if ($fund->is_active)
-                                            <flux:button variant="ghost" size="sm" wire:click="deactivate({{ $fund->id }})" wire:confirm="Deactivate this fund?">Deactivate</flux:button>
+                                            <flux:button variant="ghost" size="sm" wire:click="showDeactivateConfirm({{ $fund->id }})">Deactivate</flux:button>
                                         @else
                                             <flux:button variant="ghost" size="sm" wire:click="reactivate({{ $fund->id }})">Reactivate</flux:button>
                                         @endif
@@ -309,6 +326,18 @@ new class extends Component
                 <flux:button variant="ghost">Cancel</flux:button>
             </flux:modal.close>
             <flux:button variant="primary" wire:click="createFund">Create Fund</flux:button>
+        </div>
+    </flux:modal>
+
+    {{-- Deactivate Fund Confirmation Modal --}}
+    <flux:modal name="confirm-deactivate-fund" class="max-w-sm">
+        <flux:heading size="lg" class="mb-2">Deactivate This Fund?</flux:heading>
+        <flux:text class="mb-4">The fund will be hidden from entry forms but historical data will be preserved.</flux:text>
+        <div class="flex justify-end gap-3">
+            <flux:modal.close>
+                <flux:button variant="ghost">Cancel</flux:button>
+            </flux:modal.close>
+            <flux:button variant="primary" wire:click="deactivate">Deactivate</flux:button>
         </div>
     </flux:modal>
 
