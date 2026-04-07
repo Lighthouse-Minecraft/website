@@ -14,6 +14,8 @@ new class extends Component
 {
     use WithPagination;
 
+    public ?int $pendingPostId = null;
+
     // Filters
     public string $filterDateFrom = '';
 
@@ -139,11 +141,24 @@ new class extends Component
         }
     }
 
-    public function postEntry(int $entryId): void
+    public function showPostConfirm(int $entryId): void
+    {
+        $this->authorize('finance-record');
+        $this->pendingPostId = $entryId;
+        Flux::modal('confirm-post')->show();
+    }
+
+    public function postEntry(): void
     {
         $this->authorize('finance-record');
 
-        $entry = FinancialJournalEntry::with(['lines', 'period'])->findOrFail($entryId);
+        if (! $this->pendingPostId) {
+            return;
+        }
+
+        $entry = FinancialJournalEntry::with(['lines', 'period'])->findOrFail($this->pendingPostId);
+        $this->pendingPostId = null;
+        Flux::modal('confirm-post')->close();
 
         try {
             PostJournalEntry::run(auth()->user(), $entry);
@@ -339,8 +354,7 @@ new class extends Component
                                         <flux:button
                                             variant="ghost"
                                             size="sm"
-                                            wire:click="postEntry({{ $entry->id }})"
-                                            wire:confirm="Post this draft entry? It will become permanent and cannot be edited."
+                                            wire:click="showPostConfirm({{ $entry->id }})"
                                         >
                                             Post
                                         </flux:button>
@@ -357,4 +371,16 @@ new class extends Component
             </div>
         @endif
     </flux:card>
+
+    {{-- Post Confirmation Modal --}}
+    <flux:modal name="confirm-post" class="max-w-sm">
+        <flux:heading size="lg" class="mb-2">Post Entry?</flux:heading>
+        <flux:text class="mb-4">This entry will become permanent and cannot be edited. Corrections must be made via a reversing entry.</flux:text>
+        <div class="flex justify-end gap-3">
+            <flux:modal.close>
+                <flux:button variant="ghost">Cancel</flux:button>
+            </flux:modal.close>
+            <flux:button variant="primary" wire:click="postEntry">Post</flux:button>
+        </div>
+    </flux:modal>
 </div>
