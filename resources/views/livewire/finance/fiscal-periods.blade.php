@@ -66,6 +66,38 @@ new class extends Component
         return $recs->toArray();
     }
 
+    public function getNextFyYearProperty(): int
+    {
+        return $this->currentFyYear + 1;
+    }
+
+    public function getNextFyAlreadyExistsProperty(): bool
+    {
+        return FinancialPeriod::where('fiscal_year', $this->nextFyYear)->exists();
+    }
+
+    public function getCanGenerateNextFyProperty(): bool
+    {
+        // Allow generating next FY periods when we are in the last 2 months of the current FY
+        // (month_number 11 or 12 of the FY, i.e. 2 months before year end).
+        $startMonth = (int) SiteConfig::getValue('finance_fy_start_month', '10');
+        $currentCalendarMonth = now()->month;
+        $fyMonthNumber = (($currentCalendarMonth - $startMonth + 12) % 12) + 1;
+
+        return $fyMonthNumber >= 11;
+    }
+
+    public function generateNextFy(): void
+    {
+        $this->authorize('finance-manage');
+
+        $startMonth = (int) SiteConfig::getValue('finance_fy_start_month', '10');
+        GenerateFinancialPeriods::run($this->nextFyYear, $startMonth);
+
+        Flux::modal('confirm-generate-next-fy')->close();
+        Flux::toast("Periods for FY {$this->nextFyYear} have been generated.", 'Done', variant: 'success');
+    }
+
     public function showCloseConfirm(int $periodId): void
     {
         $this->authorize('finance-manage');
@@ -100,9 +132,24 @@ new class extends Component
 <div class="space-y-8">
     @include('livewire.finance.partials.nav')
 
-    <div>
-        <flux:heading size="xl">Fiscal Periods</flux:heading>
-        <flux:text variant="subtle">Monthly fiscal periods for the accounting ledger. Close a period after bank reconciliations are complete.</flux:text>
+    <div class="flex items-center justify-between">
+        <div>
+            <flux:heading size="xl">Fiscal Periods</flux:heading>
+            <flux:text variant="subtle">Monthly fiscal periods for the accounting ledger. Close a period after bank reconciliations are complete.</flux:text>
+        </div>
+        @can('finance-manage')
+            @if (! $this->nextFyAlreadyExists)
+                <flux:modal.trigger name="confirm-generate-next-fy">
+                    <flux:button
+                        variant="outline"
+                        :disabled="! $this->canGenerateNextFy"
+                        title="{{ $this->canGenerateNextFy ? 'Generate periods for FY ' . $this->nextFyYear : 'Available in the last 2 months of FY ' . $this->currentFyYear }}"
+                    >
+                        Generate FY {{ $this->nextFyYear }} Periods
+                    </flux:button>
+                </flux:modal.trigger>
+            @endif
+        @endcan
     </div>
 
     {{-- Current FY --}}
@@ -274,6 +321,18 @@ new class extends Component
                 <flux:button variant="ghost">Cancel</flux:button>
             </flux:modal.close>
             <flux:button variant="primary" wire:click="closePeriod">Close Period</flux:button>
+        </div>
+    </flux:modal>
+
+    {{-- Generate Next FY Confirmation Modal --}}
+    <flux:modal name="confirm-generate-next-fy" class="max-w-sm">
+        <flux:heading size="lg" class="mb-2">Generate FY {{ $this->nextFyYear }} Periods?</flux:heading>
+        <flux:text class="mb-4">This will create the 12 monthly fiscal periods for FY {{ $this->nextFyYear }}. You can start recording transactions for those months immediately.</flux:text>
+        <div class="flex justify-end gap-3">
+            <flux:modal.close>
+                <flux:button variant="ghost">Cancel</flux:button>
+            </flux:modal.close>
+            <flux:button variant="primary" wire:click="generateNextFy">Generate Periods</flux:button>
         </div>
     </flux:modal>
 </div>
