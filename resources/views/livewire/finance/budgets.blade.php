@@ -223,7 +223,7 @@ new class extends Component
 
                     @foreach ($this->accounts as $account)
                         @if ($prevType !== $account->type)
-                            <tr>
+                            <tr wire:key="type-header-{{ $account->type }}">
                                 <td colspan="{{ count($this->periods) + 2 }}" class="py-1 px-3 text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 bg-zinc-50 dark:bg-zinc-800/50">
                                     {{ ucfirst($account->type) }}
                                 </td>
@@ -238,14 +238,14 @@ new class extends Component
                             }
                         @endphp
 
-                        <tr class="border-b border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/30">
+                        <tr wire:key="account-{{ $account->id }}" class="border-b border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/30">
                             <td class="py-1.5 px-3 text-zinc-700 dark:text-zinc-300">
                                 <span class="text-xs text-zinc-400 mr-1">{{ $account->code }}</span>
                                 {{ $account->name }}
                             </td>
 
                             @foreach ($this->periods as $period)
-                                <td class="py-1 px-1">
+                                <td wire:key="budget-{{ $account->id }}-{{ $period->id }}" class="py-1 px-1">
                                     @can('finance-manage')
                                         <input
                                             type="text"
@@ -314,7 +314,7 @@ new class extends Component
 
                     @foreach ($this->accounts as $account)
                         @if ($prevType !== $account->type)
-                            <tr>
+                            <tr wire:key="var-type-header-{{ $account->type }}">
                                 <td colspan="{{ count($this->periods) * 2 + 1 }}" class="py-1 px-3 text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 bg-zinc-50 dark:bg-zinc-800/50">
                                     {{ ucfirst($account->type) }}
                                 </td>
@@ -322,7 +322,7 @@ new class extends Component
                             @php $prevType = $account->type; @endphp
                         @endif
 
-                        <tr class="border-b border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/30">
+                        <tr wire:key="var-account-{{ $account->id }}" class="border-b border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/30">
                             <td class="py-1.5 px-3 text-zinc-700 dark:text-zinc-300">
                                 <span class="text-xs text-zinc-400 mr-1">{{ $account->code }}</span>
                                 {{ $account->name }}
@@ -333,9 +333,12 @@ new class extends Component
                                     $budget  = $budgetData[$account->id][$period->id] ?? 0;
                                     $actual  = $this->actualForAccount($account, $period->id, $actualData);
                                     $variance = $actual - $budget;
+                                    // Revenue: positive variance (actual > budget) is good (green)
+                                    // Expense: negative variance (actual < budget) is good (green)
+                                    $isGood = $account->type === 'revenue' ? $variance >= 0 : $variance <= 0;
                                 @endphp
 
-                                <td class="py-1.5 px-1 text-right">
+                                <td wire:key="var-budget-{{ $account->id }}-{{ $period->id }}" class="py-1.5 px-1 text-right">
                                     @if ($budget > 0)
                                         ${{ number_format($budget / 100, 2) }}
                                     @else
@@ -343,9 +346,9 @@ new class extends Component
                                     @endif
                                 </td>
 
-                                <td class="py-1.5 px-1 text-right">
+                                <td wire:key="var-actual-{{ $account->id }}-{{ $period->id }}" class="py-1.5 px-1 text-right">
                                     @if ($actual !== 0)
-                                        <span class="{{ $variance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
+                                        <span class="{{ $isGood ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
                                             ${{ number_format($actual / 100, 2) }}
                                         </span>
                                     @else

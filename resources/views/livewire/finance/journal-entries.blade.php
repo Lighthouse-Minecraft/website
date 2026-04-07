@@ -125,9 +125,13 @@ new class extends Component
     {
         $this->authorize('finance-record');
 
-        $entry = FinancialJournalEntry::with('lines')->findOrFail($entryId);
+        $entry = FinancialJournalEntry::with(['lines', 'period', 'reversedBy'])->findOrFail($entryId);
 
         try {
+            if ($entry->reversedBy) {
+                throw new \RuntimeException('This entry has already been reversed.');
+            }
+
             CreateReversingEntry::run(auth()->user(), $entry);
             Flux::toast('Reversing entry created as draft.', 'Done', variant: 'success');
         } catch (\RuntimeException $e) {

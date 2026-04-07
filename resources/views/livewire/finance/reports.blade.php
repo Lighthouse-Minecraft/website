@@ -314,6 +314,12 @@ new class extends Component
      */
     private function getCumulativeBalance(string $type): object
     {
+        // Credit-normal account types show credit - debit; debit-normal show debit - credit
+        $isCreditNormal = in_array($type, ['liability', 'net_assets', 'revenue']);
+        $balanceExpr = $isCreditNormal
+            ? 'COALESCE(SUM(jel.credit) - SUM(jel.debit), 0) as balance'
+            : 'COALESCE(SUM(jel.debit) - SUM(jel.credit), 0) as balance';
+
         return DB::table('financial_journal_entry_lines as jel')
             ->join('financial_journal_entries as je', 'je.id', '=', 'jel.journal_entry_id')
             ->join('financial_accounts as fa', 'fa.id', '=', 'jel.account_id')
@@ -321,7 +327,7 @@ new class extends Component
             ->where('je.status', 'posted')
             ->where('je.date', '<=', $this->bsAsOfDateValue)
             ->select('fa.id as account_id', 'fa.code', 'fa.name')
-            ->selectRaw('COALESCE(SUM(jel.debit) - SUM(jel.credit), 0) as balance')
+            ->selectRaw($balanceExpr)
             ->groupBy('fa.id', 'fa.code', 'fa.name')
             ->orderBy('fa.code')
             ->get()

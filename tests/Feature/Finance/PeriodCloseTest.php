@@ -225,18 +225,27 @@ it('period is locked against new entries after close', function () {
 
 // == Livewire UI ==
 
-it('Finance - Record user sees Close Period button on open periods', function () {
+it('Finance - Record user can access fiscal periods page', function () {
     $user = User::factory()->withRole('Finance - Record')->create();
     makeNetAssetsAccounts();
 
-    $component = Volt::actingAs($user)->test('finance.fiscal-periods');
-
-    // The component renders — we check that it does not throw
-    $component->assertOk();
+    Volt::actingAs($user)
+        ->test('finance.fiscal-periods')
+        ->assertOk();
 });
 
 it('Finance - View user cannot call closePeriod', function () {
     $user = User::factory()->withRole('Finance - View')->create();
+    $period = FinancialPeriod::factory()->create();
+
+    Volt::actingAs($user)
+        ->test('finance.fiscal-periods')
+        ->call('closePeriod', $period->id)
+        ->assertForbidden();
+});
+
+it('Finance - Record user cannot call closePeriod', function () {
+    $user = User::factory()->withRole('Finance - Record')->create();
     $period = FinancialPeriod::factory()->create();
 
     Volt::actingAs($user)

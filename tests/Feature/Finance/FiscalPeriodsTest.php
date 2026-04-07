@@ -94,8 +94,8 @@ it('non-finance user is forbidden from fiscal periods page', function () {
         ->assertForbidden();
 });
 
-it('periods page auto-generates current FY periods on mount', function () {
-    $user = User::factory()->withRole('Finance - View')->create();
+it('periods page auto-generates current FY periods on mount for finance-manage users', function () {
+    $user = User::factory()->withRole('Finance - Manage')->create();
 
     // No periods exist yet
     expect(FinancialPeriod::count())->toBe(0);
@@ -104,6 +104,17 @@ it('periods page auto-generates current FY periods on mount', function () {
         ->test('finance.fiscal-periods');
 
     expect(FinancialPeriod::count())->toBe(12);
+});
+
+it('periods page does not auto-generate periods for finance-view-only users', function () {
+    $user = User::factory()->withRole('Finance - View')->create();
+
+    expect(FinancialPeriod::count())->toBe(0);
+
+    Volt::actingAs($user)
+        ->test('finance.fiscal-periods');
+
+    expect(FinancialPeriod::count())->toBe(0);
 });
 
 it('periods page shows status badges for open periods', function () {

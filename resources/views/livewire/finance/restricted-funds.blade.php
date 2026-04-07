@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\RecordActivity;
 use App\Models\FinancialRestrictedFund;
 use Flux\Flux;
 use Illuminate\Support\Facades\DB;
@@ -39,23 +40,29 @@ new class extends Component
     {
         $fundIds = $this->funds->pluck('id');
 
+        // Income entries credit the revenue account — use net credit movement for received
         $received = DB::table('financial_journal_entry_lines as jel')
             ->join('financial_journal_entries as je', 'je.id', '=', 'jel.journal_entry_id')
+            ->join('financial_accounts as fa', 'fa.id', '=', 'jel.account_id')
             ->whereIn('je.restricted_fund_id', $fundIds)
             ->where('je.entry_type', 'income')
             ->where('je.status', 'posted')
+            ->where('fa.type', 'revenue')
             ->groupBy('je.restricted_fund_id')
-            ->select('je.restricted_fund_id', DB::raw('SUM(jel.debit) as total'))
+            ->select('je.restricted_fund_id', DB::raw('COALESCE(SUM(jel.credit) - SUM(jel.debit), 0) as total'))
             ->get()
             ->keyBy('restricted_fund_id');
 
+        // Expense entries debit the expense account — use net debit movement for spent
         $spent = DB::table('financial_journal_entry_lines as jel')
             ->join('financial_journal_entries as je', 'je.id', '=', 'jel.journal_entry_id')
+            ->join('financial_accounts as fa', 'fa.id', '=', 'jel.account_id')
             ->whereIn('je.restricted_fund_id', $fundIds)
             ->where('je.entry_type', 'expense')
             ->where('je.status', 'posted')
+            ->where('fa.type', 'expense')
             ->groupBy('je.restricted_fund_id')
-            ->select('je.restricted_fund_id', DB::raw('SUM(jel.debit) as total'))
+            ->select('je.restricted_fund_id', DB::raw('COALESCE(SUM(jel.debit) - SUM(jel.credit), 0) as total'))
             ->get()
             ->keyBy('restricted_fund_id');
 
@@ -81,11 +88,13 @@ new class extends Component
             'newName' => 'required|string|max:255|unique:financial_restricted_funds,name',
         ]);
 
-        FinancialRestrictedFund::create([
+        $fund = FinancialRestrictedFund::create([
             'name' => $this->newName,
             'description' => $this->newDescription ?: null,
             'is_active' => true,
         ]);
+
+        RecordActivity::run($fund, 'create_restricted_fund', "Created restricted fund \"{$fund->name}\".");
 
         $this->newName = '';
         $this->newDescription = '';
@@ -115,10 +124,13 @@ new class extends Component
             'editName' => "required|string|max:255|unique:financial_restricted_funds,name,{$this->editId}",
         ]);
 
-        FinancialRestrictedFund::findOrFail($this->editId)->update([
+        $fund = FinancialRestrictedFund::findOrFail($this->editId);
+        $fund->update([
             'name' => $this->editName,
             'description' => $this->editDescription ?: null,
         ]);
+
+        RecordActivity::run($fund, 'update_restricted_fund', "Updated restricted fund \"{$fund->name}\".");
 
         $this->editId = null;
 
@@ -130,7 +142,10 @@ new class extends Component
     {
         $this->authorize('finance-manage');
 
-        FinancialRestrictedFund::findOrFail($id)->update(['is_active' => false]);
+        $fund = FinancialRestrictedFund::findOrFail($id);
+        $fund->update(['is_active' => false]);
+
+        RecordActivity::run($fund, 'deactivate_restricted_fund', "Deactivated restricted fund \"{$fund->name}\".");
 
         Flux::toast('Fund deactivated.', 'Done', variant: 'success');
     }
@@ -139,7 +154,10 @@ new class extends Component
     {
         $this->authorize('finance-manage');
 
-        FinancialRestrictedFund::findOrFail($id)->update(['is_active' => true]);
+        $fund = FinancialRestrictedFund::findOrFail($id);
+        $fund->update(['is_active' => true]);
+
+        RecordActivity::run($fund, 'reactivate_restricted_fund', "Reactivated restricted fund \"{$fund->name}\".");
 
         Flux::toast('Fund reactivated.', 'Done', variant: 'success');
     }
@@ -167,7 +185,13 @@ new class extends Component
 
     <flux:card>
         @if ($this->funds->isEmpty())
-            <p class="text-sm text-zinc-500 dark:text-zinc-400 py-8 text-center">No restricted funds found. Create one to get started.</p>
+            <p class="text-sm text-zinc-500 dark:text-zinc-400 py-8 text-center">
+                @can('finance-manage')
+                    No restricted funds found. Create one to get started.
+                @else
+                    No restricted funds found yet.
+                @endcan
+            </p>
         @else
             @php $summaries = $this->fundSummaries; @endphp
             <flux:table>

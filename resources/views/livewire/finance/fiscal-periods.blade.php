@@ -14,7 +14,10 @@ new class extends Component
     public function mount(): void
     {
         $this->authorize('finance-view');
-        GenerateFinancialPeriods::generateForCurrentFY();
+
+        if (auth()->user()->can('finance-manage')) {
+            GenerateFinancialPeriods::generateForCurrentFY();
+        }
     }
 
     public function getCurrentFyYearProperty(): int
@@ -63,7 +66,7 @@ new class extends Component
 
     public function closePeriod(int $periodId): void
     {
-        $this->authorize('finance-record');
+        $this->authorize('finance-manage');
 
         $period = FinancialPeriod::findOrFail($periodId);
 
@@ -129,7 +132,7 @@ new class extends Component
                                                     : null;
                                                 $recStatus = $rec['status'] ?? null;
                                             @endphp
-                                            <div class="flex items-center gap-2 text-xs">
+                                            <div wire:key="period-{{ $period->id }}-account-{{ $account->id }}" class="flex items-center gap-2 text-xs">
                                                 @can('finance-record')
                                                     <a href="{{ route('finance.reconciliation.show', ['accountId' => $account->id, 'periodId' => $period->id]) }}"
                                                        class="text-blue-600 dark:text-blue-400 hover:underline">
@@ -165,7 +168,7 @@ new class extends Component
                                 @endif
                             </flux:table.cell>
                             <flux:table.cell>
-                                @can('finance-record')
+                                @can('finance-manage')
                                     @if ($period->status !== 'closed')
                                         <flux:button
                                             variant="ghost"
@@ -196,7 +199,7 @@ new class extends Component
 
             <div class="mt-4 space-y-6">
                 @foreach ($this->priorFyPeriods as $fyYear => $periods)
-                    <flux:card>
+                    <flux:card wire:key="prior-fy-{{ $fyYear }}">
                         <flux:heading size="sm" class="mb-3">FY {{ $fyYear }}</flux:heading>
                         <flux:table>
                             <flux:table.columns>
