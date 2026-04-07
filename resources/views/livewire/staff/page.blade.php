@@ -90,6 +90,18 @@ new class extends Component {
 
 <section>
     <div class="w-full px-4 py-8 mx-auto sm:px-6 lg:px-8">
+        @can('finance-view')
+            <div class="mb-6 p-4 rounded-lg border border-zinc-200 dark:border-zinc-700 flex items-center justify-between">
+                <div>
+                    <flux:heading size="sm">Finance Tracker</flux:heading>
+                    <flux:text variant="subtle" class="text-sm">Access the accounting ledger and financial reports.</flux:text>
+                </div>
+                <flux:button variant="primary" size="sm" href="{{ route('finance.journal.index') }}" wire:navigate>
+                    Open Finance
+                </flux:button>
+            </div>
+        @endcan
+
         <flux:heading size="2xl" class="mb-8">Our Team</flux:heading>
 
         <div class="flex flex-col-reverse w-full gap-8 lg:flex-row">

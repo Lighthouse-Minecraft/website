@@ -509,6 +509,10 @@ new class extends Component
 }; ?>
 
 <div class="space-y-6 print:space-y-4">
+    <div class="print:hidden">
+        @include('livewire.finance.partials.nav')
+    </div>
+
     <div class="flex items-center justify-between print:hidden">
         <div>
             <flux:heading size="xl">Financial Reports</flux:heading>

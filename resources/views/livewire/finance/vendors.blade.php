@@ -83,6 +83,8 @@ new class extends Component
 }; ?>
 
 <div class="space-y-6">
+    @include('livewire.finance.partials.nav')
+
     <div class="flex items-center justify-between">
         <div>
             <flux:heading size="xl">Vendors</flux:heading>

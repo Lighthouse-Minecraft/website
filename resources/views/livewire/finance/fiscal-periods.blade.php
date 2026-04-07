@@ -77,6 +77,8 @@ new class extends Component
 }; ?>
 
 <div class="space-y-8">
+    @include('livewire.finance.partials.nav')
+
     <div>
         <flux:heading size="xl">Fiscal Periods</flux:heading>
         <flux:text variant="subtle">Monthly fiscal periods for the accounting ledger. Close a period after bank reconciliations are complete.</flux:text>
