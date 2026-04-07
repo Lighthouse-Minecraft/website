@@ -16,6 +16,8 @@ new class extends Component
 
     public ?int $pendingPostId = null;
 
+    public ?int $pendingReverseId = null;
+
     // Filters
     public string $filterDateFrom = '';
 
@@ -123,11 +125,24 @@ new class extends Component
         $this->resetPage();
     }
 
-    public function reverse(int $entryId): void
+    public function showReverseConfirm(int $entryId): void
+    {
+        $this->authorize('finance-record');
+        $this->pendingReverseId = $entryId;
+        Flux::modal('confirm-reverse')->show();
+    }
+
+    public function reverse(): void
     {
         $this->authorize('finance-record');
 
-        $entry = FinancialJournalEntry::with(['lines', 'period', 'reversedBy'])->findOrFail($entryId);
+        if (! $this->pendingReverseId) {
+            return;
+        }
+
+        $entry = FinancialJournalEntry::with(['lines', 'period', 'reversedBy'])->findOrFail($this->pendingReverseId);
+        $this->pendingReverseId = null;
+        Flux::modal('confirm-reverse')->close();
 
         try {
             if ($entry->reversedBy) {
@@ -348,21 +363,30 @@ new class extends Component
                                         <flux:button
                                             variant="ghost"
                                             size="sm"
-                                            wire:click="reverse({{ $entry->id }})"
-                                            wire:confirm="Create a reversing entry for this posted transaction?"
+                                            wire:click="showReverseConfirm({{ $entry->id }})"
                                         >
                                             Reverse
                                         </flux:button>
                                     @endcan
                                 @elseif ($entry->status === 'draft')
                                     @can('finance-record')
-                                        <flux:button
-                                            variant="ghost"
-                                            size="sm"
-                                            wire:click="showPostConfirm({{ $entry->id }})"
-                                        >
-                                            Post
-                                        </flux:button>
+                                        <div class="flex gap-1">
+                                            <flux:button
+                                                variant="ghost"
+                                                size="sm"
+                                                href="{{ route('finance.journal.edit', ['entryId' => $entry->id]) }}"
+                                                wire:navigate
+                                            >
+                                                Edit
+                                            </flux:button>
+                                            <flux:button
+                                                variant="ghost"
+                                                size="sm"
+                                                wire:click="showPostConfirm({{ $entry->id }})"
+                                            >
+                                                Post
+                                            </flux:button>
+                                        </div>
                                     @endcan
                                 @endif
                             </flux:table.cell>
@@ -376,6 +400,18 @@ new class extends Component
             </div>
         @endif
     </flux:card>
+
+    {{-- Reverse Confirmation Modal --}}
+    <flux:modal name="confirm-reverse" class="max-w-sm">
+        <flux:heading size="lg" class="mb-2">Reverse This Entry?</flux:heading>
+        <flux:text class="mb-4">A new draft reversing entry will be created with all debits and credits flipped. Review and post it to zero out the effect of the original entry.</flux:text>
+        <div class="flex justify-end gap-3">
+            <flux:modal.close>
+                <flux:button variant="ghost">Cancel</flux:button>
+            </flux:modal.close>
+            <flux:button variant="primary" wire:click="reverse">Create Reversing Entry</flux:button>
+        </div>
+    </flux:modal>
 
     {{-- Post Confirmation Modal --}}
     <flux:modal name="confirm-post" class="max-w-sm">

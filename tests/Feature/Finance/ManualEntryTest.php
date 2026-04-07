@@ -244,7 +244,8 @@ it('Finance - Record user can trigger a reversing entry from the list', function
 
     Volt::actingAs($user)
         ->test('finance.journal-entries')
-        ->call('reverse', $original->id);
+        ->call('showReverseConfirm', $original->id)
+        ->call('reverse');
 
     expect(FinancialJournalEntry::where('reverses_entry_id', $original->id)->exists())->toBeTrue();
 });
@@ -270,6 +271,6 @@ it('Finance - View user cannot trigger reversing entries', function () {
 
     Volt::actingAs($user)
         ->test('finance.journal-entries')
-        ->call('reverse', $original->id)
+        ->call('showReverseConfirm', $original->id)
         ->assertForbidden();
 });
