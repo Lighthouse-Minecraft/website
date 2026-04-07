@@ -11,6 +11,8 @@ use Livewire\Volt\Component;
 
 new class extends Component
 {
+    public ?int $pendingClosePeriodId = null;
+
     public function mount(): void
     {
         $this->authorize('finance-view');
@@ -64,11 +66,24 @@ new class extends Component
         return $recs->toArray();
     }
 
-    public function closePeriod(int $periodId): void
+    public function showCloseConfirm(int $periodId): void
+    {
+        $this->authorize('finance-manage');
+        $this->pendingClosePeriodId = $periodId;
+        Flux::modal('confirm-close-period')->show();
+    }
+
+    public function closePeriod(): void
     {
         $this->authorize('finance-manage');
 
-        $period = FinancialPeriod::findOrFail($periodId);
+        if (! $this->pendingClosePeriodId) {
+            return;
+        }
+
+        $period = FinancialPeriod::findOrFail($this->pendingClosePeriodId);
+        $this->pendingClosePeriodId = null;
+        Flux::modal('confirm-close-period')->close();
 
         try {
             CloseFinancialPeriod::run($period, auth()->user());
@@ -176,8 +191,7 @@ new class extends Component
                                         <flux:button
                                             variant="ghost"
                                             size="sm"
-                                            wire:click="closePeriod({{ $period->id }})"
-                                            wire:confirm="Close {{ $period->name }}? This will generate closing entries and lock the period."
+                                            wire:click="showCloseConfirm({{ $period->id }})"
                                         >
                                             Close Period
                                         </flux:button>
@@ -250,4 +264,16 @@ new class extends Component
             </div>
         </details>
     @endif
+
+    {{-- Close Period Confirmation Modal --}}
+    <flux:modal name="confirm-close-period" class="max-w-sm">
+        <flux:heading size="lg" class="mb-2">Close This Period?</flux:heading>
+        <flux:text class="mb-4">This will generate closing entries and permanently lock the period. No new entries can be posted to a closed period.</flux:text>
+        <div class="flex justify-end gap-3">
+            <flux:modal.close>
+                <flux:button variant="ghost">Cancel</flux:button>
+            </flux:modal.close>
+            <flux:button variant="primary" wire:click="closePeriod">Close Period</flux:button>
+        </div>
+    </flux:modal>
 </div>
