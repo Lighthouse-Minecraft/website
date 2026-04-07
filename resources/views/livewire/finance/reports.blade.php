@@ -97,9 +97,9 @@ new class extends Component
             ->where('fa.type', $type)
             ->where('je.status', 'posted')
             ->whereNot('je.entry_type', 'closing')
-            ->select('fa.id as account_id', 'fa.code', 'fa.name')
-            ->selectRaw('COALESCE(SUM(jel.credit) - SUM(jel.debit), 0) as net_credit')
-            ->groupBy('fa.id', 'fa.code', 'fa.name')
+            ->select('fa.id as account_id', 'fa.code', 'fa.name', 'fa.normal_balance')
+            ->selectRaw('CASE WHEN fa.normal_balance = \'credit\' THEN COALESCE(SUM(jel.credit) - SUM(jel.debit), 0) ELSE COALESCE(SUM(jel.debit) - SUM(jel.credit), 0) END as net')
+            ->groupBy('fa.id', 'fa.code', 'fa.name', 'fa.normal_balance')
             ->orderBy('fa.code');
 
         if ($this->filterPeriodId) {
@@ -120,7 +120,10 @@ new class extends Component
             'account_id' => $row->account_id,
             'code' => $row->code,
             'name' => $row->name,
-            'net' => (int) $row->net_credit,
+            // Positive = normal activity (credit for revenue, debit for expenses).
+            // A net-credit expense row (more refunds than charges) comes back negative,
+            // which correctly reduces both the line total and the grand total.
+            'net' => (int) $row->net,
         ]);
     }
 
@@ -141,8 +144,10 @@ new class extends Component
 
     public function getTotalExpensesProperty(): int
     {
-        // Expenses have a debit normal balance, so net_credit is negative
-        return (int) abs($this->expenseRows->sum('net'));
+        // Expense accounts use debit-normal balance; getCumulativeBalance returns debit - credit.
+        // Normal expenses are positive; net-credit (refund-heavy) periods yield a negative value,
+        // correctly reducing total expenses rather than inflating them.
+        return (int) $this->expenseRows->sum('net');
     }
 
     public function getNetChangeProperty(): int
@@ -223,6 +228,16 @@ new class extends Component
         $filename = 'general-ledger-'.($account?->code ?? 'all').'-'.now()->format('Y-m-d').'.csv';
 
         return response()->streamDownload(function () use ($lines) {
+            // Prefix spreadsheet-formula trigger characters to prevent CSV injection
+            $sanitize = static function (?string $value): string {
+                $value = (string) ($value ?? '');
+                if ($value !== '' && in_array($value[0], ['=', '+', '-', '@', "\t", "\r"], true)) {
+                    $value = "\t".$value;
+                }
+
+                return $value;
+            };
+
             $handle = fopen('php://output', 'w');
 
             fputcsv($handle, ['Date', 'Description', 'Vendor', 'Type', 'Debit', 'Credit', 'Running Balance']);
@@ -230,8 +245,8 @@ new class extends Component
             foreach ($lines as $line) {
                 fputcsv($handle, [
                     $line->date,
-                    $line->description,
-                    $line->vendor_name ?? '',
+                    $sanitize($line->description),
+                    $sanitize($line->vendor_name ?? ''),
                     $line->entry_type,
                     $line->debit > 0 ? number_format($line->debit / 100, 2) : '',
                     $line->credit > 0 ? number_format($line->credit / 100, 2) : '',
@@ -369,7 +384,7 @@ new class extends Component
             ->join('financial_journal_entries as je', 'je.id', '=', 'jel.journal_entry_id')
             ->join('financial_accounts as fa', 'fa.id', '=', 'jel.account_id')
             ->where('fa.type', 'net_assets')
-            ->where('fa.subtype', 'unrestricted')
+            ->where('fa.fund_type', 'unrestricted')
             ->where('je.status', 'posted')
             ->where('je.date', '<=', $this->bsAsOfDateValue)
             ->selectRaw('COALESCE(SUM(jel.credit) - SUM(jel.debit), 0) as balance')
@@ -382,7 +397,7 @@ new class extends Component
             ->join('financial_journal_entries as je', 'je.id', '=', 'jel.journal_entry_id')
             ->join('financial_accounts as fa', 'fa.id', '=', 'jel.account_id')
             ->where('fa.type', 'net_assets')
-            ->where('fa.subtype', 'restricted')
+            ->where('fa.fund_type', 'restricted')
             ->where('je.status', 'posted')
             ->where('je.date', '<=', $this->bsAsOfDateValue)
             ->selectRaw('COALESCE(SUM(jel.credit) - SUM(jel.debit), 0) as balance')
@@ -559,25 +574,28 @@ new class extends Component
                     </flux:select>
                 </flux:field>
 
-                <flux:field>
-                    <flux:label>Period</flux:label>
-                    <flux:select wire:model.live="filterPeriodId">
-                        <flux:select.option value="">All Periods</flux:select.option>
-                        @foreach ($this->filteredPeriods as $period)
-                            <flux:select.option value="{{ $period->id }}">{{ $period->name }}</flux:select.option>
-                        @endforeach
-                    </flux:select>
-                </flux:field>
+                {{-- Period and date filters are not used by the Variance tab --}}
+                @if ($activeTab !== 'variance')
+                    <flux:field>
+                        <flux:label>Period</flux:label>
+                        <flux:select wire:model.live="filterPeriodId">
+                            <flux:select.option value="">All Periods</flux:select.option>
+                            @foreach ($this->filteredPeriods as $period)
+                                <flux:select.option value="{{ $period->id }}">{{ $period->name }}</flux:select.option>
+                            @endforeach
+                        </flux:select>
+                    </flux:field>
 
-                <flux:field>
-                    <flux:label>Date From</flux:label>
-                    <flux:input type="date" wire:model.live="filterDateFrom" />
-                </flux:field>
+                    <flux:field>
+                        <flux:label>Date From</flux:label>
+                        <flux:input type="date" wire:model.live="filterDateFrom" />
+                    </flux:field>
 
-                <flux:field>
-                    <flux:label>Date To</flux:label>
-                    <flux:input type="date" wire:model.live="filterDateTo" />
-                </flux:field>
+                    <flux:field>
+                        <flux:label>Date To</flux:label>
+                        <flux:input type="date" wire:model.live="filterDateTo" />
+                    </flux:field>
+                @endif
             </div>
         </flux:card>
     @endif
@@ -638,7 +656,7 @@ new class extends Component
                                         {{ $row['name'] }}
                                     </flux:table.cell>
                                     <flux:table.cell>
-                                        <span class="font-mono">${{ number_format(abs($row['net']) / 100, 2) }}</span>
+                                        <span class="font-mono">${{ number_format($row['net'] / 100, 2) }}</span>
                                     </flux:table.cell>
                                 </flux:table.row>
                             @endforeach
@@ -917,7 +935,11 @@ new class extends Component
     {{-- Statement of Cash Flows --}}
     @if ($activeTab === 'cash-flow')
         <flux:card>
-            <flux:heading size="md" class="mb-4">Statement of Cash Flows</flux:heading>
+            <div class="flex items-start justify-between mb-4">
+                <flux:heading size="md">Statement of Cash Flows</flux:heading>
+                <flux:badge color="yellow" size="sm">Operating Activities Only</flux:badge>
+            </div>
+            <flux:text variant="subtle" class="mb-4 text-xs">This report approximates cash flow from operating activities using posted revenue and expense entries. Balance-sheet movements (loan proceeds, asset purchases, bank transfers) are not included.</flux:text>
             <div class="space-y-4">
                 <div>
                     <h3 class="text-sm font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wide mb-2">Operating Activities</h3>

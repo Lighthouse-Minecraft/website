@@ -33,10 +33,11 @@ it('non-finance user is forbidden from budgets page', function () {
 it('Finance - Manage user can set a budget amount for an account and period', function () {
     $user = User::factory()->withRole('Finance - Manage')->create();
     $period = FinancialPeriod::factory()->create();
-    $account = FinancialAccount::factory()->create(['type' => 'expense']);
+    $account = FinancialAccount::factory()->create(['type' => 'expense', 'is_active' => true]);
 
     Volt::actingAs($user)
         ->test('finance.budgets')
+        ->set('selectedYear', $period->fiscal_year)
         ->call('updateBudget', $account->id, $period->id, '500.00');
 
     $budget = FinancialBudget::where('account_id', $account->id)
@@ -50,7 +51,7 @@ it('Finance - Manage user can set a budget amount for an account and period', fu
 it('Finance - Manage user can update an existing budget amount', function () {
     $user = User::factory()->withRole('Finance - Manage')->create();
     $period = FinancialPeriod::factory()->create();
-    $account = FinancialAccount::factory()->create(['type' => 'revenue']);
+    $account = FinancialAccount::factory()->create(['type' => 'revenue', 'is_active' => true]);
 
     FinancialBudget::create([
         'account_id' => $account->id,
@@ -60,6 +61,7 @@ it('Finance - Manage user can update an existing budget amount', function () {
 
     Volt::actingAs($user)
         ->test('finance.budgets')
+        ->set('selectedYear', $period->fiscal_year)
         ->call('updateBudget', $account->id, $period->id, '200.00');
 
     expect(FinancialBudget::where('account_id', $account->id)->where('period_id', $period->id)->first()->amount)
@@ -80,10 +82,11 @@ it('Finance - View user cannot update budget amounts', function () {
 it('budget amounts are stored as integer cents', function () {
     $user = User::factory()->withRole('Finance - Manage')->create();
     $period = FinancialPeriod::factory()->create();
-    $account = FinancialAccount::factory()->create(['type' => 'expense']);
+    $account = FinancialAccount::factory()->create(['type' => 'expense', 'is_active' => true]);
 
     Volt::actingAs($user)
         ->test('finance.budgets')
+        ->set('selectedYear', $period->fiscal_year)
         ->call('updateBudget', $account->id, $period->id, '10');
 
     expect(FinancialBudget::first()->amount)->toBe(1000);

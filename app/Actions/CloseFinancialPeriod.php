@@ -27,6 +27,7 @@ class CloseFinancialPeriod
      */
     public function handle(FinancialPeriod $period, User $user): void
     {
+        // Fast pre-check to give an early error before acquiring a lock
         if ($period->status === 'closed') {
             throw new \RuntimeException('This period is already closed.');
         }
@@ -71,6 +72,13 @@ class CloseFinancialPeriod
 
         // Generate closing entries
         DB::transaction(function () use ($period, $user, $revenueBalances, $expenseBalances, $netAssetsUnrestricted, $netAssetsRestricted) {
+            // Re-check inside transaction with a lock to prevent duplicate closing entries
+            // from concurrent requests that both passed the pre-check above.
+            $locked = FinancialPeriod::lockForUpdate()->find($period->id);
+            if ($locked?->status === 'closed') {
+                throw new \RuntimeException('This period is already closed.');
+            }
+
             $this->generateRevenueClosingEntry($period, $user, $revenueBalances, $netAssetsUnrestricted, $netAssetsRestricted);
             $this->generateExpenseClosingEntry($period, $user, $expenseBalances, $netAssetsUnrestricted);
 

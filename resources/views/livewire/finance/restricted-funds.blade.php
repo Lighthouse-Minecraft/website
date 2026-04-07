@@ -88,13 +88,17 @@ new class extends Component
             'newName' => 'required|string|max:255|unique:financial_restricted_funds,name',
         ]);
 
-        $fund = FinancialRestrictedFund::create([
-            'name' => $this->newName,
-            'description' => $this->newDescription ?: null,
-            'is_active' => true,
-        ]);
+        $fund = DB::transaction(function () {
+            $fund = FinancialRestrictedFund::create([
+                'name' => $this->newName,
+                'description' => $this->newDescription ?: null,
+                'is_active' => true,
+            ]);
 
-        RecordActivity::run($fund, 'create_restricted_fund', "Created restricted fund \"{$fund->name}\".");
+            RecordActivity::run($fund, 'create_restricted_fund', "Created restricted fund \"{$fund->name}\".");
+
+            return $fund;
+        });
 
         $this->newName = '';
         $this->newDescription = '';
@@ -124,13 +128,15 @@ new class extends Component
             'editName' => "required|string|max:255|unique:financial_restricted_funds,name,{$this->editId}",
         ]);
 
-        $fund = FinancialRestrictedFund::findOrFail($this->editId);
-        $fund->update([
-            'name' => $this->editName,
-            'description' => $this->editDescription ?: null,
-        ]);
+        DB::transaction(function () {
+            $fund = FinancialRestrictedFund::findOrFail($this->editId);
+            $fund->update([
+                'name' => $this->editName,
+                'description' => $this->editDescription ?: null,
+            ]);
 
-        RecordActivity::run($fund, 'update_restricted_fund', "Updated restricted fund \"{$fund->name}\".");
+            RecordActivity::run($fund, 'update_restricted_fund', "Updated restricted fund \"{$fund->name}\".");
+        });
 
         $this->editId = null;
 
@@ -142,10 +148,12 @@ new class extends Component
     {
         $this->authorize('finance-manage');
 
-        $fund = FinancialRestrictedFund::findOrFail($id);
-        $fund->update(['is_active' => false]);
+        DB::transaction(function () use ($id) {
+            $fund = FinancialRestrictedFund::findOrFail($id);
+            $fund->update(['is_active' => false]);
 
-        RecordActivity::run($fund, 'deactivate_restricted_fund', "Deactivated restricted fund \"{$fund->name}\".");
+            RecordActivity::run($fund, 'deactivate_restricted_fund', "Deactivated restricted fund \"{$fund->name}\".");
+        });
 
         Flux::toast('Fund deactivated.', 'Done', variant: 'success');
     }
@@ -154,10 +162,12 @@ new class extends Component
     {
         $this->authorize('finance-manage');
 
-        $fund = FinancialRestrictedFund::findOrFail($id);
-        $fund->update(['is_active' => true]);
+        DB::transaction(function () use ($id) {
+            $fund = FinancialRestrictedFund::findOrFail($id);
+            $fund->update(['is_active' => true]);
 
-        RecordActivity::run($fund, 'reactivate_restricted_fund', "Reactivated restricted fund \"{$fund->name}\".");
+            RecordActivity::run($fund, 'reactivate_restricted_fund', "Reactivated restricted fund \"{$fund->name}\".");
+        });
 
         Flux::toast('Fund reactivated.', 'Done', variant: 'success');
     }

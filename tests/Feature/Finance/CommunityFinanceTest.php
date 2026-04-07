@@ -20,7 +20,7 @@ function reconcileAllForPeriod(FinancialPeriod $period, User $user): void
     FinancialAccount::where('is_bank_account', true)
         ->where('is_active', true)
         ->each(function ($bank) use ($period, $user) {
-            FinancialReconciliation::firstOrCreate(
+            FinancialReconciliation::updateOrCreate(
                 ['account_id' => $bank->id, 'period_id' => $period->id],
                 [
                     'statement_date' => $period->end_date->toDateString(),
@@ -79,11 +79,25 @@ it('shows closed periods and excludes open periods', function () {
     $financeUser = User::factory()->withRole('Finance - Record')->create();
     ensureNetAssets();
 
-    $closedPeriod = FinancialPeriod::factory()->create(['name' => 'October 2025', 'status' => 'open']);
+    $closedPeriod = FinancialPeriod::factory()->create([
+        'name' => 'October 2025',
+        'status' => 'open',
+        'fiscal_year' => 2026,
+        'month_number' => 10,
+        'start_date' => '2025-10-01',
+        'end_date' => '2025-10-31',
+    ]);
     reconcileAllForPeriod($closedPeriod, $financeUser);
     CloseFinancialPeriod::run($closedPeriod, $financeUser);
 
-    $openPeriod = FinancialPeriod::factory()->create(['name' => 'November 2025', 'status' => 'open']);
+    $openPeriod = FinancialPeriod::factory()->create([
+        'name' => 'November 2025',
+        'status' => 'open',
+        'fiscal_year' => 2026,
+        'month_number' => 11,
+        'start_date' => '2025-11-01',
+        'end_date' => '2025-11-30',
+    ]);
 
     $resident = User::factory()->withMembershipLevel(MembershipLevel::Resident)->create();
     $component = Volt::actingAs($resident)->test('finance.community-finance');

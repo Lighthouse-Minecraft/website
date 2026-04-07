@@ -45,7 +45,7 @@ function reconcileAllBanks(FinancialPeriod $period, User $user): void
     FinancialAccount::where('is_bank_account', true)
         ->where('is_active', true)
         ->each(function ($bank) use ($period, $user) {
-            FinancialReconciliation::firstOrCreate(
+            FinancialReconciliation::updateOrCreate(
                 ['account_id' => $bank->id, 'period_id' => $period->id],
                 [
                     'statement_date' => $period->end_date->toDateString(),
@@ -99,6 +99,7 @@ it('blocks close if reconciliation is in_progress', function () {
 it('closes the period when all reconciliations are complete', function () {
     $user = User::factory()->withRole('Finance - Record')->create();
     $period = FinancialPeriod::factory()->create();
+    FinancialAccount::factory()->create(['type' => 'asset', 'is_bank_account' => true, 'is_active' => true, 'name' => 'Main Checking']);
     makeNetAssetsAccounts();
     reconcileAllBanks($period, $user);
 

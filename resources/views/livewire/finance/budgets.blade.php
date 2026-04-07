@@ -104,6 +104,29 @@ new class extends Component
     {
         $this->authorize('finance-manage');
 
+        // Validate that the account is an active revenue/expense account
+        $account = FinancialAccount::where('id', $accountId)
+            ->whereIn('type', ['revenue', 'expense'])
+            ->where('is_active', true)
+            ->first();
+
+        if (! $account) {
+            Flux::toast('Invalid account.', 'Error', variant: 'danger');
+
+            return;
+        }
+
+        // Validate that the period belongs to the selected fiscal year
+        $period = FinancialPeriod::where('id', $periodId)
+            ->where('fiscal_year', $this->selectedYear)
+            ->first();
+
+        if (! $period) {
+            Flux::toast('Invalid period.', 'Error', variant: 'danger');
+
+            return;
+        }
+
         try {
             $cents = ParseDollarAmount::run($amount ?: '0');
         } catch (\InvalidArgumentException) {
@@ -133,7 +156,19 @@ new class extends Component
 
     private function ensurePeriodsExist(): void
     {
+        if (! auth()->user()?->can('finance-manage')) {
+            return;
+        }
+
+        // Reject years outside a safe range to prevent generation of arbitrary periods
+        $now = now();
         $startMonth = (int) SiteConfig::getValue('finance_fy_start_month', '10');
+        $currentFy = ($now->month >= $startMonth) ? $now->year + 1 : $now->year;
+
+        if ($this->selectedYear < $currentFy - 5 || $this->selectedYear > $currentFy + 1) {
+            return;
+        }
+
         GenerateFinancialPeriods::run($this->selectedYear, $startMonth);
     }
 

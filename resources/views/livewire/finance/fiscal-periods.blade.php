@@ -75,6 +75,9 @@ new class extends Component
             Flux::toast("Period {$period->name} has been closed.", 'Period Closed', variant: 'success');
         } catch (\RuntimeException $e) {
             Flux::toast($e->getMessage(), 'Cannot Close Period', variant: 'danger');
+        } catch (\Throwable $e) {
+            report($e);
+            Flux::toast('An unexpected error occurred while closing this period.', 'Cannot Close Period', variant: 'danger');
         }
     }
 }; ?>
