@@ -245,6 +245,7 @@ Route::prefix('finance')
         Volt::route('/journal', 'finance.journal-entries')->name('journal.index');
         Volt::route('/journal/create', 'finance.create-journal-entry')->name('journal.create');
         Volt::route('/journal/create/manual', 'finance.create-manual-entry')->name('journal.create-manual');
+        Volt::route('/journal/{entryId}/edit', 'finance.edit-journal-entry')->name('journal.edit');
         Volt::route('/budgets', 'finance.budgets')->name('budgets.index');
         Volt::route('/restricted-funds', 'finance.restricted-funds')->name('restricted-funds.index');
         Volt::route('/reconciliation/{accountId}/{periodId}', 'finance.bank-reconciliation')->name('reconciliation.show');

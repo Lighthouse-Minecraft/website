@@ -476,3 +476,111 @@ it('entries in closed periods cannot be posted via the form', function () {
     $component->assertHasErrors(['date']);
     expect(FinancialJournalEntry::where('description', 'Closed Period Entry')->exists())->toBeFalse();
 });
+
+// == Edit Draft Journal Entry ==
+
+it('Finance - Record user can load edit page for a draft guided entry', function () {
+    $user = User::factory()->withRole('Finance - Record')->create();
+    $period = FinancialPeriod::factory()->create(['status' => 'open']);
+    $bank = FinancialAccount::factory()->create(['type' => 'asset', 'is_bank_account' => true]);
+    $rev = FinancialAccount::factory()->create(['type' => 'revenue']);
+
+    $entry = CreateJournalEntry::run(
+        user: $user,
+        type: 'income',
+        periodId: $period->id,
+        date: $period->start_date->format('Y-m-d'),
+        description: 'Original Income',
+        amountCents: 5000,
+        primaryAccountId: $rev->id,
+        bankAccountId: $bank->id,
+        status: 'draft',
+    );
+
+    $component = Volt::actingAs($user)
+        ->test('finance.edit-journal-entry', ['entryId' => $entry->id]);
+
+    expect($component->get('description'))->toBe('Original Income');
+    expect($component->get('amount'))->toBe('50.00');
+    expect($component->get('entryType'))->toBe('income');
+    expect($component->get('revenueAccountId'))->toBe($rev->id);
+    expect($component->get('bankAccountId'))->toBe($bank->id);
+});
+
+it('Finance - Record user can save changes to a draft income entry', function () {
+    $user = User::factory()->withRole('Finance - Record')->create();
+    $period = FinancialPeriod::factory()->create(['status' => 'open', 'start_date' => '2026-01-01', 'end_date' => '2026-01-31']);
+    $bank = FinancialAccount::factory()->create(['type' => 'asset', 'is_bank_account' => true]);
+    $rev = FinancialAccount::factory()->create(['type' => 'revenue']);
+
+    $entry = CreateJournalEntry::run(
+        user: $user,
+        type: 'income',
+        periodId: $period->id,
+        date: '2026-01-15',
+        description: 'Old Description',
+        amountCents: 5000,
+        primaryAccountId: $rev->id,
+        bankAccountId: $bank->id,
+        status: 'draft',
+    );
+
+    Volt::actingAs($user)
+        ->test('finance.edit-journal-entry', ['entryId' => $entry->id])
+        ->set('description', 'Updated Description')
+        ->set('amount', '75.00')
+        ->call('save');
+
+    $updated = $entry->fresh()->load('lines');
+    expect($updated->description)->toBe('Updated Description');
+    expect($updated->lines->sum('debit'))->toBe(7500);
+    expect($updated->status)->toBe('draft');
+});
+
+it('Finance - Record user can delete a draft entry from the edit page', function () {
+    $user = User::factory()->withRole('Finance - Record')->create();
+    $period = FinancialPeriod::factory()->create(['status' => 'open']);
+    $bank = FinancialAccount::factory()->create(['type' => 'asset', 'is_bank_account' => true]);
+    $rev = FinancialAccount::factory()->create(['type' => 'revenue']);
+
+    $entry = CreateJournalEntry::run(
+        user: $user,
+        type: 'income',
+        periodId: $period->id,
+        date: $period->start_date->format('Y-m-d'),
+        description: 'Delete Me',
+        amountCents: 1000,
+        primaryAccountId: $rev->id,
+        bankAccountId: $bank->id,
+        status: 'draft',
+    );
+
+    Volt::actingAs($user)
+        ->test('finance.edit-journal-entry', ['entryId' => $entry->id])
+        ->call('delete');
+
+    expect(FinancialJournalEntry::find($entry->id))->toBeNull();
+});
+
+it('edit page redirects when trying to edit a posted entry', function () {
+    $user = User::factory()->withRole('Finance - Record')->create();
+    $period = FinancialPeriod::factory()->create(['status' => 'open']);
+    $bank = FinancialAccount::factory()->create(['type' => 'asset', 'is_bank_account' => true]);
+    $rev = FinancialAccount::factory()->create(['type' => 'revenue']);
+
+    $entry = CreateJournalEntry::run(
+        user: $user,
+        type: 'income',
+        periodId: $period->id,
+        date: $period->start_date->format('Y-m-d'),
+        description: 'Posted Entry',
+        amountCents: 1000,
+        primaryAccountId: $rev->id,
+        bankAccountId: $bank->id,
+        status: 'posted',
+    );
+
+    Volt::actingAs($user)
+        ->test('finance.edit-journal-entry', ['entryId' => $entry->id])
+        ->assertRedirect(route('finance.journal.index'));
+});
