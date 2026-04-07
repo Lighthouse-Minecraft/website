@@ -567,7 +567,9 @@ new class extends Component
                 <flux:field>
                     <flux:label>Fiscal Year</flux:label>
                     <flux:select wire:model.live="filterFyYear">
-                        <flux:select.option value="">All Years</flux:select.option>
+                        @if ($activeTab !== 'variance')
+                            <flux:select.option value="">All Years</flux:select.option>
+                        @endif
                         @foreach ($this->fyYears as $year)
                             <flux:select.option value="{{ $year }}">FY {{ $year }}</flux:select.option>
                         @endforeach
@@ -946,11 +948,11 @@ new class extends Component
                     <div class="space-y-1">
                         <div class="flex justify-between py-1 text-sm">
                             <span>Cash Received (Revenue)</span>
-                            <span class="font-mono text-green-600 dark:text-green-400">+${{ number_format($this->cashInflows / 100, 2) }}</span>
+                            <span class="font-mono {{ $this->cashInflows >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">{{ $this->cashInflows >= 0 ? '+' : '-' }}${{ number_format(abs($this->cashInflows) / 100, 2) }}</span>
                         </div>
                         <div class="flex justify-between py-1 text-sm">
                             <span>Cash Paid (Expenses)</span>
-                            <span class="font-mono text-red-600 dark:text-red-400">-${{ number_format($this->cashOutflows / 100, 2) }}</span>
+                            <span class="font-mono {{ $this->cashOutflows >= 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400' }}">{{ $this->cashOutflows >= 0 ? '-' : '+' }}${{ number_format(abs($this->cashOutflows) / 100, 2) }}</span>
                         </div>
                         <div class="flex justify-between py-1 text-sm font-semibold border-t border-zinc-200 dark:border-zinc-700 mt-2 pt-2">
                             <span>Net Change in Cash</span>

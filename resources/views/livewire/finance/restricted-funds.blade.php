@@ -4,6 +4,7 @@ use App\Actions\RecordActivity;
 use App\Models\FinancialRestrictedFund;
 use Flux\Flux;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Livewire\Volt\Component;
 
 new class extends Component
@@ -125,15 +126,22 @@ new class extends Component
         $this->authorize('finance-manage');
 
         $this->validate([
-            'editName' => "required|string|max:255|unique:financial_restricted_funds,name,{$this->editId}",
+            'editId' => ['required', 'integer', Rule::exists('financial_restricted_funds', 'id')],
+            'editName' => ['required', 'string', 'max:255', Rule::unique('financial_restricted_funds', 'name')->ignore($this->editId)],
         ]);
 
         DB::transaction(function () {
             $fund = FinancialRestrictedFund::findOrFail($this->editId);
-            $fund->update([
+            $fund->fill([
                 'name' => $this->editName,
                 'description' => $this->editDescription ?: null,
             ]);
+
+            if (! $fund->isDirty()) {
+                return;
+            }
+
+            $fund->save();
 
             RecordActivity::run($fund, 'update_restricted_fund', "Updated restricted fund \"{$fund->name}\".");
         });
@@ -150,6 +158,11 @@ new class extends Component
 
         DB::transaction(function () use ($id) {
             $fund = FinancialRestrictedFund::findOrFail($id);
+
+            if (! $fund->is_active) {
+                return;
+            }
+
             $fund->update(['is_active' => false]);
 
             RecordActivity::run($fund, 'deactivate_restricted_fund', "Deactivated restricted fund \"{$fund->name}\".");
@@ -164,6 +177,11 @@ new class extends Component
 
         DB::transaction(function () use ($id) {
             $fund = FinancialRestrictedFund::findOrFail($id);
+
+            if ($fund->is_active) {
+                return;
+            }
+
             $fund->update(['is_active' => true]);
 
             RecordActivity::run($fund, 'reactivate_restricted_fund', "Reactivated restricted fund \"{$fund->name}\".");
