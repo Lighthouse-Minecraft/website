@@ -29,8 +29,8 @@ class ThreadPolicy
      */
     public function viewAll(User $user): bool
     {
-        // Command can view all (handled in before)
-        return false;
+        // Ticket - Manager can see every ticket across all departments
+        return $user->hasRole('Ticket - Manager');
     }
 
     /**
@@ -111,7 +111,7 @@ class ThreadPolicy
      */
     public function addParticipant(User $user, Thread $thread): bool
     {
-        if (! $user->hasRole('Ticket - User')) {
+        if (! $user->hasRole('Ticket - User') && ! $user->hasRole('Ticket - Manager')) {
             return false;
         }
 

@@ -67,7 +67,13 @@ it('admin can view all threads', function () {
     expect($admin->can('viewAll', Thread::class))->toBeTrue();
 });
 
-it('non-admin cannot view all threads via viewAll method', function () {
+it('Ticket - Manager can view all threads', function () {
+    $user = User::factory()->withRole('Ticket - Manager')->create();
+
+    expect($user->can('viewAll', Thread::class))->toBeTrue();
+});
+
+it('Ticket - User without Ticket - Manager cannot view all threads', function () {
     $officer = officerCommand();
 
     expect($officer->can('viewAll', Thread::class))->toBeFalse();

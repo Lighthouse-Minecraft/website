@@ -202,6 +202,44 @@ describe('View Ticket Component', function () {
         expect($thread->assigned_to_user_id)->toBe($engineerStaff->id);
     })->done();
 
+    it('adds assignee as participant when assigning a ticket', function () {
+        $officer = User::factory()
+            ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::Officer)
+            ->withRole('Ticket - User')
+            ->withRole('Ticket - Manager')
+            ->create();
+
+        $assignee = User::factory()
+            ->withStaffPosition(StaffDepartment::Chaplain, StaffRank::CrewMember)
+            ->create();
+
+        $thread = Thread::factory()->withDepartment(StaffDepartment::Chaplain)->create();
+
+        actingAs($officer);
+
+        Volt::test('ready-room.tickets.view-ticket', ['thread' => $thread])
+            ->call('assignTo', $assignee->id)
+            ->assertHasNoErrors();
+
+        expect($thread->participants()->where('user_id', $assignee->id)->exists())->toBeTrue();
+    })->done();
+
+    it('can render for Ticket - Manager on tickets from any department #500', function () {
+        $manager = User::factory()
+            ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::Officer)
+            ->withRole('Ticket - Manager')
+            ->create();
+
+        // Ticket is in a different department than the manager
+        $thread = Thread::factory()->withDepartment(StaffDepartment::Chaplain)->create();
+        Message::factory()->forThread($thread)->create(['body' => 'Admin action message']);
+
+        actingAs($manager);
+
+        Volt::test('ready-room.tickets.view-ticket', ['thread' => $thread])
+            ->assertSee($thread->subject);
+    })->done();
+
     it('allows participants to reply to tickets', function () {
         $user = User::factory()->create();
 

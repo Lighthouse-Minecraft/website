@@ -436,6 +436,9 @@ new class extends Component
         $oldAssignee = $this->thread->assignedTo;
         $this->thread->update(['assigned_to_user_id' => $userId]);
 
+        // Ensure the new assignee is a participant so they can view the thread
+        $this->thread->addParticipant($newAssignee);
+
         $description = $oldAssignee
             ? "Assignment changed: {$oldAssignee->name} → {$newAssignee->name}"
             : "Assigned to: {$newAssignee->name}";

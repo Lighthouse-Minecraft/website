@@ -58,7 +58,7 @@ describe('Thread Authorization', function () {
             ->and($engineerThread->isVisibleTo($chaplainStaff))->toBeFalse();
     })->done();
 
-    it('allows Ticket - Manager to view flagged threads across departments', function () {
+    it('allows Ticket - Manager to view all threads across all departments', function () {
         $quartermaster = User::factory()
             ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::Officer)
             ->withRole('Ticket - Manager')
@@ -75,9 +75,9 @@ describe('Thread Authorization', function () {
 
         actingAs($quartermaster);
 
-        expect($quartermaster->can('viewFlagged', Thread::class))->toBeTrue()
+        expect($quartermaster->can('viewAll', Thread::class))->toBeTrue()
             ->and($flaggedChaplainThread->isVisibleTo($quartermaster))->toBeTrue()
-            ->and($unflaggedChaplainThread->isVisibleTo($quartermaster))->toBeFalse();
+            ->and($unflaggedChaplainThread->isVisibleTo($quartermaster))->toBeTrue();
     })->done();
 
     it('allows participants to view threads they are part of', function () {
