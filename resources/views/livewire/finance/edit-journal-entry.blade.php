@@ -211,7 +211,7 @@ new class extends Component
         $rules = [
             'date' => 'required|date',
             'description' => 'required|string|max:500',
-            'amount' => ['required', 'regex:/^\d+(\.\d{0,2})?$/'],
+            'amount' => ['required', 'regex:/^\d{1,9}(\.\d{0,2})?$/'],
         ];
 
         if ($this->entryType === 'income') {
@@ -226,7 +226,7 @@ new class extends Component
         }
 
         $this->validate($rules, [
-            'amount.regex' => 'Enter a valid dollar amount (e.g. 10, 10.00).',
+            'amount.regex' => 'Enter a valid dollar amount up to $999,999,999.99 (e.g. 10, 10.00).',
         ]);
 
         try {
@@ -269,11 +269,11 @@ new class extends Component
             'description' => 'required|string|max:500',
             'lines' => 'required|array|min:2',
             'lines.*.account_id' => 'required|integer|exists:financial_accounts,id',
-            'lines.*.amount' => ['required', 'regex:/^\d+(\.\d{0,2})?$/'],
+            'lines.*.amount' => ['required', 'regex:/^\d{1,9}(\.\d{0,2})?$/'],
         ], [
             'lines.*.account_id.required' => 'Each line must have an account selected.',
             'lines.*.amount.required' => 'Each line must have an amount.',
-            'lines.*.amount.regex' => 'Enter a valid dollar amount (e.g. 10, 10.00).',
+            'lines.*.amount.regex' => 'Enter a valid dollar amount up to $999,999,999.99 (e.g. 10, 10.00).',
         ]);
 
         try {

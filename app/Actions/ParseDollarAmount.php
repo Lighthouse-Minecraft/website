@@ -19,8 +19,8 @@ class ParseDollarAmount
     {
         $input = trim($input);
 
-        // Only digits with an optional decimal point (up to 2 decimal places)
-        if (! preg_match('/^\d+(\.\d{0,2})?$/', $input)) {
+        // Only digits with an optional decimal point (up to 2 decimal places); max 9 integer digits
+        if (! preg_match('/^\d{1,9}(\.\d{0,2})?$/', $input)) {
             throw new \InvalidArgumentException("Invalid dollar amount: {$input}");
         }
 
