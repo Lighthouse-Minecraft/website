@@ -22,22 +22,39 @@ it('grants viewDepartment to user with Ticket - User role and a department', fun
     expect($user->can('viewDepartment', Thread::class))->toBeTrue();
 });
 
-it('grants viewDepartment to user with Ticket - Manager role and a department', function () {
+it('denies viewDepartment to Ticket - Manager (they use viewAll instead)', function () {
     $user = User::factory()
         ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::Officer)
         ->withRole('Ticket - Manager')
         ->create();
 
-    expect($user->can('viewDepartment', Thread::class))->toBeTrue();
+    expect($user->can('viewDepartment', Thread::class))->toBeFalse();
 });
 
-it('denies viewDepartment without Ticket - User or Ticket - Manager role', function () {
+it('denies viewDepartment without Ticket - User role', function () {
     $user = User::factory()
         ->withStaffPosition(StaffDepartment::Command, StaffRank::CrewMember)
         ->withRole('Staff Access')
         ->create();
 
     expect($user->can('viewDepartment', Thread::class))->toBeFalse();
+});
+
+// == viewAll == //
+
+it('grants viewAll to Ticket - Manager', function () {
+    $user = User::factory()->withRole('Ticket - Manager')->create();
+
+    expect($user->can('viewAll', Thread::class))->toBeTrue();
+});
+
+it('denies viewAll to Ticket - User without Ticket - Manager role', function () {
+    $user = User::factory()
+        ->withStaffPosition(StaffDepartment::Command, StaffRank::CrewMember)
+        ->withRole('Ticket - User')
+        ->create();
+
+    expect($user->can('viewAll', Thread::class))->toBeFalse();
 });
 
 it('grants viewDepartment to admin', function () {
@@ -246,7 +263,18 @@ it('grants addParticipant to Ticket - User who can view the thread', function ()
     expect($user->can('addParticipant', $thread))->toBeTrue();
 });
 
-it('denies addParticipant without Ticket - User role', function () {
+it('grants addParticipant to Ticket - Manager who can view the thread', function () {
+    $user = User::factory()
+        ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::Officer)
+        ->withRole('Ticket - Manager')
+        ->create();
+
+    $thread = Thread::factory()->withDepartment(StaffDepartment::Command)->create();
+
+    expect($user->can('addParticipant', $thread))->toBeTrue();
+});
+
+it('denies addParticipant without Ticket - User or Ticket - Manager role', function () {
     $user = User::factory()
         ->withStaffPosition(StaffDepartment::Command, StaffRank::CrewMember)
         ->withRole('Staff Access')

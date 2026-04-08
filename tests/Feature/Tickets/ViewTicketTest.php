@@ -224,13 +224,14 @@ describe('View Ticket Component', function () {
         expect($thread->participants()->where('user_id', $assignee->id)->exists())->toBeTrue();
     })->done();
 
-    it('can render for Ticket - Manager in their department without being a participant #500', function () {
+    it('can render for Ticket - Manager on tickets from any department #500', function () {
         $manager = User::factory()
             ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::Officer)
             ->withRole('Ticket - Manager')
             ->create();
 
-        $thread = Thread::factory()->withDepartment(StaffDepartment::Quartermaster)->create();
+        // Ticket is in a different department than the manager
+        $thread = Thread::factory()->withDepartment(StaffDepartment::Chaplain)->create();
         Message::factory()->forThread($thread)->create(['body' => 'Admin action message']);
 
         actingAs($manager);
