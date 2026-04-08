@@ -2601,9 +2601,8 @@
             "version": "2.10.2",
             "dist": {
                 "type": "zip",
-                "url": "https://composer.fluxui.dev/download/a0a0798f-1cf8-4999-8f57-8688c21f2d59/flux-pro-2.10.2.zip",
-                "reference": "9440435e467c4bb775efbc2c510ec7dea61e17d7",
-                "shasum": "177bf08ae75c628c96a1a3a4fd1e788b1b798e1d"
+                "url": "https://composer.fluxui.dev/dist/flux-pro-2.10.2.zip",
+                "shasum": "bc0683f8cf33ced8af99b55c8fdc5741da70b32b"
             },
             "require": {
                 "illuminate/console": "^10.0|^11.0|^12.0",
@@ -2622,21 +2621,21 @@
             "type": "library",
             "extra": {
                 "laravel": {
-                    "aliases": {
-                        "Flux": "FluxPro\\FluxPro"
-                    },
                     "providers": [
                         "FluxPro\\FluxProServiceProvider"
-                    ]
+                    ],
+                    "aliases": {
+                        "Flux": "FluxPro\\FluxPro"
+                    }
                 }
             },
             "autoload": {
-                "files": [
-                    "src/helpers.php"
-                ],
                 "psr-4": {
                     "FluxPro\\": "src/"
-                }
+                },
+                "files": [
+                    "src/helpers.php"
+                ]
             },
             "autoload-dev": {
                 "psr-4": {
@@ -2667,7 +2666,7 @@
                 "livewire",
                 "ui"
             ],
-            "time": "2025-12-19T02:22:27+00:00"
+            "time": "2025-12-19T13:12:46+11:00"
         },
         {
             "name": "livewire/livewire",
