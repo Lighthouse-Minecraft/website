@@ -44,6 +44,14 @@ class AppServiceProvider extends ServiceProvider
             \App\Listeners\UpdateUserLastLogin::class,
         );
 
+        if (! $this->app->isProduction()) {
+            Event::listen(\Illuminate\Mail\Events\MessageSending::class, function ($event) {
+                $env = strtoupper(config('app.env'));
+                $subject = $event->message->getSubject() ?? '';
+                $event->message->subject("[{$env}] {$subject}");
+            });
+        }
+
         // Register custom notification channel
         Notification::extend('minecraft', function ($app) {
             return new \App\Channels\MinecraftChannel;

@@ -222,4 +222,34 @@ Route::prefix('library')->name('library.')->group(function () {
     });
 });
 
+// Finance — Public dashboard (no auth required)
+Volt::route('/finance', 'finance.public-dashboard')->name('finance.public.index');
+
+// Finance — Community view (Resident+)
+Route::prefix('finance')
+    ->name('finance.')
+    ->middleware(['auth', 'can:finance-community-view'])
+    ->group(function () {
+        Volt::route('/overview', 'finance.community-finance')->name('community.index');
+    });
+
+// Finance — Staff routes (Finance - View+)
+Route::prefix('finance')
+    ->name('finance.')
+    ->middleware(['auth', 'can:finance-view'])
+    ->group(function () {
+        Volt::route('/accounts', 'finance.chart-of-accounts')->name('accounts.index');
+        Volt::route('/periods', 'finance.fiscal-periods')->name('periods.index');
+        Volt::route('/vendors', 'finance.vendors')->name('vendors.index');
+        Volt::route('/tags', 'finance.tags')->name('tags.index');
+        Volt::route('/journal', 'finance.journal-entries')->name('journal.index');
+        Volt::route('/journal/create', 'finance.create-journal-entry')->name('journal.create');
+        Volt::route('/journal/create/manual', 'finance.create-manual-entry')->name('journal.create-manual');
+        Volt::route('/journal/{entryId}/edit', 'finance.edit-journal-entry')->name('journal.edit');
+        Volt::route('/budgets', 'finance.budgets')->name('budgets.index');
+        Volt::route('/restricted-funds', 'finance.restricted-funds')->name('restricted-funds.index');
+        Volt::route('/reconciliation/{accountId}/{periodId}', 'finance.bank-reconciliation')->name('reconciliation.show');
+        Volt::route('/reports', 'finance.reports')->name('reports.index');
+    });
+
 Route::get('/{slug}', [PageController::class, 'show'])->name('pages.show');
