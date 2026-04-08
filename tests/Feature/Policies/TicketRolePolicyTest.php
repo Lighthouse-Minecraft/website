@@ -22,7 +22,16 @@ it('grants viewDepartment to user with Ticket - User role and a department', fun
     expect($user->can('viewDepartment', Thread::class))->toBeTrue();
 });
 
-it('denies viewDepartment without Ticket - User role', function () {
+it('grants viewDepartment to user with Ticket - Manager role and a department', function () {
+    $user = User::factory()
+        ->withStaffPosition(StaffDepartment::Quartermaster, StaffRank::Officer)
+        ->withRole('Ticket - Manager')
+        ->create();
+
+    expect($user->can('viewDepartment', Thread::class))->toBeTrue();
+});
+
+it('denies viewDepartment without Ticket - User or Ticket - Manager role', function () {
     $user = User::factory()
         ->withStaffPosition(StaffDepartment::Command, StaffRank::CrewMember)
         ->withRole('Staff Access')
