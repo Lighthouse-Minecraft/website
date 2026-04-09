@@ -490,6 +490,16 @@ new class extends Component {
         <livewire:rules-version-history />
     @endcanany
 
+    {{-- Compliance List --}}
+    @can('rules.manage')
+        <livewire:rules-compliance-list />
+    @endcan
+
+    {{-- Agreement History (admins only) --}}
+    @if(auth()->user()?->isAdmin())
+        <livewire:rules-agreement-history />
+    @endif
+
     {{-- Add Category Modal --}}
     @can('rules.manage')
         <flux:modal name="add-category-modal" variant="flyout" class="space-y-4">
