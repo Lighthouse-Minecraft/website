@@ -24,6 +24,7 @@ All staff members (Junior Crew and above) can create and view discipline reports
    - **Actions Taken** -- what you did in response (minimum 5 characters). Supports Markdown.
    - **Severity** -- how serious the incident was (see below)
    - **Category** -- optional tag like Language, Harassment, Griefing, etc.
+   - **Rules Violated** -- optional. Select any Community Rules that were broken. Members can see these on the published report.
 5. Click **Save**
 
 The report is saved as a **Draft**. It won't be visible to the member until an Officer publishes it.
