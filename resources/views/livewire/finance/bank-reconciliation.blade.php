@@ -7,6 +7,7 @@ use App\Models\FinancialJournalEntryLine;
 use App\Models\FinancialPeriod;
 use App\Models\FinancialReconciliation;
 use Flux\Flux;
+use Illuminate\Support\Facades\DB;
 use Livewire\Volt\Component;
 
 new class extends Component {
@@ -75,6 +76,18 @@ new class extends Component {
         );
     }
 
+    public function getOpeningBalanceProperty(): int
+    {
+        return (int) FinancialJournalEntryLine::where('account_id', $this->account->id)
+            ->whereHas('journalEntry', fn ($q) => $q
+                ->whereHas('period', fn ($q2) => $q2
+                    ->where('end_date', '<', $this->period->start_date)
+                )
+                ->where('status', 'posted')
+            )
+            ->sum(\DB::raw('debit - credit'));
+    }
+
     public function getStatementBalanceCentsProperty(): int
     {
         try {
@@ -86,7 +99,7 @@ new class extends Component {
 
     public function getDifferenceProperty(): int
     {
-        return $this->statementBalanceCents - $this->clearedBalance;
+        return $this->statementBalanceCents - ($this->openingBalance + $this->clearedBalance);
     }
 
     public function getIsBalancedProperty(): bool
@@ -174,7 +187,12 @@ new class extends Component {
 
     {{-- Statement balance + summary --}}
     <flux:card>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div class="text-center">
+                <p class="text-xs text-zinc-500 mb-1">Opening Balance</p>
+                <p class="text-lg font-mono font-semibold">${{ number_format($this->openingBalance / 100, 2) }}</p>
+            </div>
+
             <flux:field>
                 <flux:label>Statement Ending Balance ($)</flux:label>
                 @if ($reconciliation->status === 'completed')
