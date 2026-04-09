@@ -9,6 +9,7 @@ use App\Enums\ReportSeverity;
 use App\Enums\StaffRank;
 use App\Models\DisciplineReport;
 use App\Models\ReportCategory;
+use App\Models\Rule as RuleModel;
 use App\Models\Thread;
 use App\Models\User;
 use Flux\Flux;
@@ -31,6 +32,7 @@ new class extends Component {
     public string $formActionsTaken = '';
     public string $formSeverity = '';
     public string $formCategory = '';
+    public array $formRuleIds = [];
 
     // Editing state
     #[Locked]
@@ -86,6 +88,15 @@ new class extends Component {
         return ReportCategory::orderBy('name')->get();
     }
 
+    public function getActiveRulesProperty()
+    {
+        return RuleModel::where('status', 'active')
+            ->with('ruleCategory')
+            ->orderBy('sort_order')
+            ->get()
+            ->groupBy(fn ($rule) => $rule->ruleCategory?->name ?? 'Uncategorized');
+    }
+
     public function openCreateModal(): void
     {
         $this->authorize('create', DisciplineReport::class);
@@ -118,6 +129,7 @@ new class extends Component {
             ReportSeverity::from($this->formSeverity),
             $this->formWitnesses ?: null,
             $category,
+            array_map('intval', $this->formRuleIds),
         );
 
         $this->resetForm();
@@ -137,6 +149,7 @@ new class extends Component {
         $this->formActionsTaken = $report->actions_taken;
         $this->formSeverity = $report->severity->value;
         $this->formCategory = (string) ($report->report_category_id ?? '');
+        $this->formRuleIds = $report->violatedRules()->pluck('rules.id')->map(fn ($id) => (string) $id)->all();
 
         Flux::modal('edit-report-modal')->show();
     }
@@ -165,6 +178,7 @@ new class extends Component {
             ReportSeverity::from($this->formSeverity),
             $this->formWitnesses ?: null,
             $category,
+            array_map('intval', $this->formRuleIds),
         );
 
         $this->resetForm();
@@ -189,7 +203,7 @@ new class extends Component {
             return null;
         }
 
-        return DisciplineReport::with(['subject', 'reporter', 'publisher', 'category'])
+        return DisciplineReport::with(['subject', 'reporter', 'publisher', 'category', 'violatedRules'])
             ->find($this->viewingReportId);
     }
 
@@ -255,6 +269,7 @@ new class extends Component {
         $this->formActionsTaken = '';
         $this->formSeverity = '';
         $this->formCategory = '';
+        $this->formRuleIds = [];
     }
 }; ?>
 
@@ -399,6 +414,28 @@ new class extends Component {
                 <flux:error name="formSeverity" />
             </flux:field>
 
+            @if($this->activeRules->isNotEmpty())
+                <flux:field>
+                    <flux:label>Rules Violated</flux:label>
+                    <div class="space-y-3 mt-1 max-h-48 overflow-y-auto border border-zinc-200 dark:border-zinc-700 rounded-lg p-3">
+                        @foreach($this->activeRules as $categoryName => $rules)
+                            <div>
+                                <flux:text class="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-1">{{ $categoryName }}</flux:text>
+                                <div class="space-y-1">
+                                    @foreach($rules as $rule)
+                                        <label wire:key="create-rule-{{ $rule->id }}" class="flex items-start gap-2 cursor-pointer">
+                                            <input type="checkbox" wire:model="formRuleIds" value="{{ $rule->id }}" class="mt-0.5 rounded border-zinc-300 dark:border-zinc-600" />
+                                            <span class="text-sm">{{ $rule->title }}</span>
+                                        </label>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                    <flux:description>Select any rules this incident violated (optional).</flux:description>
+                </flux:field>
+            @endif
+
             <div class="flex gap-2 justify-end">
                 <flux:button variant="ghost" x-on:click="$flux.modal('create-report-modal').close()">Cancel</flux:button>
                 <flux:button wire:click="createReport" variant="primary">Create Report</flux:button>
@@ -457,6 +494,28 @@ new class extends Component {
                 <flux:error name="formSeverity" />
             </flux:field>
 
+            @if($this->activeRules->isNotEmpty())
+                <flux:field>
+                    <flux:label>Rules Violated</flux:label>
+                    <div class="space-y-3 mt-1 max-h-48 overflow-y-auto border border-zinc-200 dark:border-zinc-700 rounded-lg p-3">
+                        @foreach($this->activeRules as $categoryName => $rules)
+                            <div>
+                                <flux:text class="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-1">{{ $categoryName }}</flux:text>
+                                <div class="space-y-1">
+                                    @foreach($rules as $rule)
+                                        <label wire:key="edit-rule-{{ $rule->id }}" class="flex items-start gap-2 cursor-pointer">
+                                            <input type="checkbox" wire:model="formRuleIds" value="{{ $rule->id }}" class="mt-0.5 rounded border-zinc-300 dark:border-zinc-600" />
+                                            <span class="text-sm">{{ $rule->title }}</span>
+                                        </label>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                    <flux:description>Select any rules this incident violated (optional).</flux:description>
+                </flux:field>
+            @endif
+
             <div class="flex gap-2 justify-end">
                 <flux:button variant="ghost" x-on:click="$flux.modal('edit-report-modal').close()">Cancel</flux:button>
                 <flux:button wire:click="updateReport" variant="primary">Save Changes</flux:button>
@@ -508,6 +567,18 @@ new class extends Component {
                         {!! Str::markdown($viewReport->actions_taken, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
                     </div>
                 </div>
+
+                @php $viewViolatedRules = $viewReport->violatedRules; @endphp
+                @if($viewViolatedRules->isNotEmpty())
+                    <div>
+                        <flux:text class="font-bold text-sm">Rules Violated</flux:text>
+                        <div class="mt-1 flex flex-wrap gap-1">
+                            @foreach($viewViolatedRules as $rule)
+                                <flux:badge color="red" size="sm">{{ $rule->title }}</flux:badge>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
 
                 @if($isStaffViewing)
                     <flux:separator variant="subtle" />
