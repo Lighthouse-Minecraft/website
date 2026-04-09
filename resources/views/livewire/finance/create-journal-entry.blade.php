@@ -374,7 +374,7 @@ new class extends Component
                             <flux:label>Tags <flux:badge size="sm" color="zinc">Optional</flux:badge></flux:label>
                             <div class="flex flex-wrap items-center gap-2">
                                 @foreach ($this->selectedTags as $tag)
-                                    <flux:badge color="{{ $tag['color'] }}" size="sm">
+                                    <flux:badge wire:key="income-tag-{{ $tag['id'] }}" color="{{ $tag['color'] }}" size="sm">
                                         {{ $tag['name'] }}
                                         <button wire:click="removeTag({{ $tag['id'] }})" class="ml-1 hover:opacity-70">×</button>
                                     </flux:badge>
@@ -450,7 +450,7 @@ new class extends Component
                             <flux:label>Tags <flux:badge size="sm" color="zinc">Optional</flux:badge></flux:label>
                             <div class="flex flex-wrap items-center gap-2">
                                 @foreach ($this->selectedTags as $tag)
-                                    <flux:badge color="{{ $tag['color'] }}" size="sm">
+                                    <flux:badge wire:key="expense-tag-{{ $tag['id'] }}" color="{{ $tag['color'] }}" size="sm">
                                         {{ $tag['name'] }}
                                         <button wire:click="removeTag({{ $tag['id'] }})" class="ml-1 hover:opacity-70">×</button>
                                     </flux:badge>

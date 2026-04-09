@@ -10,6 +10,11 @@ new class extends Component
 
     public string $search = '';
 
+    public function mount(): void
+    {
+        $this->authorize('rules.manage');
+    }
+
     public function updatedSearch(): void
     {
         $this->resetPage();

@@ -4,6 +4,7 @@ namespace App\Actions;
 
 use App\Models\Rule;
 use App\Models\RuleVersion;
+use Illuminate\Auth\Access\AuthorizationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class DeactivateRuleInDraft
@@ -17,6 +18,10 @@ class DeactivateRuleInDraft
      */
     public function handle(RuleVersion $draft, Rule $rule): void
     {
+        if ($draft->status !== 'draft') {
+            throw new AuthorizationException('Rules can only be deactivated in draft versions.');
+        }
+
         if ($draft->rules()->where('rules.id', $rule->id)->exists()) {
             $draft->rules()->updateExistingPivot($rule->id, ['deactivate_on_publish' => true]);
         } else {

@@ -117,17 +117,17 @@ new #[Layout('components.layouts.app')] class extends Component {
         @endif
 
         @foreach ($status['categories'] as $category)
-            <div class="space-y-3">
+            <div wire:key="rules-category-{{ $category->id }}" class="space-y-3">
                 <flux:heading size="lg">{{ $category->name }}</flux:heading>
 
                 @foreach ($category->rules as $rule)
-                    <div class="bg-zinc-800/60 border border-zinc-700/50 rounded-lg p-4 space-y-2">
+                    <div wire:key="rules-rule-{{ $rule->id }}" class="bg-zinc-800/60 border border-zinc-700/50 rounded-lg p-4 space-y-2">
                         <div class="flex items-start gap-3">
                             @if (!$status['has_agreed'])
                                 <div class="pt-0.5">
                                     <input
                                         type="checkbox"
-                                        wire:model="checked.{{ $rule->id }}"
+                                        wire:model.live="checked.{{ $rule->id }}"
                                         id="rule-{{ $rule->id }}"
                                         class="w-4 h-4 rounded border-zinc-600 bg-zinc-700 text-indigo-500 focus:ring-indigo-500"
                                     />

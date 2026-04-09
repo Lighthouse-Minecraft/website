@@ -6,6 +6,7 @@ use App\Models\Rule;
 use App\Models\RuleCategory;
 use App\Models\RuleVersion;
 use App\Models\User;
+use Illuminate\Auth\Access\AuthorizationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class AddRuleToDraft
@@ -22,6 +23,10 @@ class AddRuleToDraft
         string $description,
         User $createdBy
     ): Rule {
+        if ($draft->status !== 'draft') {
+            throw new AuthorizationException('Rules can only be added to draft versions.');
+        }
+
         $rule = Rule::create([
             'rule_category_id' => $category->id,
             'title' => $title,

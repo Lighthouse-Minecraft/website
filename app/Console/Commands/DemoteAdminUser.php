@@ -25,7 +25,7 @@ class DemoteAdminUser extends Command
      */
     public function handle()
     {
-        $email = $this->argument('email');
+        $email = strtolower(trim($this->argument('email')));
 
         $user = \App\Models\User::where('email', $email)->first();
 

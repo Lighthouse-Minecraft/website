@@ -6,6 +6,11 @@ use App\Models\User;
 use Livewire\Volt\Component;
 
 new class extends Component {
+    public function mount(): void
+    {
+        $this->authorize('rules.manage');
+    }
+
     public function getComplianceData(): array
     {
         $version = RuleVersion::currentPublished();

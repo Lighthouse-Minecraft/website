@@ -52,6 +52,8 @@ class ApproveAndPublishVersion
                 ->each(fn (Rule $rule) => $rule->update(['status' => 'inactive']));
         });
 
+        RecordActivity::run($version, 'rules_version_published', "Rules version v{$version->version_number} published by {$approvedBy->name}.");
+
         // Notify all active users that new rules require agreement (after transaction commits)
         $notificationService = app(TicketNotificationService::class);
         User::where('membership_level', '>=', MembershipLevel::Stowaway->value)
