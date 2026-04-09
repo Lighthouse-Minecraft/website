@@ -33,6 +33,23 @@ class UpdateRuleInDraft
         }
 
         return DB::transaction(function () use ($draft, $oldRule, $newTitle, $newDescription, $createdBy, $newCategory): Rule {
+            // If a draft replacement for this rule already exists in the draft, update it
+            // rather than creating a second one (which would cause both to be activated on publish).
+            $existingReplacement = $draft->rules()
+                ->where('rules.supersedes_rule_id', $oldRule->id)
+                ->where('rules.status', 'draft')
+                ->first();
+
+            if ($existingReplacement) {
+                $existingReplacement->update([
+                    'rule_category_id' => $newCategory?->id ?? $oldRule->rule_category_id,
+                    'title' => $newTitle,
+                    'description' => $newDescription,
+                ]);
+
+                return $existingReplacement->fresh();
+            }
+
             $replacement = Rule::create([
                 'rule_category_id' => $newCategory?->id ?? $oldRule->rule_category_id,
                 'title' => $newTitle,
