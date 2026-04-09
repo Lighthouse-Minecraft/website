@@ -46,4 +46,18 @@ class FinancialReconciliation extends Model
     {
         return $this->hasMany(FinancialReconciliationLine::class, 'reconciliation_id');
     }
+
+    /**
+     * Find the most recently completed reconciliation for an account that precedes the given period start date.
+     */
+    public static function findPriorCompleted(int $accountId, string $periodStartDate): ?self
+    {
+        return self::where('financial_reconciliations.account_id', $accountId)
+            ->where('financial_reconciliations.status', 'completed')
+            ->whereHas('period', fn ($q) => $q->where('end_date', '<', $periodStartDate))
+            ->join('financial_periods', 'financial_periods.id', '=', 'financial_reconciliations.period_id')
+            ->orderByDesc('financial_periods.end_date')
+            ->select('financial_reconciliations.*')
+            ->first();
+    }
 }

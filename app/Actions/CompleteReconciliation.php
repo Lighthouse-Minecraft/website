@@ -32,11 +32,10 @@ class CompleteReconciliation
             ->selectRaw('COALESCE(SUM(jel.debit) - SUM(jel.credit), 0) as net')
             ->value('net');
 
-        $prior = FinancialReconciliation::where('account_id', $reconciliation->account_id)
-            ->where('status', 'completed')
-            ->whereHas('period', fn ($q) => $q->where('end_date', '<', $reconciliation->period->start_date))
-            ->orderByDesc('id')
-            ->first();
+        $prior = FinancialReconciliation::findPriorCompleted(
+            $reconciliation->account_id,
+            $reconciliation->period->start_date->toDateString()
+        );
 
         $openingBalance = $prior?->statement_ending_balance ?? 0;
 

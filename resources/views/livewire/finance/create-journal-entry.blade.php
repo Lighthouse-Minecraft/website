@@ -503,7 +503,7 @@ new class extends Component
                 </flux:table.columns>
                 <flux:table.rows>
                     @foreach ($previewLines as $line)
-                        <flux:table.row>
+                        <flux:table.row wire:key="preview-line-{{ $loop->index }}">
                             <flux:table.cell>
                                 <flux:badge color="{{ $line['side'] === 'Debit' ? 'blue' : 'green' }}" size="sm">
                                     {{ $line['side'] }}
