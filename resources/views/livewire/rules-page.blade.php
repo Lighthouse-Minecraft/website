@@ -4,9 +4,10 @@ use App\Actions\AgreeToRulesVersion;
 use App\Actions\GetRulesAgreementStatus;
 use App\Models\SiteConfig;
 use Flux\Flux;
+use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
 
-new class extends Component {
+new #[Layout('components.layouts.app')] class extends Component {
     public array $checked = [];
     public array $childAgreements = [];
 
@@ -84,14 +85,13 @@ new class extends Component {
     }
 }; ?>
 
-<x-layouts.app>
-    @php
-        $status = $this->getAgreementStatus();
-        $header = \App\Models\SiteConfig::getValue('rules_header', '');
-        $footer = \App\Models\SiteConfig::getValue('rules_footer', '');
-    @endphp
+@php
+    $status = $this->getAgreementStatus();
+    $header = \App\Models\SiteConfig::getValue('rules_header', '');
+    $footer = \App\Models\SiteConfig::getValue('rules_footer', '');
+@endphp
 
-    <div class="max-w-3xl mx-auto py-8 px-4 space-y-8">
+<div class="max-w-3xl mx-auto py-8 px-4 space-y-8">
 
         @if (!$status['has_agreed'] && $status['current_version'])
             <div class="bg-amber-950/30 border border-amber-500/40 rounded-lg px-6 py-4">
@@ -235,5 +235,4 @@ new class extends Component {
             </div>
         @endif
 
-    </div>
-</x-layouts.app>
+</div>
