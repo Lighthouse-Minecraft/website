@@ -1,8 +1,11 @@
 <?php
 
 use App\Actions\AddRuleToDraft;
+use App\Actions\ApproveAndPublishVersion;
 use App\Actions\CreateRuleVersion;
 use App\Actions\DeactivateRuleInDraft;
+use App\Actions\RejectDraftVersion;
+use App\Actions\SubmitVersionForApproval;
 use App\Actions\UpdateRuleInDraft;
 use App\Actions\UpdateRulesHeaderFooter;
 use App\Models\Rule;
@@ -30,6 +33,9 @@ new class extends Component {
     public ?int $editRuleCategoryId = null;
     public string $editRuleTitle = '';
     public string $editRuleDescription = '';
+
+    // Reject modal
+    public string $rejectionNote = '';
 
     public function mount(): void
     {
@@ -270,6 +276,60 @@ new class extends Component {
             $next->save();
         }
     }
+
+    public function submitForApproval(): void
+    {
+        $this->authorize('rules.manage');
+
+        $draft = $this->getDraft();
+        if (! $draft || $draft->status !== 'draft') {
+            Flux::toast('No draft available to submit.', 'Error', variant: 'danger');
+
+            return;
+        }
+
+        SubmitVersionForApproval::run($draft, auth()->user());
+        Flux::toast('Draft submitted for approval.', 'Submitted', variant: 'success');
+    }
+
+    public function approveDraft(): void
+    {
+        $this->authorize('rules.approve');
+
+        $draft = $this->getDraft();
+        if (! $draft || $draft->status !== 'submitted') {
+            Flux::toast('No submitted version available to approve.', 'Error', variant: 'danger');
+
+            return;
+        }
+
+        try {
+            ApproveAndPublishVersion::run($draft, auth()->user());
+            Flux::toast('Rules version published. All members notified.', 'Published', variant: 'success');
+        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+            Flux::toast($e->getMessage(), 'Cannot Approve', variant: 'danger');
+        }
+    }
+
+    public function rejectDraft(): void
+    {
+        $this->authorize('rules.approve');
+
+        $this->validate(['rejectionNote' => 'required|string|min:10|max:2000']);
+
+        $draft = $this->getDraft();
+        if (! $draft || $draft->status !== 'submitted') {
+            Flux::toast('No submitted version available to reject.', 'Error', variant: 'danger');
+
+            return;
+        }
+
+        RejectDraftVersion::run($draft, auth()->user(), $this->rejectionNote);
+
+        $this->rejectionNote = '';
+        Flux::modal('reject-modal')->close();
+        Flux::toast('Draft rejected and returned for revision.', 'Rejected', variant: 'success');
+    }
 }; ?>
 
 <div class="space-y-8">
@@ -295,7 +355,7 @@ new class extends Component {
 
     {{-- Draft Management --}}
     <flux:card class="space-y-4">
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between flex-wrap gap-3">
             <div>
                 <flux:heading size="md">Draft Version</flux:heading>
                 @if($this->getDraft())
@@ -311,13 +371,50 @@ new class extends Component {
                     <flux:text variant="subtle">No draft version is currently open.</flux:text>
                 @endif
             </div>
-            @can('rules.manage')
-                @if(! $this->getDraft())
-                    <flux:button wire:click="startDraft" variant="primary" icon="document-plus">Start New Draft</flux:button>
-                @endif
-            @endcan
+            <div class="flex gap-2 flex-wrap">
+                @can('rules.manage')
+                    @if(! $this->getDraft())
+                        <flux:button wire:click="startDraft" variant="primary" icon="document-plus">Start New Draft</flux:button>
+                    @elseif($this->getDraft()->status === 'draft')
+                        <flux:button wire:click="submitForApproval" variant="primary" icon="paper-airplane">Submit for Approval</flux:button>
+                    @endif
+                @endcan
+                @can('rules.approve')
+                    @if($this->getDraft() && $this->getDraft()->status === 'submitted')
+                        <flux:button wire:click="approveDraft" variant="primary" icon="check-circle">Approve &amp; Publish</flux:button>
+                        <flux:modal.trigger name="reject-modal">
+                            <flux:button variant="danger" icon="x-circle">Reject</flux:button>
+                        </flux:modal.trigger>
+                    @endif
+                @endcan
+            </div>
         </div>
+
+        {{-- Rejection note visible to draft creator --}}
+        @if($this->getDraft() && $this->getDraft()->rejection_note && $this->getDraft()->status === 'draft')
+            <div class="border border-red-300 rounded p-3 bg-red-50 dark:bg-red-950 space-y-1">
+                <flux:text class="font-semibold text-red-700 dark:text-red-300">Rejected — Reviewer Feedback:</flux:text>
+                <flux:text class="text-sm text-red-600 dark:text-red-400">{{ $this->getDraft()->rejection_note }}</flux:text>
+            </div>
+        @endif
     </flux:card>
+
+    {{-- Reject Modal --}}
+    @can('rules.approve')
+        <flux:modal name="reject-modal" variant="flyout" class="space-y-4">
+            <flux:heading size="lg">Reject Draft Version</flux:heading>
+            <flux:text variant="subtle">Provide feedback for the draft creator explaining what needs to be changed.</flux:text>
+            <flux:field>
+                <flux:label>Feedback <span class="text-red-500">*</span></flux:label>
+                <flux:textarea wire:model="rejectionNote" rows="5" placeholder="Explain what needs to be changed before this version can be approved..." />
+                <flux:error name="rejectionNote" />
+            </flux:field>
+            <div class="flex gap-2 justify-end">
+                <flux:button x-on:click="$flux.modal('reject-modal').close()" variant="ghost">Cancel</flux:button>
+                <flux:button wire:click="rejectDraft" variant="danger">Reject Draft</flux:button>
+            </div>
+        </flux:modal>
+    @endcan
 
     {{-- Categories & Rules List --}}
     @foreach($this->getCategories() as $category)
@@ -387,6 +484,11 @@ new class extends Component {
             </flux:modal.trigger>
         </div>
     @endcan
+
+    {{-- Version History --}}
+    @canany(['rules.manage', 'rules.approve'])
+        <livewire:rules-version-history />
+    @endcanany
 
     {{-- Add Category Modal --}}
     @can('rules.manage')
