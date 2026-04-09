@@ -138,7 +138,7 @@ it('users with rules_accepted_at get a user_rule_agreements record for version 1
 });
 
 it('users without rules_accepted_at do not get an agreement record from seeder logic', function () {
-    $user = User::factory()->create([
+    $user = User::factory()->withoutRulesAgreed()->create([
         'rules_accepted_at' => null,
     ]);
 
