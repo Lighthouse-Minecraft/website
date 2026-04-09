@@ -7,7 +7,6 @@ use App\Models\FinancialJournalEntryLine;
 use App\Models\FinancialPeriod;
 use App\Models\FinancialReconciliation;
 use Flux\Flux;
-use Illuminate\Support\Facades\DB;
 use Livewire\Volt\Component;
 
 new class extends Component {
@@ -78,14 +77,13 @@ new class extends Component {
 
     public function getOpeningBalanceProperty(): int
     {
-        return (int) FinancialJournalEntryLine::where('account_id', $this->account->id)
-            ->whereHas('journalEntry', fn ($q) => $q
-                ->whereHas('period', fn ($q2) => $q2
-                    ->where('end_date', '<', $this->period->start_date)
-                )
-                ->where('status', 'posted')
-            )
-            ->sum(\DB::raw('debit - credit'));
+        $prior = FinancialReconciliation::where('account_id', $this->account->id)
+            ->where('status', 'completed')
+            ->whereHas('period', fn ($q) => $q->where('end_date', '<', $this->period->start_date))
+            ->orderByDesc('id')
+            ->first();
+
+        return $prior?->statement_ending_balance ?? 0;
     }
 
     public function getStatementBalanceCentsProperty(): int
