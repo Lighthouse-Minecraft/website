@@ -233,8 +233,8 @@ new class extends Component
         $formatted = '$'.number_format($amountCents / 100, 2);
 
         return [
-            ['side' => 'Debit',  'account' => $debitAccount?->name,  'amount' => $formatted],
-            ['side' => 'Credit', 'account' => $creditAccount?->name, 'amount' => $formatted],
+            ['side' => 'Debit',  'account' => $debitAccount?->name,  'amount' => $formatted, 'date' => $this->date],
+            ['side' => 'Credit', 'account' => $creditAccount?->name, 'amount' => $formatted, 'date' => $this->date],
         ];
     }
 
@@ -498,6 +498,7 @@ new class extends Component
                 <flux:table.columns>
                     <flux:table.column>Side</flux:table.column>
                     <flux:table.column>Account</flux:table.column>
+                    <flux:table.column>Date</flux:table.column>
                     <flux:table.column>Amount</flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>
@@ -509,6 +510,7 @@ new class extends Component
                                 </flux:badge>
                             </flux:table.cell>
                             <flux:table.cell>{{ $line['account'] }}</flux:table.cell>
+                            <flux:table.cell>{{ \Carbon\Carbon::parse($line['date'])->format('M j, Y') }}</flux:table.cell>
                             <flux:table.cell class="font-mono">{{ $line['amount'] }}</flux:table.cell>
                         </flux:table.row>
                     @endforeach
