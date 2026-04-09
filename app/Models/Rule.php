@@ -15,6 +15,7 @@ class Rule extends Model
         'status',
         'supersedes_rule_id',
         'created_by_user_id',
+        'sort_order',
     ];
 
     public function ruleCategory(): BelongsTo
