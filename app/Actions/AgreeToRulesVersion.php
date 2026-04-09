@@ -27,16 +27,16 @@ class AgreeToRulesVersion
             return;
         }
 
+        $isSelf = $user->id === $actingUser->id;
+
         UserRuleAgreement::updateOrCreate(
             ['user_id' => $user->id, 'rule_version_id' => $version->id],
-            ['agreed_at' => now()],
+            ['agreed_at' => now(), 'proxy_user_id' => $isSelf ? null : $actingUser->id],
         );
 
         $user->rules_accepted_at = now();
         $user->rules_accepted_by_user_id = $actingUser->id;
         $user->save();
-
-        $isSelf = $user->id === $actingUser->id;
 
         if ($user->isLevel(MembershipLevel::Drifter)) {
             $description = $isSelf

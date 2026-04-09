@@ -8,10 +8,16 @@ use Livewire\Volt\Component;
 
 new class extends Component {
     public array $checked = [];
+    public array $childAgreements = [];
 
     public function getAgreementStatus(): array
     {
         return GetRulesAgreementStatus::run(auth()->user());
+    }
+
+    public function getUnagreedChildrenProperty()
+    {
+        return auth()->user()->unagreedChildren();
     }
 
     public function allChecked(): bool
@@ -46,6 +52,36 @@ new class extends Component {
 
         $this->redirect(route('dashboard'), navigate: true);
     }
+
+    public function agreeForChildren(): void
+    {
+        $selectedIds = array_keys(array_filter($this->childAgreements));
+
+        if (empty($selectedIds)) {
+            Flux::toast('Please select at least one child account.', 'No Selection', variant: 'danger');
+
+            return;
+        }
+
+        $parent = auth()->user();
+        $unagreedChildren = $this->unagreedChildren;
+
+        foreach ($selectedIds as $childId) {
+            $child = $unagreedChildren->firstWhere('id', (int) $childId);
+            if ($child) {
+                AgreeToRulesVersion::run($child, $parent);
+            }
+        }
+
+        $count = count($selectedIds);
+        Flux::toast("Rules accepted for {$count} child account(s).", 'Proxy Agreement Submitted', variant: 'success');
+
+        $this->childAgreements = [];
+
+        if ($parent->unagreedChildren()->isEmpty()) {
+            $this->redirect(route('dashboard'), navigate: true);
+        }
+    }
 }; ?>
 
 <x-layouts.app>
@@ -62,6 +98,14 @@ new class extends Component {
                 <flux:heading size="lg" class="text-amber-300">Rules Agreement Required</flux:heading>
                 <flux:text class="mt-1 text-amber-200/80">
                     Please read and check each rule below, then click the agree button to continue.
+                </flux:text>
+            </div>
+        @elseif ($status['has_agreed'] && $this->unagreedChildren->isNotEmpty())
+            <div class="bg-blue-950/30 border border-blue-500/40 rounded-lg px-6 py-4">
+                <flux:heading size="lg" class="text-blue-300">Proxy Agreement Required</flux:heading>
+                <flux:text class="mt-1 text-blue-200/80">
+                    You have agreed to the rules, but some of your linked child accounts have not.
+                    Scroll down to complete proxy agreement on their behalf.
                 </flux:text>
             </div>
         @endif
@@ -152,6 +196,41 @@ new class extends Component {
                 <flux:text variant="subtle">You have agreed to the current version of the rules.</flux:text>
                 <div class="mt-3">
                     <flux:button href="{{ route('dashboard') }}" variant="ghost">Back to Dashboard</flux:button>
+                </div>
+            </div>
+        @endif
+
+        @if ($status['has_agreed'] && $this->unagreedChildren->isNotEmpty())
+            <div class="bg-blue-950/30 border border-blue-500/40 rounded-lg px-6 py-6 space-y-4">
+                <div>
+                    <flux:heading size="lg" class="text-blue-300">Proxy Agreement Required</flux:heading>
+                    <flux:text class="mt-1 text-blue-200/80">
+                        The following child accounts linked to yours have not yet agreed to the current rules.
+                        As their parent or guardian, you may agree on their behalf.
+                    </flux:text>
+                </div>
+
+                <div class="space-y-2">
+                    @foreach ($this->unagreedChildren as $child)
+                        <label wire:key="child-{{ $child->id }}" class="flex items-center gap-3 cursor-pointer bg-zinc-800/50 rounded-lg px-4 py-3 hover:bg-zinc-800/80 transition">
+                            <input type="checkbox" wire:model="childAgreements.{{ $child->id }}"
+                                class="w-4 h-4 rounded border-zinc-600 bg-zinc-700 text-indigo-500 focus:ring-indigo-500" />
+                            <flux:avatar size="xs" :src="$child->avatarUrl()" :initials="$child->initials()" />
+                            <div>
+                                <flux:text class="font-semibold text-sm">{{ $child->name }}</flux:text>
+                                <flux:text variant="subtle" class="text-xs">{{ $child->membership_level->label() }}</flux:text>
+                            </div>
+                        </label>
+                    @endforeach
+                </div>
+
+                <div class="flex items-center justify-between pt-2">
+                    <flux:text variant="subtle" class="text-xs">
+                        By submitting, you confirm you have read the rules on behalf of the selected child account(s).
+                    </flux:text>
+                    <flux:button wire:click="agreeForChildren" variant="primary" color="blue">
+                        Submit Proxy Agreement
+                    </flux:button>
                 </div>
             </div>
         @endif

@@ -9,7 +9,17 @@ class EnsureRulesAgreed
 {
     public function handle(Request $request, Closure $next)
     {
-        if ($request->user() && ! $request->user()->hasAgreedToCurrentRules()) {
+        $user = $request->user();
+
+        if (! $user) {
+            return $next($request);
+        }
+
+        if (! $user->hasAgreedToCurrentRules()) {
+            return redirect()->route('rules.show');
+        }
+
+        if ($user->unagreedChildren()->isNotEmpty()) {
             return redirect()->route('rules.show');
         }
 

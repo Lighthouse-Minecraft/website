@@ -302,6 +302,18 @@ class User extends Authenticatable // implements MustVerifyEmail
         return $this->ruleAgreements()->where('rule_version_id', $current->id)->exists();
     }
 
+    public function unagreedChildren(): \Illuminate\Support\Collection
+    {
+        $current = RuleVersion::currentPublished();
+        if (! $current) {
+            return collect();
+        }
+
+        $agreedUserIds = $current->agreements()->pluck('user_id');
+
+        return $this->children()->whereNotIn('users.id', $agreedUserIds)->get();
+    }
+
     public function children(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'parent_child_links', 'parent_user_id', 'child_user_id')
