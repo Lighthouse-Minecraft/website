@@ -199,15 +199,18 @@ MARKDOWN;
             ->where('created_at', '>=', $migrationDate)
             ->delete();
 
-        DB::table('rule_version_rules')->delete();
-        DB::table('rule_versions')->where('version_number', 1)->delete();
+        $versionId = DB::table('rule_versions')->where('version_number', 1)->value('id');
+        if ($versionId) {
+            DB::table('rule_version_rules')->where('rule_version_id', $versionId)->delete();
+            DB::table('rule_versions')->where('id', $versionId)->delete();
+        }
 
         DB::table('site_configs')
             ->whereIn('key', ['rules_header', 'rules_footer'])
             ->where('created_at', '>=', $migrationDate)
             ->delete();
 
-        DB::table('rules')->delete();
-        DB::table('rule_categories')->delete();
+        DB::table('rules')->where('created_at', '>=', $migrationDate)->delete();
+        DB::table('rule_categories')->where('created_at', '>=', $migrationDate)->delete();
     }
 };

@@ -15,6 +15,11 @@ class CreateRuleVersion
      */
     public function handle(User $createdBy): RuleVersion
     {
+        $existing = RuleVersion::currentDraft();
+        if ($existing) {
+            return $existing;
+        }
+
         $published = RuleVersion::currentPublished();
         $nextNumber = $published ? $published->version_number + 1 : 1;
 

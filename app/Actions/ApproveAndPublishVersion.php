@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Notifications\RulesVersionPublishedNotification;
 use App\Services\TicketNotificationService;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ApproveAndPublishVersion
@@ -32,24 +33,26 @@ class ApproveAndPublishVersion
             throw new AuthorizationException('The creator of a draft cannot approve their own version.');
         }
 
-        $version->status = 'published';
-        $version->approved_by_user_id = $approvedBy->id;
-        $version->published_at = now();
-        $version->save();
+        DB::transaction(function () use ($version, $approvedBy): void {
+            $version->status = 'published';
+            $version->approved_by_user_id = $approvedBy->id;
+            $version->published_at = now();
+            $version->save();
 
-        // Activate draft rules in the version (deactivate_on_publish = false)
-        $version->rules()
-            ->wherePivot('deactivate_on_publish', false)
-            ->where('rules.status', 'draft')
-            ->each(fn (Rule $rule) => $rule->update(['status' => 'active']));
+            // Activate draft rules in the version (deactivate_on_publish = false)
+            $version->rules()
+                ->wherePivot('deactivate_on_publish', false)
+                ->where('rules.status', 'draft')
+                ->each(fn (Rule $rule) => $rule->update(['status' => 'active']));
 
-        // Deactivate rules marked for deactivation
-        $version->rules()
-            ->wherePivot('deactivate_on_publish', true)
-            ->where('rules.status', 'active')
-            ->each(fn (Rule $rule) => $rule->update(['status' => 'inactive']));
+            // Deactivate rules marked for deactivation
+            $version->rules()
+                ->wherePivot('deactivate_on_publish', true)
+                ->where('rules.status', 'active')
+                ->each(fn (Rule $rule) => $rule->update(['status' => 'inactive']));
+        });
 
-        // Notify all active users that new rules require agreement
+        // Notify all active users that new rules require agreement (after transaction commits)
         $notificationService = app(TicketNotificationService::class);
         User::where('membership_level', '>=', MembershipLevel::Stowaway->value)
             ->each(function (User $user) use ($version, $notificationService) {

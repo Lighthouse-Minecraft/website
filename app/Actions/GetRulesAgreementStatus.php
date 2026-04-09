@@ -40,6 +40,7 @@ class GetRulesAgreementStatus
         $agreedVersionIds = $user->ruleAgreements()->pluck('rule_version_id');
         $agreedRuleIds = DB::table('rule_version_rules')
             ->whereIn('rule_version_id', $agreedVersionIds)
+            ->where('deactivate_on_publish', false)
             ->pluck('rule_id')
             ->flip()
             ->all(); // keyed lookup
@@ -50,6 +51,7 @@ class GetRulesAgreementStatus
         if ($lastAgreement) {
             $lastVersionRuleIds = DB::table('rule_version_rules')
                 ->where('rule_version_id', $lastAgreement->rule_version_id)
+                ->where('deactivate_on_publish', false)
                 ->pluck('rule_id')
                 ->flip()
                 ->all();

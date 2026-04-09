@@ -24,6 +24,8 @@ it('seeds the draft with all active rules from the published version', function 
     $user = User::factory()->create();
     $published = RuleVersion::currentPublished();
 
+    expect($published)->not->toBeNull('No published version exists — seed migration may not have run.');
+
     $draft = CreateRuleVersion::run($user);
 
     $publishedActiveRuleIds = $published->activeRules()->pluck('rules.id')->sort()->values();
@@ -48,7 +50,8 @@ it('only one draft can be created (no two draft versions exist at once)', functi
     $user = User::factory()->create();
 
     $draft1 = CreateRuleVersion::run($user);
+    $draft2 = CreateRuleVersion::run($user);
 
-    expect($draft1->status)->toBe('draft');
-    expect(RuleVersion::currentDraft())->not->toBeNull();
+    expect($draft1->id)->toBe($draft2->id)
+        ->and(RuleVersion::where('status', 'draft')->count())->toBe(1);
 });

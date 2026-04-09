@@ -1,11 +1,11 @@
 <?php
 
-use App\Models\User;
 use App\Models\UserRuleAgreement;
 use Livewire\Volt\Component;
 use Livewire\WithPagination;
 
-new class extends Component {
+new class extends Component
+{
     use WithPagination;
 
     public string $search = '';
@@ -19,8 +19,10 @@ new class extends Component {
     {
         return UserRuleAgreement::with(['user', 'ruleVersion'])
             ->when($this->search, function ($q) {
-                $q->whereHas('user', fn ($uq) => $uq->where('name', 'like', '%'.$this->search.'%')
-                    ->orWhere('email', 'like', '%'.$this->search.'%'));
+                $q->whereHas('user', fn ($uq) => $uq->where(function ($inner) {
+                    $inner->where('name', 'like', '%'.$this->search.'%')
+                        ->orWhere('email', 'like', '%'.$this->search.'%');
+                }));
             })
             ->orderByDesc('agreed_at')
             ->paginate(25);

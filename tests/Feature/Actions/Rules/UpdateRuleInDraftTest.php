@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Actions\CreateRuleVersion;
 use App\Actions\UpdateRuleInDraft;
 use App\Models\Rule;
+use App\Models\RuleVersion;
 use App\Models\User;
 
 uses()->group('rules', 'actions');
@@ -12,7 +13,8 @@ uses()->group('rules', 'actions');
 it('creates a replacement rule with supersedes_rule_id pointing to the old rule', function () {
     $user = User::factory()->create();
     $draft = CreateRuleVersion::run($user);
-    $oldRule = Rule::where('status', 'active')->first();
+    $oldRule = Rule::factory()->create(['status' => 'active']);
+    $draft->rules()->attach($oldRule->id, ['deactivate_on_publish' => false]);
 
     $replacement = UpdateRuleInDraft::run($draft, $oldRule, 'Updated Title', 'Updated description.', $user);
 
@@ -24,7 +26,8 @@ it('creates a replacement rule with supersedes_rule_id pointing to the old rule'
 it('adds the replacement rule to the draft with deactivate_on_publish false', function () {
     $user = User::factory()->create();
     $draft = CreateRuleVersion::run($user);
-    $oldRule = Rule::where('status', 'active')->first();
+    $oldRule = Rule::factory()->create(['status' => 'active']);
+    $draft->rules()->attach($oldRule->id, ['deactivate_on_publish' => false]);
 
     $replacement = UpdateRuleInDraft::run($draft, $oldRule, 'Updated Title', 'New text.', $user);
 
@@ -36,7 +39,8 @@ it('adds the replacement rule to the draft with deactivate_on_publish false', fu
 it('marks the old rule for deactivation on publish', function () {
     $user = User::factory()->create();
     $draft = CreateRuleVersion::run($user);
-    $oldRule = Rule::where('status', 'active')->first();
+    $oldRule = Rule::factory()->create(['status' => 'active']);
+    $draft->rules()->attach($oldRule->id, ['deactivate_on_publish' => false]);
 
     UpdateRuleInDraft::run($draft, $oldRule, 'Updated Title', 'New text.', $user);
 
@@ -48,9 +52,18 @@ it('marks the old rule for deactivation on publish', function () {
 it('does not immediately deactivate the old rule', function () {
     $user = User::factory()->create();
     $draft = CreateRuleVersion::run($user);
-    $oldRule = Rule::where('status', 'active')->first();
+    $oldRule = Rule::factory()->create(['status' => 'active']);
+    $draft->rules()->attach($oldRule->id, ['deactivate_on_publish' => false]);
 
     UpdateRuleInDraft::run($draft, $oldRule, 'Updated Title', 'New text.', $user);
 
     expect($oldRule->fresh()->status)->toBe('active');
 });
+
+it('throws if the version is not a draft', function () {
+    $user = User::factory()->create();
+    $version = RuleVersion::factory()->create(['status' => 'submitted']);
+    $oldRule = Rule::factory()->create(['status' => 'active']);
+
+    UpdateRuleInDraft::run($version, $oldRule, 'Title', 'Desc.', $user);
+})->throws(InvalidArgumentException::class);

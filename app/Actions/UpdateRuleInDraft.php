@@ -6,6 +6,8 @@ use App\Models\Rule;
 use App\Models\RuleCategory;
 use App\Models\RuleVersion;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdateRuleInDraft
@@ -26,25 +28,31 @@ class UpdateRuleInDraft
         User $createdBy,
         ?RuleCategory $newCategory = null
     ): Rule {
-        $replacement = Rule::create([
-            'rule_category_id' => $newCategory?->id ?? $oldRule->rule_category_id,
-            'title' => $newTitle,
-            'description' => $newDescription,
-            'status' => 'draft',
-            'supersedes_rule_id' => $oldRule->id,
-            'created_by_user_id' => $createdBy->id,
-        ]);
-
-        // Add the replacement rule to the draft as "activate on publish"
-        $draft->rules()->attach($replacement->id, ['deactivate_on_publish' => false]);
-
-        // Mark the old rule for deactivation on publish (it may or may not be in the version already)
-        if ($draft->rules()->where('rules.id', $oldRule->id)->exists()) {
-            $draft->rules()->updateExistingPivot($oldRule->id, ['deactivate_on_publish' => true]);
-        } else {
-            $draft->rules()->attach($oldRule->id, ['deactivate_on_publish' => true]);
+        if ($draft->status !== 'draft') {
+            throw new InvalidArgumentException('Only draft versions can be updated.');
         }
 
-        return $replacement;
+        return DB::transaction(function () use ($draft, $oldRule, $newTitle, $newDescription, $createdBy, $newCategory): Rule {
+            $replacement = Rule::create([
+                'rule_category_id' => $newCategory?->id ?? $oldRule->rule_category_id,
+                'title' => $newTitle,
+                'description' => $newDescription,
+                'status' => 'draft',
+                'supersedes_rule_id' => $oldRule->id,
+                'created_by_user_id' => $createdBy->id,
+            ]);
+
+            // Add the replacement rule to the draft as "activate on publish"
+            $draft->rules()->attach($replacement->id, ['deactivate_on_publish' => false]);
+
+            // Mark the old rule for deactivation on publish (it may or may not be in the version already)
+            if ($draft->rules()->where('rules.id', $oldRule->id)->exists()) {
+                $draft->rules()->updateExistingPivot($oldRule->id, ['deactivate_on_publish' => true]);
+            } else {
+                $draft->rules()->attach($oldRule->id, ['deactivate_on_publish' => true]);
+            }
+
+            return $replacement;
+        });
     }
 }
