@@ -32,7 +32,14 @@ class CompleteReconciliation
             ->selectRaw('COALESCE(SUM(jel.debit) - SUM(jel.credit), 0) as net')
             ->value('net');
 
-        $difference = $reconciliation->statement_ending_balance - $clearedBalance;
+        $prior = FinancialReconciliation::findPriorCompleted(
+            $reconciliation->account_id,
+            $reconciliation->period->start_date->toDateString()
+        );
+
+        $openingBalance = $prior?->statement_ending_balance ?? 0;
+
+        $difference = $reconciliation->statement_ending_balance - ($openingBalance + $clearedBalance);
 
         if ($difference !== 0) {
             throw new \RuntimeException(
