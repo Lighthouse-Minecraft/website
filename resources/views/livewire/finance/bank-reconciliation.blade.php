@@ -75,6 +75,16 @@ new class extends Component {
         );
     }
 
+    public function getOpeningBalanceProperty(): int
+    {
+        $prior = FinancialReconciliation::findPriorCompleted(
+            $this->account->id,
+            $this->period->start_date->toDateString()
+        );
+
+        return $prior?->statement_ending_balance ?? 0;
+    }
+
     public function getStatementBalanceCentsProperty(): int
     {
         try {
@@ -86,7 +96,7 @@ new class extends Component {
 
     public function getDifferenceProperty(): int
     {
-        return $this->statementBalanceCents - $this->clearedBalance;
+        return $this->statementBalanceCents - ($this->openingBalance + $this->clearedBalance);
     }
 
     public function getIsBalancedProperty(): bool
@@ -175,19 +185,10 @@ new class extends Component {
     {{-- Statement balance + summary --}}
     <flux:card>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <flux:field>
-                <flux:label>Statement Ending Balance ($)</flux:label>
-                @if ($reconciliation->status === 'completed')
-                    <p class="text-sm font-mono font-medium">${{ number_format($reconciliation->statement_ending_balance / 100, 2) }}</p>
-                @else
-                    <flux:input
-                        wire:model.live="statementBalance"
-                        wire:change="updateStatementBalance"
-                        placeholder="0.00"
-                    />
-                    <flux:error name="statementBalance" />
-                @endif
-            </flux:field>
+            <div class="text-center">
+                <p class="text-xs text-zinc-500 mb-1">Opening Balance</p>
+                <p class="text-lg font-mono font-semibold dark:text-zinc-100">${{ number_format($this->openingBalance / 100, 2) }}</p>
+            </div>
 
             <div class="text-center">
                 <p class="text-xs text-zinc-500 mb-1">Cleared Balance</p>
@@ -212,8 +213,23 @@ new class extends Component {
             </div>
         </div>
 
-        @if ($reconciliation->status !== 'completed')
-            <div class="flex justify-end mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-700">
+        <div class="flex items-end justify-between mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-700">
+            <flux:field>
+                <flux:label>Statement Ending Balance ($)</flux:label>
+                @if ($reconciliation->status === 'completed')
+                    <p class="text-sm font-mono font-medium">${{ number_format($reconciliation->statement_ending_balance / 100, 2) }}</p>
+                @else
+                    <flux:input
+                        wire:model.live="statementBalance"
+                        wire:change="updateStatementBalance"
+                        placeholder="0.00"
+                        class="w-40"
+                    />
+                    <flux:error name="statementBalance" />
+                @endif
+            </flux:field>
+
+            @if ($reconciliation->status !== 'completed')
                 <flux:button
                     variant="primary"
                     wire:click="complete"
@@ -221,13 +237,13 @@ new class extends Component {
                 >
                     Complete Reconciliation
                 </flux:button>
-            </div>
-        @else
-            <div class="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-700 text-sm text-zinc-500">
-                Completed {{ $reconciliation->completed_at->format('M j, Y \a\t g:i A') }}
-                by {{ $reconciliation->completedBy?->name ?? 'Unknown' }}
-            </div>
-        @endif
+            @else
+                <p class="text-sm text-zinc-500">
+                    Completed {{ $reconciliation->completed_at->format('M j, Y \a\t g:i A') }}
+                    by {{ $reconciliation->completedBy?->name ?? 'Unknown' }}
+                </p>
+            @endif
+        </div>
     </flux:card>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
