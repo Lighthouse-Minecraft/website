@@ -258,5 +258,14 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('finance-community-view', function ($user) {
             return $user->isAdmin() || (! $user->in_brig && $user->isAtLeastLevel(MembershipLevel::Resident));
         });
+
+        // Rules gates
+        Gate::define('rules.manage', function ($user) {
+            return $user->hasRole('Rules - Manage');
+        });
+
+        Gate::define('rules.approve', function ($user) {
+            return $user->hasRole('Rules - Approve');
+        });
     }
 }
