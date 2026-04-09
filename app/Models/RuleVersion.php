@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class RuleVersion extends Model
 {
@@ -42,6 +43,11 @@ class RuleVersion extends Model
         return $this->belongsToMany(Rule::class, 'rule_version_rules')
             ->withPivot('deactivate_on_publish')
             ->wherePivot('deactivate_on_publish', false);
+    }
+
+    public function agreements(): HasMany
+    {
+        return $this->hasMany(UserRuleAgreement::class);
     }
 
     public function isDraft(): bool
