@@ -37,6 +37,8 @@ class AddRuleToDraft
 
         $draft->rules()->attach($rule->id, ['deactivate_on_publish' => false]);
 
+        RecordActivity::run($rule, 'rule_added_to_draft', "Rule \"{$rule->title}\" added to draft version.");
+
         return $rule;
     }
 }

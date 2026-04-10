@@ -27,5 +27,7 @@ class DeactivateRuleInDraft
         } else {
             $draft->rules()->attach($rule->id, ['deactivate_on_publish' => true]);
         }
+
+        RecordActivity::run($rule, 'rule_marked_for_deactivation', "Rule \"{$rule->title}\" marked for deactivation on publish.");
     }
 }
