@@ -121,51 +121,41 @@ new #[Layout('components.layouts.app')] class extends Component {
                 <flux:heading size="lg">{{ $category->name }}</flux:heading>
 
                 @foreach ($category->rules as $rule)
-                    <div wire:key="rules-rule-{{ $rule->id }}" class="bg-zinc-800/60 border border-zinc-700/50 rounded-lg p-4 space-y-2">
-                        <div class="flex items-start gap-3">
-                            @if (!$status['has_agreed'])
-                                <div class="pt-0.5">
-                                    <input
-                                        type="checkbox"
-                                        wire:model.live="checked.{{ $rule->id }}"
-                                        id="rule-{{ $rule->id }}"
-                                        class="w-4 h-4 rounded border-zinc-600 bg-zinc-700 text-indigo-500 focus:ring-indigo-500"
-                                    />
-                                </div>
+                    <div wire:key="rules-rule-{{ $rule->id }}" class="bg-zinc-800/60 border border-zinc-700/50 rounded-lg p-4 space-y-3">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="font-semibold text-zinc-100">{{ $rule->title }}</span>
+
+                            @if ($rule->agreement_status === 'new')
+                                <flux:badge color="green" size="sm">NEW</flux:badge>
+                            @elseif ($rule->agreement_status === 'updated')
+                                <flux:badge color="amber" size="sm">UPDATED</flux:badge>
                             @endif
-
-                            <div class="flex-1 min-w-0">
-                                <div class="flex flex-wrap items-center gap-2 mb-1">
-                                    <label for="rule-{{ $rule->id }}" class="font-semibold text-zinc-100 cursor-pointer">
-                                        {{ $rule->title }}
-                                    </label>
-
-                                    @if ($rule->agreement_status === 'new')
-                                        <flux:badge color="green" size="sm">NEW</flux:badge>
-                                    @elseif ($rule->agreement_status === 'updated')
-                                        <flux:badge color="amber" size="sm">UPDATED</flux:badge>
-                                    @endif
-                                </div>
-
-                                <div class="prose prose-sm prose-invert max-w-none text-zinc-300">
-                                    {!! Str::markdown($rule->description, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
-                                </div>
-
-                                @if ($rule->agreement_status === 'updated' && $rule->previous_rule)
-                                    <details class="mt-3">
-                                        <summary class="text-xs text-zinc-400 cursor-pointer hover:text-zinc-200 select-none">
-                                            View previous version of this rule
-                                        </summary>
-                                        <div class="mt-2 pl-3 border-l-2 border-zinc-600 space-y-1">
-                                            <flux:text variant="subtle" class="text-xs font-medium uppercase tracking-wide">Previous</flux:text>
-                                            <div class="prose prose-sm prose-invert max-w-none text-zinc-400">
-                                                {!! Str::markdown($rule->previous_rule->description, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
-                                            </div>
-                                        </div>
-                                    </details>
-                                @endif
-                            </div>
                         </div>
+
+                        <div class="prose prose-sm prose-invert max-w-none text-zinc-300">
+                            {!! Str::markdown($rule->description, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
+                        </div>
+
+                        @if ($rule->agreement_status === 'updated' && $rule->previous_rule)
+                            <details class="mt-1">
+                                <summary class="text-xs text-zinc-400 cursor-pointer hover:text-zinc-200 select-none">
+                                    View previous version of this rule
+                                </summary>
+                                <div class="mt-2 pl-3 border-l-2 border-zinc-600 space-y-1">
+                                    <flux:text variant="subtle" class="text-xs font-medium uppercase tracking-wide">Previous</flux:text>
+                                    <div class="prose prose-sm prose-invert max-w-none text-zinc-400">
+                                        {!! Str::markdown($rule->previous_rule->description, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
+                                    </div>
+                                </div>
+                            </details>
+                        @endif
+
+                        @if (!$status['has_agreed'])
+                            <div class="flex items-center gap-3 pt-2 border-t border-zinc-700/50">
+                                <flux:switch wire:model.live="checked.{{ $rule->id }}" />
+                                <flux:text class="text-sm">I have read and agree to this rule</flux:text>
+                            </div>
+                        @endif
                     </div>
                 @endforeach
             </div>
