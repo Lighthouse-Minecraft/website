@@ -68,11 +68,15 @@ class GetRulesAgreementStatus
         $categories = RuleCategory::with(['rules.supersedes'])
             ->orderBy('sort_order')
             ->get()
-            ->map(function (RuleCategory $category) use ($currentRuleIds, $agreedRuleIds, $lastVersionRuleIds) {
+            ->map(function (RuleCategory $category) use ($currentRuleIds, $agreedRuleIds, $lastVersionRuleIds, $lastAgreement) {
                 $category->setRelation('rules', $category->rules->filter(function ($rule) use ($currentRuleIds) {
                     return isset($currentRuleIds[$rule->id]);
-                })->values()->map(function ($rule) use ($agreedRuleIds, $lastVersionRuleIds) {
-                    if (isset($agreedRuleIds[$rule->id])) {
+                })->values()->map(function ($rule) use ($agreedRuleIds, $lastVersionRuleIds, $lastAgreement) {
+                    if (! $lastAgreement) {
+                        // First-time user: nothing is "new" or "updated" — all rules are simply the rules
+                        $rule->agreement_status = 'unchanged';
+                        $rule->previous_rule = null;
+                    } elseif (isset($agreedRuleIds[$rule->id])) {
                         $rule->agreement_status = 'unchanged';
                         $rule->previous_rule = null;
                     } elseif ($rule->supersedes_rule_id && isset($lastVersionRuleIds[$rule->supersedes_rule_id])) {
