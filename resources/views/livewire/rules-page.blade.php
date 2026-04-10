@@ -181,7 +181,7 @@ new #[Layout('components.layouts.app')] class extends Component {
                     I Have Read and Agree to All Rules
                 </flux:button>
             </div>
-        @elseif ($status['has_agreed'])
+        @elseif ($status['has_agreed'] && $this->unagreedChildren->isEmpty())
             <div class="text-center py-4">
                 <flux:text variant="subtle">You have agreed to the current version of the rules.</flux:text>
                 <div class="mt-3">
