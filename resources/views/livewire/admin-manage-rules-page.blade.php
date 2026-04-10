@@ -5,6 +5,7 @@ use App\Actions\ApproveAndPublishVersion;
 use App\Actions\CreateRuleVersion;
 use App\Actions\DeactivateRuleInDraft;
 use App\Actions\RejectDraftVersion;
+use App\Actions\RemoveRuleFromDraft;
 use App\Actions\SubmitVersionForApproval;
 use App\Actions\UpdateRuleInDraft;
 use App\Actions\UpdateRulesHeaderFooter;
@@ -33,6 +34,10 @@ new class extends Component {
     public ?int $editRuleCategoryId = null;
     public string $editRuleTitle = '';
     public string $editRuleDescription = '';
+
+    // Edit category
+    public ?int $editCategoryId = null;
+    public string $editCategoryName = '';
 
     // Reject modal
     public string $rejectionNote = '';
@@ -152,6 +157,62 @@ new class extends Component {
             $category->save();
             $next->save();
         }
+    }
+
+    public function openEditCategoryModal(int $categoryId): void
+    {
+        $this->authorize('rules.manage');
+
+        $category = RuleCategory::findOrFail($categoryId);
+        $this->editCategoryId = $categoryId;
+        $this->editCategoryName = $category->name;
+        Flux::modal('edit-category-modal')->show();
+    }
+
+    public function updateCategory(): void
+    {
+        $this->authorize('rules.manage');
+
+        $this->validate(['editCategoryName' => 'required|string|max:255']);
+
+        $category = RuleCategory::findOrFail($this->editCategoryId);
+        $category->update(['name' => $this->editCategoryName]);
+
+        $this->reset(['editCategoryId', 'editCategoryName']);
+        Flux::modal('edit-category-modal')->close();
+        Flux::toast('Category name updated.', 'Updated', variant: 'success');
+    }
+
+    public function deleteCategory(int $categoryId): void
+    {
+        $this->authorize('rules.manage');
+
+        $category = RuleCategory::findOrFail($categoryId);
+
+        if ($category->rules()->count() > 0) {
+            Flux::toast('Cannot delete a category that has rules. Move or remove all rules first.', 'Error', variant: 'danger');
+
+            return;
+        }
+
+        $category->delete();
+        Flux::toast('Category deleted.', 'Deleted', variant: 'success');
+    }
+
+    public function removeRuleFromDraft(int $ruleId): void
+    {
+        $this->authorize('rules.manage');
+
+        $draft = $this->getDraft();
+        if (! $draft) {
+            Flux::toast('No draft version found.', 'Error', variant: 'danger');
+
+            return;
+        }
+
+        $rule = Rule::findOrFail($ruleId);
+        RemoveRuleFromDraft::run($draft, $rule);
+        Flux::toast('Rule removed from draft.', 'Removed', variant: 'success');
     }
 
     public function openAddRuleModal(int $categoryId): void
@@ -424,6 +485,10 @@ new class extends Component {
                 @can('rules.manage')
                     <flux:button wire:click="moveCategoryUp({{ $category->id }})" size="sm" variant="ghost" icon="chevron-up" title="Move category up" />
                     <flux:button wire:click="moveCategoryDown({{ $category->id }})" size="sm" variant="ghost" icon="chevron-down" title="Move category down" />
+                    <flux:button wire:click="openEditCategoryModal({{ $category->id }})" size="sm" variant="ghost" icon="pencil-square" title="Edit category name" />
+                    @if($category->rules->isEmpty())
+                        <flux:button wire:click="deleteCategory({{ $category->id }})" wire:confirm="Delete this category?" size="sm" variant="ghost" icon="trash" title="Delete category" />
+                    @endif
                     @if($this->getDraft())
                         <flux:button wire:click="openAddRuleModal({{ $category->id }})" size="sm" variant="ghost" icon="plus" title="Add rule">Add Rule</flux:button>
                     @endif
@@ -462,9 +527,13 @@ new class extends Component {
                                 <flux:button wire:click="moveRuleUp({{ $rule->id }})" size="sm" variant="ghost" icon="chevron-up" title="Move up" />
                                 <flux:button wire:click="moveRuleDown({{ $rule->id }})" size="sm" variant="ghost" icon="chevron-down" title="Move down" />
                                 @if($this->getDraft() && ! $isDeactivating)
-                                    <flux:button wire:click="openEditRuleModal({{ $rule->id }})" size="sm" variant="ghost" icon="pencil-square" title="Edit / Replace" />
-                                    @if($rule->status === 'active')
-                                        <flux:button wire:click="deactivateRule({{ $rule->id }})" size="sm" variant="ghost" icon="trash" title="Mark for deactivation" />
+                                    @if($isDraftRule)
+                                        <flux:button wire:click="removeRuleFromDraft({{ $rule->id }})" wire:confirm="Remove this rule from the draft?" size="sm" variant="ghost" icon="trash" title="Remove from draft" />
+                                    @else
+                                        <flux:button wire:click="openEditRuleModal({{ $rule->id }})" size="sm" variant="ghost" icon="pencil-square" title="Edit / Replace" />
+                                        @if($rule->status === 'active')
+                                            <flux:button wire:click="deactivateRule({{ $rule->id }})" size="sm" variant="ghost" icon="trash" title="Mark for deactivation" />
+                                        @endif
                                     @endif
                                 @endif
                             @endcan
@@ -512,6 +581,20 @@ new class extends Component {
             <div class="flex gap-2 justify-end">
                 <flux:button x-on:click="$flux.modal('add-category-modal').close()" variant="ghost">Cancel</flux:button>
                 <flux:button wire:click="addCategory" variant="primary">Add Category</flux:button>
+            </div>
+        </flux:modal>
+
+        {{-- Edit Category Modal --}}
+        <flux:modal name="edit-category-modal" variant="flyout" class="space-y-4">
+            <flux:heading size="lg">Edit Category Name</flux:heading>
+            <flux:field>
+                <flux:label>Category Name <span class="text-red-500">*</span></flux:label>
+                <flux:input wire:model="editCategoryName" placeholder="e.g. Keep Language Clean" />
+                <flux:error name="editCategoryName" />
+            </flux:field>
+            <div class="flex gap-2 justify-end">
+                <flux:button x-on:click="$flux.modal('edit-category-modal').close()" variant="ghost">Cancel</flux:button>
+                <flux:button wire:click="updateCategory" variant="primary">Save</flux:button>
             </div>
         </flux:modal>
 
