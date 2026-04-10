@@ -204,8 +204,8 @@ new class extends Component {
         $this->authorize('rules.manage');
 
         $draft = $this->getDraft();
-        if (! $draft) {
-            Flux::toast('No draft version found.', 'Error', variant: 'danger');
+        if (! $draft || $draft->status !== 'draft') {
+            Flux::toast('Cannot modify: draft is not in editable status.', 'Error', variant: 'danger');
 
             return;
         }
@@ -236,8 +236,8 @@ new class extends Component {
         ]);
 
         $draft = $this->getDraft();
-        if (! $draft) {
-            Flux::toast('Start a draft first.', 'Error', variant: 'danger');
+        if (! $draft || $draft->status !== 'draft') {
+            Flux::toast('Cannot modify: draft is not in editable status.', 'Error', variant: 'danger');
 
             return;
         }
@@ -273,8 +273,8 @@ new class extends Component {
         ]);
 
         $draft = $this->getDraft();
-        if (! $draft) {
-            Flux::toast('Start a draft first.', 'Error', variant: 'danger');
+        if (! $draft || $draft->status !== 'draft') {
+            Flux::toast('Cannot modify: draft is not in editable status.', 'Error', variant: 'danger');
 
             return;
         }
@@ -293,8 +293,8 @@ new class extends Component {
         $this->authorize('rules.manage');
 
         $draft = $this->getDraft();
-        if (! $draft) {
-            Flux::toast('Start a draft first.', 'Error', variant: 'danger');
+        if (! $draft || $draft->status !== 'draft') {
+            Flux::toast('Cannot modify: draft is not in editable status.', 'Error', variant: 'danger');
 
             return;
         }
@@ -489,7 +489,7 @@ new class extends Component {
                     @if($category->rules->isEmpty())
                         <flux:button wire:click="deleteCategory({{ $category->id }})" wire:confirm="Delete this category?" size="sm" variant="ghost" icon="trash" title="Delete category" />
                     @endif
-                    @if($this->getDraft())
+                    @if($this->getDraft() && $this->getDraft()->status === 'draft')
                         <flux:button wire:click="openAddRuleModal({{ $category->id }})" size="sm" variant="ghost" icon="plus" title="Add rule">Add Rule</flux:button>
                     @endif
                 @endcan
@@ -526,7 +526,7 @@ new class extends Component {
                             @can('rules.manage')
                                 <flux:button wire:click="moveRuleUp({{ $rule->id }})" size="sm" variant="ghost" icon="chevron-up" title="Move up" />
                                 <flux:button wire:click="moveRuleDown({{ $rule->id }})" size="sm" variant="ghost" icon="chevron-down" title="Move down" />
-                                @if($this->getDraft() && ! $isDeactivating)
+                                @if($this->getDraft() && $this->getDraft()->status === 'draft' && ! $isDeactivating)
                                     @if($isDraftRule)
                                         <flux:button wire:click="removeRuleFromDraft({{ $rule->id }})" wire:confirm="Remove this rule from the draft?" size="sm" variant="ghost" icon="trash" title="Remove from draft" />
                                     @else

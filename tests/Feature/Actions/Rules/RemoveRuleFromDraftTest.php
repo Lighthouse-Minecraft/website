@@ -16,8 +16,8 @@ uses()->group('rules', 'actions');
 
 it('removes a draft rule from the version and deletes it', function () {
     $user = User::factory()->create();
+    $category = RuleCategory::factory()->create();
     $draft = CreateRuleVersion::run($user);
-    $category = RuleCategory::first();
     $rule = AddRuleToDraft::run($draft, $category, 'Temp Rule', 'Temporary.', $user);
 
     RemoveRuleFromDraft::run($draft, $rule);
@@ -28,9 +28,8 @@ it('removes a draft rule from the version and deletes it', function () {
 
 it('removes the deactivation mark on the superseded rule when removing a replacement', function () {
     $user = User::factory()->create();
+    $activeRule = Rule::factory()->create(['status' => 'active']);
     $draft = CreateRuleVersion::run($user);
-    $category = RuleCategory::first();
-    $activeRule = Rule::where('status', 'active')->first();
 
     $replacement = UpdateRuleInDraft::run($draft, $activeRule, 'Updated Title', 'Updated description.', $user);
 
@@ -49,19 +48,8 @@ it('removes the deactivation mark on the superseded rule when removing a replace
 
 it('throws when the draft is not in draft status', function () {
     $user = User::factory()->create();
-    $category = RuleCategory::first();
-
-    $submittedVersion = RuleVersion::create([
-        'version_number' => 99,
-        'status' => 'submitted',
-        'created_by_user_id' => $user->id,
-    ]);
-
-    $rule = Rule::factory()->create([
-        'rule_category_id' => $category->id,
-        'status' => 'draft',
-        'created_by_user_id' => $user->id,
-    ]);
+    $submittedVersion = RuleVersion::factory()->submitted()->create();
+    $rule = Rule::factory()->draft()->create();
 
     expect(fn () => RemoveRuleFromDraft::run($submittedVersion, $rule))
         ->toThrow(AuthorizationException::class);
@@ -70,8 +58,17 @@ it('throws when the draft is not in draft status', function () {
 it('throws when the rule is not in draft status', function () {
     $user = User::factory()->create();
     $draft = CreateRuleVersion::run($user);
-    $activeRule = Rule::where('status', 'active')->first();
+    $activeRule = Rule::factory()->create(['status' => 'active']);
 
     expect(fn () => RemoveRuleFromDraft::run($draft, $activeRule))
+        ->toThrow(AuthorizationException::class);
+});
+
+it('throws when the rule is not attached to the given draft', function () {
+    $user = User::factory()->create();
+    $draft = CreateRuleVersion::run($user);
+    $unattachedRule = Rule::factory()->draft()->create();
+
+    expect(fn () => RemoveRuleFromDraft::run($draft, $unattachedRule))
         ->toThrow(AuthorizationException::class);
 });

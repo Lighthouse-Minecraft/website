@@ -28,6 +28,10 @@ class RemoveRuleFromDraft
             throw new AuthorizationException('Only draft rules can be removed. Use DeactivateRuleInDraft for active rules.');
         }
 
+        if (! $draft->rules()->whereKey($rule->id)->exists()) {
+            throw new AuthorizationException('This rule is not attached to the selected draft version.');
+        }
+
         DB::transaction(function () use ($draft, $rule): void {
             $title = $rule->title;
 
