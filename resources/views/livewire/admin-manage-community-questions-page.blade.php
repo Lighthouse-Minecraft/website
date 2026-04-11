@@ -5,6 +5,7 @@ use App\Actions\UpdateCommunityQuestion;
 use App\Enums\CommunityQuestionStatus;
 use App\Models\CommunityQuestion;
 use Carbon\Carbon;
+use Carbon\CarbonTimeZone;
 use Flux\Flux;
 use Livewire\WithPagination;
 use Livewire\Volt\Component;
@@ -22,6 +23,29 @@ new class extends Component {
     public string $formStatus = 'draft';
     public ?string $formStartDate = null;
     public ?string $formEndDate = null;
+
+    protected function userTimezone(): string
+    {
+        return auth()->user()->timezone ?? 'America/New_York';
+    }
+
+    protected function toUtc(?string $datetime): ?Carbon
+    {
+        if (! filled($datetime)) {
+            return null;
+        }
+
+        return Carbon::parse($datetime, new CarbonTimeZone($this->userTimezone()))->utc();
+    }
+
+    protected function toLocal(?\DateTimeInterface $datetime): ?string
+    {
+        if (! $datetime) {
+            return null;
+        }
+
+        return Carbon::instance($datetime)->setTimezone($this->userTimezone())->format('Y-m-d\TH:i');
+    }
 
     public function sort(string $column): void
     {
@@ -62,8 +86,8 @@ new class extends Component {
         $this->formQuestionText = $question->question_text;
         $this->formDescription = $question->description ?? '';
         $this->formStatus = $question->status->value;
-        $this->formStartDate = $question->start_date?->format('Y-m-d\TH:i');
-        $this->formEndDate = $question->end_date?->format('Y-m-d\TH:i');
+        $this->formStartDate = $this->toLocal($question->start_date);
+        $this->formEndDate = $this->toLocal($question->end_date);
 
         Flux::modal('question-form-modal')->show();
     }
@@ -81,8 +105,8 @@ new class extends Component {
         ]);
 
         $status = CommunityQuestionStatus::from($this->formStatus);
-        $startDate = $this->formStartDate ? Carbon::parse($this->formStartDate) : null;
-        $endDate = $this->formEndDate ? Carbon::parse($this->formEndDate) : null;
+        $startDate = $this->toUtc($this->formStartDate);
+        $endDate = $this->toUtc($this->formEndDate);
 
         if ($this->editingId) {
             $question = CommunityQuestion::findOrFail($this->editingId);
