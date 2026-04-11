@@ -95,7 +95,9 @@ new class extends Component {
                     <div class="flex items-center gap-3">
                         <flux:avatar size="sm" :src="$viewUser->avatarUrl()" />
                         <div>
-                            <flux:heading size="lg">{{ $viewUser->name }}</flux:heading>
+                            <flux:heading size="lg">
+                                <flux:link href="{{ route('profile.show', $viewUser) }}">{{ $viewUser->name }}</flux:link>
+                            </flux:heading>
                             @if($viewUser->staff_title)
                                 <flux:text variant="subtle" class="text-sm">{{ $viewUser->staff_title }}</flux:text>
                             @endif
@@ -111,7 +113,13 @@ new class extends Component {
                         @foreach($viewReport->answers->sortBy(fn ($a) => $a->question->sort_order) as $answer)
                             <div>
                                 <flux:text class="font-semibold text-sm">{{ $answer->question->question_text }}</flux:text>
-                                <flux:text class="mt-1">{{ $answer->answer ?: 'No response' }}</flux:text>
+                                @if($answer->answer)
+                                    <div class="prose prose-sm dark:prose-invert max-w-none mt-1">
+                                        {!! Str::markdown($answer->answer, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
+                                    </div>
+                                @else
+                                    <flux:text class="mt-1">No response</flux:text>
+                                @endif
                             </div>
                         @endforeach
                     @else
