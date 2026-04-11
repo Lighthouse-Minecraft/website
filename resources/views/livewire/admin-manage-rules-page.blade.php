@@ -522,7 +522,9 @@ new class extends Component {
                                     <flux:badge variant="warning" size="sm">Replaces #{{ $rule->supersedes_rule_id }}</flux:badge>
                                 @endif
                             </div>
-                            <p class="text-sm text-zinc-500 mt-1">{{ Str::limit($rule->description, 120) }}</p>
+                            <div class="prose prose-sm dark:prose-invert max-w-none mt-1">
+                                {!! Str::markdown($rule->description, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
+                            </div>
                         </div>
                         <div class="flex items-center gap-1 flex-shrink-0">
                             @can('rules.manage')
