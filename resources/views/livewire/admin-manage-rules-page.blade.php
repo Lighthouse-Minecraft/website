@@ -485,7 +485,9 @@ new class extends Component {
                 @can('rules.manage')
                     <flux:button wire:click="moveCategoryUp({{ $category->id }})" size="sm" variant="ghost" icon="chevron-up" title="Move category up" />
                     <flux:button wire:click="moveCategoryDown({{ $category->id }})" size="sm" variant="ghost" icon="chevron-down" title="Move category down" />
-                    <flux:button wire:click="openEditCategoryModal({{ $category->id }})" size="sm" variant="ghost" icon="pencil-square" title="Edit category name" />
+                    @if($this->getDraft() && $this->getDraft()->status === 'draft')
+                        <flux:button wire:click="openEditCategoryModal({{ $category->id }})" size="sm" variant="ghost" icon="pencil-square" title="Edit category name" />
+                    @endif
                     @if($category->rules->isEmpty())
                         <flux:button wire:click="deleteCategory({{ $category->id }})" wire:confirm="Delete this category?" size="sm" variant="ghost" icon="trash" title="Delete category" />
                     @endif
