@@ -281,7 +281,17 @@ new class extends Component {
 
         $oldRule = Rule::findOrFail($this->editRuleId);
         $newCategory = RuleCategory::findOrFail($this->editRuleCategoryId);
-        UpdateRuleInDraft::run($draft, $oldRule, $this->editRuleTitle, $this->editRuleDescription, auth()->user(), $newCategory);
+
+        if ($oldRule->status === 'draft') {
+            // Draft rules can be edited directly — no need to create a replacement
+            $oldRule->update([
+                'rule_category_id' => $newCategory->id,
+                'title' => $this->editRuleTitle,
+                'description' => $this->editRuleDescription,
+            ]);
+        } else {
+            UpdateRuleInDraft::run($draft, $oldRule, $this->editRuleTitle, $this->editRuleDescription, auth()->user(), $newCategory);
+        }
 
         $this->reset(['editRuleId', 'editRuleTitle', 'editRuleDescription', 'editRuleCategoryId']);
         Flux::modal('edit-rule-modal')->close();
@@ -532,6 +542,7 @@ new class extends Component {
                                 <flux:button wire:click="moveRuleDown({{ $rule->id }})" size="sm" variant="ghost" icon="chevron-down" title="Move down" />
                                 @if($this->getDraft() && $this->getDraft()->status === 'draft' && ! $isDeactivating)
                                     @if($isDraftRule)
+                                        <flux:button wire:click="openEditRuleModal({{ $rule->id }})" size="sm" variant="ghost" icon="pencil-square" title="Edit rule" />
                                         <flux:button wire:click="removeRuleFromDraft({{ $rule->id }})" wire:confirm="Remove this rule from the draft?" size="sm" variant="ghost" icon="trash" title="Remove from draft" />
                                     @else
                                         <flux:button wire:click="openEditRuleModal({{ $rule->id }})" size="sm" variant="ghost" icon="pencil-square" title="Edit / Replace" />
