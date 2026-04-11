@@ -493,8 +493,10 @@ new class extends Component {
             <div class="flex items-center gap-2">
                 <flux:heading size="md" class="flex-1">{{ $category->name }}</flux:heading>
                 @can('rules.manage')
-                    <flux:button wire:click="moveCategoryUp({{ $category->id }})" size="sm" variant="ghost" icon="chevron-up" title="Move category up" />
-                    <flux:button wire:click="moveCategoryDown({{ $category->id }})" size="sm" variant="ghost" icon="chevron-down" title="Move category down" />
+                    @if($this->getDraft() && $this->getDraft()->status === 'draft')
+                        <flux:button wire:click="moveCategoryUp({{ $category->id }})" size="sm" variant="ghost" icon="chevron-up" title="Move category up" />
+                        <flux:button wire:click="moveCategoryDown({{ $category->id }})" size="sm" variant="ghost" icon="chevron-down" title="Move category down" />
+                    @endif
                     @if($this->getDraft() && $this->getDraft()->status === 'draft')
                         <flux:button wire:click="openEditCategoryModal({{ $category->id }})" size="sm" variant="ghost" icon="pencil-square" title="Edit category name" />
                     @endif
@@ -538,8 +540,10 @@ new class extends Component {
                         </div>
                         <div class="flex items-center gap-1 flex-shrink-0">
                             @can('rules.manage')
-                                <flux:button wire:click="moveRuleUp({{ $rule->id }})" size="sm" variant="ghost" icon="chevron-up" title="Move up" />
-                                <flux:button wire:click="moveRuleDown({{ $rule->id }})" size="sm" variant="ghost" icon="chevron-down" title="Move down" />
+                                @if($this->getDraft() && $this->getDraft()->status === 'draft')
+                                    <flux:button wire:click="moveRuleUp({{ $rule->id }})" size="sm" variant="ghost" icon="chevron-up" title="Move up" />
+                                    <flux:button wire:click="moveRuleDown({{ $rule->id }})" size="sm" variant="ghost" icon="chevron-down" title="Move down" />
+                                @endif
                                 @if($this->getDraft() && $this->getDraft()->status === 'draft' && ! $isDeactivating)
                                     @if($isDraftRule)
                                         <flux:button wire:click="openEditRuleModal({{ $rule->id }})" size="sm" variant="ghost" icon="pencil-square" title="Edit rule" />
