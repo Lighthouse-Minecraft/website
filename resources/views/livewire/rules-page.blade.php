@@ -24,13 +24,13 @@ new #[Layout('components.layouts.app')] class extends Component {
     public function allChecked(): bool
     {
         $status = $this->getAgreementStatus();
-        $totalRules = $status['categories']->sum(fn ($cat) => $cat->rules->count());
+        $totalCategories = $status['categories']->count();
 
-        if ($totalRules === 0) {
+        if ($totalCategories === 0) {
             return false;
         }
 
-        return count(array_filter($this->checked)) >= $totalRules;
+        return count(array_filter($this->checked)) >= $totalCategories;
     }
 
     public function agreeToRules(): void
@@ -97,7 +97,7 @@ new #[Layout('components.layouts.app')] class extends Component {
             <div class="bg-amber-950/30 border border-amber-500/40 rounded-lg px-6 py-4">
                 <flux:heading size="lg" class="text-amber-300">Rules Agreement Required</flux:heading>
                 <flux:text class="mt-1 text-amber-200/80">
-                    Please read and check each rule below, then click the agree button to continue.
+                    Please read each category below and check the agreement box at the bottom of each category, then click the agree button to continue.
                 </flux:text>
             </div>
         @elseif ($status['has_agreed'] && $this->unagreedChildren->isNotEmpty())
@@ -149,15 +149,15 @@ new #[Layout('components.layouts.app')] class extends Component {
                                 </div>
                             </details>
                         @endif
-
-                        @if (!$status['has_agreed'])
-                            <div class="flex items-center gap-3 pt-2 border-t border-zinc-700/50">
-                                <flux:switch wire:model.live="checked.{{ $rule->id }}" />
-                                <flux:text class="text-sm">I have read and agree to this rule</flux:text>
-                            </div>
-                        @endif
                     </div>
                 @endforeach
+
+                @if (!$status['has_agreed'])
+                    <div class="flex items-center gap-3 p-4 bg-zinc-800/40 border border-zinc-700/50 rounded-lg">
+                        <flux:switch wire:model.live="checked.{{ $category->id }}" />
+                        <flux:text class="text-sm">I have read and agree to all rules in the <span class="font-semibold text-zinc-100">{{ $category->name }}</span> category</flux:text>
+                    </div>
+                @endif
             </div>
         @endforeach
 
@@ -170,7 +170,7 @@ new #[Layout('components.layouts.app')] class extends Component {
         @if (!$status['has_agreed'] && $status['current_version'])
             <div class="sticky bottom-4 bg-zinc-900/95 backdrop-blur border border-zinc-700 rounded-lg px-6 py-4 flex items-center justify-between shadow-lg">
                 <flux:text variant="subtle" class="text-sm">
-                    Check all rules above to enable the agree button.
+                    Check all categories above to enable the agree button.
                 </flux:text>
                 <flux:button
                     wire:click="agreeToRules"
