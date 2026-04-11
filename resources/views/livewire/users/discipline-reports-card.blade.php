@@ -303,7 +303,6 @@ new class extends Component {
                 <flux:table.columns>
                     <flux:table.column>Date</flux:table.column>
                     <flux:table.column>Category</flux:table.column>
-                    <flux:table.column>Description</flux:table.column>
                     <flux:table.column>Severity</flux:table.column>
                     <flux:table.column></flux:table.column>
                 </flux:table.columns>
@@ -314,20 +313,17 @@ new class extends Component {
                                 {{ ($report->published_at ?? $report->created_at)->format('M j, Y') }}
                             </flux:table.cell>
                             <flux:table.cell>
-                                @if($report->category)
-                                    <flux:badge color="{{ $report->category->color }}" size="sm">
-                                        {{ $report->category->name }}
-                                    </flux:badge>
-                                @else
-                                    <flux:text variant="subtle">—</flux:text>
-                                @endif
-                            </flux:table.cell>
-                            <flux:table.cell>
-                                <div class="flex items-center gap-2">
+                                <div class="flex flex-wrap items-center gap-1">
                                     @if($report->isDraft())
                                         <flux:badge color="amber" size="sm">Draft</flux:badge>
                                     @endif
-                                    <flux:text class="truncate max-w-xs">{{ Str::limit($report->description, 60) }}</flux:text>
+                                    @if($report->category)
+                                        <flux:badge color="{{ $report->category->color }}" size="sm">
+                                            {{ $report->category->name }}
+                                        </flux:badge>
+                                    @else
+                                        <flux:text variant="subtle">—</flux:text>
+                                    @endif
                                 </div>
                             </flux:table.cell>
                             <flux:table.cell>

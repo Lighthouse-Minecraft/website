@@ -8,6 +8,7 @@ use App\Enums\ReportStatus;
 use App\Enums\StaffDepartment;
 use App\Enums\StaffRank;
 use App\Models\DisciplineReport;
+use App\Models\ReportCategory;
 use App\Models\User;
 use Livewire\Volt\Volt;
 
@@ -53,16 +54,15 @@ it('shows only published reports to non-staff users', function () {
     $subject = User::factory()->create();
     loginAs($subject);
 
-    DisciplineReport::factory()->forSubject($subject)->create([
-        'description' => 'Draft report unique text',
-    ]);
+    $publishedCategory = ReportCategory::factory()->create(['name' => 'Published-Only-Category']);
+    DisciplineReport::factory()->forSubject($subject)->create(); // draft, no category
     DisciplineReport::factory()->forSubject($subject)->published()->create([
-        'description' => 'Published report unique text',
+        'report_category_id' => $publishedCategory->id,
     ]);
 
     Volt::test('users.discipline-reports-card', ['user' => $subject])
-        ->assertDontSee('Draft report unique text')
-        ->assertSee('Published report unique text');
+        ->assertDontSee('Draft')                // no Draft badge — draft report not shown
+        ->assertSee('Published-Only-Category'); // published report's category is visible
 });
 
 it('shows all reports including drafts to staff', function () {
@@ -70,16 +70,15 @@ it('shows all reports including drafts to staff', function () {
     loginAs($staff);
     $subject = User::factory()->create();
 
-    DisciplineReport::factory()->forSubject($subject)->create([
-        'description' => 'Draft visible to staff',
-    ]);
+    $publishedCategory = ReportCategory::factory()->create(['name' => 'Staff-Published-Category']);
+    DisciplineReport::factory()->forSubject($subject)->create(); // draft report
     DisciplineReport::factory()->forSubject($subject)->published()->create([
-        'description' => 'Published visible to staff',
+        'report_category_id' => $publishedCategory->id,
     ]);
 
     Volt::test('users.discipline-reports-card', ['user' => $subject])
-        ->assertSee('Draft visible to staff')
-        ->assertSee('Published visible to staff');
+        ->assertSee('Draft')                    // draft badge visible to staff
+        ->assertSee('Staff-Published-Category'); // published report also visible
 });
 
 it('allows staff to create a report via modal', function () {
