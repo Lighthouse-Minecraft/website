@@ -65,8 +65,23 @@ class ReleaseUserFromBrig
             ? DiscordAccountStatus::Active
             : DiscordAccountStatus::ParentDisabled;
 
-        // Restore Discord accounts from brigged
+        $discordApi = app(\App\Services\DiscordApiService::class);
+        $brigRoleId = (string) config('lighthouse.discord.roles.in_brig', '');
+
+        // Restore Discord accounts from brigged and remove the "In Brig" role
         foreach ($target->discordAccounts()->where('status', DiscordAccountStatus::Brigged)->get() as $discordAccount) {
+            if ($brigRoleId !== '') {
+                try {
+                    $discordApi->removeRole($discordAccount->discord_user_id, $brigRoleId);
+                } catch (\Exception $e) {
+                    Log::warning('Failed to remove In Brig Discord role on release', [
+                        'discord_user_id' => $discordAccount->discord_user_id,
+                        'user_id' => $target->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
             try {
                 $discordAccount->status = $discordRestoreStatus;
                 $discordAccount->save();

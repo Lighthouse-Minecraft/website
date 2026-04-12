@@ -123,6 +123,7 @@ return [
             'rank_officer' => env('DISCORD_ROLE_RANK_OFFICER'),
             // Special
             'verified' => env('DISCORD_ROLE_VERIFIED'),
+            'in_brig' => env('DISCORD_ROLE_IN_BRIG'),
         ],
     ],
 ];
