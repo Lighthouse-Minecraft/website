@@ -1024,8 +1024,8 @@ new class extends Component {
 
             <flux:field x-show="!$wire.brigActionPermanent">
                 <flux:label>Days Until Auto-Release</flux:label>
-                <flux:description>Optional. Leave blank for no auto-release timer.</flux:description>
-                <flux:input wire:model.live="brigActionDays" type="number" min="1" max="365" placeholder="e.g. 7 (leave blank for no timer)" :disabled="$brigActionPermanent" />
+                <flux:description>Optional. Leave blank to skip auto-release (equivalent to permanent).</flux:description>
+                <flux:input wire:model.live="brigActionDays" type="number" min="1" max="365" placeholder="e.g. 7" :disabled="$brigActionPermanent" />
                 <flux:error name="brigActionDays" />
             </flux:field>
 
