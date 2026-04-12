@@ -15,6 +15,7 @@ new class extends Component {
     public ?MinecraftAccount $selectedAccount = null;
     public string $brigActionReason = '';
     public ?int $brigActionDays = null;
+    public bool $brigActionPermanent = false;
     public ?int $accountToRevoke = null;
     public ?int $accountToForceDelete = null;
 
@@ -268,6 +269,7 @@ new class extends Component {
         }
         $this->brigActionReason = '';
         $this->brigActionDays = null;
+        $this->brigActionPermanent = false;
         Flux::modal('profile-put-in-brig-modal')->show();
     }
 
@@ -288,10 +290,12 @@ new class extends Component {
 
         $this->validate([
             'brigActionReason' => 'required|string|min:5',
-            'brigActionDays' => 'nullable|integer|min:1|max:365',
+            'brigActionDays' => $this->brigActionPermanent ? 'nullable' : 'nullable|integer|min:1|max:365',
         ]);
 
-        $expiresAt = $this->brigActionDays ? now()->addDays((int) $this->brigActionDays) : null;
+        $expiresAt = (! $this->brigActionPermanent && $this->brigActionDays)
+            ? now()->addDays((int) $this->brigActionDays)
+            : null;
 
         \App\Actions\PutUserInBrig::run($this->user, Auth::user(), $this->brigActionReason, $expiresAt);
 
@@ -980,9 +984,13 @@ new class extends Component {
             </flux:field>
 
             <flux:field>
+                <flux:checkbox wire:model.live="brigActionPermanent" label="Permanent (no expiry)" />
+            </flux:field>
+
+            <flux:field x-show="!$wire.brigActionPermanent">
                 <flux:label>Days Until Auto-Release</flux:label>
                 <flux:description>Optional. Leave blank for no auto-release timer.</flux:description>
-                <flux:input wire:model.live="brigActionDays" type="number" min="1" max="365" placeholder="e.g. 7 (leave blank for no timer)" />
+                <flux:input wire:model.live="brigActionDays" type="number" min="1" max="365" placeholder="e.g. 7 (leave blank for no timer)" :disabled="$brigActionPermanent" />
                 <flux:error name="brigActionDays" />
             </flux:field>
 
