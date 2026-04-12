@@ -92,9 +92,8 @@ new class extends Component
     }
 }; ?>
 
-<x-layouts.app>
-    <div class="space-y-6">
-    <div class="mb-6 flex items-center justify-between">
+<div class="space-y-6">
+    <div class="flex items-center justify-between">
         <flux:heading size="xl">Staff Credential Vault</flux:heading>
         @can('manage-vault')
             <flux:button variant="primary" icon="plus" wire:click="openCreate">
@@ -228,5 +227,4 @@ new class extends Component
             </div>
         </flux:modal>
     @endcan
-    </div>
-</x-layouts.app>
+</div>
