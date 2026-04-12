@@ -5,7 +5,6 @@ declare(strict_types=1);
 use App\Actions\CreateRuleVersion;
 use App\Actions\UpdateRuleInDraft;
 use App\Models\Rule;
-use App\Models\RuleVersion;
 use App\Models\User;
 
 uses()->group('rules', 'actions');
@@ -62,7 +61,8 @@ it('does not immediately deactivate the old rule', function () {
 
 it('throws if the version is not a draft', function () {
     $user = User::factory()->create();
-    $version = RuleVersion::factory()->create(['status' => 'submitted']);
+    $version = CreateRuleVersion::run($user);
+    $version->update(['status' => 'submitted']);
     $oldRule = Rule::factory()->create(['status' => 'active']);
 
     UpdateRuleInDraft::run($version, $oldRule, 'Title', 'Desc.', $user);
