@@ -262,6 +262,7 @@ Route::prefix('vault')
     ->middleware(['auth', 'can:view-vault'])
     ->group(function () {
         Volt::route('/', 'vault.index')->name('index');
+        Volt::route('/{credential}', 'vault.detail')->name('detail');
     });
 
 Route::get('/{slug}', [PageController::class, 'show'])->name('pages.show');
