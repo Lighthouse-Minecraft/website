@@ -15,6 +15,7 @@ new class extends Component {
     public ?MinecraftAccount $selectedAccount = null;
     public string $brigActionReason = '';
     public ?int $brigActionDays = null;
+    public bool $brigActionPermanent = false;
     public ?int $accountToRevoke = null;
     public ?int $accountToForceDelete = null;
 
@@ -268,6 +269,7 @@ new class extends Component {
         }
         $this->brigActionReason = '';
         $this->brigActionDays = null;
+        $this->brigActionPermanent = false;
         Flux::modal('profile-put-in-brig-modal')->show();
     }
 
@@ -288,10 +290,12 @@ new class extends Component {
 
         $this->validate([
             'brigActionReason' => 'required|string|min:5',
-            'brigActionDays' => 'nullable|integer|min:1|max:365',
+            'brigActionDays' => $this->brigActionPermanent ? 'nullable' : 'nullable|integer|min:1|max:365',
         ]);
 
-        $expiresAt = $this->brigActionDays ? now()->addDays((int) $this->brigActionDays) : null;
+        $expiresAt = (! $this->brigActionPermanent && $this->brigActionDays)
+            ? now()->addDays((int) $this->brigActionDays)
+            : null;
 
         \App\Actions\PutUserInBrig::run($this->user, Auth::user(), $this->brigActionReason, $expiresAt);
 
@@ -405,29 +409,44 @@ new class extends Component {
         Flux::modal('profile-edit-user-modal')->show();
     }
 
+    public function canEditAllFields(): bool
+    {
+        return Auth::user()->isAdmin() || Auth::user()->hasRole('User - Manager');
+    }
+
     public function saveEditUser(): void
     {
         $this->authorize('update', $this->user);
 
-        $this->validate([
+        $rules = [
             'editUserData.name' => ['required', 'string', 'max:32'],
-            'editUserData.email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->user->id)],
-            'editUserData.date_of_birth' => ['nullable', 'date', 'before:today'],
-            'editUserData.parent_email' => ['nullable', 'email'],
-        ]);
+        ];
 
-        $oldParentEmail = $this->user->parent_email;
-        $newParentEmail = $this->editUserData['parent_email'] ?: null;
+        if ($this->canEditAllFields()) {
+            $rules['editUserData.email'] = ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->user->id)];
+            $rules['editUserData.date_of_birth'] = ['nullable', 'date', 'before:today'];
+            $rules['editUserData.parent_email'] = ['nullable', 'email'];
+        }
 
-        $this->user->update([
-            'name' => $this->editUserData['name'],
-            'email' => $this->editUserData['email'],
-            'date_of_birth' => $this->editUserData['date_of_birth'] ?: null,
-            'parent_email' => $newParentEmail,
-        ]);
+        $this->validate($rules);
 
-        if ($newParentEmail && strtolower($newParentEmail ?? '') !== strtolower($oldParentEmail ?? '')) {
-            \App\Actions\LinkParentByEmail::run($this->user);
+        $updateData = ['name' => $this->editUserData['name']];
+
+        if ($this->canEditAllFields()) {
+            $oldParentEmail = $this->user->parent_email;
+            $newParentEmail = $this->editUserData['parent_email'] ?: null;
+
+            $updateData['email'] = $this->editUserData['email'];
+            $updateData['date_of_birth'] = $this->editUserData['date_of_birth'] ?: null;
+            $updateData['parent_email'] = $newParentEmail;
+        }
+
+        $this->user->update($updateData);
+
+        if ($this->canEditAllFields()) {
+            if ($newParentEmail && strcasecmp($newParentEmail, (string) ($oldParentEmail ?? '')) !== 0) {
+                \App\Actions\LinkParentByEmail::run($this->user);
+            }
         }
 
         \App\Actions\RecordActivity::run($this->user, 'update_profile', 'User profile updated.');
@@ -942,23 +961,43 @@ new class extends Component {
                     <flux:error name="editUserData.name" />
                 </flux:field>
 
-                <flux:field>
-                    <flux:label>Email</flux:label>
-                    <flux:input wire:model="editUserData.email" type="email" required />
-                    <flux:error name="editUserData.email" />
-                </flux:field>
+                @if($this->canEditAllFields())
+                    <flux:field>
+                        <flux:label>Email</flux:label>
+                        <flux:input wire:model="editUserData.email" type="email" required />
+                        <flux:error name="editUserData.email" />
+                    </flux:field>
 
-                <flux:field>
-                    <flux:label>Date of Birth</flux:label>
-                    <flux:input wire:model="editUserData.date_of_birth" type="date" />
-                    <flux:error name="editUserData.date_of_birth" />
-                </flux:field>
+                    <flux:field>
+                        <flux:label>Date of Birth</flux:label>
+                        <flux:input wire:model="editUserData.date_of_birth" type="date" />
+                        <flux:error name="editUserData.date_of_birth" />
+                    </flux:field>
 
-                <flux:field>
-                    <flux:label>Parent Email</flux:label>
-                    <flux:input wire:model="editUserData.parent_email" type="email" placeholder="Optional" />
-                    <flux:error name="editUserData.parent_email" />
-                </flux:field>
+                    <flux:field>
+                        <flux:label>Parent Email</flux:label>
+                        <flux:input wire:model="editUserData.parent_email" type="email" placeholder="Optional" />
+                        <flux:error name="editUserData.parent_email" />
+                    </flux:field>
+                @else
+                    <flux:field>
+                        <flux:label>Email</flux:label>
+                        <flux:text>{{ $editUserData['email'] }}</flux:text>
+                        <flux:description>Contact staff to update your email address.</flux:description>
+                    </flux:field>
+
+                    <flux:field>
+                        <flux:label>Date of Birth</flux:label>
+                        <flux:text>{{ $editUserData['date_of_birth'] ?: '—' }}</flux:text>
+                        <flux:description>Contact staff to update your date of birth.</flux:description>
+                    </flux:field>
+
+                    <flux:field>
+                        <flux:label>Parent Email</flux:label>
+                        <flux:text>{{ $editUserData['parent_email'] ?: '—' }}</flux:text>
+                        <flux:description>Contact staff to update your parent email.</flux:description>
+                    </flux:field>
+                @endif
 
                 <div class="flex justify-end">
                     <flux:button type="submit" variant="primary">Save</flux:button>
@@ -980,9 +1019,13 @@ new class extends Component {
             </flux:field>
 
             <flux:field>
+                <flux:checkbox wire:model.live="brigActionPermanent" label="Permanent (no expiry)" />
+            </flux:field>
+
+            <flux:field x-show="!$wire.brigActionPermanent">
                 <flux:label>Days Until Auto-Release</flux:label>
-                <flux:description>Optional. Leave blank for no auto-release timer.</flux:description>
-                <flux:input wire:model.live="brigActionDays" type="number" min="1" max="365" placeholder="e.g. 7 (leave blank for no timer)" />
+                <flux:description>Optional. Leave blank to skip auto-release (equivalent to permanent).</flux:description>
+                <flux:input wire:model.live="brigActionDays" type="number" min="1" max="365" placeholder="e.g. 7" :disabled="$brigActionPermanent" />
                 <flux:error name="brigActionDays" />
             </flux:field>
 

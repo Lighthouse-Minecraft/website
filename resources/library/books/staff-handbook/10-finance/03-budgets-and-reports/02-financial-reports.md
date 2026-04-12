@@ -73,3 +73,5 @@ Color coding follows the same rules: green = favorable, red = unfavorable.
 ## Printing and PDF Export
 
 All report tabs are print-friendly. Use your browser's **Print** function (Ctrl+P / Cmd+P) to print or save as PDF. The print layout hides navigation and filters so only the report content shows.
+
+Printed reports include a header with the **Lighthouse logo image**, organization name ({{config:app.name}}), the report title (e.g., "General Ledger" or "Balance Sheet"), and the date the report was generated. This makes printed or PDF copies clearly identifiable.

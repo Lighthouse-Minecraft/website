@@ -9,7 +9,7 @@ summary: "What to do on the Discord setup step and how to complete it."
 
 When you're a **Stowaway**, the first thing the wizard asks you to do is connect your Discord account. Linking Discord lets Lighthouse assign you the right roles on the server automatically and enables Discord DM notifications for things like ticket replies and announcements.
 
-Click **Connect Discord** and you'll be taken to your account settings where you can complete the link. Once your account is connected, come back to your Dashboard -- the wizard will detect it and move you to the next step.
+Click **Connect Discord** and you'll be taken to Discord's authorization page. Once you authorize the connection, you'll be brought straight back to your Dashboard -- the wizard will detect your linked account and move you to the next step automatically. There's nothing else you need to do.
 
 For a detailed walkthrough of the linking process itself, see [[books/user-handbook/discord/accounts/linking-your-account|Linking Your Discord Account]].
 
