@@ -2,13 +2,16 @@
 
 use App\Actions\AssignCredentialPositions;
 use App\Actions\DeleteCredential;
+use App\Actions\ReauthenticateVaultSession;
 use App\Actions\UpdateCredential;
 use App\Models\Credential;
 use App\Models\StaffPosition;
+use App\Services\VaultSession;
 use Flux\Flux;
 use Livewire\Volt\Component;
 
-new class extends Component {
+new class extends Component
+{
     public Credential $credential;
 
     // Edit fields (Vault Manager — all fields)
@@ -31,10 +34,59 @@ new class extends Component {
     // Position assignment
     public ?int $addPositionId = null;
 
+    // Password reveal
+    public ?string $revealedPassword = null;
+
+    // Re-auth modal
+    public string $reauthPassword = '';
+
+    public string $reauthError = '';
+
     public function mount(Credential $credential): void
     {
         $this->authorize('view', $credential);
         $this->credential = $credential;
+    }
+
+    #[\Livewire\Attributes\Computed]
+    public function isSessionUnlocked(): bool
+    {
+        return app(VaultSession::class)->isUnlocked();
+    }
+
+    public function revealPassword(): void
+    {
+        $this->authorize('view', $this->credential);
+
+        if (app(VaultSession::class)->isUnlocked()) {
+            $this->revealedPassword = $this->credential->password;
+        } else {
+            $this->reauthPassword = '';
+            $this->reauthError = '';
+            Flux::modal('reauth-modal')->show();
+        }
+    }
+
+    public function reauth(): void
+    {
+        $this->authorize('view', $this->credential);
+
+        $this->validate(['reauthPassword' => 'required|string']);
+
+        $success = ReauthenticateVaultSession::run(auth()->user(), $this->reauthPassword);
+
+        if (! $success) {
+            $this->reauthError = 'Incorrect password. Please try again.';
+
+            return;
+        }
+
+        $this->reauthPassword = '';
+        $this->reauthError = '';
+        $this->revealedPassword = $this->credential->password;
+
+        Flux::modal('reauth-modal')->close();
+        Flux::toast('Vault session unlocked.', 'Done', variant: 'success');
     }
 
     #[\Livewire\Attributes\Computed]
@@ -244,8 +296,15 @@ new class extends Component {
 
                 <div>
                     <flux:text variant="subtle" class="text-xs uppercase tracking-wide">Password</flux:text>
-                    <flux:text class="mt-1 font-mono text-zinc-400">••••••••••••</flux:text>
-                    <flux:text variant="subtle" class="mt-1 text-xs">Re-authentication required to reveal</flux:text>
+                    @if ($revealedPassword !== null)
+                        <flux:text class="mt-1 font-mono break-all">{{ $revealedPassword }}</flux:text>
+                    @else
+                        <div class="mt-1 flex items-center gap-2">
+                            <flux:text class="font-mono text-zinc-400">••••••••••••</flux:text>
+                            <flux:button size="xs" variant="ghost" wire:click="revealPassword">Reveal</flux:button>
+                        </div>
+                        <flux:text variant="subtle" class="mt-1 text-xs">Re-authentication required to reveal</flux:text>
+                    @endif
                 </div>
 
                 @if ($credential->getRawOriginal('totp_secret'))
@@ -398,6 +457,29 @@ new class extends Component {
             </div>
         </flux:modal>
     @endcan
+
+    {{-- Re-auth modal --}}
+    <flux:modal name="reauth-modal" class="w-full max-w-sm">
+        <div class="space-y-6">
+            <div>
+                <flux:heading size="lg">Confirm Your Identity</flux:heading>
+                <flux:text class="mt-2">Enter your Lighthouse password to unlock the vault and reveal this credential.</flux:text>
+            </div>
+
+            <flux:field>
+                <flux:label>Password</flux:label>
+                <flux:input wire:model="reauthPassword" type="password" wire:keydown.enter="reauth" autofocus />
+                @if ($reauthError)
+                    <flux:error>{{ $reauthError }}</flux:error>
+                @endif
+            </flux:field>
+
+            <div class="flex justify-end gap-2">
+                <flux:button variant="ghost" x-on:click="$flux.modal('reauth-modal').close()">Cancel</flux:button>
+                <flux:button variant="primary" wire:click="reauth">Unlock & Reveal</flux:button>
+            </div>
+        </div>
+    </flux:modal>
 
     @can('managePositions', $credential)
         {{-- Manage position access modal --}}

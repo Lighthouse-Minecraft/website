@@ -79,3 +79,65 @@ it('allows a Vault Manager to update a credential', function () {
 
     expect($credential->fresh()->name)->toBe('Updated Name');
 });
+
+// === password reveal ===
+
+it('reveals the password after successful re-authentication', function () {
+    $user = User::factory()->withRole('Vault Manager')->create([
+        'staff_rank' => StaffRank::JrCrew,
+        'password' => bcrypt('my-vault-password'),
+    ]);
+    $credential = Credential::factory()->create(['created_by' => $user->id]);
+    $this->actingAs($user);
+
+    livewire('vault.detail', ['credential' => $credential])
+        ->set('reauthPassword', 'my-vault-password')
+        ->call('reauth')
+        ->assertSet('revealedPassword', $credential->fresh()->password);
+});
+
+it('does not reveal the password with a wrong re-auth password', function () {
+    $user = User::factory()->withRole('Vault Manager')->create([
+        'staff_rank' => StaffRank::JrCrew,
+        'password' => bcrypt('correct-password'),
+    ]);
+    $credential = Credential::factory()->create(['created_by' => $user->id]);
+    $this->actingAs($user);
+
+    livewire('vault.detail', ['credential' => $credential])
+        ->set('reauthPassword', 'wrong-password')
+        ->call('reauth')
+        ->assertSet('revealedPassword', null)
+        ->assertSet('reauthError', 'Incorrect password. Please try again.');
+});
+
+it('reveals the password immediately when the vault session is already unlocked', function () {
+    $user = User::factory()->withRole('Vault Manager')->create(['staff_rank' => StaffRank::JrCrew]);
+    $credential = Credential::factory()->create(['created_by' => $user->id]);
+    $this->actingAs($user);
+
+    // Unlock the session before mounting the component
+    session(['vault_unlocked_at' => now()->timestamp]);
+
+    livewire('vault.detail', ['credential' => $credential])
+        ->call('revealPassword')
+        ->assertSet('revealedPassword', $credential->fresh()->password);
+});
+
+it('enforces policy on reveal: position holder can reveal their credential password', function () {
+    $manager = User::factory()->withRole('Vault Manager')->create(['staff_rank' => StaffRank::JrCrew]);
+    $credential = Credential::factory()->create(['created_by' => $manager->id]);
+
+    $jrCrew = User::factory()->create([
+        'staff_rank' => StaffRank::JrCrew,
+        'password' => bcrypt('staff-pass'),
+    ]);
+    $position = \App\Models\StaffPosition::factory()->assignedTo($jrCrew->id)->create();
+    $credential->staffPositions()->attach($position->id);
+    $this->actingAs($jrCrew);
+
+    livewire('vault.detail', ['credential' => $credential])
+        ->set('reauthPassword', 'staff-pass')
+        ->call('reauth')
+        ->assertSet('revealedPassword', $credential->fresh()->password);
+});
