@@ -105,6 +105,13 @@ new class extends Component
         $this->totpSecondsRemaining = $result['seconds_remaining'];
     }
 
+    public function closeTotp(): void
+    {
+        $this->totpCode = null;
+        $this->totpSecondsRemaining = 0;
+        Flux::modal('totp-modal')->close();
+    }
+
     public function reauth(): void
     {
         $this->authorize('view', $this->credential);
@@ -245,6 +252,10 @@ new class extends Component
 
         $this->credential = UpdateCredential::run($this->credential, auth()->user(), $data);
 
+        if (array_key_exists('password', $data)) {
+            $this->revealedPassword = null;
+        }
+
         Flux::modal('edit-credential-modal')->close();
         Flux::toast('Credential updated.', 'Done', variant: 'success');
         unset($this->assignedPositions, $this->availablePositions);
@@ -327,7 +338,7 @@ new class extends Component
                     @endif
                 </flux:heading>
                 @if ($credential->website_url)
-                    <flux:link href="{{ $credential->website_url }}" target="_blank" class="text-sm">
+                    <flux:link href="{{ $credential->website_url }}" target="_blank" rel="noopener noreferrer" class="text-sm">
                         {{ $credential->website_url }}
                     </flux:link>
                 @endif
@@ -565,7 +576,7 @@ new class extends Component
                 </div>
 
                 <div class="flex justify-end">
-                    <flux:button variant="ghost" x-on:click="$flux.modal('totp-modal').close()">Close</flux:button>
+                    <flux:button variant="ghost" wire:click="closeTotp">Close</flux:button>
                 </div>
             </div>
         </flux:modal>
