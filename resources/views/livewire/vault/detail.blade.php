@@ -256,6 +256,9 @@ new class extends Component
             $this->revealedPassword = null;
         }
 
+        $this->editPassword = '';
+        $this->editTotpSecret = '';
+
         Flux::modal('edit-credential-modal')->close();
         Flux::toast('Credential updated.', 'Done', variant: 'success');
         unset($this->assignedPositions, $this->availablePositions);
@@ -544,7 +547,13 @@ new class extends Component
         <div class="space-y-6">
             <div>
                 <flux:heading size="lg">Confirm Your Identity</flux:heading>
-                <flux:text class="mt-2">Enter your Lighthouse password to unlock the vault and reveal this credential.</flux:text>
+                <flux:text class="mt-2">
+                    @if ($reauthPurpose === 'totp')
+                        Enter your Lighthouse password to view the current TOTP code.
+                    @else
+                        Enter your Lighthouse password to unlock the vault and reveal this credential.
+                    @endif
+                </flux:text>
             </div>
 
             <flux:field>
@@ -557,7 +566,9 @@ new class extends Component
 
             <div class="flex justify-end gap-2">
                 <flux:button variant="ghost" x-on:click="$flux.modal('reauth-modal').close()">Cancel</flux:button>
-                <flux:button variant="primary" wire:click="reauth">Unlock & Reveal</flux:button>
+                <flux:button variant="primary" wire:click="reauth">
+                    {{ $reauthPurpose === 'totp' ? 'View Code' : 'Unlock & Reveal' }}
+                </flux:button>
             </div>
         </div>
     </flux:modal>
