@@ -27,6 +27,7 @@ class CreateDisciplineReport
         ReportSeverity $severity,
         ?string $witnesses = null,
         ?ReportCategory $category = null,
+        array $ruleIds = [],
     ): DisciplineReport {
         $report = DisciplineReport::create([
             'subject_user_id' => $subject->id,
@@ -39,6 +40,10 @@ class CreateDisciplineReport
             'severity' => $severity,
             'status' => ReportStatus::Draft,
         ]);
+
+        if (! empty($ruleIds)) {
+            $report->violatedRules()->sync($ruleIds);
+        }
 
         RecordActivity::run($subject, 'discipline_report_created',
             "Discipline report #{$report->id} created by {$reporter->name}. Severity: {$severity->label()}.", $reporter);

@@ -85,6 +85,8 @@ new class extends Component {
             || $user->can('viewAny', \App\Models\StaffPosition::class)
             || $user->can('viewAny', \App\Models\BoardMember::class)
             || $user->can('manage-application-questions')
+            || $user->can('rules.manage')
+            || $user->can('rules.approve')
         );
     }
 
@@ -122,6 +124,7 @@ new class extends Component {
                 $user?->can('viewAny', \App\Models\StaffPosition::class) => 'staff-position-manager',
                 $user?->can('viewAny', \App\Models\BoardMember::class) => 'board-member-manager',
                 $user?->can('manage-application-questions') => 'application-questions',
+                $user?->can('rules.manage') || $user?->can('rules.approve') => 'rules-manager',
                 default => 'role-manager',
             },
             default => 'user-manager',
@@ -306,6 +309,9 @@ new class extends Component {
                 @can('manage-application-questions')
                     <flux:tab name="application-questions">App Questions</flux:tab>
                 @endcan
+                @canany(['rules.manage', 'rules.approve'])
+                    <flux:tab name="rules-manager">Rules</flux:tab>
+                @endcanany
             </flux:tabs>
 
             <flux:tab.panel name="site-settings">
@@ -342,6 +348,11 @@ new class extends Component {
                 @can('manage-application-questions')
                     <livewire:admin-manage-application-questions-page />
                 @endcan
+            </flux:tab.panel>
+            <flux:tab.panel name="rules-manager">
+                @canany(['rules.manage', 'rules.approve'])
+                    <livewire:admin-manage-rules-page />
+                @endcanany
             </flux:tab.panel>
         </flux:tab.group>
     @endif

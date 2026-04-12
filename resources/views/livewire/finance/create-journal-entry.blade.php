@@ -354,20 +354,41 @@ new class extends Component
                         </flux:field>
                     </div>
 
-                    <flux:field>
-                        <flux:label>Donor Email <flux:badge size="sm" color="zinc">Optional</flux:badge></flux:label>
-                        <flux:input type="email" wire:model="donorEmail" placeholder="donor@example.com" />
-                    </flux:field>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <flux:field>
+                            <flux:label>Donor Email <flux:badge size="sm" color="zinc">Optional</flux:badge></flux:label>
+                            <flux:input type="email" wire:model="donorEmail" placeholder="donor@example.com" />
+                        </flux:field>
 
-                    <flux:field>
-                        <flux:label>Restricted Fund <flux:badge size="sm" color="zinc">Optional</flux:badge></flux:label>
-                        <flux:select wire:model="restrictedFundId">
-                            <flux:select.option value="">None (unrestricted)</flux:select.option>
-                            @foreach ($this->activeFunds as $fund)
-                                <flux:select.option value="{{ $fund->id }}">{{ $fund->name }}</flux:select.option>
-                            @endforeach
-                        </flux:select>
-                    </flux:field>
+                        <flux:field>
+                            <flux:label>Restricted Fund <flux:badge size="sm" color="zinc">Optional</flux:badge></flux:label>
+                            <flux:select wire:model="restrictedFundId">
+                                <flux:select.option value="">None (unrestricted)</flux:select.option>
+                                @foreach ($this->activeFunds as $fund)
+                                    <flux:select.option value="{{ $fund->id }}">{{ $fund->name }}</flux:select.option>
+                                @endforeach
+                            </flux:select>
+                        </flux:field>
+
+                        <flux:field>
+                            <flux:label>Tags <flux:badge size="sm" color="zinc">Optional</flux:badge></flux:label>
+                            <div class="flex flex-wrap items-center gap-2">
+                                @foreach ($this->selectedTags as $tag)
+                                    <flux:badge wire:key="income-tag-{{ $tag['id'] }}" color="{{ $tag['color'] }}" size="sm">
+                                        {{ $tag['name'] }}
+                                        <button wire:click="removeTag({{ $tag['id'] }})" class="ml-1 hover:opacity-70">×</button>
+                                    </flux:badge>
+                                @endforeach
+                                <flux:button
+                                    variant="outline"
+                                    size="sm"
+                                    wire:click="$dispatch('open-tag-search', { selectedTagIds: {{ json_encode($tagIds) }} })"
+                                >
+                                    + Add Tag
+                                </flux:button>
+                            </div>
+                        </flux:field>
+                    </div>
                 @endif
 
                 {{-- Expense-specific fields --}}
@@ -400,29 +421,50 @@ new class extends Component
                         </flux:field>
                     </div>
 
-                    <flux:field>
-                        <flux:label>Vendor <flux:badge size="sm" color="zinc">Optional</flux:badge></flux:label>
-                        <div class="flex items-center gap-2">
-                            @if ($vendorId)
-                                <flux:badge color="blue">{{ $vendorName }}</flux:badge>
-                                <flux:button variant="ghost" size="sm" wire:click="$set('vendorId', null)">Clear</flux:button>
-                            @else
-                                <flux:button variant="outline" size="sm" wire:click="$dispatch('open-vendor-search')">
-                                    Select Vendor
-                                </flux:button>
-                            @endif
-                        </div>
-                    </flux:field>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <flux:field>
+                            <flux:label>Vendor <flux:badge size="sm" color="zinc">Optional</flux:badge></flux:label>
+                            <div class="flex items-center gap-2">
+                                @if ($vendorId)
+                                    <flux:badge color="blue">{{ $vendorName }}</flux:badge>
+                                    <flux:button variant="ghost" size="sm" wire:click="$set('vendorId', null)">Clear</flux:button>
+                                @else
+                                    <flux:button variant="outline" size="sm" wire:click="$dispatch('open-vendor-search')">
+                                        Select Vendor
+                                    </flux:button>
+                                @endif
+                            </div>
+                        </flux:field>
 
-                    <flux:field>
-                        <flux:label>Restricted Fund <flux:badge size="sm" color="zinc">Optional</flux:badge></flux:label>
-                        <flux:select wire:model="restrictedFundId">
-                            <flux:select.option value="">None</flux:select.option>
-                            @foreach ($this->activeFunds as $fund)
-                                <flux:select.option value="{{ $fund->id }}">{{ $fund->name }}</flux:select.option>
-                            @endforeach
-                        </flux:select>
-                    </flux:field>
+                        <flux:field>
+                            <flux:label>Restricted Fund <flux:badge size="sm" color="zinc">Optional</flux:badge></flux:label>
+                            <flux:select wire:model="restrictedFundId">
+                                <flux:select.option value="">None</flux:select.option>
+                                @foreach ($this->activeFunds as $fund)
+                                    <flux:select.option value="{{ $fund->id }}">{{ $fund->name }}</flux:select.option>
+                                @endforeach
+                            </flux:select>
+                        </flux:field>
+
+                        <flux:field>
+                            <flux:label>Tags <flux:badge size="sm" color="zinc">Optional</flux:badge></flux:label>
+                            <div class="flex flex-wrap items-center gap-2">
+                                @foreach ($this->selectedTags as $tag)
+                                    <flux:badge wire:key="expense-tag-{{ $tag['id'] }}" color="{{ $tag['color'] }}" size="sm">
+                                        {{ $tag['name'] }}
+                                        <button wire:click="removeTag({{ $tag['id'] }})" class="ml-1 hover:opacity-70">×</button>
+                                    </flux:badge>
+                                @endforeach
+                                <flux:button
+                                    variant="outline"
+                                    size="sm"
+                                    wire:click="$dispatch('open-tag-search', { selectedTagIds: {{ json_encode($tagIds) }} })"
+                                >
+                                    + Add Tag
+                                </flux:button>
+                            </div>
+                        </flux:field>
+                    </div>
                 @endif
 
                 {{-- Transfer-specific fields --}}
@@ -454,28 +496,6 @@ new class extends Component
                             <flux:error name="toAccountId" />
                         </flux:field>
                     </div>
-                @endif
-
-                {{-- Tags --}}
-                @if ($entryType !== 'transfer')
-                    <flux:field>
-                        <flux:label>Tags <flux:badge size="sm" color="zinc">Optional</flux:badge></flux:label>
-                        <div class="flex flex-wrap items-center gap-2">
-                            @foreach ($this->selectedTags as $tag)
-                                <flux:badge color="{{ $tag['color'] }}" size="sm">
-                                    {{ $tag['name'] }}
-                                    <button wire:click="removeTag({{ $tag['id'] }})" class="ml-1 hover:opacity-70">×</button>
-                                </flux:badge>
-                            @endforeach
-                            <flux:button
-                                variant="outline"
-                                size="sm"
-                                wire:click="$dispatch('open-tag-search', { selectedTagIds: {{ json_encode($tagIds) }} })"
-                            >
-                                + Add Tag
-                            </flux:button>
-                        </div>
-                    </flux:field>
                 @endif
             </div>
 

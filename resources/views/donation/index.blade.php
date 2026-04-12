@@ -5,31 +5,33 @@
 
 
     <flux:heading class="mt-6">Community Support</flux:heading>
-    <flux:text>Here’s how the community is helping cover our monthly costs:</flux:text>
-    <flux:text variant="subtle" size="sm" class="my-1">(Amounts are currently updated at least every 2 weeks)</flux:text>
+    <flux:text>Here's how the community is helping cover our monthly costs:</flux:text>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 my-6">
-        @php
-            $donationGoal = \App\Models\SiteConfig::getValue('donation_goal', (string) config('lighthouse.donation_goal', 60));
-            $currentMonthName = \App\Models\SiteConfig::getValue('donation_current_month_name', config('lighthouse.donation_current_month_name', ''));
-            $currentMonthAmount = \App\Models\SiteConfig::getValue('donation_current_month_amount', (string) config('lighthouse.donation_current_month_amount', 0));
-            $lastMonthName = \App\Models\SiteConfig::getValue('donation_last_month_name', config('lighthouse.donation_last_month_name', ''));
-            $lastMonthAmount = \App\Models\SiteConfig::getValue('donation_last_month_amount', (string) config('lighthouse.donation_last_month_amount', 0));
-        @endphp
-
-        @if($currentMonthName)
+        @foreach ($closedPeriods as $period)
+            @php $netPositive = $period['net'] >= 0; @endphp
             <flux:card class="overflow-hidden">
-                <flux:text>{{ $currentMonthName }}</flux:text>
-                <flux:heading size="xl" class="mt-2 tabular-nums flex">${{ $currentMonthAmount }} <flux:text class="text-lg mt-1 mx-4">/ ${{ $donationGoal }}</flux:text></flux:heading>
+                <flux:heading size="sm" class="mb-3">{{ $period['name'] }}</flux:heading>
+                <div class="space-y-2">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-zinc-500">Income</span>
+                        <span class="font-mono text-green-600 dark:text-green-400">${{ number_format($period['income'] / 100, 2) }}</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-zinc-500">Expenses</span>
+                        <span class="font-mono text-red-600 dark:text-red-400">${{ number_format($period['expenses'] / 100, 2) }}</span>
+                    </div>
+                    <div class="flex justify-between text-sm font-semibold border-t border-zinc-200 dark:border-zinc-700 pt-2 mt-2">
+                        <span>Net</span>
+                        @if ($netPositive)
+                            <span class="font-mono text-green-600 dark:text-green-400">${{ number_format($period['net'] / 100, 2) }}</span>
+                        @else
+                            <span class="font-mono text-red-600 dark:text-red-400">-${{ number_format(abs($period['net']) / 100, 2) }}</span>
+                        @endif
+                    </div>
+                </div>
             </flux:card>
-        @endif
-
-        @if($lastMonthName)
-            <flux:card class="overflow-hidden">
-                <flux:text>{{ $lastMonthName }}</flux:text>
-                <flux:heading size="xl" class="mt-2 tabular-nums flex">${{ $lastMonthAmount }} <flux:text class="text-lg mt-1 mx-4">/ ${{ $donationGoal }}</flux:text></flux:heading>
-            </flux:card>
-        @endif
+        @endforeach
 
         @if(config('lighthouse.stripe.one_time_donation_url'))
             <flux:card class="overflow-hidden">

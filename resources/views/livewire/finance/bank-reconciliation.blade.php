@@ -102,9 +102,11 @@ new class extends Component {
     public function getIsBalancedProperty(): bool
     {
         // Allow $0.00 reconciliation (e.g. savings account with no activity):
-        // require the statement balance field to have been explicitly entered (non-empty)
-        // and the difference to be zero.
-        return $this->statementBalance !== '' && $this->difference === 0;
+        // require the statement balance field to have been explicitly entered (non-empty),
+        // the difference to be zero, and all transactions to be cleared.
+        return $this->statementBalance !== ''
+            && $this->difference === 0
+            && $this->unclearedLines->isEmpty();
     }
 
     public function markCleared(int $lineId): void

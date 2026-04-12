@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class DisciplineReport extends Model
@@ -82,6 +83,11 @@ class DisciplineReport extends Model
     public function isPublished(): bool
     {
         return $this->status === ReportStatus::Published;
+    }
+
+    public function violatedRules(): BelongsToMany
+    {
+        return $this->belongsToMany(Rule::class, 'discipline_report_rules');
     }
 
     public function topics(): MorphMany

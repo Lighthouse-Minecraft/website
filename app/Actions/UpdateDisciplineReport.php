@@ -22,6 +22,7 @@ class UpdateDisciplineReport
         ReportSeverity $severity,
         ?string $witnesses = null,
         ?ReportCategory $category = null,
+        array $ruleIds = [],
     ): DisciplineReport {
         $report->update([
             'description' => $description,
@@ -31,6 +32,8 @@ class UpdateDisciplineReport
             'severity' => $severity,
             'report_category_id' => $category?->id,
         ]);
+
+        $report->violatedRules()->sync($ruleIds);
 
         RecordActivity::run($report->subject, 'discipline_report_updated',
             "Discipline report #{$report->id} updated by {$editor->name}.", $editor);

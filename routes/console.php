@@ -68,3 +68,9 @@ Schedule::job(new \App\Jobs\EscalateUnassignedTickets)
 // Cleanup unreferenced blog images monthly
 Schedule::job(new \App\Jobs\CleanupUnreferencedBlogImages)
     ->monthly();
+
+// Check rules agreement compliance daily and send reminders / place brigs
+Schedule::job(new \App\Jobs\CheckRulesAgreementJob)
+    ->dailyAt('07:00')
+    ->withoutOverlapping(10)
+    ->onOneServer();

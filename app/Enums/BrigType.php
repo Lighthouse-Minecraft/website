@@ -8,6 +8,7 @@ enum BrigType: string
     case ParentalPending = 'parental_pending';
     case ParentalDisabled = 'parental_disabled';
     case AgeLock = 'age_lock';
+    case RulesNonCompliance = 'rules_non_compliance';
 
     public function label(): string
     {
@@ -16,6 +17,7 @@ enum BrigType: string
             self::ParentalPending => 'Pending Parental Approval',
             self::ParentalDisabled => 'Restricted by Parent',
             self::AgeLock => 'Age Verification Required',
+            self::RulesNonCompliance => 'Rules Non-Compliance',
         };
     }
 

@@ -15,8 +15,12 @@ Route::get('/', function () {
 })->name('home');
 
 Route::view('dashboard', 'dashboard')
-    ->middleware(['auth', 'verified', 'ensure-dob'])
+    ->middleware(['auth', 'verified', 'ensure-dob', 'ensure-rules-agreed'])
     ->name('dashboard');
+
+Volt::route('/rules', 'rules-page')
+    ->middleware(['auth', 'verified', 'ensure-dob'])
+    ->name('rules.show');
 
 Volt::route('/contact', 'contact.contact-form')->name('contact.index');
 Volt::route('/contact/thread/{token}', 'contact.guest-thread')->name('contact.thread');

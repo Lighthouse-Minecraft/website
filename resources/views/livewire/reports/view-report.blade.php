@@ -15,7 +15,7 @@ new class extends Component
     public function mount(DisciplineReport $report): void
     {
         $this->authorize('view', $report);
-        $this->report = $report->load(['subject', 'reporter', 'publisher', 'category']);
+        $this->report = $report->load(['subject', 'reporter', 'publisher', 'category', 'violatedRules']);
     }
 
     #[Computed]
@@ -107,6 +107,17 @@ new class extends Component
                     {!! Str::markdown($report->actions_taken, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
                 </div>
             </div>
+
+            @if($report->violatedRules->isNotEmpty())
+                <div>
+                    <flux:text class="font-bold text-sm">Rules Violated</flux:text>
+                    <div class="mt-1 flex flex-wrap gap-1">
+                        @foreach($report->violatedRules as $rule)
+                            <flux:badge color="red" size="sm">{{ $rule->title }}</flux:badge>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
         </div>
     </flux:card>
 
