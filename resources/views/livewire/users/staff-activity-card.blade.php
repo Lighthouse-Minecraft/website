@@ -168,7 +168,7 @@ new class extends Component {
 
                     @if($viewReport)
                         @foreach($viewReport->answers->sortBy(fn ($a) => $a->question->sort_order) as $answer)
-                            <div>
+                            <div wire:key="report-answer-{{ $answer->id }}">
                                 <flux:text class="font-semibold text-sm">{{ $answer->question->question_text }}</flux:text>
                                 @if($answer->answer)
                                     <div class="prose prose-sm dark:prose-invert max-w-none mt-1">
