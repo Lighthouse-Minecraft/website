@@ -6,6 +6,7 @@ use App\Enums\StaffRank;
 use App\Models\Meeting;
 use App\Models\MeetingPayout;
 use App\Models\SiteConfig;
+use App\Models\User;
 use App\Services\MinecraftRconService;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -28,12 +29,22 @@ class ProcessMeetingPayouts
 
         $attendees = $meeting->attendees()->get();
 
+        // Jr Crew don't attend meetings but are still eligible for payouts if
+        // they submitted their Staff Update Report. Include them alongside attendees.
+        $attendeeIds = $attendees->pluck('id');
+        $jrCrewSubmitters = User::where('staff_rank', StaffRank::JrCrew->value)
+            ->whereNotIn('id', $attendeeIds)
+            ->whereIn('id', $submittedUserIds)
+            ->get();
+
+        $allParticipants = $attendees->concat($jrCrewSubmitters);
+
         $paidCount = 0;
         $skippedCount = 0;
         $failedCount = 0;
         $pendingCount = 0;
 
-        foreach ($attendees as $attendee) {
+        foreach ($allParticipants as $attendee) {
             // Skip if payout record already exists (duplicate prevention).
             // Count pending records so the activity log surfaces interrupted payouts.
             $existingPayout = MeetingPayout::where('meeting_id', $meeting->id)->where('user_id', $attendee->id)->first();
