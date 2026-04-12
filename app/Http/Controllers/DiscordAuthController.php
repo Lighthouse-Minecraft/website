@@ -15,7 +15,9 @@ class DiscordAuthController extends Controller
         Gate::authorize('link-discord');
 
         if ($request->get('from') === 'onboarding') {
-            session(['discord_oauth_from' => 'onboarding']);
+            $request->session()->put('discord_oauth_from', 'onboarding');
+        } else {
+            $request->session()->forget('discord_oauth_from');
         }
 
         return Socialite::driver('discord')

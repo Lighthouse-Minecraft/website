@@ -20,7 +20,7 @@ Crew Members and Jr Crew cannot see this card on other staff profiles.
 
 ## What the Card Shows
 
-The card has three sections, all covering a **rolling 3-month window**:
+The card has three sections. **Meeting Attendance** and **Staff Reports** use a rolling 3-month window. **Tickets** are all-time counts:
 
 ### Meeting Attendance
 

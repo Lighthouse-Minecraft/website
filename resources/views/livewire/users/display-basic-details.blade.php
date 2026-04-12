@@ -444,10 +444,7 @@ new class extends Component {
         $this->user->update($updateData);
 
         if ($this->canEditAllFields()) {
-            $newParentEmail = $this->editUserData['parent_email'] ?: null;
-            $oldParentEmail = $this->user->fresh()->parent_email;
-
-            if ($newParentEmail && strtolower($newParentEmail ?? '') !== strtolower($oldParentEmail ?? '')) {
+            if ($newParentEmail && strcasecmp($newParentEmail, (string) ($oldParentEmail ?? '')) !== 0) {
                 \App\Actions\LinkParentByEmail::run($this->user);
             }
         }
@@ -989,21 +986,17 @@ new class extends Component {
                         <flux:description>Contact staff to update your email address.</flux:description>
                     </flux:field>
 
-                    @if($editUserData['date_of_birth'])
-                        <flux:field>
-                            <flux:label>Date of Birth</flux:label>
-                            <flux:text>{{ $editUserData['date_of_birth'] }}</flux:text>
-                            <flux:description>Contact staff to update your date of birth.</flux:description>
-                        </flux:field>
-                    @endif
+                    <flux:field>
+                        <flux:label>Date of Birth</flux:label>
+                        <flux:text>{{ $editUserData['date_of_birth'] ?: '—' }}</flux:text>
+                        <flux:description>Contact staff to update your date of birth.</flux:description>
+                    </flux:field>
 
-                    @if($editUserData['parent_email'])
-                        <flux:field>
-                            <flux:label>Parent Email</flux:label>
-                            <flux:text>{{ $editUserData['parent_email'] }}</flux:text>
-                            <flux:description>Contact staff to update your parent email.</flux:description>
-                        </flux:field>
-                    @endif
+                    <flux:field>
+                        <flux:label>Parent Email</flux:label>
+                        <flux:text>{{ $editUserData['parent_email'] ?: '—' }}</flux:text>
+                        <flux:description>Contact staff to update your parent email.</flux:description>
+                    </flux:field>
                 @endif
 
                 <div class="flex justify-end">

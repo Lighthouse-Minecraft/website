@@ -8,8 +8,17 @@ use Laravel\Socialite\Facades\Socialite;
 
 uses()->group('discord', 'onboarding');
 
+function stowawayWithDiscord(): User
+{
+    return User::factory()->create([
+        'membership_level' => MembershipLevel::Stowaway,
+        'parent_allows_discord' => true,
+        'in_brig' => false,
+    ]);
+}
+
 it('stores onboarding origin in session when from=onboarding param is passed', function () {
-    $user = User::factory()->create(['membership_level' => MembershipLevel::Stowaway]);
+    $user = stowawayWithDiscord();
 
     $this->actingAs($user)
         ->get(route('auth.discord.redirect', ['from' => 'onboarding']));
@@ -18,7 +27,7 @@ it('stores onboarding origin in session when from=onboarding param is passed', f
 });
 
 it('does not store onboarding origin when from param is absent', function () {
-    $user = User::factory()->create(['membership_level' => MembershipLevel::Stowaway]);
+    $user = stowawayWithDiscord();
 
     $this->actingAs($user)
         ->get(route('auth.discord.redirect'));
@@ -27,7 +36,7 @@ it('does not store onboarding origin when from param is absent', function () {
 });
 
 it('does not store origin for unrecognised from values', function () {
-    $user = User::factory()->create(['membership_level' => MembershipLevel::Stowaway]);
+    $user = stowawayWithDiscord();
 
     $this->actingAs($user)
         ->get(route('auth.discord.redirect', ['from' => 'evil']));
@@ -35,8 +44,18 @@ it('does not store origin for unrecognised from values', function () {
     expect(session('discord_oauth_from'))->toBeNull();
 });
 
+it('clears stale onboarding session when redirect is not from onboarding', function () {
+    $user = stowawayWithDiscord();
+
+    $this->actingAs($user)
+        ->withSession(['discord_oauth_from' => 'onboarding'])
+        ->get(route('auth.discord.redirect'));
+
+    expect(session('discord_oauth_from'))->toBeNull();
+});
+
 it('callback redirects to dashboard on success when from=onboarding was stored', function () {
-    $user = User::factory()->create(['membership_level' => MembershipLevel::Stowaway]);
+    $user = stowawayWithDiscord();
 
     $mockSocialUser = Mockery::mock(\Laravel\Socialite\Two\User::class);
     $mockSocialUser->shouldReceive('getId')->andReturn('999888777');
@@ -61,7 +80,7 @@ it('callback redirects to dashboard on success when from=onboarding was stored',
 });
 
 it('callback redirects to settings on success without onboarding session', function () {
-    $user = User::factory()->create(['membership_level' => MembershipLevel::Stowaway]);
+    $user = stowawayWithDiscord();
 
     $mockSocialUser = Mockery::mock(\Laravel\Socialite\Two\User::class);
     $mockSocialUser->shouldReceive('getId')->andReturn('111222333');
@@ -85,7 +104,7 @@ it('callback redirects to settings on success without onboarding session', funct
 });
 
 it('callback redirects to dashboard on OAuth error when from=onboarding', function () {
-    $user = User::factory()->create(['membership_level' => MembershipLevel::Stowaway]);
+    $user = stowawayWithDiscord();
 
     $mockProvider = Mockery::mock(\Laravel\Socialite\Contracts\Provider::class);
     $mockProvider->shouldReceive('scopes')->andReturnSelf();
@@ -101,7 +120,7 @@ it('callback redirects to dashboard on OAuth error when from=onboarding', functi
 });
 
 it('wizard discord step links directly to OAuth redirect with onboarding param', function () {
-    $user = User::factory()->create(['membership_level' => MembershipLevel::Stowaway]);
+    $user = stowawayWithDiscord();
     $this->actingAs($user);
 
     \Livewire\Volt\Volt::test('onboarding.wizard')
@@ -109,7 +128,7 @@ it('wizard discord step links directly to OAuth redirect with onboarding param',
 });
 
 it('wizard discord step does not link to settings page', function () {
-    $user = User::factory()->create(['membership_level' => MembershipLevel::Stowaway]);
+    $user = stowawayWithDiscord();
     $this->actingAs($user);
 
     \Livewire\Volt\Volt::test('onboarding.wizard')

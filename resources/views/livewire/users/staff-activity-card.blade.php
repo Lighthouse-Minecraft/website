@@ -40,6 +40,7 @@ new class extends Component {
         return Meeting::where('type', MeetingType::StaffMeeting)
             ->where('status', MeetingStatus::Completed)
             ->where('end_time', '>=', $this->getThreeMonthsAgo())
+            ->with(['attendees' => fn ($q) => $q->where('users.id', $this->userId)])
             ->get();
     }
 
@@ -47,15 +48,12 @@ new class extends Component {
     {
         return $this->getStaffMeetings3mo()
             ->map(function (Meeting $meeting) {
-                $pivot = DB::table('meeting_user')
-                    ->where('meeting_id', $meeting->id)
-                    ->where('user_id', $this->userId)
-                    ->first();
+                $attendee = $meeting->attendees->first();
 
                 return [
                     'meeting' => $meeting,
-                    'attended' => $pivot ? (bool) $pivot->attended : false,
-                    'on_record' => $pivot !== null,
+                    'attended' => $attendee ? (bool) $attendee->pivot->attended : false,
+                    'on_record' => $attendee !== null,
                 ];
             })
             ->sortByDesc(fn ($row) => $row['meeting']->scheduled_time);
@@ -135,7 +133,7 @@ new class extends Component {
             <div class="flex flex-col gap-1">
                 <flux:text class="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Meeting Attendance</flux:text>
                 <div class="flex items-center gap-2">
-                    <button wire:click="openAttendanceModal" class="text-lg font-bold text-blue-600 dark:text-blue-400 hover:underline focus:outline-none">
+                    <button wire:click="openAttendanceModal" class="text-lg font-bold text-blue-600 dark:text-blue-400 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded-sm">
                         {{ $this->attendanceCount }} / {{ $this->totalMeetings3mo }}
                     </button>
                     <flux:text variant="subtle" class="text-sm">meetings</flux:text>
