@@ -22,6 +22,7 @@ class CreateCredential
             'notes' => $data['notes'] ?? null,
             'recovery_codes' => $data['recovery_codes'] ?? null,
             'needs_password_change' => false,
+            'password_changed_at' => now(),
             'created_by' => $creator->id,
             'updated_by' => null,
         ]);

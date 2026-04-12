@@ -107,6 +107,7 @@ new class extends Component
             <flux:table.column>Name</flux:table.column>
             <flux:table.column>Website</flux:table.column>
             <flux:table.column>TOTP</flux:table.column>
+            <flux:table.column>Password Changed</flux:table.column>
             <flux:table.column>Last Accessed</flux:table.column>
         </flux:table.columns>
         <flux:table.rows>
@@ -137,6 +138,15 @@ new class extends Component
                         @endif
                     </flux:table.cell>
                     <flux:table.cell>
+                        @if ($credential->password_changed_at)
+                            <flux:text variant="subtle" class="text-sm">
+                                {{ $credential->password_changed_at->format('M j, Y') }}
+                            </flux:text>
+                        @else
+                            <flux:text variant="subtle" class="text-sm">—</flux:text>
+                        @endif
+                    </flux:table.cell>
+                    <flux:table.cell>
                         @if ($credential->latestAccessLog)
                             <flux:text variant="subtle" class="text-sm">
                                 @if ($credential->latestAccessLog->user)
@@ -156,7 +166,7 @@ new class extends Component
                 </flux:table.row>
             @empty
                 <flux:table.row>
-                    <flux:table.cell colspan="4">
+                    <flux:table.cell colspan="5">
                         <flux:text variant="subtle" class="py-4 text-center">
                             No credentials in the vault yet.
                             @can('manage-vault')

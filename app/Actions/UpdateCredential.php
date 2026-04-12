@@ -45,6 +45,7 @@ class UpdateCredential
         if (isset($data['password']) && $data['password'] !== '') {
             $updates['password'] = $data['password'];
             $updates['needs_password_change'] = false;
+            $updates['password_changed_at'] = now();
         }
 
         $credential->update($updates);

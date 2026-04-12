@@ -47,6 +47,30 @@ it('clears needs_password_change when password is updated', function () {
     expect($updated->needs_password_change)->toBeFalse();
 });
 
+it('stamps password_changed_at when password is updated', function () {
+    $user = User::factory()->withRole('Vault Manager')->create();
+    $credential = Credential::factory()->create(['created_by' => $user->id]);
+
+    $before = now()->subSecond();
+    $updated = UpdateCredential::run($credential, $user, ['password' => 'brand-new-password']);
+
+    expect($updated->password_changed_at)->not->toBeNull()
+        ->and($updated->password_changed_at->isAfter($before))->toBeTrue();
+});
+
+it('does not update password_changed_at when only other fields are updated', function () {
+    $user = User::factory()->withRole('Vault Manager')->create();
+    $original = now()->subDay();
+    $credential = Credential::factory()->create([
+        'created_by' => $user->id,
+        'password_changed_at' => $original,
+    ]);
+
+    UpdateCredential::run($credential, $user, ['name' => 'Different Name']);
+
+    expect($credential->fresh()->password_changed_at->toDateString())->toBe($original->toDateString());
+});
+
 it('does not clear needs_password_change when only other fields are updated', function () {
     $user = User::factory()->withRole('Vault Manager')->create();
     $credential = Credential::factory()->needsPasswordChange()->create(['created_by' => $user->id]);

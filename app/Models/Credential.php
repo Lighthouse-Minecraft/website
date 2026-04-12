@@ -24,6 +24,7 @@ class Credential extends Model
         'notes',
         'recovery_codes',
         'needs_password_change',
+        'password_changed_at',
         'created_by',
         'updated_by',
     ];
@@ -32,6 +33,7 @@ class Credential extends Model
     {
         return [
             'needs_password_change' => 'boolean',
+            'password_changed_at' => 'datetime',
         ];
     }
 
