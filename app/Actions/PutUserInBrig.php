@@ -69,8 +69,10 @@ class PutUserInBrig
             $account->save();
         }
 
-        // Strip Discord roles and mark accounts as brigged
+        // Strip Discord roles, mark accounts as brigged, and assign the "In Brig" role
         $discordApi = app(\App\Services\DiscordApiService::class);
+        $brigRoleId = (string) config('lighthouse.discord.roles.in_brig', '');
+
         foreach ($target->discordAccounts()->whereIn('status', [DiscordAccountStatus::Active, DiscordAccountStatus::ParentDisabled])->get() as $discordAccount) {
             try {
                 $discordApi->removeAllManagedRoles($discordAccount->discord_user_id);
@@ -80,6 +82,18 @@ class PutUserInBrig
                     'user_id' => $target->id,
                     'error' => $e->getMessage(),
                 ]);
+            }
+
+            if ($brigRoleId !== '') {
+                try {
+                    $discordApi->addRole($discordAccount->discord_user_id, $brigRoleId);
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::warning('Failed to assign In Brig Discord role', [
+                        'discord_user_id' => $discordAccount->discord_user_id,
+                        'user_id' => $target->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
             }
 
             $discordAccount->status = DiscordAccountStatus::Brigged;
