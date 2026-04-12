@@ -106,7 +106,6 @@ new class extends Component
         <flux:table.columns>
             <flux:table.column>Name</flux:table.column>
             <flux:table.column>Website</flux:table.column>
-            <flux:table.column>Password</flux:table.column>
             <flux:table.column>TOTP</flux:table.column>
             <flux:table.column>Last Accessed</flux:table.column>
         </flux:table.columns>
@@ -123,13 +122,12 @@ new class extends Component
                     </flux:table.cell>
                     <flux:table.cell>
                         @if ($credential->website_url)
-                            <flux:text variant="subtle" class="text-sm">{{ $credential->website_url }}</flux:text>
+                            <flux:link href="{{ $credential->website_url }}" target="_blank" rel="noopener noreferrer" class="text-sm">
+                                {{ parse_url($credential->website_url, PHP_URL_HOST) ?? $credential->website_url }}
+                            </flux:link>
                         @else
                             <flux:text variant="subtle" class="text-sm">—</flux:text>
                         @endif
-                    </flux:table.cell>
-                    <flux:table.cell>
-                        <flux:badge color="zinc" size="sm">••••••••</flux:badge>
                     </flux:table.cell>
                     <flux:table.cell>
                         @if ($credential->getRawOriginal('totp_secret'))
@@ -141,7 +139,13 @@ new class extends Component
                     <flux:table.cell>
                         @if ($credential->latestAccessLog)
                             <flux:text variant="subtle" class="text-sm">
-                                {{ $credential->latestAccessLog->user?->name ?? '(deleted)' }}
+                                @if ($credential->latestAccessLog->user)
+                                    <flux:link href="{{ route('profile.show', $credential->latestAccessLog->user) }}" wire:navigate class="text-sm">
+                                        {{ $credential->latestAccessLog->user->name }}
+                                    </flux:link>
+                                @else
+                                    (deleted)
+                                @endif
                                 <br>
                                 <span class="text-xs">{{ $credential->latestAccessLog->created_at->diffForHumans() }}</span>
                             </flux:text>
@@ -152,7 +156,7 @@ new class extends Component
                 </flux:table.row>
             @empty
                 <flux:table.row>
-                    <flux:table.cell colspan="5">
+                    <flux:table.cell colspan="4">
                         <flux:text variant="subtle" class="py-4 text-center">
                             No credentials in the vault yet.
                             @can('manage-vault')
