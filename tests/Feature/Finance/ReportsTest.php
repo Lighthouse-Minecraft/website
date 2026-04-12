@@ -359,3 +359,38 @@ it('trial balance excludes draft entries', function () {
     expect($component->get('trialBalanceTotalDebit'))->toBe(0);
     expect($component->get('trialBalanceTotalCredit'))->toBe(0);
 });
+
+// == Print header ==
+
+it('print header includes the org name', function () {
+    $user = User::factory()->withRole('Finance - View')->create();
+    $this->actingAs($user);
+
+    Volt::test('finance.reports')
+        ->assertSee(config('app.name'));
+});
+
+it('print header includes the Lighthouse logo', function () {
+    $user = User::factory()->withRole('Finance - View')->create();
+    $this->actingAs($user);
+
+    Volt::test('finance.reports')
+        ->assertSee('LighthouseMC_Logo.png', false);
+});
+
+it('print header shows report title for active tab', function () {
+    $user = User::factory()->withRole('Finance - View')->create();
+    $this->actingAs($user);
+
+    Volt::test('finance.reports')
+        ->set('activeTab', 'ledger')
+        ->assertSee('General Ledger');
+});
+
+it('print header shows Statement of Activities for default tab', function () {
+    $user = User::factory()->withRole('Finance - View')->create();
+    $this->actingAs($user);
+
+    Volt::test('finance.reports')
+        ->assertSee('Statement of Activities');
+});
