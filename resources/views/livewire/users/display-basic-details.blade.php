@@ -409,29 +409,47 @@ new class extends Component {
         Flux::modal('profile-edit-user-modal')->show();
     }
 
+    public function canEditAllFields(): bool
+    {
+        return Auth::user()->isAdmin() || Auth::user()->hasRole('User - Manager');
+    }
+
     public function saveEditUser(): void
     {
         $this->authorize('update', $this->user);
 
-        $this->validate([
+        $rules = [
             'editUserData.name' => ['required', 'string', 'max:32'],
-            'editUserData.email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->user->id)],
-            'editUserData.date_of_birth' => ['nullable', 'date', 'before:today'],
-            'editUserData.parent_email' => ['nullable', 'email'],
-        ]);
+        ];
 
-        $oldParentEmail = $this->user->parent_email;
-        $newParentEmail = $this->editUserData['parent_email'] ?: null;
+        if ($this->canEditAllFields()) {
+            $rules['editUserData.email'] = ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->user->id)];
+            $rules['editUserData.date_of_birth'] = ['nullable', 'date', 'before:today'];
+            $rules['editUserData.parent_email'] = ['nullable', 'email'];
+        }
 
-        $this->user->update([
-            'name' => $this->editUserData['name'],
-            'email' => $this->editUserData['email'],
-            'date_of_birth' => $this->editUserData['date_of_birth'] ?: null,
-            'parent_email' => $newParentEmail,
-        ]);
+        $this->validate($rules);
 
-        if ($newParentEmail && strtolower($newParentEmail ?? '') !== strtolower($oldParentEmail ?? '')) {
-            \App\Actions\LinkParentByEmail::run($this->user);
+        $updateData = ['name' => $this->editUserData['name']];
+
+        if ($this->canEditAllFields()) {
+            $oldParentEmail = $this->user->parent_email;
+            $newParentEmail = $this->editUserData['parent_email'] ?: null;
+
+            $updateData['email'] = $this->editUserData['email'];
+            $updateData['date_of_birth'] = $this->editUserData['date_of_birth'] ?: null;
+            $updateData['parent_email'] = $newParentEmail;
+        }
+
+        $this->user->update($updateData);
+
+        if ($this->canEditAllFields()) {
+            $newParentEmail = $this->editUserData['parent_email'] ?: null;
+            $oldParentEmail = $this->user->fresh()->parent_email;
+
+            if ($newParentEmail && strtolower($newParentEmail ?? '') !== strtolower($oldParentEmail ?? '')) {
+                \App\Actions\LinkParentByEmail::run($this->user);
+            }
         }
 
         \App\Actions\RecordActivity::run($this->user, 'update_profile', 'User profile updated.');
@@ -946,23 +964,47 @@ new class extends Component {
                     <flux:error name="editUserData.name" />
                 </flux:field>
 
-                <flux:field>
-                    <flux:label>Email</flux:label>
-                    <flux:input wire:model="editUserData.email" type="email" required />
-                    <flux:error name="editUserData.email" />
-                </flux:field>
+                @if($this->canEditAllFields())
+                    <flux:field>
+                        <flux:label>Email</flux:label>
+                        <flux:input wire:model="editUserData.email" type="email" required />
+                        <flux:error name="editUserData.email" />
+                    </flux:field>
 
-                <flux:field>
-                    <flux:label>Date of Birth</flux:label>
-                    <flux:input wire:model="editUserData.date_of_birth" type="date" />
-                    <flux:error name="editUserData.date_of_birth" />
-                </flux:field>
+                    <flux:field>
+                        <flux:label>Date of Birth</flux:label>
+                        <flux:input wire:model="editUserData.date_of_birth" type="date" />
+                        <flux:error name="editUserData.date_of_birth" />
+                    </flux:field>
 
-                <flux:field>
-                    <flux:label>Parent Email</flux:label>
-                    <flux:input wire:model="editUserData.parent_email" type="email" placeholder="Optional" />
-                    <flux:error name="editUserData.parent_email" />
-                </flux:field>
+                    <flux:field>
+                        <flux:label>Parent Email</flux:label>
+                        <flux:input wire:model="editUserData.parent_email" type="email" placeholder="Optional" />
+                        <flux:error name="editUserData.parent_email" />
+                    </flux:field>
+                @else
+                    <flux:field>
+                        <flux:label>Email</flux:label>
+                        <flux:text>{{ $editUserData['email'] }}</flux:text>
+                        <flux:description>Contact staff to update your email address.</flux:description>
+                    </flux:field>
+
+                    @if($editUserData['date_of_birth'])
+                        <flux:field>
+                            <flux:label>Date of Birth</flux:label>
+                            <flux:text>{{ $editUserData['date_of_birth'] }}</flux:text>
+                            <flux:description>Contact staff to update your date of birth.</flux:description>
+                        </flux:field>
+                    @endif
+
+                    @if($editUserData['parent_email'])
+                        <flux:field>
+                            <flux:label>Parent Email</flux:label>
+                            <flux:text>{{ $editUserData['parent_email'] }}</flux:text>
+                            <flux:description>Contact staff to update your parent email.</flux:description>
+                        </flux:field>
+                    @endif
+                @endif
 
                 <div class="flex justify-end">
                     <flux:button type="submit" variant="primary">Save</flux:button>
