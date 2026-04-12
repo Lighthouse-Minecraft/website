@@ -1,7 +1,7 @@
 <x-layouts.app>
-    <div class="mb-6 flex items-center justify-between">
+    <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <flux:heading size="xl">Staff Ready Room</flux:heading>
-        <div class="flex gap-2">
+        <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             @can('review-staff-applications')
                 <flux:button href="{{ route('admin.applications.index') }}" wire:navigate icon="document-text">
                     View Applications
@@ -18,6 +18,11 @@
             @can('manage-blog')
                 <flux:button href="{{ route('blog.manage') }}" wire:navigate icon="pencil-square">
                     Blog Management
+                </flux:button>
+            @endcan
+            @can('view-vault')
+                <flux:button href="{{ route('vault.index') }}" wire:navigate icon="key">
+                    Vault
                 </flux:button>
             @endcan
         </div>

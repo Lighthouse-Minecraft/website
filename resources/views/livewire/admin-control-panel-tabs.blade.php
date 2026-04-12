@@ -70,6 +70,7 @@ new class extends Component {
             || $user->can('view-discord-api-log')
             || $user->can('view-activity-log')
             || $user->can('view-discipline-report-log')
+            || $user->can('view-credential-access-log')
         );
     }
 
@@ -114,6 +115,7 @@ new class extends Component {
                 $user?->can('view-discord-api-log') => 'discord-api-log',
                 $user?->can('view-activity-log') => 'activity-log',
                 $user?->can('view-discipline-report-log') => 'discipline-report-log',
+                $user?->can('view-credential-access-log') => 'credential-access-log',
                 default => 'mc-command-log',
             },
             'config' => match (true) {
@@ -259,6 +261,9 @@ new class extends Component {
                 @can('view-discipline-report-log')
                     <flux:tab name="discipline-report-log">Reports Log</flux:tab>
                 @endcan
+                @can('view-credential-access-log')
+                    <flux:tab name="credential-access-log">Credential Access Log</flux:tab>
+                @endcan
             </flux:tabs>
 
             <flux:tab.panel name="mc-command-log">
@@ -279,6 +284,11 @@ new class extends Component {
             <flux:tab.panel name="discipline-report-log">
                 @can('view-discipline-report-log')
                     <livewire:admin-manage-discipline-reports-page />
+                @endcan
+            </flux:tab.panel>
+            <flux:tab.panel name="credential-access-log">
+                @can('view-credential-access-log')
+                    <livewire:admin-manage-credential-access-log-page />
                 @endcan
             </flux:tab.panel>
         </flux:tab.group>
