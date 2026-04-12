@@ -270,6 +270,15 @@ class AuthServiceProvider extends ServiceProvider
             return $user->isAtLeastRank(StaffRank::Officer);
         });
 
+        // Vault gates
+        Gate::define('manage-vault', function ($user) {
+            return $user->hasRole('Vault Manager');
+        });
+
+        Gate::define('view-vault', function ($user) {
+            return $user->isAtLeastRank(StaffRank::JrCrew);
+        });
+
         // Rules gates
         Gate::define('rules.manage', function ($user) {
             return $user->hasRole('Rules - Manage');
