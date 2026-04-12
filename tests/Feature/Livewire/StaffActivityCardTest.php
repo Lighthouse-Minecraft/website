@@ -82,54 +82,44 @@ it('denies regular members from viewing the staff activity card', function () {
         ->assertForbidden();
 });
 
-// Attendance count tests
+// Meeting table row tests
 
-it('shows correct attendance count from last 3 months', function () {
+it('shows attended badge for a meeting the staff member attended', function () {
     $staff = staffMemberWithPosition();
     loginAs($staff);
 
-    $attended = completedStaffMeeting();
-    $missed = completedStaffMeeting();
-    $attended->attendees()->attach($staff->id, ['added_at' => now(), 'attended' => true]);
-    $missed->attendees()->attach($staff->id, ['added_at' => now(), 'attended' => false]);
+    $meeting = completedStaffMeeting(['title' => 'Weekly Standup']);
+    $meeting->attendees()->attach($staff->id, ['added_at' => now(), 'attended' => true]);
 
     Volt::test('users.staff-activity-card', ['user' => $staff])
-        ->assertSee('1 / 2');
+        ->assertSee('Weekly Standup')
+        ->assertSee('Attended');
 });
 
-it('does not count meetings older than 3 months in attendance', function () {
+it('shows absent badge for a meeting the staff member missed', function () {
     $staff = staffMemberWithPosition();
     loginAs($staff);
 
-    $old = completedStaffMeeting(['end_time' => now()->subMonths(4), 'scheduled_time' => now()->subMonths(4)]);
-    $old->attendees()->attach($staff->id, ['added_at' => now(), 'attended' => true]);
+    $meeting = completedStaffMeeting(['title' => 'Weekly Standup']);
+    $meeting->attendees()->attach($staff->id, ['added_at' => now(), 'attended' => false]);
 
     Volt::test('users.staff-activity-card', ['user' => $staff])
-        ->assertSee('0 / 0');
+        ->assertSee('Weekly Standup')
+        ->assertSee('Absent');
 });
 
-// Reports filed/missed tests
-
-it('shows correct reports filed and missed count', function () {
+it('shows not on record badge when staff member has no attendance entry', function () {
     $staff = staffMemberWithPosition();
     loginAs($staff);
 
-    $meeting1 = completedStaffMeeting();
-    $meeting2 = completedStaffMeeting();
-
-    MeetingReport::create([
-        'meeting_id' => $meeting1->id,
-        'user_id' => $staff->id,
-        'submitted_at' => now(),
-    ]);
-    // No report for meeting2
+    completedStaffMeeting(['title' => 'Weekly Standup']);
 
     Volt::test('users.staff-activity-card', ['user' => $staff])
-        ->assertSee('1 filed')
-        ->assertSee('1 missed');
+        ->assertSee('Weekly Standup')
+        ->assertSee('Not on Record');
 });
 
-it('does not show missed badge when all reports are filed', function () {
+it('shows view report button when a submitted report exists for the meeting', function () {
     $staff = staffMemberWithPosition();
     loginAs($staff);
 
@@ -141,8 +131,17 @@ it('does not show missed badge when all reports are filed', function () {
     ]);
 
     Volt::test('users.staff-activity-card', ['user' => $staff])
-        ->assertSee('1 filed')
-        ->assertDontSee('missed');
+        ->assertSee('View Report');
+});
+
+it('does not show view report button when no report was submitted', function () {
+    $staff = staffMemberWithPosition();
+    loginAs($staff);
+
+    completedStaffMeeting();
+
+    Volt::test('users.staff-activity-card', ['user' => $staff])
+        ->assertDontSee('View Report');
 });
 
 // Ticket count tests
