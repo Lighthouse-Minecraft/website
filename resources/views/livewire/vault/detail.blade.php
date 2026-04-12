@@ -1,14 +1,17 @@
 <?php
 
+use App\Actions\AssignCredentialPositions;
 use App\Actions\DeleteCredential;
 use App\Actions\UpdateCredential;
 use App\Models\Credential;
+use App\Models\StaffPosition;
 use Flux\Flux;
 use Livewire\Volt\Component;
 
 new class extends Component {
     public Credential $credential;
 
+    // Edit fields (Vault Manager — all fields)
     public string $editName = '';
 
     public string $editWebsiteUrl = '';
@@ -25,18 +28,39 @@ new class extends Component {
 
     public string $editRecoveryCodes = '';
 
+    // Position assignment
+    public ?int $addPositionId = null;
+
     public function mount(Credential $credential): void
     {
-        $this->authorize('view-vault');
+        $this->authorize('view', $credential);
         $this->credential = $credential;
+    }
+
+    #[\Livewire\Attributes\Computed]
+    public function isVaultManager(): bool
+    {
+        return auth()->user()->hasRole('Vault Manager') || auth()->user()->isAdmin();
+    }
+
+    #[\Livewire\Attributes\Computed]
+    public function assignedPositions()
+    {
+        return $this->credential->staffPositions()->with('user')->ordered()->get();
+    }
+
+    #[\Livewire\Attributes\Computed]
+    public function availablePositions()
+    {
+        $assignedIds = $this->assignedPositions->pluck('id');
+
+        return StaffPosition::ordered()->get()->filter(fn ($p) => ! $assignedIds->contains($p->id));
     }
 
     public function openEdit(): void
     {
-        $this->authorize('manage-vault');
+        $this->authorize('update', $this->credential);
 
-        $this->editName = $this->credential->name;
-        $this->editWebsiteUrl = $this->credential->website_url ?? '';
         $this->editUsername = $this->credential->username ?? '';
         $this->editEmail = $this->credential->email ?? '';
         $this->editPassword = '';
@@ -44,33 +68,58 @@ new class extends Component {
         $this->editNotes = $this->credential->notes ?? '';
         $this->editRecoveryCodes = $this->credential->recovery_codes ?? '';
 
+        if ($this->isVaultManager) {
+            $this->editName = $this->credential->name;
+            $this->editWebsiteUrl = $this->credential->website_url ?? '';
+        }
+
         Flux::modal('edit-credential-modal')->show();
     }
 
     public function saveEdit(): void
     {
-        $this->authorize('manage-vault');
+        $this->authorize('update', $this->credential);
 
-        $this->validate([
-            'editName' => 'required|string|max:255',
-            'editWebsiteUrl' => 'nullable|url|max:500',
-            'editUsername' => 'required|string|max:500',
-            'editEmail' => 'nullable|email|max:500',
-            'editPassword' => 'nullable|string|max:1000',
-            'editTotpSecret' => 'nullable|string|max:500',
-            'editNotes' => 'nullable|string|max:5000',
-            'editRecoveryCodes' => 'nullable|string|max:5000',
-        ]);
+        if ($this->isVaultManager) {
+            $this->validate([
+                'editName' => 'required|string|max:255',
+                'editWebsiteUrl' => 'nullable|url|max:500',
+                'editUsername' => 'required|string|max:500',
+                'editEmail' => 'nullable|email|max:500',
+                'editPassword' => 'nullable|string|max:1000',
+                'editTotpSecret' => 'nullable|string|max:500',
+                'editNotes' => 'nullable|string|max:5000',
+                'editRecoveryCodes' => 'nullable|string|max:5000',
+            ]);
 
-        $data = [
-            'name' => $this->editName,
-            'website_url' => $this->editWebsiteUrl ?: null,
-            'username' => $this->editUsername,
-            'email' => $this->editEmail ?: null,
-            'totp_secret' => $this->editTotpSecret ?: null,
-            'notes' => $this->editNotes ?: null,
-            'recovery_codes' => $this->editRecoveryCodes ?: null,
-        ];
+            $data = [
+                'name' => $this->editName,
+                'website_url' => $this->editWebsiteUrl ?: null,
+                'username' => $this->editUsername,
+                'email' => $this->editEmail ?: null,
+                'totp_secret' => $this->editTotpSecret ?: null,
+                'notes' => $this->editNotes ?: null,
+                'recovery_codes' => $this->editRecoveryCodes ?: null,
+            ];
+        } else {
+            // Position holders cannot edit name or website URL
+            $this->validate([
+                'editUsername' => 'required|string|max:500',
+                'editEmail' => 'nullable|email|max:500',
+                'editPassword' => 'nullable|string|max:1000',
+                'editTotpSecret' => 'nullable|string|max:500',
+                'editNotes' => 'nullable|string|max:5000',
+                'editRecoveryCodes' => 'nullable|string|max:5000',
+            ]);
+
+            $data = [
+                'username' => $this->editUsername,
+                'email' => $this->editEmail ?: null,
+                'totp_secret' => $this->editTotpSecret ?: null,
+                'notes' => $this->editNotes ?: null,
+                'recovery_codes' => $this->editRecoveryCodes ?: null,
+            ];
+        }
 
         if ($this->editPassword !== '') {
             $data['password'] = $this->editPassword;
@@ -80,23 +129,65 @@ new class extends Component {
 
         Flux::modal('edit-credential-modal')->close();
         Flux::toast('Credential updated.', 'Done', variant: 'success');
+        unset($this->assignedPositions, $this->availablePositions);
     }
 
     public function confirmDelete(): void
     {
-        $this->authorize('manage-vault');
+        $this->authorize('delete', $this->credential);
         Flux::modal('delete-confirm-modal')->show();
     }
 
     public function delete(): void
     {
-        $this->authorize('manage-vault');
+        $this->authorize('delete', $this->credential);
 
         DeleteCredential::run($this->credential, auth()->user());
 
         Flux::modal('delete-confirm-modal')->close();
 
         $this->redirect(route('vault.index'), navigate: true);
+    }
+
+    public function openManagePositions(): void
+    {
+        $this->authorize('managePositions', $this->credential);
+        $this->addPositionId = null;
+        Flux::modal('manage-positions-modal')->show();
+    }
+
+    public function addPosition(): void
+    {
+        $this->authorize('managePositions', $this->credential);
+
+        $this->validate(['addPositionId' => 'required|integer|exists:staff_positions,id']);
+
+        $current = $this->credential->staffPositions->pluck('id')->toArray();
+        if (! in_array($this->addPositionId, $current)) {
+            $current[] = $this->addPositionId;
+            AssignCredentialPositions::run($this->credential, auth()->user(), $current);
+            $this->credential = $this->credential->fresh();
+        }
+
+        $this->addPositionId = null;
+        unset($this->assignedPositions, $this->availablePositions);
+        Flux::toast('Position added.', 'Done', variant: 'success');
+    }
+
+    public function removePosition(int $positionId): void
+    {
+        $this->authorize('managePositions', $this->credential);
+
+        $current = $this->credential->staffPositions->pluck('id')
+            ->filter(fn ($id) => $id !== $positionId)
+            ->values()
+            ->toArray();
+
+        AssignCredentialPositions::run($this->credential, auth()->user(), $current);
+        $this->credential = $this->credential->fresh();
+
+        unset($this->assignedPositions, $this->availablePositions);
+        Flux::toast('Position removed.', 'Done', variant: 'success');
     }
 }; ?>
 
@@ -122,12 +213,17 @@ new class extends Component {
                     </flux:link>
                 @endif
             </div>
-            @can('manage-vault')
-                <div class="flex gap-2">
+            <div class="flex gap-2">
+                @can('update', $credential)
                     <flux:button variant="ghost" icon="pencil-square" wire:click="openEdit">Edit</flux:button>
+                @endcan
+                @can('managePositions', $credential)
+                    <flux:button variant="ghost" icon="user-group" wire:click="openManagePositions">Manage Access</flux:button>
+                @endcan
+                @can('delete', $credential)
                     <flux:button variant="danger" icon="trash" wire:click="confirmDelete">Delete</flux:button>
-                </div>
-            @endcan
+                @endcan
+            </div>
         </div>
 
         <flux:card class="space-y-4">
@@ -149,14 +245,14 @@ new class extends Component {
                 <div>
                     <flux:text variant="subtle" class="text-xs uppercase tracking-wide">Password</flux:text>
                     <flux:text class="mt-1 font-mono text-zinc-400">••••••••••••</flux:text>
-                    <flux:text variant="subtle" class="text-xs mt-1">Re-authentication required to reveal</flux:text>
+                    <flux:text variant="subtle" class="mt-1 text-xs">Re-authentication required to reveal</flux:text>
                 </div>
 
                 @if ($credential->getRawOriginal('totp_secret'))
                     <div>
                         <flux:text variant="subtle" class="text-xs uppercase tracking-wide">TOTP</flux:text>
                         <flux:badge color="blue" size="sm" class="mt-1">TOTP configured</flux:badge>
-                        <flux:text variant="subtle" class="text-xs mt-1">Re-authentication required to view code</flux:text>
+                        <flux:text variant="subtle" class="mt-1 text-xs">Re-authentication required to view code</flux:text>
                     </div>
                 @endif
             </div>
@@ -176,6 +272,38 @@ new class extends Component {
             </flux:card>
         @endif
 
+        @can('managePositions', $credential)
+            <flux:card class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <flux:heading size="md">Position Access</flux:heading>
+                </div>
+                @if ($this->assignedPositions->isEmpty())
+                    <flux:text variant="subtle" class="text-sm">No positions assigned — only Vault Managers can view this credential.</flux:text>
+                @else
+                    <flux:table>
+                        <flux:table.columns>
+                            <flux:table.column>Position</flux:table.column>
+                            <flux:table.column>Held By</flux:table.column>
+                            <flux:table.column></flux:table.column>
+                        </flux:table.columns>
+                        <flux:table.rows>
+                            @foreach ($this->assignedPositions as $position)
+                                <flux:table.row wire:key="pos-{{ $position->id }}">
+                                    <flux:table.cell>{{ $position->title }}</flux:table.cell>
+                                    <flux:table.cell>
+                                        {{ $position->user?->name ?? '(vacant)' }}
+                                    </flux:table.cell>
+                                    <flux:table.cell>
+                                        <flux:button size="sm" variant="danger" icon="x-mark" wire:click="removePosition({{ $position->id }})">Remove</flux:button>
+                                    </flux:table.cell>
+                                </flux:table.row>
+                            @endforeach
+                        </flux:table.rows>
+                    </flux:table>
+                @endif
+            </flux:card>
+        @endcan
+
         <flux:text variant="subtle" class="text-xs">
             Added by {{ $credential->createdBy->name }} on {{ $credential->created_at->format('M j, Y') }}
             @if ($credential->updatedBy)
@@ -184,24 +312,26 @@ new class extends Component {
         </flux:text>
     </div>
 
-    @can('manage-vault')
-        {{-- Edit modal --}}
+    {{-- Edit modal --}}
+    @can('update', $credential)
         <flux:modal name="edit-credential-modal" class="w-full max-w-2xl">
             <div class="space-y-6">
                 <flux:heading size="lg">Edit Credential</flux:heading>
 
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <flux:field class="sm:col-span-2">
-                        <flux:label>Name <span class="text-red-500">*</span></flux:label>
-                        <flux:input wire:model="editName" />
-                        <flux:error name="editName" />
-                    </flux:field>
+                    @if ($this->isVaultManager)
+                        <flux:field class="sm:col-span-2">
+                            <flux:label>Name <span class="text-red-500">*</span></flux:label>
+                            <flux:input wire:model="editName" />
+                            <flux:error name="editName" />
+                        </flux:field>
 
-                    <flux:field class="sm:col-span-2">
-                        <flux:label>Website URL</flux:label>
-                        <flux:input wire:model="editWebsiteUrl" type="url" />
-                        <flux:error name="editWebsiteUrl" />
-                    </flux:field>
+                        <flux:field class="sm:col-span-2">
+                            <flux:label>Website URL</flux:label>
+                            <flux:input wire:model="editWebsiteUrl" type="url" />
+                            <flux:error name="editWebsiteUrl" />
+                        </flux:field>
+                    @endif
 
                     <flux:field>
                         <flux:label>Username <span class="text-red-500">*</span></flux:label>
@@ -248,7 +378,9 @@ new class extends Component {
                 </div>
             </div>
         </flux:modal>
+    @endcan
 
+    @can('delete', $credential)
         {{-- Delete confirmation modal --}}
         <flux:modal name="delete-confirm-modal" class="w-full max-w-md">
             <div class="space-y-6">
@@ -262,6 +394,47 @@ new class extends Component {
                 <div class="flex justify-end gap-2">
                     <flux:button variant="ghost" x-on:click="$flux.modal('delete-confirm-modal').close()">Cancel</flux:button>
                     <flux:button variant="danger" wire:click="delete">Delete Permanently</flux:button>
+                </div>
+            </div>
+        </flux:modal>
+    @endcan
+
+    @can('managePositions', $credential)
+        {{-- Manage position access modal --}}
+        <flux:modal name="manage-positions-modal" class="w-full max-w-lg">
+            <div class="space-y-6">
+                <flux:heading size="lg">Manage Position Access</flux:heading>
+
+                <div class="space-y-2">
+                    <flux:text variant="subtle" class="text-sm">Add a staff position to grant everyone who holds that position access to view and update this credential.</flux:text>
+                </div>
+
+                @if ($this->availablePositions->isNotEmpty())
+                    <div class="flex gap-2">
+                        <div class="flex-1">
+                            <flux:select wire:model="addPositionId">
+                                <flux:select.option value="">Select a position...</flux:select.option>
+                                @foreach ($this->availablePositions as $position)
+                                    <flux:select.option value="{{ $position->id }}">
+                                        {{ $position->title }}
+                                        @if ($position->user)
+                                            ({{ $position->user->name }})
+                                        @else
+                                            (vacant)
+                                        @endif
+                                    </flux:select.option>
+                                @endforeach
+                            </flux:select>
+                        </div>
+                        <flux:button variant="primary" wire:click="addPosition">Add</flux:button>
+                    </div>
+                    <flux:error name="addPositionId" />
+                @else
+                    <flux:text variant="subtle" class="text-sm">All positions have been assigned access.</flux:text>
+                @endif
+
+                <div class="flex justify-end">
+                    <flux:button variant="ghost" x-on:click="$flux.modal('manage-positions-modal').close()">Done</flux:button>
                 </div>
             </div>
         </flux:modal>

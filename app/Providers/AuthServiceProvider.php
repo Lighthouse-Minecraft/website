@@ -28,6 +28,7 @@ class AuthServiceProvider extends ServiceProvider
         \App\Models\CommunityResponse::class => \App\Policies\CommunityResponsePolicy::class,
         \App\Models\StaffApplication::class => \App\Policies\StaffApplicationPolicy::class,
         \App\Models\BlogPost::class => \App\Policies\BlogPostPolicy::class,
+        \App\Models\Credential::class => \App\Policies\CredentialPolicy::class,
     ];
 
     /**

@@ -30,7 +30,21 @@ new class extends Component {
     #[\Livewire\Attributes\Computed]
     public function credentials()
     {
-        return Credential::orderBy('name')->get();
+        $user = auth()->user();
+
+        if ($user->hasRole('Vault Manager') || $user->isAdmin()) {
+            return Credential::orderBy('name')->get();
+        }
+
+        $positionId = $user->staffPosition?->id;
+
+        if ($positionId === null) {
+            return collect();
+        }
+
+        return Credential::whereHas('staffPositions', function ($query) use ($positionId) {
+            $query->where('staff_positions.id', $positionId);
+        })->orderBy('name')->get();
     }
 
     public function openCreate(): void

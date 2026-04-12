@@ -51,11 +51,14 @@ it('allows a Vault Manager to delete a credential', function () {
     $this->assertDatabaseMissing('credentials', ['id' => $credential->id]);
 });
 
-it('rejects a non-Vault-Manager from deleting a credential', function () {
+it('rejects a position holder (non-Vault-Manager) from deleting a credential', function () {
     $manager = User::factory()->withRole('Vault Manager')->create(['staff_rank' => StaffRank::JrCrew]);
     $credential = Credential::factory()->create(['created_by' => $manager->id]);
 
+    // Give the jrCrew user a position and assign it to the credential so they can view it
     $jrCrew = User::factory()->create(['staff_rank' => StaffRank::JrCrew]);
+    $position = \App\Models\StaffPosition::factory()->assignedTo($jrCrew->id)->create();
+    $credential->staffPositions()->attach($position->id);
     $this->actingAs($jrCrew);
 
     livewire('vault.detail', ['credential' => $credential])
