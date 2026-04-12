@@ -4,6 +4,7 @@ use App\Actions\AssignCredentialPositions;
 use App\Actions\DeleteCredential;
 use App\Actions\GenerateTotpCode;
 use App\Actions\ReauthenticateVaultSession;
+use App\Actions\RecordCredentialAccess;
 use App\Actions\UpdateCredential;
 use App\Models\Credential;
 use App\Models\StaffPosition;
@@ -69,6 +70,7 @@ new class extends Component
 
         if (app(VaultSession::class)->isUnlocked()) {
             $this->revealedPassword = $this->credential->password;
+            RecordCredentialAccess::run($this->credential, auth()->user(), 'viewed_password');
         } else {
             $this->reauthPurpose = 'password';
             $this->reauthPassword = '';
@@ -126,9 +128,11 @@ new class extends Component
             $result = GenerateTotpCode::run($this->credential);
             $this->totpCode = $result['code'];
             $this->totpSecondsRemaining = $result['seconds_remaining'];
+            RecordCredentialAccess::run($this->credential, auth()->user(), 'viewed_totp');
             Flux::modal('totp-modal')->show();
         } else {
             $this->revealedPassword = $this->credential->password;
+            RecordCredentialAccess::run($this->credential, auth()->user(), 'viewed_password');
         }
     }
 

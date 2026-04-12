@@ -50,6 +50,7 @@ class UpdateCredential
         $credential->update($updates);
 
         RecordActivity::run($credential, 'credential_updated', "Credential \"{$credential->name}\" updated by {$updater->name}.");
+        RecordCredentialAccess::run($credential, $updater, 'updated');
 
         return $credential->fresh();
     }

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Credential extends Model
 {
@@ -149,5 +150,12 @@ class Credential extends Model
     public function accessLogs(): HasMany
     {
         return $this->hasMany(CredentialAccessLog::class);
+    }
+
+    public function latestAccessLog(): HasOne
+    {
+        return $this->hasOne(CredentialAccessLog::class)
+            ->whereIn('action', ['viewed_password', 'viewed_totp'])
+            ->latestOfMany('created_at');
     }
 }

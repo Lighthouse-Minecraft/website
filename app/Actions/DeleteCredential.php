@@ -14,6 +14,9 @@ class DeleteCredential
     {
         $name = $credential->name;
 
+        // Record access before logs are cleared
+        RecordCredentialAccess::run($credential, $deletedBy, 'deleted');
+
         $credential->staffPositions()->detach();
         $credential->accessLogs()->delete();
         $credential->delete();

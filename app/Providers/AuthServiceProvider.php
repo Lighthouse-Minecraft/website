@@ -112,6 +112,7 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('view-mc-command-log', $canViewLogs);
         Gate::define('view-discord-api-log', $canViewLogs);
         Gate::define('view-activity-log', $canViewLogs);
+        Gate::define('view-credential-access-log', $canViewLogs);
         Gate::define('view-discipline-report-log', function ($user) use ($canViewLogs) {
             return $canViewLogs($user) || $user->hasRole('Discipline Report - Manager');
         });

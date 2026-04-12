@@ -22,5 +22,6 @@ class AssignCredentialPositions
             'credential_positions_assigned',
             "Credential \"{$credential->name}\" position access updated by {$assignedBy->name}."
         );
+        RecordCredentialAccess::run($credential, $assignedBy, 'positions_assigned');
     }
 }

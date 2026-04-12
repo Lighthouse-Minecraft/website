@@ -5,7 +5,8 @@ use App\Models\Credential;
 use Flux\Flux;
 use Livewire\Volt\Component;
 
-new class extends Component {
+new class extends Component
+{
     public string $name = '';
 
     public string $website_url = '';
@@ -32,8 +33,12 @@ new class extends Component {
     {
         $user = auth()->user();
 
+        $withLastAccess = fn ($q) => $q->with([
+            'latestAccessLog.user',
+        ]);
+
         if ($user->hasRole('Vault Manager') || $user->isAdmin()) {
-            return Credential::orderBy('name')->get();
+            return Credential::orderBy('name')->tap($withLastAccess)->get();
         }
 
         $positionId = $user->staffPosition?->id;
@@ -44,7 +49,7 @@ new class extends Component {
 
         return Credential::whereHas('staffPositions', function ($query) use ($positionId) {
             $query->where('staff_positions.id', $positionId);
-        })->orderBy('name')->get();
+        })->orderBy('name')->tap($withLastAccess)->get();
     }
 
     public function openCreate(): void
@@ -103,6 +108,7 @@ new class extends Component {
             <flux:table.column>Website</flux:table.column>
             <flux:table.column>Password</flux:table.column>
             <flux:table.column>TOTP</flux:table.column>
+            <flux:table.column>Last Accessed</flux:table.column>
         </flux:table.columns>
         <flux:table.rows>
             @forelse ($this->credentials as $credential)
@@ -132,10 +138,21 @@ new class extends Component {
                             <flux:text variant="subtle" class="text-sm">—</flux:text>
                         @endif
                     </flux:table.cell>
+                    <flux:table.cell>
+                        @if ($credential->latestAccessLog)
+                            <flux:text variant="subtle" class="text-sm">
+                                {{ $credential->latestAccessLog->user?->name ?? '(deleted)' }}
+                                <br>
+                                <span class="text-xs">{{ $credential->latestAccessLog->created_at->diffForHumans() }}</span>
+                            </flux:text>
+                        @else
+                            <flux:text variant="subtle" class="text-sm">—</flux:text>
+                        @endif
+                    </flux:table.cell>
                 </flux:table.row>
             @empty
                 <flux:table.row>
-                    <flux:table.cell colspan="4">
+                    <flux:table.cell colspan="5">
                         <flux:text variant="subtle" class="py-4 text-center">
                             No credentials in the vault yet.
                             @can('manage-vault')
