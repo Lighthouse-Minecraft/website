@@ -91,6 +91,11 @@ class StaffPosition extends Model
         return $query->where('accepting_applications', true);
     }
 
+    public function credentials(): BelongsToMany
+    {
+        return $this->belongsToMany(Credential::class, 'credential_staff_position');
+    }
+
     public function roles(): BelongsToMany
     {
         return $this->belongsToMany(Role::class);

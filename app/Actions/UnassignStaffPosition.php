@@ -21,6 +21,9 @@ class UnassignStaffPosition
         $positionTitle = $position->title;
 
         DB::transaction(function () use ($position, $user, $positionTitle) {
+            // Flag credentials accessed by the departing user before clearing the position
+            FlagCredentialsAfterPositionRemoval::run($user, $position);
+
             // Clear the position assignment
             $position->update(['user_id' => null]);
 
