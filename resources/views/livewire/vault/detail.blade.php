@@ -10,6 +10,7 @@ use App\Models\Credential;
 use App\Models\StaffPosition;
 use App\Services\VaultSession;
 use Flux\Flux;
+use Illuminate\Support\Facades\Hash;
 use Livewire\Volt\Component;
 
 new class extends Component
@@ -110,29 +111,41 @@ new class extends Component
 
         $this->validate(['reauthPassword' => 'required|string']);
 
-        $success = ReauthenticateVaultSession::run(auth()->user(), $this->reauthPassword);
+        $user = auth()->user();
 
-        if (! $success) {
-            $this->reauthError = 'Incorrect password. Please try again.';
+        if ($this->reauthPurpose === 'totp') {
+            // TOTP re-auth verifies identity only — does not unlock the vault session
+            if (! Hash::check($this->reauthPassword, $user->password)) {
+                $this->reauthError = 'Incorrect password. Please try again.';
 
-            return;
+                return;
+            }
+        } else {
+            // Password reveal unlocks the vault session for the configured TTL
+            $success = ReauthenticateVaultSession::run($user, $this->reauthPassword);
+
+            if (! $success) {
+                $this->reauthError = 'Incorrect password. Please try again.';
+
+                return;
+            }
         }
 
         $this->reauthPassword = '';
         $this->reauthError = '';
 
         Flux::modal('reauth-modal')->close();
-        Flux::toast('Vault session unlocked.', 'Done', variant: 'success');
 
         if ($this->reauthPurpose === 'totp') {
             $result = GenerateTotpCode::run($this->credential);
             $this->totpCode = $result['code'];
             $this->totpSecondsRemaining = $result['seconds_remaining'];
-            RecordCredentialAccess::run($this->credential, auth()->user(), 'viewed_totp');
+            RecordCredentialAccess::run($this->credential, $user, 'viewed_totp');
             Flux::modal('totp-modal')->show();
         } else {
+            Flux::toast('Vault session unlocked.', 'Done', variant: 'success');
             $this->revealedPassword = $this->credential->password;
-            RecordCredentialAccess::run($this->credential, auth()->user(), 'viewed_password');
+            RecordCredentialAccess::run($this->credential, $user, 'viewed_password');
         }
     }
 
@@ -196,10 +209,13 @@ new class extends Component
                 'website_url' => $this->editWebsiteUrl ?: null,
                 'username' => $this->editUsername,
                 'email' => $this->editEmail ?: null,
-                'totp_secret' => $this->editTotpSecret ?: null,
                 'notes' => $this->editNotes ?: null,
                 'recovery_codes' => $this->editRecoveryCodes ?: null,
             ];
+
+            if ($this->editTotpSecret !== '') {
+                $data['totp_secret'] = $this->editTotpSecret;
+            }
         } else {
             // Position holders cannot edit name or website URL
             $this->validate([
@@ -214,10 +230,13 @@ new class extends Component
             $data = [
                 'username' => $this->editUsername,
                 'email' => $this->editEmail ?: null,
-                'totp_secret' => $this->editTotpSecret ?: null,
                 'notes' => $this->editNotes ?: null,
                 'recovery_codes' => $this->editRecoveryCodes ?: null,
             ];
+
+            if ($this->editTotpSecret !== '') {
+                $data['totp_secret'] = $this->editTotpSecret;
+            }
         }
 
         if ($this->editPassword !== '') {

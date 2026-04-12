@@ -32,7 +32,7 @@ it('stores sensitive fields encrypted in the database', function () {
         'notes' => 'Some notes',
     ]);
 
-    $raw = \Illuminate\Support\Facades\DB::table('credentials')->where('id', $credential->id)->first();
+    $raw = Credential::query()->toBase()->where('id', $credential->id)->first();
 
     expect($raw->username)->not->toBe('myusername')
         ->and($raw->email)->not->toBe('admin@example.com')

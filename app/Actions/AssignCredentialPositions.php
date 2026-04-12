@@ -4,6 +4,7 @@ namespace App\Actions;
 
 use App\Models\Credential;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class AssignCredentialPositions
@@ -15,13 +16,16 @@ class AssignCredentialPositions
      */
     public function handle(Credential $credential, User $assignedBy, array $positionIds): void
     {
-        $credential->staffPositions()->sync($positionIds);
+        DB::transaction(function () use ($credential, $assignedBy, $positionIds) {
+            $credential->staffPositions()->sync($positionIds);
 
-        RecordActivity::run(
-            $credential,
-            'credential_positions_assigned',
-            "Credential \"{$credential->name}\" position access updated by {$assignedBy->name}."
-        );
-        RecordCredentialAccess::run($credential, $assignedBy, 'positions_assigned');
+            RecordActivity::run(
+                $credential,
+                'credential_positions_assigned',
+                "Credential \"{$credential->name}\" position access updated by {$assignedBy->name}.",
+                $assignedBy
+            );
+            RecordCredentialAccess::run($credential, $assignedBy, 'positions_assigned');
+        });
     }
 }

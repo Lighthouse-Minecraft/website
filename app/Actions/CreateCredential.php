@@ -26,7 +26,7 @@ class CreateCredential
             'updated_by' => null,
         ]);
 
-        RecordActivity::run($credential, 'credential_created', "Credential \"{$credential->name}\" created by {$creator->name}.");
+        RecordActivity::run($credential, 'credential_created', "Credential \"{$credential->name}\" created by {$creator->name}.", $creator);
         RecordCredentialAccess::run($credential, $creator, 'created');
 
         return $credential;

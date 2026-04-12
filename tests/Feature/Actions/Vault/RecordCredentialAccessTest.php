@@ -8,7 +8,6 @@ use App\Actions\DeleteCredential;
 use App\Actions\RecordCredentialAccess;
 use App\Actions\UpdateCredential;
 use App\Models\Credential;
-use App\Models\CredentialAccessLog;
 use App\Models\User;
 
 uses()->group('vault', 'actions');
@@ -63,7 +62,7 @@ it('UpdateCredential logs an updated access entry', function () {
     ]);
 });
 
-it('DeleteCredential logs a deleted access entry', function () {
+it('DeleteCredential logs a deleted access entry that persists after deletion', function () {
     $user = User::factory()->withRole('Vault Manager')->create();
     $credential = CreateCredential::run($user, [
         'name' => 'Delete Log Test',
@@ -72,15 +71,17 @@ it('DeleteCredential logs a deleted access entry', function () {
     ]);
     $credentialId = $credential->id;
 
-    // Access log is recorded before deletion; assert entry was created
-    // Note: DeleteCredential clears access logs after recording, so we check
-    // that it was recorded by observing the CredentialAccessLog table snapshot
-    $logCountBefore = CredentialAccessLog::where('credential_id', $credentialId)->count();
     DeleteCredential::run($credential, $user);
 
-    // After deletion, access logs are cleared — but the deleted action was recorded
-    // We can't assert the deleted row exists; instead verify the credential is gone
+    // The credential is gone
     $this->assertDatabaseMissing('credentials', ['id' => $credentialId]);
+
+    // The 'deleted' audit entry is preserved with credential_id nullified
+    $this->assertDatabaseHas('credential_access_logs', [
+        'credential_id' => null,
+        'user_id' => $user->id,
+        'action' => 'deleted',
+    ]);
 });
 
 it('AssignCredentialPositions logs a positions_assigned access entry', function () {

@@ -29,14 +29,14 @@ class CredentialFactory extends Factory
 
     public function withTotp(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn () => [
             'totp_secret' => strtoupper($this->faker->lexify('????????????????????????????????')),
         ]);
     }
 
     public function needsPasswordChange(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn () => [
             'needs_password_change' => true,
         ]);
     }

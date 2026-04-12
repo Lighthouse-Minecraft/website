@@ -29,31 +29,19 @@ it('denies manage-vault to a regular member', function () {
 
 // === view-vault ===
 
-it('grants view-vault to a JrCrew staff member', function () {
-    $user = User::factory()->create(['staff_rank' => StaffRank::JrCrew]);
+dataset('view_vault_allowed_ranks', [
+    StaffRank::JrCrew,
+    StaffRank::CrewMember,
+    StaffRank::Officer,
+]);
+
+it('grants view-vault to staff at or above JrCrew', function (StaffRank $rank) {
+    $user = User::factory()->create(['staff_rank' => $rank]);
 
     expect($user->can('view-vault'))->toBeTrue();
-});
+})->with('view_vault_allowed_ranks');
 
-it('grants view-vault to a CrewMember', function () {
-    $user = User::factory()->create(['staff_rank' => StaffRank::CrewMember]);
-
-    expect($user->can('view-vault'))->toBeTrue();
-});
-
-it('grants view-vault to an Officer', function () {
-    $user = User::factory()->create(['staff_rank' => StaffRank::Officer]);
-
-    expect($user->can('view-vault'))->toBeTrue();
-});
-
-it('denies view-vault to a regular member with no staff rank', function () {
-    $user = User::factory()->create(['staff_rank' => StaffRank::None]);
-
-    expect($user->can('view-vault'))->toBeFalse();
-});
-
-it('denies view-vault to a user freshly registered with no staff rank (None)', function () {
+it('denies view-vault to a user with no staff rank', function () {
     $user = User::factory()->create(['staff_rank' => StaffRank::None]);
 
     expect($user->can('view-vault'))->toBeFalse();

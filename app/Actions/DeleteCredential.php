@@ -14,13 +14,13 @@ class DeleteCredential
     {
         $name = $credential->name;
 
-        // Record access before logs are cleared
+        // Record access audit before deleting — access log rows are preserved with
+        // credential_id set to null (nullOnDelete FK) so the history is not lost
         RecordCredentialAccess::run($credential, $deletedBy, 'deleted');
 
         $credential->staffPositions()->detach();
-        $credential->accessLogs()->delete();
         $credential->delete();
 
-        RecordActivity::run($deletedBy, 'credential_deleted', "Credential \"{$name}\" deleted by {$deletedBy->name}.");
+        RecordActivity::run($deletedBy, 'credential_deleted', "Credential \"{$name}\" deleted by {$deletedBy->name}.", $deletedBy);
     }
 }

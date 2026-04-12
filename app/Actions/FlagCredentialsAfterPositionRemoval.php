@@ -12,13 +12,9 @@ class FlagCredentialsAfterPositionRemoval
 
     public function handle(User $user, StaffPosition $position): void
     {
-        // Find credentials assigned to this position that the departing user accessed
-        $credentials = $position->credentials()
-            ->whereHas('accessLogs', fn ($q) => $q->where('user_id', $user->id))
-            ->get();
-
-        foreach ($credentials as $credential) {
-            $credential->update(['needs_password_change' => true]);
-        }
+        // Flag credentials on this position that the departing user actually accessed
+        $position->credentials()
+            ->whereHas('accessLogs', fn ($accessLogQuery) => $accessLogQuery->where('user_id', $user->id))
+            ->update(['needs_password_change' => true]);
     }
 }

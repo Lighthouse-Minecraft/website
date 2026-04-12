@@ -20,6 +20,10 @@ class GenerateTotpCode
     {
         $rawSecret = $credential->totp_secret;
 
+        if (blank($rawSecret)) {
+            throw new \RuntimeException('TOTP secret is missing for this credential.');
+        }
+
         $totp = TOTP::createFromSecret($rawSecret, new InternalClock);
 
         return [
