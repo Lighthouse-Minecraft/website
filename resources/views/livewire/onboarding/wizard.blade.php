@@ -103,15 +103,15 @@ new class extends Component
                         and send you direct message notifications about meetings, tickets, and community updates.
                     </flux:text>
                     <flux:text variant="subtle" class="text-sm mb-4">
-                        You'll be redirected to your account settings to complete the link.
-                        Once connected, <strong>return to the dashboard</strong> to continue your setup.
+                        You'll be taken to Discord to authorize the connection.
+                        Once connected, you'll return here automatically to continue your setup.
                     </flux:text>
 
                     <div class="flex items-center justify-between">
                         <flux:button wire:click="skipDiscord" variant="ghost" size="sm">
                             Skip for now
                         </flux:button>
-                        <flux:button href="{{ route('settings.discord-account') }}" variant="primary">
+                        <flux:button href="{{ route('auth.discord.redirect', ['from' => 'onboarding']) }}" variant="primary">
                             Connect Discord
                         </flux:button>
                     </div>

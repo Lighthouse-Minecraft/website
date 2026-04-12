@@ -24,7 +24,7 @@ You cannot put another staff member in the Brig, and you cannot brig yourself.
 1. Open the **Stowaway Users** widget on your Dashboard
 2. Click the **Put in Brig** button next to the user
 3. In the modal, enter a **reason** (minimum 5 characters) explaining why
-4. Optionally set a **timer** (1-365 days) -- this doesn't auto-release them, but notifies them when the timer expires and they become eligible to appeal
+4. Optionally set a **timer** (1-365 days) or check **No expiry (permanent)** if no timer should be set
 5. Click **Confirm**
 
 ### From a User's Profile
@@ -32,7 +32,7 @@ You cannot put another staff member in the Brig, and you cannot brig yourself.
 1. Navigate to the user's **profile page**
 2. Click the **Actions** menu on their profile card
 3. Select **Put in Brig**
-4. Enter a **reason** and optional **timer** in the modal
+4. Enter a **reason** and optional **timer** (or check **No expiry** for an indefinite brig) in the modal
 5. Click **Confirm**
 
 ## What Happens Immediately
@@ -42,17 +42,19 @@ When you put a user in the Brig, the system automatically:
 - Sets their account as brigged with the reason you entered
 - **Bans all their Minecraft accounts** -- removes them from the server whitelist and sets their account status to Banned
 - **Strips all their Discord roles** -- removes managed roles from their Discord accounts
+- **Assigns the Discord "In Brig" role** (if configured) -- marks their account as brigged in the Discord server
 - Records the action in the **activity log**
 - Sends the user a **notification** about their brig placement
 - Sets their first appeal availability to **24 hours** from now unless you entered a longer timer
 
 ## The Brig Timer
 
-The timer is optional but recommended. It sets a date when the user will be notified that they're eligible to submit an appeal. Important things to know:
+The timer is optional. It sets a date when the user will be notified that they're eligible to submit an appeal. Important things to know:
 
 - The timer does **not** automatically release the user -- staff must manually release them
 - A scheduled task checks daily for expired timers and sends the user a notification
 - If you don't set a timer, the user can still appeal after the initial 24-hour cooldown
+- Check **No expiry (permanent)** to skip the timer entirely -- the days field is hidden when this is checked. Users without a timer can still appeal after 24 hours
 
 ## What the User Sees
 

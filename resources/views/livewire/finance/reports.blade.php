@@ -545,9 +545,29 @@ new class extends Component
     </div>
 
     {{-- Print header (only visible when printing) --}}
-    <div class="hidden print:block mb-4">
-        <h1 class="text-xl font-bold">Financial Report</h1>
-        <p class="text-sm text-zinc-500">Generated {{ now()->format('M j, Y') }}</p>
+    <div class="hidden print:block mb-6">
+        @php
+            $tabLabels = [
+                'activities'   => 'Statement of Activities',
+                'ledger'       => 'General Ledger',
+                'trial'        => 'Trial Balance',
+                'balance-sheet'=> 'Balance Sheet',
+                'cash-flow'    => 'Cash Flow Statement',
+                'variance'     => 'Budget vs. Actual',
+            ];
+            $reportTitle = $tabLabels[$activeTab] ?? 'Financial Report';
+        @endphp
+
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
+            <img src="{{ asset('img/LighthouseMC_Logo.png') }}" alt="{{ config('app.name') }}" style="width:48px; height:48px; border-radius:6px;" />
+            <div>
+                <div style="font-size:18px; font-weight:700; line-height:1.2;">{{ config('app.name') }}</div>
+                <div style="font-size:14px; font-weight:600; color:#374151;">{{ $reportTitle }}</div>
+            </div>
+        </div>
+        <div style="border-top:1px solid #d1d5db; padding-top:6px;">
+            <span style="font-size:12px; color:#6b7280;">Generated {{ now()->format('F j, Y') }}</span>
+        </div>
     </div>
 
     {{-- Tabs --}}

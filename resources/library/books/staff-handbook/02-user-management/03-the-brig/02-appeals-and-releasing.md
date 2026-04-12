@@ -43,7 +43,7 @@ When you release a user, the system automatically:
 
 - Clears their brig status and reason
 - **Restores their Minecraft accounts** -- previously active accounts are re-whitelisted on the server and permissions re-synced
-- **Restores their Discord roles** -- membership level and department roles are re-synced
+- **Removes the Discord "In Brig" role** (if configured) and restores their normal Discord roles
 - Records the release in the **activity log**
 - Sends the user a **notification** that they've been released
 

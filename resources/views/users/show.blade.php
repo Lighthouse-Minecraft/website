@@ -13,6 +13,14 @@
         </div>
     @endcan
 
+    @if($user->staffPosition)
+        @can('view-staff-activity', $user)
+            <div class="my-6">
+                <livewire:users.staff-activity-card :user="$user" />
+            </div>
+        @endcan
+    @endif
+
     @can('viewActivityLog', $user)
         <div class="w-full my-6 flex justify-end">
             <flux:modal.trigger name="activity-log-modal">

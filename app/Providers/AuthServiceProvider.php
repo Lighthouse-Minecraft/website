@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Enums\MembershipLevel;
 use App\Enums\StaffDepartment;
+use App\Enums\StaffRank;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 
@@ -257,6 +258,16 @@ class AuthServiceProvider extends ServiceProvider
         // Community finance view — Resident+ members can see closed period summaries
         Gate::define('finance-community-view', function ($user) {
             return $user->isAdmin() || (! $user->in_brig && $user->isAtLeastLevel(MembershipLevel::Resident));
+        });
+
+        Gate::define('view-staff-activity', function ($user, $targetUser) {
+            // The staff member themselves
+            if ($user->id === $targetUser->id) {
+                return true;
+            }
+
+            // Command officers and department leads (Officer rank in any department)
+            return $user->isAtLeastRank(StaffRank::Officer);
         });
 
         // Rules gates

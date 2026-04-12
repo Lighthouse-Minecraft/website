@@ -60,10 +60,10 @@ test('Discord step shows Connect Discord button and Skip for now option', functi
     Volt::test('onboarding.wizard')
         ->assertSee('Connect Discord')
         ->assertSee('Skip for now')
-        ->assertSee(route('settings.discord-account'));
+        ->assertSee(route('auth.discord.redirect', ['from' => 'onboarding']));
 });
 
-test('Connect Discord button points to the discord account settings route', function () {
+test('Connect Discord button points directly to the OAuth redirect with onboarding param', function () {
     $user = User::factory()->create([
         'membership_level' => MembershipLevel::Stowaway,
         'rules_accepted_at' => now(),
@@ -71,7 +71,8 @@ test('Connect Discord button points to the discord account settings route', func
     loginAs($user);
 
     Volt::test('onboarding.wizard')
-        ->assertSee(route('settings.discord-account'));
+        ->assertSee(route('auth.discord.redirect', ['from' => 'onboarding']))
+        ->assertDontSee(route('settings.discord-account'));
 });
 
 test('Skip for now records onboarding_discord_skipped in activity log', function () {
