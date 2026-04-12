@@ -20,7 +20,7 @@ return new class extends Migration
         Schema::table('credential_access_logs', function (Blueprint $table) {
             $table->dropForeign(['credential_id']);
             $table->unsignedBigInteger('credential_id')->nullable(false)->change();
-            $table->foreignId('credential_id')->constrained('credentials')->cascadeOnDelete();
+            $table->foreign('credential_id')->references('id')->on('credentials')->cascadeOnDelete();
         });
     }
 };
