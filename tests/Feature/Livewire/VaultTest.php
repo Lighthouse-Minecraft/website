@@ -141,3 +141,61 @@ it('enforces policy on reveal: position holder can reveal their credential passw
         ->call('reauth')
         ->assertSet('revealedPassword', $credential->fresh()->password);
 });
+
+// === TOTP display ===
+
+it('shows the TOTP code after successful re-authentication', function () {
+    $user = User::factory()->withRole('Vault Manager')->create([
+        'staff_rank' => StaffRank::JrCrew,
+        'password' => bcrypt('vault-pass'),
+    ]);
+    $credential = Credential::factory()->withTotp()->create(['created_by' => $user->id]);
+    $this->actingAs($user);
+
+    livewire('vault.detail', ['credential' => $credential])
+        ->set('reauthPurpose', 'totp')
+        ->set('reauthPassword', 'vault-pass')
+        ->call('reauth')
+        ->assertSet('totpCode', fn ($code) => (bool) preg_match('/^\d{6}$/', $code))
+        ->assertSet('revealedPassword', null); // should not reveal password when purpose is totp
+});
+
+it('always requires re-auth to show TOTP code even when vault session is unlocked', function () {
+    $user = User::factory()->withRole('Vault Manager')->create([
+        'staff_rank' => StaffRank::JrCrew,
+        'password' => bcrypt('vault-pass'),
+    ]);
+    $credential = Credential::factory()->withTotp()->create(['created_by' => $user->id]);
+    $this->actingAs($user);
+
+    // Unlock the vault session
+    session(['vault_unlocked_at' => now()->timestamp]);
+
+    // showTotp() should set reauthPurpose to 'totp' without showing the code directly
+    livewire('vault.detail', ['credential' => $credential])
+        ->call('showTotp')
+        ->assertSet('totpCode', null)
+        ->assertSet('reauthPurpose', 'totp');
+});
+
+it('refreshes the TOTP code without re-auth', function () {
+    $user = User::factory()->withRole('Vault Manager')->create([
+        'staff_rank' => StaffRank::JrCrew,
+        'password' => bcrypt('vault-pass'),
+    ]);
+    $credential = Credential::factory()->withTotp()->create(['created_by' => $user->id]);
+    $this->actingAs($user);
+
+    $component = livewire('vault.detail', ['credential' => $credential])
+        ->set('reauthPurpose', 'totp')
+        ->set('reauthPassword', 'vault-pass')
+        ->call('reauth');
+
+    $firstCode = $component->get('totpCode');
+
+    // refreshTotp can be called without re-auth
+    $component->call('refreshTotp');
+
+    // The code may or may not change (same 30-second window), but it should still be a 6-digit string
+    expect($component->get('totpCode'))->toMatch('/^\d{6}$/');
+});

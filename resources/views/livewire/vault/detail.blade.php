@@ -2,6 +2,7 @@
 
 use App\Actions\AssignCredentialPositions;
 use App\Actions\DeleteCredential;
+use App\Actions\GenerateTotpCode;
 use App\Actions\ReauthenticateVaultSession;
 use App\Actions\UpdateCredential;
 use App\Models\Credential;
@@ -37,10 +38,18 @@ new class extends Component
     // Password reveal
     public ?string $revealedPassword = null;
 
+    // TOTP display
+    public ?string $totpCode = null;
+
+    public int $totpSecondsRemaining = 0;
+
     // Re-auth modal
     public string $reauthPassword = '';
 
     public string $reauthError = '';
+
+    // 'password' | 'totp' — what to do after successful re-auth
+    public string $reauthPurpose = 'password';
 
     public function mount(Credential $credential): void
     {
@@ -61,10 +70,36 @@ new class extends Component
         if (app(VaultSession::class)->isUnlocked()) {
             $this->revealedPassword = $this->credential->password;
         } else {
+            $this->reauthPurpose = 'password';
             $this->reauthPassword = '';
             $this->reauthError = '';
             Flux::modal('reauth-modal')->show();
         }
+    }
+
+    public function showTotp(): void
+    {
+        $this->authorize('view', $this->credential);
+
+        // TOTP always requires re-auth, even if vault session is unlocked
+        $this->reauthPurpose = 'totp';
+        $this->reauthPassword = '';
+        $this->reauthError = '';
+        Flux::modal('reauth-modal')->show();
+    }
+
+    public function refreshTotp(): void
+    {
+        $this->authorize('view', $this->credential);
+
+        // Auto-refresh: does not require re-auth, just fetches next code
+        if ($this->totpCode === null) {
+            return;
+        }
+
+        $result = GenerateTotpCode::run($this->credential);
+        $this->totpCode = $result['code'];
+        $this->totpSecondsRemaining = $result['seconds_remaining'];
     }
 
     public function reauth(): void
@@ -83,10 +118,18 @@ new class extends Component
 
         $this->reauthPassword = '';
         $this->reauthError = '';
-        $this->revealedPassword = $this->credential->password;
 
         Flux::modal('reauth-modal')->close();
         Flux::toast('Vault session unlocked.', 'Done', variant: 'success');
+
+        if ($this->reauthPurpose === 'totp') {
+            $result = GenerateTotpCode::run($this->credential);
+            $this->totpCode = $result['code'];
+            $this->totpSecondsRemaining = $result['seconds_remaining'];
+            Flux::modal('totp-modal')->show();
+        } else {
+            $this->revealedPassword = $this->credential->password;
+        }
     }
 
     #[\Livewire\Attributes\Computed]
@@ -310,7 +353,10 @@ new class extends Component
                 @if ($credential->getRawOriginal('totp_secret'))
                     <div>
                         <flux:text variant="subtle" class="text-xs uppercase tracking-wide">TOTP</flux:text>
-                        <flux:badge color="blue" size="sm" class="mt-1">TOTP configured</flux:badge>
+                        <div class="mt-1 flex items-center gap-2">
+                            <flux:badge color="blue" size="sm">TOTP configured</flux:badge>
+                            <flux:button size="xs" variant="ghost" wire:click="showTotp">Show Code</flux:button>
+                        </div>
                         <flux:text variant="subtle" class="mt-1 text-xs">Re-authentication required to view code</flux:text>
                     </div>
                 @endif
@@ -480,6 +526,26 @@ new class extends Component
             </div>
         </div>
     </flux:modal>
+
+    {{-- TOTP modal --}}
+    @if ($totpCode !== null)
+        <flux:modal name="totp-modal" class="w-full max-w-sm">
+            <div class="space-y-6">
+                <flux:heading size="lg">TOTP Code</flux:heading>
+
+                <div class="text-center">
+                    <flux:text class="font-mono text-4xl font-bold tracking-widest">{{ $totpCode }}</flux:text>
+                    <flux:text variant="subtle" class="mt-2 text-sm">
+                        Expires in <span wire:poll.1000ms="refreshTotp">{{ $totpSecondsRemaining }}</span> seconds
+                    </flux:text>
+                </div>
+
+                <div class="flex justify-end">
+                    <flux:button variant="ghost" x-on:click="$flux.modal('totp-modal').close()">Close</flux:button>
+                </div>
+            </div>
+        </flux:modal>
+    @endif
 
     @can('managePositions', $credential)
         {{-- Manage position access modal --}}
