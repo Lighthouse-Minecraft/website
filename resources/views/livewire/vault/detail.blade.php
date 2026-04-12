@@ -310,6 +310,7 @@ new class extends Component
 }; ?>
 
 <x-layouts.app>
+    <div>
     <div class="mb-6 flex items-center gap-4">
         <flux:button href="{{ route('vault.index') }}" wire:navigate variant="ghost" icon="arrow-left" size="sm">
             Back to Vault
@@ -610,4 +611,5 @@ new class extends Component
             </div>
         </flux:modal>
     @endcan
+    </div>
 </x-layouts.app>

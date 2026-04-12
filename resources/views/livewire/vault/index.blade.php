@@ -93,6 +93,7 @@ new class extends Component
 }; ?>
 
 <x-layouts.app>
+    <div class="space-y-6">
     <div class="mb-6 flex items-center justify-between">
         <flux:heading size="xl">Staff Credential Vault</flux:heading>
         @can('manage-vault')
@@ -227,4 +228,5 @@ new class extends Component
             </div>
         </flux:modal>
     @endcan
+    </div>
 </x-layouts.app>

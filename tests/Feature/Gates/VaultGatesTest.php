@@ -27,6 +27,12 @@ it('denies manage-vault to a regular member', function () {
     expect($user->can('manage-vault'))->toBeFalse();
 });
 
+it('grants manage-vault to an admin regardless of role', function () {
+    $user = User::factory()->admin()->create();
+
+    expect($user->can('manage-vault'))->toBeTrue();
+});
+
 // === view-vault ===
 
 dataset('view_vault_allowed_ranks', [
@@ -45,4 +51,10 @@ it('denies view-vault to a user with no staff rank', function () {
     $user = User::factory()->create(['staff_rank' => StaffRank::None]);
 
     expect($user->can('view-vault'))->toBeFalse();
+});
+
+it('grants view-vault to an admin regardless of staff rank', function () {
+    $user = User::factory()->admin()->create(['staff_rank' => StaffRank::None]);
+
+    expect($user->can('view-vault'))->toBeTrue();
 });

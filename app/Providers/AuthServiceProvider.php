@@ -274,11 +274,11 @@ class AuthServiceProvider extends ServiceProvider
 
         // Vault gates
         Gate::define('manage-vault', function ($user) {
-            return $user->hasRole('Vault Manager');
+            return $user->isAdmin() || $user->hasRole('Vault Manager');
         });
 
         Gate::define('view-vault', function ($user) {
-            return $user->isAtLeastRank(StaffRank::JrCrew);
+            return $user->isAdmin() || $user->isAtLeastRank(StaffRank::JrCrew);
         });
 
         // Rules gates

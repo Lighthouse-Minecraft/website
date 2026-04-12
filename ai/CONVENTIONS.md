@@ -90,6 +90,32 @@ new class extends Component {
 - Computed properties: `public function getXxxProperty()` returns data, accessed as `$this->xxx`.
 - `wire:key` on every repeated element: `wire:key="prefix-{{ $item->id }}"`.
 
+**Full-page components and the single-root rule**:
+
+Livewire requires **exactly one root HTML element** per component. For full-page components that use `<x-layouts.app>` as the page shell, ALL slot content inside it must be wrapped in a single `<div>`. Placing multiple sibling elements directly inside `<x-layouts.app>` throws `MultipleRootElementsDetectedException`.
+
+**Correct** (single root `<div>` wrapping everything):
+```blade
+<x-layouts.app>
+    <div class="space-y-6">
+        <div class="flex items-center justify-between">...</div>
+        <flux:table>...</flux:table>
+        <flux:modal name="...">...</flux:modal>
+    </div>
+</x-layouts.app>
+```
+
+**Wrong** (multiple siblings directly inside `<x-layouts.app>`):
+```blade
+<x-layouts.app>
+    <div class="flex items-center justify-between">...</div>  {{-- root 1 --}}
+    <flux:table>...</flux:table>                              {{-- root 2 --}}
+    <flux:modal name="...">...</flux:modal>                   {{-- root 3 --}}
+</x-layouts.app>
+```
+
+All modals must be inside the single wrapper `<div>`, even though they render as overlays — they are still part of the component's DOM tree and count toward the root element count.
+
 ---
 
 ## Flux UI Component Cheatsheet
