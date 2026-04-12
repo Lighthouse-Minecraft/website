@@ -10,9 +10,13 @@ use Laravel\Socialite\Facades\Socialite;
 
 class DiscordAuthController extends Controller
 {
-    public function redirect()
+    public function redirect(Request $request)
     {
         Gate::authorize('link-discord');
+
+        if ($request->get('from') === 'onboarding') {
+            session(['discord_oauth_from' => 'onboarding']);
+        }
 
         return Socialite::driver('discord')
             ->scopes(['identify', 'guilds.join'])
@@ -23,12 +27,16 @@ class DiscordAuthController extends Controller
     {
         Gate::authorize('link-discord');
 
+        $from = session()->pull('discord_oauth_from');
+        $successRoute = $from === 'onboarding' ? 'dashboard' : 'settings.discord-account';
+        $errorRoute = $from === 'onboarding' ? 'dashboard' : 'settings.discord-account';
+
         try {
             $discordUser = Socialite::driver('discord')->user();
         } catch (\Exception $e) {
             Log::warning('Discord OAuth callback failed', ['error' => $e->getMessage()]);
 
-            return redirect()->route('settings.discord-account')
+            return redirect()->route($errorRoute)
                 ->with('error', 'Failed to authenticate with Discord. Please try again.');
         }
 
@@ -43,11 +51,11 @@ class DiscordAuthController extends Controller
         ]);
 
         if ($result['success']) {
-            return redirect()->route('settings.discord-account')
+            return redirect()->route($successRoute)
                 ->with('success', $result['message']);
         }
 
-        return redirect()->route('settings.discord-account')
+        return redirect()->route($errorRoute)
             ->with('error', $result['message']);
     }
 }
