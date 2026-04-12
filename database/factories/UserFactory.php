@@ -114,4 +114,32 @@ class UserFactory extends Factory
             'date_of_birth' => now()->subYears(25),
         ]);
     }
+
+    /**
+     * Automatically agree to the current published rules version after creating the user.
+     * Applied by default so that factory users can access the dashboard in tests.
+     */
+    public function configure(): static
+    {
+        return $this->afterCreating(function ($user) {
+            $version = \App\Models\RuleVersion::currentPublished();
+            if ($version) {
+                \App\Models\UserRuleAgreement::updateOrCreate(
+                    ['user_id' => $user->id, 'rule_version_id' => $version->id],
+                    ['agreed_at' => now()],
+                );
+            }
+        });
+    }
+
+    /**
+     * Create a user that has NOT agreed to the current rules version.
+     * Use this when specifically testing the rules agreement flow.
+     */
+    public function withoutRulesAgreed(): static
+    {
+        return $this->afterCreating(function ($user) {
+            $user->ruleAgreements()->delete();
+        });
+    }
 }

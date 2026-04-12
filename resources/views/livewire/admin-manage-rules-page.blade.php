@@ -1,0 +1,669 @@
+<?php
+
+use App\Actions\AddRuleToDraft;
+use App\Actions\ApproveAndPublishVersion;
+use App\Actions\CreateRuleVersion;
+use App\Actions\DeactivateRuleInDraft;
+use App\Actions\RejectDraftVersion;
+use App\Actions\RemoveRuleFromDraft;
+use App\Actions\SubmitVersionForApproval;
+use App\Actions\UpdateRuleInDraft;
+use App\Actions\UpdateRulesHeaderFooter;
+use App\Models\Rule;
+use App\Models\RuleCategory;
+use App\Models\RuleVersion;
+use App\Models\SiteConfig;
+use Flux\Flux;
+use Livewire\Volt\Component;
+
+new class extends Component {
+    // Header/footer
+    public string $rulesHeader = '';
+    public string $rulesFooter = '';
+
+    // Add category
+    public string $newCategoryName = '';
+
+    // Add rule
+    public ?int $addRuleCategoryId = null;
+    public string $newRuleTitle = '';
+    public string $newRuleDescription = '';
+
+    // Edit/replace rule
+    public ?int $editRuleId = null;
+    public ?int $editRuleCategoryId = null;
+    public string $editRuleTitle = '';
+    public string $editRuleDescription = '';
+
+    // Edit category
+    public ?int $editCategoryId = null;
+    public string $editCategoryName = '';
+
+    // Reject modal
+    public string $rejectionNote = '';
+
+    public function mount(): void
+    {
+        $this->rulesHeader = SiteConfig::getValue('rules_header', '');
+        $this->rulesFooter = SiteConfig::getValue('rules_footer', '');
+    }
+
+    public function getCategories()
+    {
+        return RuleCategory::with(['rules' => fn ($q) => $q->orderBy('sort_order')])
+            ->orderBy('sort_order')
+            ->get();
+    }
+
+    public function getDraft(): ?RuleVersion
+    {
+        return RuleVersion::currentDraft();
+    }
+
+    public function getDraftRuleIds(): array
+    {
+        $draft = $this->getDraft();
+        if (! $draft) {
+            return [];
+        }
+
+        return $draft->rules()
+            ->wherePivot('deactivate_on_publish', false)
+            ->pluck('rules.id')
+            ->toArray();
+    }
+
+    public function getDeactivatingRuleIds(): array
+    {
+        $draft = $this->getDraft();
+        if (! $draft) {
+            return [];
+        }
+
+        return $draft->rules()
+            ->wherePivot('deactivate_on_publish', true)
+            ->pluck('rules.id')
+            ->toArray();
+    }
+
+    public function saveHeaderFooter(): void
+    {
+        $this->authorize('rules.manage');
+
+        $this->validate([
+            'rulesHeader' => 'nullable|string|max:5000',
+            'rulesFooter' => 'nullable|string|max:5000',
+        ]);
+
+        UpdateRulesHeaderFooter::run($this->rulesHeader, $this->rulesFooter);
+        Flux::toast('Rules header and footer saved.', 'Saved', variant: 'success');
+    }
+
+    public function startDraft(): void
+    {
+        $this->authorize('rules.manage');
+
+        if (RuleVersion::currentDraft()) {
+            Flux::toast('A draft already exists.', 'Error', variant: 'danger');
+
+            return;
+        }
+
+        CreateRuleVersion::run(auth()->user());
+        Flux::toast('Draft version created.', 'Draft Started', variant: 'success');
+    }
+
+    public function addCategory(): void
+    {
+        $this->authorize('rules.manage');
+
+        $this->validate(['newCategoryName' => 'required|string|max:255']);
+
+        $maxOrder = RuleCategory::max('sort_order') ?? 0;
+        RuleCategory::create(['name' => $this->newCategoryName, 'sort_order' => $maxOrder + 1]);
+
+        $this->newCategoryName = '';
+        Flux::modal('add-category-modal')->close();
+        Flux::toast('Category added.', 'Added', variant: 'success');
+    }
+
+    public function moveCategoryUp(int $categoryId): void
+    {
+        $this->authorize('rules.manage');
+
+        $category = RuleCategory::findOrFail($categoryId);
+        $prev = RuleCategory::where('sort_order', '<', $category->sort_order)
+            ->orderByDesc('sort_order')
+            ->first();
+
+        if ($prev) {
+            [$category->sort_order, $prev->sort_order] = [$prev->sort_order, $category->sort_order];
+            $category->save();
+            $prev->save();
+        }
+    }
+
+    public function moveCategoryDown(int $categoryId): void
+    {
+        $this->authorize('rules.manage');
+
+        $category = RuleCategory::findOrFail($categoryId);
+        $next = RuleCategory::where('sort_order', '>', $category->sort_order)
+            ->orderBy('sort_order')
+            ->first();
+
+        if ($next) {
+            [$category->sort_order, $next->sort_order] = [$next->sort_order, $category->sort_order];
+            $category->save();
+            $next->save();
+        }
+    }
+
+    public function openEditCategoryModal(int $categoryId): void
+    {
+        $this->authorize('rules.manage');
+
+        $category = RuleCategory::findOrFail($categoryId);
+        $this->editCategoryId = $categoryId;
+        $this->editCategoryName = $category->name;
+        Flux::modal('edit-category-modal')->show();
+    }
+
+    public function updateCategory(): void
+    {
+        $this->authorize('rules.manage');
+
+        $this->validate(['editCategoryName' => 'required|string|max:255']);
+
+        $category = RuleCategory::findOrFail($this->editCategoryId);
+        $category->update(['name' => $this->editCategoryName]);
+
+        $this->reset(['editCategoryId', 'editCategoryName']);
+        Flux::modal('edit-category-modal')->close();
+        Flux::toast('Category name updated.', 'Updated', variant: 'success');
+    }
+
+    public function deleteCategory(int $categoryId): void
+    {
+        $this->authorize('rules.manage');
+
+        $category = RuleCategory::findOrFail($categoryId);
+
+        if ($category->rules()->count() > 0) {
+            Flux::toast('Cannot delete a category that has rules. Move or remove all rules first.', 'Error', variant: 'danger');
+
+            return;
+        }
+
+        $category->delete();
+        Flux::toast('Category deleted.', 'Deleted', variant: 'success');
+    }
+
+    public function removeRuleFromDraft(int $ruleId): void
+    {
+        $this->authorize('rules.manage');
+
+        $draft = $this->getDraft();
+        if (! $draft || $draft->status !== 'draft') {
+            Flux::toast('Cannot modify: draft is not in editable status.', 'Error', variant: 'danger');
+
+            return;
+        }
+
+        $rule = Rule::findOrFail($ruleId);
+        RemoveRuleFromDraft::run($draft, $rule);
+        Flux::toast('Rule removed from draft.', 'Removed', variant: 'success');
+    }
+
+    public function openAddRuleModal(int $categoryId): void
+    {
+        $this->authorize('rules.manage');
+
+        $this->addRuleCategoryId = $categoryId;
+        $this->newRuleTitle = '';
+        $this->newRuleDescription = '';
+        Flux::modal('add-rule-modal')->show();
+    }
+
+    public function addRule(): void
+    {
+        $this->authorize('rules.manage');
+
+        $this->validate([
+            'newRuleTitle' => 'required|string|max:255',
+            'newRuleDescription' => 'required|string|max:10000',
+            'addRuleCategoryId' => 'required|integer|exists:rule_categories,id',
+        ]);
+
+        $draft = $this->getDraft();
+        if (! $draft || $draft->status !== 'draft') {
+            Flux::toast('Cannot modify: draft is not in editable status.', 'Error', variant: 'danger');
+
+            return;
+        }
+
+        $category = RuleCategory::findOrFail($this->addRuleCategoryId);
+        AddRuleToDraft::run($draft, $category, $this->newRuleTitle, $this->newRuleDescription, auth()->user());
+
+        $this->reset(['newRuleTitle', 'newRuleDescription', 'addRuleCategoryId']);
+        Flux::modal('add-rule-modal')->close();
+        Flux::toast('Rule added to draft.', 'Added', variant: 'success');
+    }
+
+    public function openEditRuleModal(int $ruleId): void
+    {
+        $this->authorize('rules.manage');
+
+        $rule = Rule::findOrFail($ruleId);
+        $this->editRuleId = $ruleId;
+        $this->editRuleCategoryId = $rule->rule_category_id;
+        $this->editRuleTitle = $rule->title;
+        $this->editRuleDescription = $rule->description;
+        Flux::modal('edit-rule-modal')->show();
+    }
+
+    public function updateRule(): void
+    {
+        $this->authorize('rules.manage');
+
+        $this->validate([
+            'editRuleTitle' => 'required|string|max:255',
+            'editRuleDescription' => 'required|string|max:10000',
+            'editRuleCategoryId' => 'required|integer|exists:rule_categories,id',
+        ]);
+
+        $draft = $this->getDraft();
+        if (! $draft || $draft->status !== 'draft') {
+            Flux::toast('Cannot modify: draft is not in editable status.', 'Error', variant: 'danger');
+
+            return;
+        }
+
+        $oldRule = Rule::findOrFail($this->editRuleId);
+        $newCategory = RuleCategory::findOrFail($this->editRuleCategoryId);
+
+        if ($oldRule->status === 'draft') {
+            // Draft rules can be edited directly — no need to create a replacement
+            $oldRule->update([
+                'rule_category_id' => $newCategory->id,
+                'title' => $this->editRuleTitle,
+                'description' => $this->editRuleDescription,
+            ]);
+        } else {
+            UpdateRuleInDraft::run($draft, $oldRule, $this->editRuleTitle, $this->editRuleDescription, auth()->user(), $newCategory);
+        }
+
+        $this->reset(['editRuleId', 'editRuleTitle', 'editRuleDescription', 'editRuleCategoryId']);
+        Flux::modal('edit-rule-modal')->close();
+        Flux::toast('Rule replaced in draft.', 'Updated', variant: 'success');
+    }
+
+    public function deactivateRule(int $ruleId): void
+    {
+        $this->authorize('rules.manage');
+
+        $draft = $this->getDraft();
+        if (! $draft || $draft->status !== 'draft') {
+            Flux::toast('Cannot modify: draft is not in editable status.', 'Error', variant: 'danger');
+
+            return;
+        }
+
+        $rule = Rule::findOrFail($ruleId);
+        DeactivateRuleInDraft::run($draft, $rule);
+        Flux::toast('Rule marked for deactivation.', 'Deactivated', variant: 'success');
+    }
+
+    public function moveRuleUp(int $ruleId): void
+    {
+        $this->authorize('rules.manage');
+
+        $rule = Rule::findOrFail($ruleId);
+        $prev = Rule::where('rule_category_id', $rule->rule_category_id)
+            ->where('sort_order', '<', $rule->sort_order)
+            ->orderByDesc('sort_order')
+            ->first();
+
+        if ($prev) {
+            [$rule->sort_order, $prev->sort_order] = [$prev->sort_order, $rule->sort_order];
+            $rule->save();
+            $prev->save();
+        }
+    }
+
+    public function moveRuleDown(int $ruleId): void
+    {
+        $this->authorize('rules.manage');
+
+        $rule = Rule::findOrFail($ruleId);
+        $next = Rule::where('rule_category_id', $rule->rule_category_id)
+            ->where('sort_order', '>', $rule->sort_order)
+            ->orderBy('sort_order')
+            ->first();
+
+        if ($next) {
+            [$rule->sort_order, $next->sort_order] = [$next->sort_order, $rule->sort_order];
+            $rule->save();
+            $next->save();
+        }
+    }
+
+    public function submitForApproval(): void
+    {
+        $this->authorize('rules.manage');
+
+        $draft = $this->getDraft();
+        if (! $draft || $draft->status !== 'draft') {
+            Flux::toast('No draft available to submit.', 'Error', variant: 'danger');
+
+            return;
+        }
+
+        SubmitVersionForApproval::run($draft, auth()->user());
+        Flux::toast('Draft submitted for approval.', 'Submitted', variant: 'success');
+    }
+
+    public function approveDraft(): void
+    {
+        $this->authorize('rules.approve');
+
+        $draft = $this->getDraft();
+        if (! $draft || $draft->status !== 'submitted') {
+            Flux::toast('No submitted version available to approve.', 'Error', variant: 'danger');
+
+            return;
+        }
+
+        try {
+            ApproveAndPublishVersion::run($draft, auth()->user());
+            Flux::toast('Rules version published. All members notified.', 'Published', variant: 'success');
+        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+            Flux::toast($e->getMessage(), 'Cannot Approve', variant: 'danger');
+        }
+    }
+
+    public function rejectDraft(): void
+    {
+        $this->authorize('rules.approve');
+
+        $this->validate(['rejectionNote' => 'required|string|min:10|max:2000']);
+
+        $draft = $this->getDraft();
+        if (! $draft || $draft->status !== 'submitted') {
+            Flux::toast('No submitted version available to reject.', 'Error', variant: 'danger');
+
+            return;
+        }
+
+        RejectDraftVersion::run($draft, auth()->user(), $this->rejectionNote);
+
+        $this->rejectionNote = '';
+        Flux::modal('reject-modal')->close();
+        Flux::toast('Draft rejected and returned for revision.', 'Rejected', variant: 'success');
+    }
+}; ?>
+
+<div class="space-y-8">
+    {{-- Header/Footer Editing --}}
+    @can('rules.manage')
+        <flux:card class="space-y-4">
+            <flux:heading size="md">Rules Header & Footer</flux:heading>
+            <flux:text variant="subtle">Markdown text displayed above and below the community rules page.</flux:text>
+
+            <flux:field>
+                <flux:label>Header (Markdown)</flux:label>
+                <flux:textarea wire:model="rulesHeader" rows="5" placeholder="Scripture quotes or introductory text..." />
+            </flux:field>
+
+            <flux:field>
+                <flux:label>Footer (Markdown)</flux:label>
+                <flux:textarea wire:model="rulesFooter" rows="3" placeholder="Officer discretion disclaimer or closing notes..." />
+            </flux:field>
+
+            <flux:button wire:click="saveHeaderFooter" variant="primary" size="sm">Save Header &amp; Footer</flux:button>
+        </flux:card>
+    @endcan
+
+    {{-- Draft Management --}}
+    <flux:card class="space-y-4">
+        <div class="flex items-center justify-between flex-wrap gap-3">
+            <div>
+                <flux:heading size="md">Draft Version</flux:heading>
+                @if($this->getDraft())
+                    <flux:text variant="subtle">
+                        Draft v{{ $this->getDraft()->version_number }} is open
+                        @if($this->getDraft()->status === 'submitted')
+                            — <flux:badge variant="warning" size="sm">Awaiting Approval</flux:badge>
+                        @else
+                            — <flux:badge variant="primary" size="sm">In Progress</flux:badge>
+                        @endif
+                    </flux:text>
+                @else
+                    <flux:text variant="subtle">No draft version is currently open.</flux:text>
+                @endif
+            </div>
+            <div class="flex gap-2 flex-wrap">
+                @can('rules.manage')
+                    @if(! $this->getDraft())
+                        <flux:button wire:click="startDraft" variant="primary" icon="document-plus">Start New Draft</flux:button>
+                    @elseif($this->getDraft()->status === 'draft')
+                        <flux:button wire:click="submitForApproval" variant="primary" icon="paper-airplane">Submit for Approval</flux:button>
+                    @endif
+                @endcan
+                @can('rules.approve')
+                    @if($this->getDraft() && $this->getDraft()->status === 'submitted')
+                        <flux:button wire:click="approveDraft" variant="primary" icon="check-circle">Approve &amp; Publish</flux:button>
+                        <flux:modal.trigger name="reject-modal">
+                            <flux:button variant="danger" icon="x-circle">Reject</flux:button>
+                        </flux:modal.trigger>
+                    @endif
+                @endcan
+            </div>
+        </div>
+
+        {{-- Rejection note visible to draft creator --}}
+        @if($this->getDraft() && $this->getDraft()->rejection_note && $this->getDraft()->status === 'draft')
+            <div class="border border-red-300 rounded p-3 bg-red-50 dark:bg-red-950 space-y-1">
+                <flux:text class="font-semibold text-red-700 dark:text-red-300">Rejected — Reviewer Feedback:</flux:text>
+                <flux:text class="text-sm text-red-600 dark:text-red-400">{{ $this->getDraft()->rejection_note }}</flux:text>
+            </div>
+        @endif
+    </flux:card>
+
+    {{-- Reject Modal --}}
+    @can('rules.approve')
+        <flux:modal name="reject-modal" variant="flyout" class="space-y-4">
+            <flux:heading size="lg">Reject Draft Version</flux:heading>
+            <flux:text variant="subtle">Provide feedback for the draft creator explaining what needs to be changed.</flux:text>
+            <flux:field>
+                <flux:label>Feedback <span class="text-red-500">*</span></flux:label>
+                <flux:textarea wire:model="rejectionNote" rows="5" placeholder="Explain what needs to be changed before this version can be approved..." />
+                <flux:error name="rejectionNote" />
+            </flux:field>
+            <div class="flex gap-2 justify-end">
+                <flux:button x-on:click="$flux.modal('reject-modal').close()" variant="ghost">Cancel</flux:button>
+                <flux:button wire:click="rejectDraft" variant="danger">Reject Draft</flux:button>
+            </div>
+        </flux:modal>
+    @endcan
+
+    {{-- Categories & Rules List --}}
+    @foreach($this->getCategories() as $category)
+        <flux:card wire:key="category-{{ $category->id }}" class="space-y-4">
+            <div class="flex items-center gap-2">
+                <flux:heading size="md" class="flex-1">{{ $category->name }}</flux:heading>
+                @can('rules.manage')
+                    @if($this->getDraft() && $this->getDraft()->status === 'draft')
+                        <flux:button wire:click="moveCategoryUp({{ $category->id }})" size="sm" variant="ghost" icon="chevron-up" title="Move category up" />
+                        <flux:button wire:click="moveCategoryDown({{ $category->id }})" size="sm" variant="ghost" icon="chevron-down" title="Move category down" />
+                    @endif
+                    @if($this->getDraft() && $this->getDraft()->status === 'draft')
+                        <flux:button wire:click="openEditCategoryModal({{ $category->id }})" size="sm" variant="ghost" icon="pencil-square" title="Edit category name" />
+                    @endif
+                    @if($category->rules->isEmpty())
+                        <flux:button wire:click="deleteCategory({{ $category->id }})" wire:confirm="Delete this category?" size="sm" variant="ghost" icon="trash" title="Delete category" />
+                    @endif
+                    @if($this->getDraft() && $this->getDraft()->status === 'draft')
+                        <flux:button wire:click="openAddRuleModal({{ $category->id }})" size="sm" variant="ghost" icon="plus" title="Add rule">Add Rule</flux:button>
+                    @endif
+                @endcan
+            </div>
+
+            @forelse($category->rules as $rule)
+                @php
+                    $draftRuleIds = $this->getDraftRuleIds();
+                    $deactivatingIds = $this->getDeactivatingRuleIds();
+                    $isDeactivating = in_array($rule->id, $deactivatingIds);
+                    $isDraftRule = $rule->status === 'draft';
+                @endphp
+                <div wire:key="rule-{{ $rule->id }}" class="border rounded p-3 {{ $isDeactivating ? 'opacity-50 bg-red-50 dark:bg-red-950' : '' }}">
+                    <div class="flex items-start gap-2">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="font-medium text-sm">{{ $rule->title }}</span>
+                                @if($isDraftRule)
+                                    <flux:badge variant="success" size="sm">NEW</flux:badge>
+                                @endif
+                                @if($isDeactivating)
+                                    <flux:badge variant="danger" size="sm">Deactivating</flux:badge>
+                                @endif
+                                @if($rule->status === 'inactive')
+                                    <flux:badge variant="zinc" size="sm">Inactive</flux:badge>
+                                @endif
+                                @if($rule->supersedes_rule_id)
+                                    <flux:badge variant="warning" size="sm">Replaces #{{ $rule->supersedes_rule_id }}</flux:badge>
+                                @endif
+                            </div>
+                            <div class="prose prose-sm dark:prose-invert max-w-none mt-1">
+                                {!! Str::markdown($rule->description, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1 flex-shrink-0">
+                            @can('rules.manage')
+                                @if($this->getDraft() && $this->getDraft()->status === 'draft')
+                                    <flux:button wire:click="moveRuleUp({{ $rule->id }})" size="sm" variant="ghost" icon="chevron-up" title="Move up" />
+                                    <flux:button wire:click="moveRuleDown({{ $rule->id }})" size="sm" variant="ghost" icon="chevron-down" title="Move down" />
+                                @endif
+                                @if($this->getDraft() && $this->getDraft()->status === 'draft' && ! $isDeactivating)
+                                    @if($isDraftRule)
+                                        <flux:button wire:click="openEditRuleModal({{ $rule->id }})" size="sm" variant="ghost" icon="pencil-square" title="Edit rule" />
+                                        <flux:button wire:click="removeRuleFromDraft({{ $rule->id }})" wire:confirm="Remove this rule from the draft?" size="sm" variant="ghost" icon="trash" title="Remove from draft" />
+                                    @else
+                                        <flux:button wire:click="openEditRuleModal({{ $rule->id }})" size="sm" variant="ghost" icon="pencil-square" title="Edit / Replace" />
+                                        @if($rule->status === 'active')
+                                            <flux:button wire:click="deactivateRule({{ $rule->id }})" size="sm" variant="ghost" icon="trash" title="Mark for deactivation" />
+                                        @endif
+                                    @endif
+                                @endif
+                            @endcan
+                        </div>
+                    </div>
+                </div>
+            @empty
+                <flux:text variant="subtle" class="text-sm">No rules in this category.</flux:text>
+            @endforelse
+        </flux:card>
+    @endforeach
+
+    @can('rules.manage')
+        <div class="flex justify-end">
+            <flux:modal.trigger name="add-category-modal">
+                <flux:button variant="ghost" icon="folder-plus">Add Category</flux:button>
+            </flux:modal.trigger>
+        </div>
+    @endcan
+
+    {{-- Version History --}}
+    @canany(['rules.manage', 'rules.approve'])
+        <livewire:rules-version-history />
+    @endcanany
+
+    {{-- Compliance List --}}
+    @can('rules.manage')
+        <livewire:rules-compliance-list />
+    @endcan
+
+    {{-- Agreement History (admins only) --}}
+    @if(auth()->user()?->isAdmin())
+        <livewire:rules-agreement-history />
+    @endif
+
+    {{-- Add Category Modal --}}
+    @can('rules.manage')
+        <flux:modal name="add-category-modal" variant="flyout" class="space-y-4">
+            <flux:heading size="lg">Add Category</flux:heading>
+            <flux:field>
+                <flux:label>Category Name <span class="text-red-500">*</span></flux:label>
+                <flux:input wire:model="newCategoryName" placeholder="e.g. Keep Language Clean" />
+                <flux:error name="newCategoryName" />
+            </flux:field>
+            <div class="flex gap-2 justify-end">
+                <flux:button x-on:click="$flux.modal('add-category-modal').close()" variant="ghost">Cancel</flux:button>
+                <flux:button wire:click="addCategory" variant="primary">Add Category</flux:button>
+            </div>
+        </flux:modal>
+
+        {{-- Edit Category Modal --}}
+        <flux:modal name="edit-category-modal" variant="flyout" class="space-y-4">
+            <flux:heading size="lg">Edit Category Name</flux:heading>
+            <flux:field>
+                <flux:label>Category Name <span class="text-red-500">*</span></flux:label>
+                <flux:input wire:model="editCategoryName" placeholder="e.g. Keep Language Clean" />
+                <flux:error name="editCategoryName" />
+            </flux:field>
+            <div class="flex gap-2 justify-end">
+                <flux:button x-on:click="$flux.modal('edit-category-modal').close()" variant="ghost">Cancel</flux:button>
+                <flux:button wire:click="updateCategory" variant="primary">Save</flux:button>
+            </div>
+        </flux:modal>
+
+        {{-- Add Rule Modal --}}
+        <flux:modal name="add-rule-modal" variant="flyout" class="space-y-4">
+            <flux:heading size="lg">Add Rule to Draft</flux:heading>
+            <flux:field>
+                <flux:label>Title <span class="text-red-500">*</span></flux:label>
+                <flux:input wire:model="newRuleTitle" placeholder="e.g. No Griefing" />
+                <flux:error name="newRuleTitle" />
+            </flux:field>
+            <flux:field>
+                <flux:label>Description <span class="text-red-500">*</span></flux:label>
+                <flux:textarea wire:model="newRuleDescription" rows="4" placeholder="Full rule text (Markdown supported)..." />
+                <flux:error name="newRuleDescription" />
+            </flux:field>
+            <div class="flex gap-2 justify-end">
+                <flux:button x-on:click="$flux.modal('add-rule-modal').close()" variant="ghost">Cancel</flux:button>
+                <flux:button wire:click="addRule" variant="primary">Add Rule</flux:button>
+            </div>
+        </flux:modal>
+
+        {{-- Edit Rule Modal --}}
+        <flux:modal name="edit-rule-modal" variant="flyout" class="space-y-4">
+            <flux:heading size="lg">Edit / Replace Rule</flux:heading>
+            <flux:text variant="subtle" size="sm">A replacement rule will be created with the new text. The original rule will be deactivated when this version publishes.</flux:text>
+
+            <flux:field>
+                <flux:label>Category</flux:label>
+                <flux:select wire:model="editRuleCategoryId">
+                    @foreach($this->getCategories() as $cat)
+                        <flux:select.option value="{{ $cat->id }}">{{ $cat->name }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+                <flux:error name="editRuleCategoryId" />
+            </flux:field>
+            <flux:field>
+                <flux:label>Title <span class="text-red-500">*</span></flux:label>
+                <flux:input wire:model="editRuleTitle" />
+                <flux:error name="editRuleTitle" />
+            </flux:field>
+            <flux:field>
+                <flux:label>Description <span class="text-red-500">*</span></flux:label>
+                <flux:textarea wire:model="editRuleDescription" rows="4" />
+                <flux:error name="editRuleDescription" />
+            </flux:field>
+            <div class="flex gap-2 justify-end">
+                <flux:button x-on:click="$flux.modal('edit-rule-modal').close()" variant="ghost">Cancel</flux:button>
+                <flux:button wire:click="updateRule" variant="primary">Save Replacement</flux:button>
+            </div>
+        </flux:modal>
+    @endcan
+</div>

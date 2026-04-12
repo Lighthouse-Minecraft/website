@@ -5,6 +5,7 @@ use App\Enums\StaffRank;
 use App\Models\Meeting;
 use App\Models\MeetingReport;
 use App\Models\SiteConfig;
+use App\Models\User;
 use Livewire\Volt\Component;
 
 new class extends Component {
@@ -48,11 +49,19 @@ new class extends Component {
         $payoutAmounts = $this->payoutAmounts;
         $submittedUserIds = $this->submittedUserIds;
 
-        $rows = $attendees->map(function ($attendee) use ($payoutAmounts, $submittedUserIds) {
-            $rank = $attendee->staff_rank;
-            $attended = (bool) $attendee->pivot->attended;
-            $formSubmitted = in_array($attendee->id, $submittedUserIds);
-            $mcAccount = $attendee->primaryMinecraftAccount();
+        // Jr Crew don't attend meetings but are still eligible for payouts if
+        // they submitted their Staff Update Report. Include them separately.
+        $attendeeIds = $attendees->pluck('id');
+        $jrCrewSubmitters = User::where('staff_rank', StaffRank::JrCrew->value)
+            ->whereNotIn('id', $attendeeIds)
+            ->whereIn('id', $submittedUserIds)
+            ->orderBy('name')
+            ->get();
+
+        $buildRow = function (User $user, bool $attended) use ($payoutAmounts, $submittedUserIds) {
+            $rank = $user->staff_rank;
+            $formSubmitted = in_array($user->id, $submittedUserIds);
+            $mcAccount = $user->primaryMinecraftAccount();
             $amount = ($rank && $rank !== StaffRank::None) ? ($payoutAmounts[$rank->value] ?? 0) : 0;
 
             $eligible = true;
@@ -76,7 +85,7 @@ new class extends Component {
             }
 
             return [
-                'user'          => $attendee,
+                'user'          => $user,
                 'rank'          => $rank,
                 'attended'      => $attended,
                 'formSubmitted' => $formSubmitted,
@@ -84,9 +93,12 @@ new class extends Component {
                 'amount'        => $amount,
                 'eligible'      => $eligible,
                 'skipReason'    => $skipReason,
-                'department'    => $attendee->staff_department,
+                'department'    => $user->staff_department,
             ];
-        });
+        };
+
+        $rows = $attendees->map(fn ($a) => $buildRow($a, (bool) $a->pivot->attended))
+            ->concat($jrCrewSubmitters->map(fn ($a) => $buildRow($a, false)));
 
         // Sort by rank descending (Officer → Crew Member → Jr Crew), then name.
         return $rows->sortBy([
