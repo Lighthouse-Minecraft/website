@@ -25,6 +25,7 @@ class CheckBrigTimers extends Command
     public function handle(): int
     {
         $users = User::where('in_brig', true)
+            ->whereNull('permanent_brig_at')
             ->whereNotNull('brig_expires_at')
             ->where('brig_expires_at', '<=', now())
             ->where('brig_timer_notified', false)

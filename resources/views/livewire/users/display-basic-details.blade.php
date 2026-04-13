@@ -297,7 +297,7 @@ new class extends Component {
             ? now()->addDays((int) $this->brigActionDays)
             : null;
 
-        \App\Actions\PutUserInBrig::run($this->user, Auth::user(), $this->brigActionReason, $expiresAt);
+        \App\Actions\PutUserInBrig::run($this->user, Auth::user(), $this->brigActionReason, $expiresAt, permanent: $this->brigActionPermanent);
 
         $this->user->refresh();
         Flux::modal('profile-put-in-brig-modal')->close();

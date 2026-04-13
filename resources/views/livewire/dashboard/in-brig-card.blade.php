@@ -223,8 +223,13 @@ new class extends Component {
     <flux:card class="w-full max-w-lg mx-auto text-center py-8 px-6 space-y-6">
         <div class="flex flex-col items-center gap-3">
             <flux:icon name="lock-closed" class="w-12 h-12 text-red-500" />
-            <flux:heading size="xl">You Are In the Brig</flux:heading>
-            <flux:badge color="red" size="lg">Access Restricted</flux:badge>
+            @if($user->permanent_brig_at)
+                <flux:heading size="xl">Permanently Confined</flux:heading>
+                <flux:badge color="red" size="lg">Permanent Confinement</flux:badge>
+            @else
+                <flux:heading size="xl">You Are In the Brig</flux:heading>
+                <flux:badge color="red" size="lg">Access Restricted</flux:badge>
+            @endif
         </div>
 
         @if($user->brig_reason)
@@ -234,7 +239,11 @@ new class extends Component {
             </div>
         @endif
 
-        @if($user->next_appeal_available_at && ! $user->canAppeal())
+        @if($user->permanent_brig_at)
+            <flux:text variant="subtle" class="text-sm">
+                Your account has been permanently confined. You cannot submit appeals.
+            </flux:text>
+        @elseif($user->next_appeal_available_at && ! $user->canAppeal())
             <div class="bg-zinc-50 dark:bg-zinc-800 rounded-lg p-4 text-left">
                 <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-1">Appeal Available</flux:text>
                 <flux:text class="text-zinc-800 dark:text-zinc-200">You may submit an appeal after <strong>{{ $user->next_appeal_available_at->setTimezone($user->timezone ?? 'UTC')->format('F j, Y \a\t g:i A T') }}</strong>.</flux:text>
@@ -249,7 +258,7 @@ new class extends Component {
             <flux:modal.trigger name="brig-appeal-modal">
                 <flux:button variant="primary" icon="chat-bubble-left-ellipsis">Submit Appeal</flux:button>
             </flux:modal.trigger>
-        @else
+        @elseif(! $user->permanent_brig_at)
             <flux:button disabled variant="ghost" icon="chat-bubble-left-ellipsis">Appeal Not Yet Available</flux:button>
         @endif
 

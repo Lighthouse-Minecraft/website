@@ -48,6 +48,7 @@ class User extends Authenticatable // implements MustVerifyEmail
         'brig_expires_at',
         'next_appeal_available_at',
         'brig_timer_notified',
+        'permanent_brig_at',
         'date_of_birth',
         'parent_email',
         'brig_type',
@@ -104,6 +105,7 @@ class User extends Authenticatable // implements MustVerifyEmail
             'brig_expires_at' => 'datetime',
             'next_appeal_available_at' => 'datetime',
             'brig_timer_notified' => 'boolean',
+            'permanent_brig_at' => 'datetime',
             'date_of_birth' => 'date',
             'brig_type' => BrigType::class,
             'parent_allows_site' => 'boolean',
@@ -167,6 +169,11 @@ class User extends Authenticatable // implements MustVerifyEmail
     public function canAppeal(): bool
     {
         if (! $this->in_brig) {
+            return false;
+        }
+
+        // Permanently confined users cannot appeal
+        if ($this->permanent_brig_at) {
             return false;
         }
 
