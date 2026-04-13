@@ -265,8 +265,8 @@ new class extends Component {
     </flux:card>
 @endif
 
-{{-- Shared contact/appeal modal — available to discipline and parental brig types --}}
-@if($user->brig_type?->isDisciplinary() || $user->brig_type?->isParental() || $user->brig_type === null)
+{{-- Shared contact/appeal modal — available to discipline and parental brig types (not permanent) --}}
+@if(! $user->permanent_brig_at && ($user->brig_type?->isDisciplinary() || $user->brig_type?->isParental() || $user->brig_type === null))
 <flux:modal name="brig-appeal-modal" class="w-full lg:w-1/2">
     <div class="space-y-6">
         @if($user->brig_type?->isParental())
