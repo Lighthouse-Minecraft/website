@@ -18,7 +18,7 @@ Your Dashboard will show you the exact date and time when your appeal becomes av
 3. Write your message explaining your situation -- be honest and respectful
 4. Click **Submit Appeal** to send it
 
-Your appeal is sent directly to the **Quartermaster** team, who handle moderation and discipline matters. They'll review your message and respond through a [[books/user-handbook/website/getting-help/support-tickets|support ticket]], so check your notifications for their reply.
+Your appeal is sent directly to the **Brig Warden** team, who handle moderation and discipline matters. They'll review your message and get back to you, so keep an eye on your notifications for a reply.
 
 ## Tips for a Good Appeal
 

@@ -39,10 +39,16 @@ We don't list every possible reason here -- the community rules cover expectatio
 
 When you're placed in the Brig, you'll receive a notification (by email and any other channels you've set up in your [[books/user-handbook/website/your-account/notification-preferences|notification preferences]]). This notification includes the reason and information about when you can appeal.
 
-You'll also be notified when your waiting period ends and you become eligible to appeal, and again if your appeal is successful and you're released.
+You'll also be notified if staff update your Brig status -- for example, if the reason or release date changes. When your waiting period ends, you'll get another notification letting you know you're eligible to appeal. And if your appeal is successful and you're released, you'll get a final notification confirming that your access has been restored.
 
 ## Getting Your Access Back
 
-The Brig isn't permanent. Once your waiting period is over, you can submit an appeal to staff apologizing for the behaviors and explaining what steps you are taking to ensure those behaviors do not happen again. Staff will review it and decide whether to restore your access.
+In most cases, the Brig isn't permanent. Once your waiting period is over, you can submit an appeal to staff explaining your situation and what steps you're taking to ensure the behavior doesn't happen again. Staff will review it and decide whether to restore your access.
 
 For a step-by-step guide on the appeal process, see [[books/user-handbook/website/the-brig/submitting-an-appeal|Submitting an Appeal]].
+
+## Permanent Confinement
+
+In rare cases involving duplicate accounts or other serious situations, staff may mark an account as **permanently confined**. If this applies to your account, you'll see a "Permanently Confined" message on your Dashboard instead of the standard Brig status card.
+
+Permanently confined accounts cannot submit appeals. If you believe this has been applied to your account in error, you'll need to contact staff directly through another means. You'll receive a notification if this status is ever removed from your account.
