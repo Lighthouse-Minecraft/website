@@ -7,7 +7,7 @@ summary: 'How to handle brig appeals and release users.'
 
 ## Overview
 
-Brigged users can submit appeals to request their access be restored. Appeals create support tickets in the **Quartermaster** department. When you're ready to restore a user's access, you release them from the Brig.
+Brigged users can submit appeals to request their access be restored. Appeals create **Brig Appeal threads** in the staff discussions, and all Brig Wardens are automatically notified. When you're ready to restore a user's access, you release them from the Brig.
 
 ## How Appeals Work
 

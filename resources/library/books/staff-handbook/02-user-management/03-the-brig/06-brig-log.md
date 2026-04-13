@@ -11,7 +11,7 @@ The **Brig Log** is an audit trail of all brig-related actions taken on the site
 
 ## Who Can Access It
 
-Only staff with the **Brig Warden** role can view the Brig Log. If you have this role, the Logs tab in the ACP will appear automatically, defaulting to the Brig Log view.
+Only staff with the **Brig Warden** role can view the Brig Log. If you have this role, the **Logs** tab in the ACP will appear and include the Brig Log.
 
 ## How to Access It
 
