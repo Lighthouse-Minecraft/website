@@ -21,7 +21,7 @@ class UpdateBrigStatus
      * @param  User  $target  The brigged user to update.
      * @param  User  $admin  The staff member making the change.
      * @param  string|null  $newReason  New brig reason. Null = no change.
-     * @param  Carbon|false  $newExpiresAt  New expiry. False = no change; null = clear; Carbon = set.
+     * @param  Carbon|false|null  $newExpiresAt  New expiry. False = no change; null = clear; Carbon = set.
      * @param  bool|null  $permanent  True = set permanent; false = remove; null = no change.
      * @param  bool  $notify  Whether to notify the user. Always true when removing permanent.
      * @param  string|null  $releaseReason  If provided, quick-releases the user via ReleaseUserFromBrig.
@@ -30,7 +30,7 @@ class UpdateBrigStatus
         User $target,
         User $admin,
         ?string $newReason = null,
-        Carbon|false $newExpiresAt = false,
+        Carbon|false|null $newExpiresAt = false,
         ?bool $permanent = null,
         bool $notify = true,
         ?string $releaseReason = null,
