@@ -1,8 +1,6 @@
 <?php
 
 use App\Enums\MessageKind;
-use App\Enums\StaffDepartment;
-use App\Enums\StaffRank;
 use App\Enums\ThreadStatus;
 use App\Enums\ThreadType;
 use App\Models\Message;
@@ -50,8 +48,10 @@ new class extends Component {
                 ? 'Staff Contact: '.$lockedUser->name
                 : 'Brig Appeal: '.$lockedUser->name;
 
+            $threadType = $lockedUser->brig_type?->isParental() ? ThreadType::Topic : ThreadType::BrigAppeal;
+
             $thread = Thread::create([
-                'type' => ThreadType::Topic,
+                'type' => $threadType,
                 'subject' => $subject,
                 'status' => ThreadStatus::Open,
                 'created_by_user_id' => $lockedUser->id,
@@ -61,17 +61,16 @@ new class extends Component {
             // Add the appealing user
             $thread->addParticipant($lockedUser);
 
-            // Auto-add Command Officers+ and all Quartermasters
+            // Auto-add Brig Wardens, All-Roles staff, and Admins
             $staffToAdd = User::where(function ($query) {
-                $query->where(function ($q) {
-                    // Command department, Officer rank or above
-                    $q->where('staff_department', StaffDepartment::Command)
-                      ->where('staff_rank', '>=', StaffRank::Officer->value);
-                })->orWhere(function ($q) {
-                    // All Quartermaster department members with a rank
-                    $q->where('staff_department', StaffDepartment::Quartermaster)
-                      ->whereNotNull('staff_rank');
-                });
+                // Admin users
+                $query->whereNotNull('admin_granted_at')
+                    // Staff positions with all roles granted
+                    ->orWhereHas('staffPosition', function ($q) {
+                        $q->whereNotNull('has_all_roles_at')
+                            // Staff positions with the Brig Warden role
+                            ->orWhereHas('roles', fn ($rq) => $rq->where('name', 'Brig Warden'));
+                    });
             })->where('id', '!=', $lockedUser->id)->get();
 
             foreach ($staffToAdd as $staff) {

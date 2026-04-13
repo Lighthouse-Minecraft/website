@@ -49,8 +49,8 @@ new class extends Component
 
     public function mount(Thread $thread): void
     {
-        // Only allow topic-type threads on this route
-        if ($thread->type !== ThreadType::Topic) {
+        // Only allow topic and brig appeal threads on this route
+        if (! in_array($thread->type, [ThreadType::Topic, ThreadType::BrigAppeal], true)) {
             abort(404);
         }
 
