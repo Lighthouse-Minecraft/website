@@ -19,7 +19,7 @@ When a brigged user submits an appeal:
 4. A **7-day cooldown** starts before they can appeal again
 5. The appeal appears in the discussions list as a Brig Appeal thread
 
-Brig Wardens are automatically added as participants on every appeal thread. Open the thread to read the user's message, discuss with your team using the thread replies, and decide whether to release or keep the restriction.
+Brig Wardens, All-Roles staff, and Admins are automatically added as participants on every appeal thread. Open the thread to read the user's message, discuss with your team using the thread replies, and decide whether to release or keep the restriction.
 
 ## Reviewing an Appeal Thread
 

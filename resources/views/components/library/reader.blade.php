@@ -25,12 +25,14 @@
                 <button
                     class="flex items-center justify-between w-full text-left"
                     x-on:click="open = !open"
+                    :aria-expanded="open"
+                    aria-controls="mobile-toc-content"
                     type="button"
                 >
                     <span class="font-medium text-sm">Table of Contents</span>
                     <flux:icon.chevron-down class="size-4 transition-transform" x-bind:class="open ? 'rotate-180' : ''" />
                 </button>
-                <div x-show="open" x-collapse class="mt-3">
+                <div id="mobile-toc-content" x-show="open" x-collapse class="mt-3">
                     <x-library.navigation :items="$navigation" :currentUrl="$currentUrl" />
                 </div>
             </flux:card>
