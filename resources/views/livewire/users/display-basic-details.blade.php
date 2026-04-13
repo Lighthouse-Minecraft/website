@@ -533,6 +533,11 @@ new class extends Component {
                             @endcan
 
                             @can('put-in-brig')
+                                @if($user->isInBrig())
+                                    <flux:menu.item icon="wrench-screwdriver" x-on:click="$flux.modal('profile-manage-brig-modal').show()">
+                                        Manage Brig Status
+                                    </flux:menu.item>
+                                @endif
                                 @if(! $user->isInBrig() && ! $user->staffPosition && $user->id !== Auth::id())
                                     <flux:menu.item icon="lock-closed" wire:click="openPutInBrigModal">
                                         Put in Brig
@@ -1084,6 +1089,21 @@ new class extends Component {
             </div>
         </div>
     </flux:modal>
+
+    {{-- Manage Brig Status Modal --}}
+    @if($user->isInBrig())
+        @can('put-in-brig')
+            <flux:modal name="profile-manage-brig-modal" class="w-full md:w-2/3 xl:w-1/2">
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <flux:heading size="lg">Manage Brig Status — {{ $user->name }}</flux:heading>
+                        <flux:button variant="ghost" size="sm" x-on:click="$flux.modal('profile-manage-brig-modal').close()">Close</flux:button>
+                    </div>
+                    <livewire:brig.brig-status-manager :user="$user" wire:key="brig-manager-{{ $user->id }}" />
+                </div>
+            </flux:modal>
+        @endcan
+    @endif
 
     {{-- Force Delete Minecraft account confirmation modal --}}
     <flux:modal name="confirm-force-delete-mc-account" class="min-w-[22rem] space-y-6">
