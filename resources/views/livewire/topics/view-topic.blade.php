@@ -177,7 +177,7 @@ new class extends Component
             ['replyMessage' => $this->replyMessage, 'replyImage' => $this->replyImage],
             [
                 'replyMessage' => 'required_without:replyImage|nullable|string|min:1',
-                'replyImage' => 'nullable|mimes:jpg,jpeg,png,gif,webp,heic,heif|max:' . $maxKb,
+                'replyImage' => 'nullable|mimes:jpg,jpeg,png,gif,webp,heic,heif|max:'.$maxKb,
             ]
         );
 
@@ -185,6 +185,7 @@ new class extends Component
             foreach ($validator->errors()->toArray() as $field => $messages) {
                 $this->addError($field, $messages[0]);
             }
+
             return;
         }
 
@@ -277,7 +278,7 @@ new class extends Component
         Message::create([
             'thread_id' => $this->thread->id,
             'user_id' => $systemUser->id,
-            'body' => auth()->user()->name . " {$action} this topic.",
+            'body' => auth()->user()->name." {$action} this topic.",
             'kind' => MessageKind::System,
         ]);
 
@@ -290,7 +291,7 @@ new class extends Component
             ->update(['last_read_at' => $now]);
         Thread::clearUnreadCache(auth()->user(), ThreadType::Topic);
 
-        RecordActivity::run($this->thread, "topic_{$action}", "Topic {$action} by " . auth()->user()->name);
+        RecordActivity::run($this->thread, "topic_{$action}", "Topic {$action} by ".auth()->user()->name);
 
         Flux::toast("Topic {$action} successfully!", variant: 'success');
 
@@ -304,6 +305,7 @@ new class extends Component
 
         if (strlen($this->participantSearch) < 2) {
             $this->searchResults = [];
+
             return;
         }
 
@@ -313,10 +315,10 @@ new class extends Component
         $existingIds = $this->thread->participants()->pluck('user_id')->toArray();
 
         $users = User::where(function ($query) use ($term) {
-                $query->where('name', 'like', "%{$term}%")
-                    ->orWhereHas('discordAccounts', fn ($q) => $q->where('username', 'like', "%{$term}%"))
-                    ->orWhereHas('minecraftAccounts', fn ($q) => $q->where('username', 'like', "%{$term}%"));
-            })
+            $query->where('name', 'like', "%{$term}%")
+                ->orWhereHas('discordAccounts', fn ($q) => $q->where('username', 'like', "%{$term}%"))
+                ->orWhereHas('minecraftAccounts', fn ($q) => $q->where('username', 'like', "%{$term}%"));
+        })
             ->whereNotIn('id', $existingIds)
             ->limit(10)
             ->get();
@@ -341,13 +343,13 @@ new class extends Component
         Message::create([
             'thread_id' => $this->thread->id,
             'user_id' => $systemUser->id,
-            'body' => auth()->user()->name . " added {$user->name} to this topic.",
+            'body' => auth()->user()->name." added {$user->name} to this topic.",
             'kind' => MessageKind::System,
         ]);
 
         $this->thread->update(['last_message_at' => now()]);
 
-        RecordActivity::run($this->thread, 'participant_added', "{$user->name} added by " . auth()->user()->name);
+        RecordActivity::run($this->thread, 'participant_added', "{$user->name} added by ".auth()->user()->name);
 
         $this->participantSearch = '';
         $this->searchResults = [];
@@ -469,6 +471,18 @@ new class extends Component
             </div>
         </div>
         <div class="flex items-center gap-2">
+            @if($thread->type === \App\Enums\ThreadType::BrigAppeal)
+                @can('put-in-brig')
+                    <flux:button
+                        size="sm"
+                        variant="danger"
+                        icon="wrench-screwdriver"
+                        x-on:click="$flux.modal('brig-appeal-manage-modal').show()"
+                    >
+                        Manage Brig Status
+                    </flux:button>
+                @endcan
+            @endif
             @if($this->canLock)
                 <flux:button wire:click="toggleLock" variant="ghost" size="sm">
                     @if($thread->is_locked)
@@ -763,5 +777,29 @@ new class extends Component
                 </div>
             </div>
         </flux:modal>
+    @endif
+
+    {{-- Manage Brig Status Modal (BrigAppeal threads only) --}}
+    @if($thread->type === \App\Enums\ThreadType::BrigAppeal)
+        @can('put-in-brig')
+            <flux:modal name="brig-appeal-manage-modal" class="w-full md:w-2/3 lg:w-1/2">
+                <div class="space-y-4">
+                    <div class="flex items-center gap-3">
+                        <flux:avatar :initials="$thread->createdBy->initials()" />
+                        <div>
+                            <flux:heading size="lg">
+                                <flux:link href="{{ route('profile.show', $thread->createdBy) }}">{{ $thread->createdBy->name }}</flux:link>
+                            </flux:heading>
+                            <flux:text variant="subtle" class="text-sm">Manage brig status</flux:text>
+                        </div>
+                    </div>
+                    <flux:separator variant="subtle" />
+                    <livewire:brig.brig-status-manager
+                        :user="$thread->createdBy"
+                        :key="'appeal-manage-'.$thread->createdBy->id"
+                    />
+                </div>
+            </flux:modal>
+        @endcan
     @endif
 </div>
