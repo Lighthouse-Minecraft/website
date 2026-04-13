@@ -57,6 +57,7 @@ class PutUserInBrig
         $target->next_appeal_available_at = $appealAvailableAt;
         $target->brig_timer_notified = false;
         $target->brig_type = $brigType;
+        $target->brig_placed_at = now();
         $target->permanent_brig_at = $permanent ? now() : null;
         $target->save();
 
