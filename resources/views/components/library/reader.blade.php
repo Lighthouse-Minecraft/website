@@ -18,6 +18,24 @@
 
     {{-- Main content --}}
     <div class="flex-1 min-w-0">
+        {{-- Mobile collapsible TOC (shown below lg) --}}
+        @if(count($navigation) > 0)
+        <div class="lg:hidden mb-4" x-data="{ open: false }">
+            <flux:card>
+                <button
+                    class="flex items-center justify-between w-full text-left"
+                    x-on:click="open = !open"
+                    type="button"
+                >
+                    <span class="font-medium text-sm">Table of Contents</span>
+                    <flux:icon.chevron-down class="size-4 transition-transform" x-bind:class="open ? 'rotate-180' : ''" />
+                </button>
+                <div x-show="open" x-collapse class="mt-3">
+                    <x-library.navigation :items="$navigation" :currentUrl="$currentUrl" />
+                </div>
+            </flux:card>
+        </div>
+        @endif
         <flux:card>
             {{-- Breadcrumbs --}}
             @if(count($breadcrumbs) > 0)
@@ -56,7 +74,7 @@
             {{-- Prev/Next navigation --}}
             @if($prev || $next)
             <flux:separator class="my-6" />
-            <div class="flex justify-between">
+            <div class="flex flex-col sm:flex-row gap-2 sm:justify-between">
                 @if($prev)
                     <flux:button variant="ghost" icon="arrow-left" href="{{ $prev->url }}" wire:navigate>
                         {{ $prev->title }}
