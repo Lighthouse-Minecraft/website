@@ -28,6 +28,7 @@ class AuthServiceProvider extends ServiceProvider
         \App\Models\CommunityResponse::class => \App\Policies\CommunityResponsePolicy::class,
         \App\Models\StaffApplication::class => \App\Policies\StaffApplicationPolicy::class,
         \App\Models\BlogPost::class => \App\Policies\BlogPostPolicy::class,
+        \App\Models\Credential::class => \App\Policies\CredentialPolicy::class,
     ];
 
     /**
@@ -111,6 +112,7 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('view-mc-command-log', $canViewLogs);
         Gate::define('view-discord-api-log', $canViewLogs);
         Gate::define('view-activity-log', $canViewLogs);
+        Gate::define('view-credential-access-log', $canViewLogs);
         Gate::define('view-discipline-report-log', function ($user) use ($canViewLogs) {
             return $canViewLogs($user) || $user->hasRole('Discipline Report - Manager');
         });
@@ -268,6 +270,15 @@ class AuthServiceProvider extends ServiceProvider
 
             // Command officers and department leads (Officer rank in any department)
             return $user->isAtLeastRank(StaffRank::Officer);
+        });
+
+        // Vault gates
+        Gate::define('manage-vault', function ($user) {
+            return $user->isAdmin() || $user->hasRole('Vault Manager');
+        });
+
+        Gate::define('view-vault', function ($user) {
+            return $user->isAdmin() || $user->isAtLeastRank(StaffRank::JrCrew);
         });
 
         // Rules gates

@@ -155,3 +155,5 @@ If you encounter permission issues while accessing certain features or resources
     }
     dd($msg);
     ``` 
+## Generate Vault Key
+`php -r "echo base64_encode(random_bytes(32)).PHP_EOL;"`

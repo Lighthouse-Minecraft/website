@@ -32,6 +32,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(\App\Services\DocumentationService::class, function () {
             return new \App\Services\DocumentationService(resource_path('library'));
         });
+
+        $this->app->singleton(\App\Services\VaultEncrypter::class, function () {
+            return new \App\Services\VaultEncrypter;
+        });
     }
 
     /**
