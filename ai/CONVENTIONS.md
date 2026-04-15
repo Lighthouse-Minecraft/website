@@ -90,6 +90,32 @@ new class extends Component {
 - Computed properties: `public function getXxxProperty()` returns data, accessed as `$this->xxx`.
 - `wire:key` on every repeated element: `wire:key="prefix-{{ $item->id }}"`.
 
+**Full-page components and the single-root rule**:
+
+Livewire requires **exactly one root HTML element** per component. For full-page Volt components, Livewire **automatically** applies `resources/views/components/layouts/app.blade.php` as the page layout — **do NOT add `<x-layouts.app>` manually**. The component template must start with a single root `<div>`.
+
+Using `<x-layouts.app>` explicitly causes `MultipleRootElementsDetectedException` because Livewire's `SupportPageComponents` feature extracts the slot content and checks it for root elements. Even with a wrapper `<div>` inside `<x-layouts.app>`, Livewire still sees multiple roots in some render paths (e.g. wire:navigate).
+
+**Correct** (bare single `<div>` root — layout auto-applied):
+```blade
+<div class="space-y-6">
+    <div class="flex items-center justify-between">...</div>
+    <flux:table>...</flux:table>
+    <flux:modal name="...">...</flux:modal>
+</div>
+```
+
+**Wrong** (explicit `<x-layouts.app>` — causes MultipleRootElementsDetectedException):
+```blade
+<x-layouts.app>
+    <div class="flex items-center justify-between">...</div>
+    <flux:table>...</flux:table>
+    <flux:modal name="...">...</flux:modal>
+</x-layouts.app>
+```
+
+All modals belong inside the single root `<div>`, even though they render as overlays — they still count as DOM children of the component.
+
 ---
 
 ## Flux UI Component Cheatsheet
