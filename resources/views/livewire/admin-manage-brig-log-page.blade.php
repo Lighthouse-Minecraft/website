@@ -33,6 +33,7 @@ new class extends Component
             ->with(['causer', 'subject'])
             ->whereIn('action', self::BRIG_ACTIONS)
             ->latest()
+            ->orderByDesc('id')
             ->paginate($this->perPage);
     }
 }; ?>
