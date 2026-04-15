@@ -135,6 +135,10 @@
                 @canany(['manage-discipline-reports', 'publish-discipline-reports'])
                     <livewire:dashboard.discipline-reports-widget />
                 @endcanany
+
+                @can('put-in-brig')
+                    <livewire:dashboard.brig-warden-widget />
+                @endcan
             </div>
         </div>
     @endcan
