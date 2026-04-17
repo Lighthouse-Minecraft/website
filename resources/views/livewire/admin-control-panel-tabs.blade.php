@@ -1,9 +1,10 @@
 <?php
 
-use Livewire\Attributes\{Url};
-use Livewire\Volt\{Component};
+use Livewire\Attributes\Url;
+use Livewire\Volt\Component;
 
-new class extends Component {
+new class extends Component
+{
     #[Url]
     public string $category = 'users';
 
@@ -71,6 +72,7 @@ new class extends Component {
             || $user->can('view-activity-log')
             || $user->can('view-discipline-report-log')
             || $user->can('view-credential-access-log')
+            || $user->can('put-in-brig')
         );
     }
 
@@ -116,6 +118,7 @@ new class extends Component {
                 $user?->can('view-activity-log') => 'activity-log',
                 $user?->can('view-discipline-report-log') => 'discipline-report-log',
                 $user?->can('view-credential-access-log') => 'credential-access-log',
+                $user?->can('put-in-brig') => 'brig-log',
                 default => 'mc-command-log',
             },
             'config' => match (true) {
@@ -264,6 +267,9 @@ new class extends Component {
                 @can('view-credential-access-log')
                     <flux:tab name="credential-access-log">Credential Access Log</flux:tab>
                 @endcan
+                @can('put-in-brig')
+                    <flux:tab name="brig-log">Brig Log</flux:tab>
+                @endcan
             </flux:tabs>
 
             <flux:tab.panel name="mc-command-log">
@@ -289,6 +295,11 @@ new class extends Component {
             <flux:tab.panel name="credential-access-log">
                 @can('view-credential-access-log')
                     <livewire:admin-manage-credential-access-log-page />
+                @endcan
+            </flux:tab.panel>
+            <flux:tab.panel name="brig-log">
+                @can('put-in-brig')
+                    <livewire:admin-manage-brig-log-page />
                 @endcan
             </flux:tab.panel>
         </flux:tab.group>

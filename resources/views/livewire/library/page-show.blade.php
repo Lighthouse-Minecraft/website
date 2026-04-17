@@ -81,7 +81,7 @@ new class extends Component {
 }; ?>
 
 <section>
-    <div class="mx-auto max-w-6xl p-6">
+    <div class="mx-auto max-w-6xl p-2 sm:p-6">
         @if($accessDenied === 'login_required')
             <flux:card>
                 <flux:heading size="lg">Login Required</flux:heading>

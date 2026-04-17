@@ -18,7 +18,7 @@ Your Dashboard will show you the exact date and time when your appeal becomes av
 3. Write your message explaining your situation -- be honest and respectful
 4. Click **Submit Appeal** to send it
 
-Your appeal is sent directly to the **Quartermaster** team, who handle moderation and discipline matters. They'll review your message and respond through a [[books/user-handbook/website/getting-help/support-tickets|support ticket]], so check your notifications for their reply.
+Your appeal is sent directly to the **Brig Warden** team, who handle moderation and discipline matters. They'll review your message and get back to you, so keep an eye on your notifications for a reply.
 
 ## Tips for a Good Appeal
 
@@ -29,7 +29,7 @@ Your appeal is sent directly to the **Quartermaster** team, who handle moderatio
 
 ## What Happens Next
 
-After you submit your appeal, the Quartermaster team will review it. There's no set timeline for a response, but staff will get back to you through a support ticket.
+After you submit your appeal, the Brig Warden team will review it. There's no set timeline for a response, but staff will get back to you through your appeal thread.
 
 If your appeal is successful, your access will be fully restored -- your Minecraft whitelist, Discord roles, and website access will all come back automatically. You'll receive a notification confirming your release.
 
@@ -45,4 +45,4 @@ To keep things fair and manageable for staff, there are a few limits on appeals:
 
 ## If You Have Questions
 
-If you're confused about your Brig status or the appeal process, your best option is to include those questions in your appeal message. The Quartermaster team can clarify anything you're unsure about when they respond.
+If you're confused about your Brig status or the appeal process, your best option is to include those questions in your appeal message. The Brig Warden team can clarify anything you're unsure about when they respond.

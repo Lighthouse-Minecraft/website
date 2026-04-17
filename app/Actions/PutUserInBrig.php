@@ -29,7 +29,7 @@ class PutUserInBrig
      * @param  BrigType  $brigType  The type of brig placement (discipline, parental, age lock).
      * @param  bool  $notify  Whether to send a notification to the user.
      */
-    public function handle(User $target, User $admin, string $reason, ?Carbon $expiresAt = null, ?Carbon $appealAvailableAt = null, BrigType $brigType = BrigType::Discipline, bool $notify = true): void
+    public function handle(User $target, User $admin, string $reason, ?Carbon $expiresAt = null, ?Carbon $appealAvailableAt = null, BrigType $brigType = BrigType::Discipline, bool $notify = true, bool $permanent = false): void
     {
         if ($target->isInBrig()) {
             throw new AuthorizationException('This user is already in the brig.');
@@ -45,16 +45,20 @@ class PutUserInBrig
             }
         }
 
-        if ($appealAvailableAt === null && $brigType === BrigType::Discipline) {
-            $appealAvailableAt = now()->addHours(24);
+        if ($permanent) {
+            $appealAvailableAt = null;
+        } elseif ($appealAvailableAt === null && $brigType === BrigType::Discipline) {
+            $appealAvailableAt = $expiresAt ?? now()->addHours(24);
         }
 
         $target->in_brig = true;
         $target->brig_reason = $reason;
-        $target->brig_expires_at = $expiresAt;
+        $target->brig_expires_at = $permanent ? null : $expiresAt;
         $target->next_appeal_available_at = $appealAvailableAt;
         $target->brig_timer_notified = false;
         $target->brig_type = $brigType;
+        $target->brig_placed_at = now();
+        $target->permanent_brig_at = $permanent ? now() : null;
         $target->save();
 
         // Ban all active/verifying/ParentDisabled Minecraft accounts

@@ -1,8 +1,6 @@
 <?php
 
 use App\Enums\MessageKind;
-use App\Enums\StaffDepartment;
-use App\Enums\StaffRank;
 use App\Enums\ThreadStatus;
 use App\Enums\ThreadType;
 use App\Models\Message;
@@ -50,8 +48,10 @@ new class extends Component {
                 ? 'Staff Contact: '.$lockedUser->name
                 : 'Brig Appeal: '.$lockedUser->name;
 
+            $threadType = $lockedUser->brig_type?->isParental() ? ThreadType::Topic : ThreadType::BrigAppeal;
+
             $thread = Thread::create([
-                'type' => ThreadType::Topic,
+                'type' => $threadType,
                 'subject' => $subject,
                 'status' => ThreadStatus::Open,
                 'created_by_user_id' => $lockedUser->id,
@@ -61,17 +61,16 @@ new class extends Component {
             // Add the appealing user
             $thread->addParticipant($lockedUser);
 
-            // Auto-add Command Officers+ and all Quartermasters
+            // Auto-add Brig Wardens, All-Roles staff, and Admins
             $staffToAdd = User::where(function ($query) {
-                $query->where(function ($q) {
-                    // Command department, Officer rank or above
-                    $q->where('staff_department', StaffDepartment::Command)
-                      ->where('staff_rank', '>=', StaffRank::Officer->value);
-                })->orWhere(function ($q) {
-                    // All Quartermaster department members with a rank
-                    $q->where('staff_department', StaffDepartment::Quartermaster)
-                      ->whereNotNull('staff_rank');
-                });
+                // Admin users
+                $query->whereNotNull('admin_granted_at')
+                    // Staff positions with all roles granted
+                    ->orWhereHas('staffPosition', function ($q) {
+                        $q->whereNotNull('has_all_roles_at')
+                            // Staff positions with the Brig Warden role
+                            ->orWhereHas('roles', fn ($rq) => $rq->where('name', 'Brig Warden'));
+                    });
             })->where('id', '!=', $lockedUser->id)->get();
 
             foreach ($staffToAdd as $staff) {
@@ -223,8 +222,13 @@ new class extends Component {
     <flux:card class="w-full max-w-lg mx-auto text-center py-8 px-6 space-y-6">
         <div class="flex flex-col items-center gap-3">
             <flux:icon name="lock-closed" class="w-12 h-12 text-red-500" />
-            <flux:heading size="xl">You Are In the Brig</flux:heading>
-            <flux:badge color="red" size="lg">Access Restricted</flux:badge>
+            @if($user->permanent_brig_at)
+                <flux:heading size="xl">Permanently Confined</flux:heading>
+                <flux:badge color="red" size="lg">Permanent Confinement</flux:badge>
+            @else
+                <flux:heading size="xl">You Are In the Brig</flux:heading>
+                <flux:badge color="red" size="lg">Access Restricted</flux:badge>
+            @endif
         </div>
 
         @if($user->brig_reason)
@@ -234,7 +238,11 @@ new class extends Component {
             </div>
         @endif
 
-        @if($user->next_appeal_available_at && ! $user->canAppeal())
+        @if($user->permanent_brig_at)
+            <flux:text variant="subtle" class="text-sm">
+                Your account has been permanently confined. You cannot submit appeals.
+            </flux:text>
+        @elseif($user->next_appeal_available_at && ! $user->canAppeal())
             <div class="bg-zinc-50 dark:bg-zinc-800 rounded-lg p-4 text-left">
                 <flux:text class="font-medium text-sm text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-1">Appeal Available</flux:text>
                 <flux:text class="text-zinc-800 dark:text-zinc-200">You may submit an appeal after <strong>{{ $user->next_appeal_available_at->setTimezone($user->timezone ?? 'UTC')->format('F j, Y \a\t g:i A T') }}</strong>.</flux:text>
@@ -249,15 +257,15 @@ new class extends Component {
             <flux:modal.trigger name="brig-appeal-modal">
                 <flux:button variant="primary" icon="chat-bubble-left-ellipsis">Submit Appeal</flux:button>
             </flux:modal.trigger>
-        @else
+        @elseif(! $user->permanent_brig_at)
             <flux:button disabled variant="ghost" icon="chat-bubble-left-ellipsis">Appeal Not Yet Available</flux:button>
         @endif
 
     </flux:card>
 @endif
 
-{{-- Shared contact/appeal modal — available to discipline and parental brig types --}}
-@if($user->brig_type?->isDisciplinary() || $user->brig_type?->isParental() || $user->brig_type === null)
+{{-- Shared contact/appeal modal — available to discipline and parental brig types (not permanent) --}}
+@if(! $user->permanent_brig_at && ($user->brig_type?->isDisciplinary() || $user->brig_type?->isParental() || $user->brig_type === null))
 <flux:modal name="brig-appeal-modal" class="w-full lg:w-1/2">
     <div class="space-y-6">
         @if($user->brig_type?->isParental())

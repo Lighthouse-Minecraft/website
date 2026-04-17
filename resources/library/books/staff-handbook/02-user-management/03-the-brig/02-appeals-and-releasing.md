@@ -7,29 +7,40 @@ summary: 'How to handle brig appeals and release users.'
 
 ## Overview
 
-Brigged users can submit appeals to request their access be restored. Appeals create support tickets in the **Quartermaster** department. When you're ready to restore a user's access, you release them from the Brig.
+Brigged users can submit appeals to request their access be restored. Appeals create **Brig Appeal threads** in the staff discussions, and all Brig Wardens are automatically notified. When you're ready to restore a user's access, you release them from the Brig.
 
 ## How Appeals Work
 
 When a brigged user submits an appeal:
 
 1. They write an appeal message (minimum 20 characters) from their Dashboard
-2. The system creates a **Quartermaster ticket** with their message
-3. Quartermaster staff receive a notification about the new ticket
+2. The system creates a **Brig Appeal thread** in the staff discussions
+3. All Brig Wardens receive a notification about the new appeal
 4. A **7-day cooldown** starts before they can appeal again
-5. The appeal appears in the ticket queue like any other ticket
+5. The appeal appears in the discussions list as a Brig Appeal thread
 
-Appeals are a way for users to explain their side and request another chance. Treat them like any support ticket -- read the appeal, discuss with the team if needed, and decide whether to release or keep the restriction.
+Brig Wardens, All-Roles staff, and Admins are automatically added as participants on every appeal thread. Open the thread to read the user's message, discuss with your team using the thread replies, and decide whether to release or keep the restriction.
+
+## Reviewing an Appeal Thread
+
+When you open a Brig Appeal thread, you'll see a **Manage Brig Status** button in the thread header. Click it to open the [[books/staff-handbook/user-management/the-brig/updating-brig-status|Brig Status Manager]] for that user directly from the thread -- so you can release them (or update their status) without leaving the discussion.
 
 ## Releasing a User from the Brig
 
 ### Who Can Do This
 
-- Admins
-- Quartermaster Officers
-- Command Officers
+Only staff with the **Brig Warden** role can release users from the Brig.
 
 ### How to Release
+
+**From the Brig Status Manager** (recommended after reviewing an appeal):
+
+1. Open the [[books/staff-handbook/user-management/the-brig/updating-brig-status|Brig Status Manager]] for the user
+2. Scroll to the **Quick Release** section
+3. Enter a **release reason** (minimum 5 characters)
+4. Click **Release from Brig**
+
+**From the user's profile page:**
 
 1. Navigate to the user's **profile page**
 2. Click the **Actions** menu on their profile card

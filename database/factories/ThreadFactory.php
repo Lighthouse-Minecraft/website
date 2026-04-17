@@ -102,6 +102,15 @@ class ThreadFactory extends Factory
         ]);
     }
 
+    public function brigAppeal(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'type' => ThreadType::BrigAppeal,
+            'subtype' => null,
+            'department' => null,
+        ]);
+    }
+
     public function locked(): static
     {
         return $this->state(fn (array $attributes) => [

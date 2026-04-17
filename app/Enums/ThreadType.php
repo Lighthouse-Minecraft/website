@@ -10,6 +10,7 @@ enum ThreadType: string
     case Topic = 'topic';
     case BlogComment = 'blog_comment';
     case ContactInquiry = 'contact_inquiry';
+    case BrigAppeal = 'brig_appeal';
 
     public function label(): string
     {
@@ -20,6 +21,7 @@ enum ThreadType: string
             self::Topic => 'Topic',
             self::BlogComment => 'Blog Comment',
             self::ContactInquiry => 'Contact Inquiry',
+            self::BrigAppeal => 'Brig Appeal',
         };
     }
 }

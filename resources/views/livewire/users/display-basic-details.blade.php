@@ -1,5 +1,7 @@
 <?php
 
+use Flux\Flux;
+use Livewire\Attributes\On;
 use Livewire\Volt\Component;
 use App\Models\MinecraftAccount;
 use App\Models\StaffPosition;
@@ -8,7 +10,6 @@ use App\Enums\MembershipLevel;
 use App\Enums\StaffRank;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
-use Flux\Flux;
 
 new class extends Component {
     public User $user;
@@ -30,6 +31,17 @@ new class extends Component {
     public function mount(User $user) {
         $this->user = $user;
         $this->user->load('minecraftAccounts', 'discordAccounts', 'parents', 'children', 'staffPosition');
+    }
+
+    #[On('brig-status-updated')]
+    public function refreshBrigState(): void
+    {
+        $this->user->refresh();
+        $this->user->load('minecraftAccounts', 'discordAccounts', 'parents', 'children', 'staffPosition');
+
+        if (! $this->user->isInBrig()) {
+            Flux::modal('profile-manage-brig-modal')->close();
+        }
     }
 
     public function assignToPosition(int $positionId): void
@@ -297,7 +309,7 @@ new class extends Component {
             ? now()->addDays((int) $this->brigActionDays)
             : null;
 
-        \App\Actions\PutUserInBrig::run($this->user, Auth::user(), $this->brigActionReason, $expiresAt);
+        \App\Actions\PutUserInBrig::run($this->user, Auth::user(), $this->brigActionReason, $expiresAt, permanent: $this->brigActionPermanent);
 
         $this->user->refresh();
         Flux::modal('profile-put-in-brig-modal')->close();
@@ -533,6 +545,11 @@ new class extends Component {
                             @endcan
 
                             @can('put-in-brig')
+                                @if($user->isInBrig())
+                                    <flux:menu.item icon="wrench-screwdriver" x-on:click="$flux.modal('profile-manage-brig-modal').show()">
+                                        Manage Brig Status
+                                    </flux:menu.item>
+                                @endif
                                 @if(! $user->isInBrig() && ! $user->staffPosition && $user->id !== Auth::id())
                                     <flux:menu.item icon="lock-closed" wire:click="openPutInBrigModal">
                                         Put in Brig
@@ -1084,6 +1101,21 @@ new class extends Component {
             </div>
         </div>
     </flux:modal>
+
+    {{-- Manage Brig Status Modal --}}
+    @if($user->isInBrig())
+        @can('put-in-brig')
+            <flux:modal name="profile-manage-brig-modal" class="w-full md:w-2/3 xl:w-1/2">
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <flux:heading size="lg">Manage Brig Status — {{ $user->name }}</flux:heading>
+                        <flux:button variant="ghost" size="sm" x-on:click="$flux.modal('profile-manage-brig-modal').close()">Close</flux:button>
+                    </div>
+                    <livewire:brig.brig-status-manager :user="$user" wire:key="brig-manager-{{ $user->id }}" />
+                </div>
+            </flux:modal>
+        @endcan
+    @endif
 
     {{-- Force Delete Minecraft account confirmation modal --}}
     <flux:modal name="confirm-force-delete-mc-account" class="min-w-[22rem] space-y-6">
