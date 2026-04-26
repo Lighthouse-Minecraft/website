@@ -76,6 +76,13 @@ class DisciplineReport extends Model
         return $query->where('subject_user_id', $user->id);
     }
 
+    protected static function booted(): void
+    {
+        static::deleting(function (DisciplineReport $report) {
+            $report->images()->each->delete();
+        });
+    }
+
     public function isDraft(): bool
     {
         return $this->status === ReportStatus::Draft;
