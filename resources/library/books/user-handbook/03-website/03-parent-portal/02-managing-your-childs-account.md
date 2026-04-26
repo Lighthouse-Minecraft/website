@@ -41,7 +41,7 @@ When a child account is first created, the default permission settings depend on
 Each child's card also shows:
 
 - **Recent Tickets** -- The most recent support tickets involving your child, so you can see if they've reached out for help or been contacted by staff
-- **Discipline Reports** -- Any published reports related to your child's behavior in the community. You can click on a report to see the full details, including what happened and what actions were taken
+- **Discipline Reports** -- Any published reports related to your child's behavior in the community. You can click on a report to see the full details, including what happened, what actions were taken, and any evidence images staff attached to the report
 
 ## Releasing to an Independent Account
 
