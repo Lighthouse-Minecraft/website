@@ -1,5 +1,12 @@
 <nav class="flex flex-wrap gap-2 pb-2 border-b border-zinc-200 dark:border-zinc-700">
     <flux:button
+        variant="{{ request()->routeIs('finance.dashboard.index') ? 'filled' : 'ghost' }}"
+        size="sm"
+        href="{{ route('finance.dashboard.index') }}"
+        wire:navigate
+    >Dashboard</flux:button>
+
+    <flux:button
         variant="{{ request()->routeIs('finance.journal.*') ? 'filled' : 'ghost' }}"
         size="sm"
         href="{{ route('finance.journal.index') }}"
