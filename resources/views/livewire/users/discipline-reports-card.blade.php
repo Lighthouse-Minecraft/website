@@ -119,7 +119,10 @@ new class extends Component {
     {
         $this->authorize('create', DisciplineReport::class);
 
-        $maxKb = SiteConfig::getValue('max_image_size_kb', '2048');
+        $maxKb = (int) (SiteConfig::getValue('max_image_size_kb', '2048') ?: 2048);
+        if ($maxKb <= 0) {
+            $maxKb = 2048;
+        }
 
         $this->validate([
             'formDescription' => 'required|string|min:10',
@@ -178,7 +181,10 @@ new class extends Component {
         $report = DisciplineReport::findOrFail($this->editingReportId);
         $this->authorize('update', $report);
 
-        $maxKb = SiteConfig::getValue('max_image_size_kb', '2048');
+        $maxKb = (int) (SiteConfig::getValue('max_image_size_kb', '2048') ?: 2048);
+        if ($maxKb <= 0) {
+            $maxKb = 2048;
+        }
 
         $this->validate([
             'formDescription' => 'required|string|min:10',
@@ -202,6 +208,13 @@ new class extends Component {
             $category,
             array_map('intval', $this->formRuleIds),
         );
+
+        $report->refresh();
+        if (! $report->isDraft()) {
+            Flux::modal('edit-report-modal')->close();
+            Flux::toast('This report is no longer editable.', 'Report Locked', variant: 'danger');
+            return;
+        }
 
         // Delete images marked for removal (verify they belong to this report)
         if (! empty($this->removedImageIds)) {
@@ -501,8 +514,8 @@ new class extends Component {
 
             @if($formImages)
                 <div class="grid grid-cols-3 gap-2">
-                    @foreach($formImages as $image)
-                        <img src="{{ $image->temporaryUrl() }}" alt="Preview" class="rounded-lg object-cover aspect-square w-full" />
+                    @foreach($formImages as $index => $image)
+                        <img wire:key="create-preview-{{ $index }}" src="{{ $image->temporaryUrl() }}" alt="Preview" class="rounded-lg object-cover aspect-square w-full" />
                     @endforeach
                 </div>
             @endif
@@ -613,8 +626,8 @@ new class extends Component {
 
                 @if($formImages)
                     <div class="grid grid-cols-3 gap-2">
-                        @foreach($formImages as $image)
-                            <img src="{{ $image->temporaryUrl() }}" alt="Preview" class="rounded-lg object-cover aspect-square w-full" />
+                        @foreach($formImages as $index => $image)
+                            <img wire:key="edit-preview-{{ $index }}" src="{{ $image->temporaryUrl() }}" alt="Preview" class="rounded-lg object-cover aspect-square w-full" />
                         @endforeach
                     </div>
                 @endif
@@ -730,7 +743,7 @@ new class extends Component {
                         <flux:text class="font-bold text-sm mb-2">Evidence</flux:text>
                         <div class="grid grid-cols-3 gap-2">
                             @foreach($viewReport->images as $image)
-                                <a wire:key="view-img-{{ $image->id }}" href="{{ $image->url() }}" target="_blank" rel="noopener">
+                                <a wire:key="view-img-{{ $image->id }}" href="{{ $image->url() }}" target="_blank" rel="noopener noreferrer">
                                     <img src="{{ $image->url() }}" alt="{{ $image->original_filename }}" class="rounded-lg object-cover aspect-square w-full hover:opacity-90 transition" />
                                 </a>
                             @endforeach
