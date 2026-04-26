@@ -133,7 +133,7 @@ it('current month income total reflects posted entries in current calendar month
     $component = Volt::actingAs($user)->test('finance.dashboard');
     $currentMonth = $component->get('currentMonth');
 
-    expect($currentMonth['income'])->toBeGreaterThanOrEqual(75000);
+    expect($currentMonth['income'])->toBe(75000);
 });
 
 it('current month expenses reflect posted entries in current calendar month', function () {
@@ -167,7 +167,7 @@ it('current month expenses reflect posted entries in current calendar month', fu
     $component = Volt::actingAs($user)->test('finance.dashboard');
     $currentMonth = $component->get('currentMonth');
 
-    expect($currentMonth['expenses'])->toBeGreaterThanOrEqual(30000);
+    expect($currentMonth['expenses'])->toBe(30000);
 });
 
 it('draft entries are excluded from current month totals', function () {
@@ -204,24 +204,10 @@ it('draft entries are excluded from current month totals', function () {
         status: 'draft',
     );
 
-    // Load a fresh component to get isolated results
     $component = Volt::actingAs($user)->test('finance.dashboard');
-    $currentMonth = $component->instance()->getCurrentMonthProperty();
+    $currentMonth = $component->get('currentMonth');
 
-    // Total income in current month should not include the draft amount
-    // We can't assert exact 0 because other tests may have added posted entries,
-    // so assert the total is less than 123456 from THIS test's data in isolation.
-    // Instead verify via a direct DB check approach: revenue account line not counted
-    $postedIncome = \Illuminate\Support\Facades\DB::table('financial_journal_entry_lines as jel')
-        ->join('financial_journal_entries as je', 'je.id', '=', 'jel.journal_entry_id')
-        ->join('financial_accounts as fa', 'fa.id', '=', 'jel.account_id')
-        ->where('je.status', 'posted')
-        ->where('fa.id', $revenue->id)
-        ->whereBetween('je.date', [now()->startOfMonth()->toDateString(), now()->endOfMonth()->toDateString()])
-        ->selectRaw('COALESCE(SUM(jel.credit) - SUM(jel.debit), 0) as total')
-        ->value('total');
-
-    expect((int) $postedIncome)->toBe(0);
+    expect($currentMonth['income'])->toBe(0);
 });
 
 // == Pending drafts count ==

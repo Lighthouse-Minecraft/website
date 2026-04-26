@@ -19,7 +19,10 @@ class AttachDisciplineReportImages
             throw new \RuntimeException('Cannot attach images to a published discipline report.');
         }
 
-        $maxKb = SiteConfig::getValue('max_image_size_kb', '2048');
+        $maxKb = (int) (SiteConfig::getValue('max_image_size_kb', '2048') ?: 2048);
+        if ($maxKb <= 0) {
+            $maxKb = 2048;
+        }
 
         foreach ($files as $file) {
             /** @var UploadedFile $file */

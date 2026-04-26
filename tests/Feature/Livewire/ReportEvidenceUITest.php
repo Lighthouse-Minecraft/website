@@ -40,6 +40,7 @@ it('view-report does not render Evidence section when report has no images', fun
     $component = Volt::actingAs($staff)->test('reports.view-report', ['report' => $report]);
 
     $component->assertDontSee('Evidence');
+    $component->assertDontSee('<img', false);
 });
 
 // == discipline-reports-card: image UI visibility ==
