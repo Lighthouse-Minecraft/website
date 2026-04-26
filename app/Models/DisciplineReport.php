@@ -79,7 +79,7 @@ class DisciplineReport extends Model
     protected static function booted(): void
     {
         static::deleting(function (DisciplineReport $report) {
-            $report->images()->each->delete();
+            $report->images->each->delete();
         });
     }
 
