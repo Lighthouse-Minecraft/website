@@ -927,7 +927,7 @@ new class extends Component {
             {{-- Staff Reports Card --}}
             @can('view-user-discipline-reports', $user)
                 <div class="w-full lg:w-1/2">
-                    <livewire:users.discipline-reports-card :user="$user" lazy />
+                    <livewire:users.discipline-reports-card :user="$user" />
                 </div>
             @endcan
         </div>
