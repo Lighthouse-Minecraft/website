@@ -40,6 +40,8 @@ new class extends Component {
     public array $formRuleIds = [];
 
     // Image upload state
+    public $pendingImage = null;
+
     public $formImages = [];
 
     public array $removedImageIds = [];
@@ -107,6 +109,31 @@ new class extends Component {
             ->groupBy(fn ($rule) => $rule->ruleCategory?->name ?? 'Uncategorized');
     }
 
+    public function addPendingImage(): void
+    {
+        if (! $this->pendingImage) {
+            return;
+        }
+
+        $maxKb = (int) (SiteConfig::getValue('max_image_size_kb', '2048') ?: 2048);
+        if ($maxKb <= 0) {
+            $maxKb = 2048;
+        }
+
+        $this->validate([
+            'pendingImage' => "mimes:jpg,jpeg,png,gif,webp|max:{$maxKb}",
+        ]);
+
+        $this->formImages[] = $this->pendingImage;
+        $this->pendingImage = null;
+    }
+
+    public function removeStagedImage(int $index): void
+    {
+        unset($this->formImages[$index]);
+        $this->formImages = array_values($this->formImages);
+    }
+
     public function openCreateModal(): void
     {
         $this->authorize('create', DisciplineReport::class);
@@ -130,6 +157,7 @@ new class extends Component {
             'formActionsTaken' => 'required|string|min:5',
             'formSeverity' => ['required', 'string', Rule::enum(ReportSeverity::class)],
             'formCategory' => 'nullable|string|exists:report_categories,id',
+            'pendingImage' => "nullable|mimes:jpg,jpeg,png,gif,webp|max:{$maxKb}",
             'formImages.*' => "nullable|mimes:jpg,jpeg,png,gif,webp|max:{$maxKb}",
         ]);
 
@@ -148,8 +176,13 @@ new class extends Component {
             array_map('intval', $this->formRuleIds),
         );
 
-        if (! empty($this->formImages)) {
-            AttachDisciplineReportImages::run($report, $this->formImages);
+        $allImages = $this->formImages;
+        if ($this->pendingImage) {
+            $allImages[] = $this->pendingImage;
+        }
+
+        if (! empty($allImages)) {
+            AttachDisciplineReportImages::run($report, $allImages);
         }
 
         $this->resetForm();
@@ -192,6 +225,7 @@ new class extends Component {
             'formActionsTaken' => 'required|string|min:5',
             'formSeverity' => ['required', 'string', Rule::enum(ReportSeverity::class)],
             'formCategory' => 'nullable|string|exists:report_categories,id',
+            'pendingImage' => "nullable|mimes:jpg,jpeg,png,gif,webp|max:{$maxKb}",
             'formImages.*' => "nullable|mimes:jpg,jpeg,png,gif,webp|max:{$maxKb}",
         ]);
 
@@ -224,9 +258,14 @@ new class extends Component {
                 ->each->delete();
         }
 
-        // Attach newly uploaded images
-        if (! empty($this->formImages)) {
-            AttachDisciplineReportImages::run($report, $this->formImages);
+        // Attach newly uploaded images (staged + any still-pending)
+        $allImages = $this->formImages;
+        if ($this->pendingImage) {
+            $allImages[] = $this->pendingImage;
+        }
+
+        if (! empty($allImages)) {
+            AttachDisciplineReportImages::run($report, $allImages);
         }
 
         $this->resetForm();
@@ -345,6 +384,7 @@ new class extends Component {
         $this->formSeverity = '';
         $this->formCategory = '';
         $this->formRuleIds = [];
+        $this->pendingImage = null;
         $this->formImages = [];
         $this->removedImageIds = [];
     }
@@ -511,21 +551,38 @@ new class extends Component {
 
             <flux:field>
                 <flux:label>Evidence Images</flux:label>
-                <flux:description>Attach screenshots or photos as evidence (JPG, PNG, GIF, WEBP). Multiple files allowed.</flux:description>
-                <input
-                    type="file"
-                    wire:model="formImages"
-                    multiple
-                    accept="image/jpeg,image/png,image/gif,image/webp"
-                    class="block w-full text-sm text-zinc-500 dark:text-zinc-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-zinc-100 file:text-zinc-700 hover:file:bg-zinc-200 dark:file:bg-zinc-700 dark:file:text-zinc-300 dark:hover:file:bg-zinc-600 cursor-pointer"
-                >
-                <flux:error name="formImages.*" />
+                <flux:file-upload wire:model="pendingImage">
+                    <flux:file-upload.dropzone
+                        icon="photo"
+                        heading="Upload image"
+                        description="PNG, JPG, GIF, WEBP"
+                    />
+                </flux:file-upload>
+                @if($pendingImage)
+                    <flux:file-item
+                        :heading="$pendingImage->getClientOriginalName()"
+                        :image="$pendingImage->temporaryUrl()"
+                        :size="$pendingImage->getSize()"
+                    >
+                        <flux:file-item.remove wire:click="$set('pendingImage', null)" />
+                    </flux:file-item>
+                    <flux:button size="sm" wire:click="addPendingImage">Add Image</flux:button>
+                @endif
+                <flux:error name="pendingImage" />
             </flux:field>
 
-            @if($formImages)
-                <div class="grid grid-cols-3 gap-2">
+            @if(!empty($formImages))
+                <div class="space-y-2">
+                    <flux:text class="text-sm font-medium">Images to attach ({{ count($formImages) }})</flux:text>
                     @foreach($formImages as $index => $image)
-                        <img wire:key="create-preview-{{ $index }}" src="{{ $image->temporaryUrl() }}" alt="Preview" class="rounded-lg object-cover aspect-square w-full" />
+                        <flux:file-item
+                            wire:key="create-staged-{{ $index }}"
+                            :heading="$image->getClientOriginalName()"
+                            :image="$image->temporaryUrl()"
+                            :size="$image->getSize()"
+                        >
+                            <flux:file-item.remove wire:click="removeStagedImage({{ $index }})" />
+                        </flux:file-item>
                     @endforeach
                 </div>
             @endif
@@ -629,21 +686,38 @@ new class extends Component {
                 {{-- New image uploads --}}
                 <flux:field>
                     <flux:label>Add More Evidence Images</flux:label>
-                    <flux:description>Attach additional screenshots or photos (JPG, PNG, GIF, WEBP).</flux:description>
-                    <input
-                        type="file"
-                        wire:model="formImages"
-                        multiple
-                        accept="image/jpeg,image/png,image/gif,image/webp"
-                        class="block w-full text-sm text-zinc-500 dark:text-zinc-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-zinc-100 file:text-zinc-700 hover:file:bg-zinc-200 dark:file:bg-zinc-700 dark:file:text-zinc-300 dark:hover:file:bg-zinc-600 cursor-pointer"
-                    >
-                    <flux:error name="formImages.*" />
+                    <flux:file-upload wire:model="pendingImage">
+                        <flux:file-upload.dropzone
+                            icon="photo"
+                            heading="Upload image"
+                            description="PNG, JPG, GIF, WEBP"
+                        />
+                    </flux:file-upload>
+                    @if($pendingImage)
+                        <flux:file-item
+                            :heading="$pendingImage->getClientOriginalName()"
+                            :image="$pendingImage->temporaryUrl()"
+                            :size="$pendingImage->getSize()"
+                        >
+                            <flux:file-item.remove wire:click="$set('pendingImage', null)" />
+                        </flux:file-item>
+                        <flux:button size="sm" wire:click="addPendingImage">Add Image</flux:button>
+                    @endif
+                    <flux:error name="pendingImage" />
                 </flux:field>
 
-                @if($formImages)
-                    <div class="grid grid-cols-3 gap-2">
+                @if(!empty($formImages))
+                    <div class="space-y-2">
+                        <flux:text class="text-sm font-medium">Images to attach ({{ count($formImages) }})</flux:text>
                         @foreach($formImages as $index => $image)
-                            <img wire:key="edit-preview-{{ $index }}" src="{{ $image->temporaryUrl() }}" alt="Preview" class="rounded-lg object-cover aspect-square w-full" />
+                            <flux:file-item
+                                wire:key="edit-staged-{{ $index }}"
+                                :heading="$image->getClientOriginalName()"
+                                :image="$image->temporaryUrl()"
+                                :size="$image->getSize()"
+                            >
+                                <flux:file-item.remove wire:click="removeStagedImage({{ $index }})" />
+                            </flux:file-item>
                         @endforeach
                     </div>
                 @endif
