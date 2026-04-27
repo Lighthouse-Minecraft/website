@@ -508,7 +508,9 @@ new class extends Component {
             <flux:field>
                 <flux:label>Evidence Images</flux:label>
                 <flux:description>Attach screenshots or photos as evidence (JPG, PNG, GIF, WEBP). Multiple files allowed.</flux:description>
-                <flux:input type="file" wire:model="formImages" multiple accept="image/jpeg,image/png,image/gif,image/webp" />
+                <flux:file-upload wire:model="formImages" multiple accept="image/jpeg,image/png,image/gif,image/webp">
+                    <flux:file-upload.dropzone heading="Upload evidence images" text="PNG, JPG, GIF, WEBP" inline />
+                </flux:file-upload>
                 <flux:error name="formImages.*" />
             </flux:field>
 
@@ -620,7 +622,9 @@ new class extends Component {
                 <flux:field>
                     <flux:label>Add More Evidence Images</flux:label>
                     <flux:description>Attach additional screenshots or photos (JPG, PNG, GIF, WEBP).</flux:description>
-                    <flux:input type="file" wire:model="formImages" multiple accept="image/jpeg,image/png,image/gif,image/webp" />
+                    <flux:file-upload wire:model="formImages" multiple accept="image/jpeg,image/png,image/gif,image/webp">
+                        <flux:file-upload.dropzone heading="Upload evidence images" text="PNG, JPG, GIF, WEBP" inline />
+                    </flux:file-upload>
                     <flux:error name="formImages.*" />
                 </flux:field>
 
