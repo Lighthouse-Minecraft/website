@@ -8,6 +8,7 @@ use App\Models\BoardMember;
 use App\Models\StaffPosition;
 use App\Models\User;
 use App\Services\MinecraftRconService;
+use Livewire\Volt\Volt;
 
 uses()->group('staff');
 
@@ -106,4 +107,33 @@ it('shows unlinked board member with display name', function () {
     $this->get(route('staff.index'))
         ->assertOk()
         ->assertSee('External Board Member');
+});
+
+it('does not render the old sidebar panel markup', function () {
+    $this->get(route('staff.index'))
+        ->assertOk()
+        ->assertDontSee('lg:w-1/4 lg:sticky', false);
+});
+
+it('selectPosition sets selectedPositionId and selectedPosition returns the correct model', function () {
+    $position = StaffPosition::factory()->officer()->inDepartment(StaffDepartment::Command)->create([
+        'title' => 'Unique Test Officer Title XYZ',
+    ]);
+
+    $component = Volt::test('staff.page');
+    $component->call('selectPosition', $position->id);
+
+    expect($component->get('selectedPositionId'))->toBe($position->id);
+    $component->assertSee('Unique Test Officer Title XYZ');
+});
+
+it('renders markdown responsibilities as HTML in the modal content', function () {
+    $position = StaffPosition::factory()->officer()->inDepartment(StaffDepartment::Command)->create([
+        'responsibilities' => '**bold text**',
+    ]);
+
+    $component = Volt::test('staff.page');
+    $component->call('selectPosition', $position->id);
+
+    $component->assertSee('<strong>bold text</strong>', false);
 });

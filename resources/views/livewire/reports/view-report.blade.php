@@ -15,7 +15,7 @@ new class extends Component
     public function mount(DisciplineReport $report): void
     {
         $this->authorize('view', $report);
-        $this->report = $report->load(['subject', 'reporter', 'publisher', 'category', 'violatedRules']);
+        $this->report = $report->load(['subject', 'reporter', 'publisher', 'category', 'violatedRules', 'images']);
     }
 
     #[Computed]
@@ -161,6 +161,20 @@ new class extends Component
             <div>
                 <flux:text class="font-bold text-sm">Date</flux:text>
                 <flux:text>{{ ($report->published_at ?? $report->created_at)->format('M j, Y g:i A') }}</flux:text>
+            </div>
+        </flux:card>
+    @endif
+
+    {{-- Evidence --}}
+    @if($report->images->isNotEmpty())
+        <flux:card>
+            <flux:heading size="sm" class="mb-3">Evidence</flux:heading>
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                @foreach($report->images as $image)
+                    <a href="{{ $image->url() }}" target="_blank" rel="noopener" wire:key="evidence-img-{{ $image->id }}">
+                        <img src="{{ $image->url() }}" alt="{{ $image->original_filename }}" class="rounded-lg object-cover aspect-square w-full hover:opacity-90 transition" />
+                    </a>
+                @endforeach
             </div>
         </flux:card>
     @endif

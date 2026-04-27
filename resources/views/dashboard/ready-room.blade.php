@@ -11,7 +11,7 @@
                 View Tickets
             </flux:button>
             @can('finance-view')
-                <flux:button href="{{ route('finance.journal.index') }}" wire:navigate icon="banknotes">
+                <flux:button href="{{ route('finance.dashboard.index') }}" wire:navigate icon="banknotes">
                     Finance
                 </flux:button>
             @endcan
