@@ -242,6 +242,7 @@ Route::prefix('finance')
     ->name('finance.')
     ->middleware(['auth', 'can:finance-view'])
     ->group(function () {
+        Volt::route('/dashboard', 'finance.dashboard')->name('dashboard.index');
         Volt::route('/accounts', 'finance.chart-of-accounts')->name('accounts.index');
         Volt::route('/periods', 'finance.fiscal-periods')->name('periods.index');
         Volt::route('/vendors', 'finance.vendors')->name('vendors.index');

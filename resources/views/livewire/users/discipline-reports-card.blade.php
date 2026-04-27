@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\AttachDisciplineReportImages;
 use App\Actions\CreateDisciplineReport;
 use App\Actions\CreateTopic;
 use App\Actions\PublishDisciplineReport;
@@ -8,8 +9,10 @@ use App\Enums\ReportLocation;
 use App\Enums\ReportSeverity;
 use App\Enums\StaffRank;
 use App\Models\DisciplineReport;
+use App\Models\DisciplineReportImage;
 use App\Models\ReportCategory;
 use App\Models\Rule as RuleModel;
+use App\Models\SiteConfig;
 use App\Models\Thread;
 use App\Models\User;
 use Flux\Flux;
@@ -17,8 +20,10 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Locked;
 use Livewire\Volt\Component;
+use Livewire\WithFileUploads;
 
 new class extends Component {
+    use WithFileUploads;
     #[Locked]
     public int $userId;
 
@@ -33,6 +38,13 @@ new class extends Component {
     public string $formSeverity = '';
     public string $formCategory = '';
     public array $formRuleIds = [];
+
+    // Image upload state
+    public $pendingImage = null;
+
+    public $formImages = [];
+
+    public array $removedImageIds = [];
 
     // Editing state
     #[Locked]
@@ -97,6 +109,31 @@ new class extends Component {
             ->groupBy(fn ($rule) => $rule->ruleCategory?->name ?? 'Uncategorized');
     }
 
+    public function addPendingImage(): void
+    {
+        if (! $this->pendingImage) {
+            return;
+        }
+
+        $maxKb = (int) (SiteConfig::getValue('max_image_size_kb', '2048') ?: 2048);
+        if ($maxKb <= 0) {
+            $maxKb = 2048;
+        }
+
+        $this->validate([
+            'pendingImage' => "mimes:jpg,jpeg,png,gif,webp|max:{$maxKb}",
+        ]);
+
+        $this->formImages[] = $this->pendingImage;
+        $this->pendingImage = null;
+    }
+
+    public function removeStagedImage(int $index): void
+    {
+        unset($this->formImages[$index]);
+        $this->formImages = array_values($this->formImages);
+    }
+
     public function openCreateModal(): void
     {
         $this->authorize('create', DisciplineReport::class);
@@ -109,18 +146,25 @@ new class extends Component {
     {
         $this->authorize('create', DisciplineReport::class);
 
+        $maxKb = (int) (SiteConfig::getValue('max_image_size_kb', '2048') ?: 2048);
+        if ($maxKb <= 0) {
+            $maxKb = 2048;
+        }
+
         $this->validate([
             'formDescription' => 'required|string|min:10',
             'formLocation' => ['required', 'string', Rule::enum(ReportLocation::class)],
             'formActionsTaken' => 'required|string|min:5',
             'formSeverity' => ['required', 'string', Rule::enum(ReportSeverity::class)],
             'formCategory' => 'nullable|string|exists:report_categories,id',
+            'pendingImage' => "nullable|mimes:jpg,jpeg,png,gif,webp|max:{$maxKb}",
+            'formImages.*' => "nullable|mimes:jpg,jpeg,png,gif,webp|max:{$maxKb}",
         ]);
 
         $subject = $this->user;
         $category = $this->formCategory ? ReportCategory::find($this->formCategory) : null;
 
-        CreateDisciplineReport::run(
+        $report = CreateDisciplineReport::run(
             $subject,
             Auth::user(),
             $this->formDescription,
@@ -131,6 +175,15 @@ new class extends Component {
             $category,
             array_map('intval', $this->formRuleIds),
         );
+
+        $allImages = $this->formImages;
+        if ($this->pendingImage) {
+            $allImages[] = $this->pendingImage;
+        }
+
+        if (! empty($allImages)) {
+            AttachDisciplineReportImages::run($report, $allImages);
+        }
 
         $this->resetForm();
         Flux::modal('create-report-modal')->close();
@@ -150,6 +203,8 @@ new class extends Component {
         $this->formSeverity = $report->severity->value;
         $this->formCategory = (string) ($report->report_category_id ?? '');
         $this->formRuleIds = $report->violatedRules()->pluck('rules.id')->map(fn ($id) => (string) $id)->all();
+        $this->formImages = [];
+        $this->removedImageIds = [];
 
         Flux::modal('edit-report-modal')->show();
     }
@@ -159,12 +214,19 @@ new class extends Component {
         $report = DisciplineReport::findOrFail($this->editingReportId);
         $this->authorize('update', $report);
 
+        $maxKb = (int) (SiteConfig::getValue('max_image_size_kb', '2048') ?: 2048);
+        if ($maxKb <= 0) {
+            $maxKb = 2048;
+        }
+
         $this->validate([
             'formDescription' => 'required|string|min:10',
             'formLocation' => ['required', 'string', Rule::enum(ReportLocation::class)],
             'formActionsTaken' => 'required|string|min:5',
             'formSeverity' => ['required', 'string', Rule::enum(ReportSeverity::class)],
             'formCategory' => 'nullable|string|exists:report_categories,id',
+            'pendingImage' => "nullable|mimes:jpg,jpeg,png,gif,webp|max:{$maxKb}",
+            'formImages.*' => "nullable|mimes:jpg,jpeg,png,gif,webp|max:{$maxKb}",
         ]);
 
         $category = $this->formCategory ? ReportCategory::find($this->formCategory) : null;
@@ -180,6 +242,31 @@ new class extends Component {
             $category,
             array_map('intval', $this->formRuleIds),
         );
+
+        $report->refresh();
+        if (! $report->isDraft()) {
+            Flux::modal('edit-report-modal')->close();
+            Flux::toast('This report is no longer editable.', 'Report Locked', variant: 'danger');
+            return;
+        }
+
+        // Delete images marked for removal (verify they belong to this report)
+        if (! empty($this->removedImageIds)) {
+            DisciplineReportImage::where('discipline_report_id', $report->id)
+                ->whereIn('id', $this->removedImageIds)
+                ->get()
+                ->each->delete();
+        }
+
+        // Attach newly uploaded images (staged + any still-pending)
+        $allImages = $this->formImages;
+        if ($this->pendingImage) {
+            $allImages[] = $this->pendingImage;
+        }
+
+        if (! empty($allImages)) {
+            AttachDisciplineReportImages::run($report, $allImages);
+        }
 
         $this->resetForm();
         $this->editingReportId = null;
@@ -197,13 +284,40 @@ new class extends Component {
         Flux::toast('Staff report published.', 'Report Published', variant: 'success');
     }
 
+    public function removeImage(int $imageId): void
+    {
+        $report = DisciplineReport::findOrFail($this->editingReportId);
+        $this->authorize('update', $report);
+
+        if (! $report->images()->whereKey($imageId)->exists()) {
+            return;
+        }
+
+        if (! in_array($imageId, $this->removedImageIds)) {
+            $this->removedImageIds[] = $imageId;
+        }
+    }
+
+    public function getEditingReportImagesProperty()
+    {
+        if (! $this->editingReportId) {
+            return collect();
+        }
+
+        return DisciplineReport::find($this->editingReportId)
+            ?->images()
+            ->whereNotIn('id', $this->removedImageIds)
+            ->get()
+            ?? collect();
+    }
+
     public function getViewingReportProperty()
     {
         if (! $this->viewingReportId) {
             return null;
         }
 
-        return DisciplineReport::with(['subject', 'reporter', 'publisher', 'category', 'violatedRules'])
+        return DisciplineReport::with(['subject', 'reporter', 'publisher', 'category', 'violatedRules', 'images'])
             ->find($this->viewingReportId);
     }
 
@@ -270,6 +384,9 @@ new class extends Component {
         $this->formSeverity = '';
         $this->formCategory = '';
         $this->formRuleIds = [];
+        $this->pendingImage = null;
+        $this->formImages = [];
+        $this->removedImageIds = [];
     }
 }; ?>
 
@@ -432,6 +549,44 @@ new class extends Component {
                 </flux:field>
             @endif
 
+            <flux:field>
+                <flux:label>Evidence Images</flux:label>
+                <flux:file-upload wire:model="pendingImage">
+                    <flux:file-upload.dropzone
+                        icon="photo"
+                        heading="Upload image"
+                        description="PNG, JPG, GIF, WEBP"
+                    />
+                </flux:file-upload>
+                @if($pendingImage)
+                    <flux:file-item
+                        :heading="$pendingImage->getClientOriginalName()"
+                        :image="$pendingImage->temporaryUrl()"
+                        :size="$pendingImage->getSize()"
+                    >
+                        <flux:file-item.remove wire:click="$set('pendingImage', null)" />
+                    </flux:file-item>
+                    <flux:button size="sm" wire:click="addPendingImage">Add Image</flux:button>
+                @endif
+                <flux:error name="pendingImage" />
+            </flux:field>
+
+            @if(!empty($formImages))
+                <div class="space-y-2">
+                    <flux:text class="text-sm font-medium">Images to attach ({{ count($formImages) }})</flux:text>
+                    @foreach($formImages as $index => $image)
+                        <flux:file-item
+                            wire:key="create-staged-{{ $index }}"
+                            :heading="$image->getClientOriginalName()"
+                            :image="$image->temporaryUrl()"
+                            :size="$image->getSize()"
+                        >
+                            <flux:file-item.remove wire:click="removeStagedImage({{ $index }})" />
+                        </flux:file-item>
+                    @endforeach
+                </div>
+            @endif
+
             <div class="flex gap-2 justify-end">
                 <flux:button variant="ghost" x-on:click="$flux.modal('create-report-modal').close()">Cancel</flux:button>
                 <flux:button wire:click="createReport" variant="primary">Create Report</flux:button>
@@ -510,6 +665,62 @@ new class extends Component {
                     </div>
                     <flux:description>Select any rules this incident violated (optional).</flux:description>
                 </flux:field>
+            @endif
+
+            @if($editingReportId && \App\Models\DisciplineReport::find($editingReportId)?->isDraft())
+                {{-- Existing images --}}
+                @if($this->editingReportImages->isNotEmpty())
+                    <div>
+                        <flux:text class="font-bold text-sm mb-2">Current Evidence Images</flux:text>
+                        <div class="grid grid-cols-3 gap-2">
+                            @foreach($this->editingReportImages as $image)
+                                <div wire:key="edit-img-{{ $image->id }}" class="relative group">
+                                    <img src="{{ $image->url() }}" alt="{{ $image->original_filename }}" class="rounded-lg object-cover aspect-square w-full" />
+                                    <button wire:click="removeImage({{ $image->id }})" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition">×</button>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+
+                {{-- New image uploads --}}
+                <flux:field>
+                    <flux:label>Add More Evidence Images</flux:label>
+                    <flux:file-upload wire:model="pendingImage">
+                        <flux:file-upload.dropzone
+                            icon="photo"
+                            heading="Upload image"
+                            description="PNG, JPG, GIF, WEBP"
+                        />
+                    </flux:file-upload>
+                    @if($pendingImage)
+                        <flux:file-item
+                            :heading="$pendingImage->getClientOriginalName()"
+                            :image="$pendingImage->temporaryUrl()"
+                            :size="$pendingImage->getSize()"
+                        >
+                            <flux:file-item.remove wire:click="$set('pendingImage', null)" />
+                        </flux:file-item>
+                        <flux:button size="sm" wire:click="addPendingImage">Add Image</flux:button>
+                    @endif
+                    <flux:error name="pendingImage" />
+                </flux:field>
+
+                @if(!empty($formImages))
+                    <div class="space-y-2">
+                        <flux:text class="text-sm font-medium">Images to attach ({{ count($formImages) }})</flux:text>
+                        @foreach($formImages as $index => $image)
+                            <flux:file-item
+                                wire:key="edit-staged-{{ $index }}"
+                                :heading="$image->getClientOriginalName()"
+                                :image="$image->temporaryUrl()"
+                                :size="$image->getSize()"
+                            >
+                                <flux:file-item.remove wire:click="removeStagedImage({{ $index }})" />
+                            </flux:file-item>
+                        @endforeach
+                    </div>
+                @endif
             @endif
 
             <div class="flex gap-2 justify-end">
@@ -612,6 +823,21 @@ new class extends Component {
                     <div>
                         <flux:text class="font-bold text-sm">Date</flux:text>
                         <flux:text>{{ ($viewReport->published_at ?? $viewReport->created_at)->format('M j, Y g:i A') }}</flux:text>
+                    </div>
+                @endif
+
+                {{-- Evidence Section --}}
+                @if($viewReport->images->isNotEmpty())
+                    <flux:separator variant="subtle" />
+                    <div>
+                        <flux:text class="font-bold text-sm mb-2">Evidence</flux:text>
+                        <div class="grid grid-cols-3 gap-2">
+                            @foreach($viewReport->images as $image)
+                                <a wire:key="view-img-{{ $image->id }}" href="{{ $image->url() }}" target="_blank" rel="noopener noreferrer">
+                                    <img src="{{ $image->url() }}" alt="{{ $image->original_filename }}" class="rounded-lg object-cover aspect-square w-full hover:opacity-90 transition" />
+                                </a>
+                            @endforeach
+                        </div>
                     </div>
                 @endif
 

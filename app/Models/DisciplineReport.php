@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class DisciplineReport extends Model
@@ -75,6 +76,13 @@ class DisciplineReport extends Model
         return $query->where('subject_user_id', $user->id);
     }
 
+    protected static function booted(): void
+    {
+        static::deleting(function (DisciplineReport $report) {
+            $report->images->each->delete();
+        });
+    }
+
     public function isDraft(): bool
     {
         return $this->status === ReportStatus::Draft;
@@ -83,6 +91,11 @@ class DisciplineReport extends Model
     public function isPublished(): bool
     {
         return $this->status === ReportStatus::Published;
+    }
+
+    public function images(): HasMany
+    {
+        return $this->hasMany(DisciplineReportImage::class);
     }
 
     public function violatedRules(): BelongsToMany

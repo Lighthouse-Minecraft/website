@@ -144,18 +144,24 @@ new class extends Component {
                     <flux:badge size="sm" color="zinc">{{ $staffPosition->department->label() }}</flux:badge>
                 </div>
                 @if($staffPosition->description)
-                    <flux:text variant="subtle">{{ $staffPosition->description }}</flux:text>
+                    <div class="prose prose-sm dark:prose-invert max-w-none">
+                        {!! Str::markdown($staffPosition->description, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
+                    </div>
                 @endif
                 @if($staffPosition->responsibilities)
                     <div>
                         <flux:text class="font-medium">Responsibilities:</flux:text>
-                        <flux:text>{{ $staffPosition->responsibilities }}</flux:text>
+                        <div class="prose prose-sm dark:prose-invert max-w-none">
+                            {!! Str::markdown($staffPosition->responsibilities, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
+                        </div>
                     </div>
                 @endif
                 @if($staffPosition->requirements)
                     <div>
                         <flux:text class="font-medium">Requirements:</flux:text>
-                        <flux:text>{{ $staffPosition->requirements }}</flux:text>
+                        <div class="prose prose-sm dark:prose-invert max-w-none">
+                            {!! Str::markdown($staffPosition->requirements, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
+                        </div>
                     </div>
                 @endif
             </div>
