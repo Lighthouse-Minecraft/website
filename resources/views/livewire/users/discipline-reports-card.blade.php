@@ -250,6 +250,10 @@ new class extends Component {
         $report = DisciplineReport::findOrFail($this->editingReportId);
         $this->authorize('update', $report);
 
+        if (! $report->images()->whereKey($imageId)->exists()) {
+            return;
+        }
+
         if (! in_array($imageId, $this->removedImageIds)) {
             $this->removedImageIds[] = $imageId;
         }
