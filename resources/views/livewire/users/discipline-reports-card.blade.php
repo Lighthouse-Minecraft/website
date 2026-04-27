@@ -512,9 +512,13 @@ new class extends Component {
             <flux:field>
                 <flux:label>Evidence Images</flux:label>
                 <flux:description>Attach screenshots or photos as evidence (JPG, PNG, GIF, WEBP). Multiple files allowed.</flux:description>
-                <flux:file-upload wire:model="formImages" multiple accept="image/jpeg,image/png,image/gif,image/webp">
-                    <flux:file-upload.dropzone heading="Upload evidence images" text="PNG, JPG, GIF, WEBP" inline />
-                </flux:file-upload>
+                <input
+                    type="file"
+                    wire:model="formImages"
+                    multiple
+                    accept="image/jpeg,image/png,image/gif,image/webp"
+                    class="block w-full text-sm text-zinc-500 dark:text-zinc-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-zinc-100 file:text-zinc-700 hover:file:bg-zinc-200 dark:file:bg-zinc-700 dark:file:text-zinc-300 dark:hover:file:bg-zinc-600 cursor-pointer"
+                >
                 <flux:error name="formImages.*" />
             </flux:field>
 
@@ -626,9 +630,13 @@ new class extends Component {
                 <flux:field>
                     <flux:label>Add More Evidence Images</flux:label>
                     <flux:description>Attach additional screenshots or photos (JPG, PNG, GIF, WEBP).</flux:description>
-                    <flux:file-upload wire:model="formImages" multiple accept="image/jpeg,image/png,image/gif,image/webp">
-                        <flux:file-upload.dropzone heading="Upload evidence images" text="PNG, JPG, GIF, WEBP" inline />
-                    </flux:file-upload>
+                    <input
+                        type="file"
+                        wire:model="formImages"
+                        multiple
+                        accept="image/jpeg,image/png,image/gif,image/webp"
+                        class="block w-full text-sm text-zinc-500 dark:text-zinc-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-zinc-100 file:text-zinc-700 hover:file:bg-zinc-200 dark:file:bg-zinc-700 dark:file:text-zinc-300 dark:hover:file:bg-zinc-600 cursor-pointer"
+                    >
                     <flux:error name="formImages.*" />
                 </flux:field>
 
