@@ -22,6 +22,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        DB::table('roles')->where('name', 'Backup Manager')->delete();
+        // up() is conditional (only inserts if missing), so rollback cannot safely
+        // determine whether this role pre-existed — leave it in place.
     }
 };

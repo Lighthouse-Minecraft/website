@@ -107,6 +107,8 @@ it('S3 retention returns empty when no files exist', function () {
 // ── PushBackupToS3 command ────────────────────────────────────────────────────
 
 it('app:backup-push-s3 uploads most recent local backup to S3', function () {
+    config(['filesystems.disks.s3.key' => 'fake-key', 'filesystems.disks.s3.bucket' => 'fake-bucket']);
+
     $dir = storage_path('app/backups');
     if (! is_dir($dir)) {
         mkdir($dir, 0755, true);

@@ -114,14 +114,15 @@ class RestoreService
     {
         $sql = $this->readGzip($path);
 
-        $result = Process::input($sql)->run([
-            'mysql',
-            '-h', $config['host'] ?? 'localhost',
-            '-P', (string) ($config['port'] ?? 3306),
-            '-u', $config['username'],
-            '-p'.$config['password'],
-            $config['database'],
-        ]);
+        $result = Process::env(['MYSQL_PWD' => $config['password'] ?? ''])
+            ->input($sql)
+            ->run([
+                'mysql',
+                '-h', $config['host'] ?? 'localhost',
+                '-P', (string) ($config['port'] ?? 3306),
+                '-u', $config['username'],
+                $config['database'],
+            ]);
 
         if (! $result->successful()) {
             throw new \RuntimeException('mysql restore failed: '.$result->errorOutput());
@@ -185,9 +186,15 @@ class RestoreService
 
     private function buildTargetDsn(string $type, array $config): string
     {
+        $username = rawurlencode((string) ($config['username'] ?? ''));
+        $password = rawurlencode((string) ($config['password'] ?? ''));
+        $database = rawurlencode((string) ($config['database'] ?? ''));
+        $host = $config['host'] ?? 'localhost';
+        $port = (string) ($config['port'] ?? ($type === 'pgsql' ? 5432 : 3306));
+
         return match ($type) {
-            'pgsql' => "postgresql://{$config['username']}:{$config['password']}@{$config['host']}:{$config['port']}/{$config['database']}",
-            'mysql', 'mariadb' => "mysql://{$config['username']}:{$config['password']}@{$config['host']}:{$config['port']}/{$config['database']}",
+            'pgsql' => "postgresql://{$username}:{$password}@{$host}:{$port}/{$database}",
+            'mysql', 'mariadb' => "mysql://{$username}:{$password}@{$host}:{$port}/{$database}",
             default => throw new \RuntimeException("Cannot build DSN for type: {$type}"),
         };
     }

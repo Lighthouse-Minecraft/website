@@ -19,12 +19,27 @@ class RestoreBackup extends Command
     public function handle(): int
     {
         $filename = $this->argument('filename');
+
+        if ($filename !== basename($filename) || ! str_ends_with($filename, '.sql.gz')) {
+            $this->error('Invalid backup filename.');
+
+            return Command::FAILURE;
+        }
+
+        $backupsDir = realpath(storage_path('app/backups'));
         $path = storage_path("app/backups/{$filename}");
+        $realPath = realpath($path);
+
+        if ($realPath === false || $backupsDir === false || ! str_starts_with($realPath, $backupsDir.DIRECTORY_SEPARATOR)) {
+            $this->error('Invalid backup path.');
+
+            return Command::FAILURE;
+        }
 
         $service = app(RestoreService::class);
 
         try {
-            $service->restore($path);
+            $service->restore($realPath);
             $this->info("Restore completed from: {$filename}");
             $this->notifyManagers('success', $filename);
 

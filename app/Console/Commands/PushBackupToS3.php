@@ -28,6 +28,13 @@ class PushBackupToS3 extends Command
         $localPath = $files[0];
 
         $storageService = app(BackupStorageService::class);
+
+        if (! $storageService->isConfigured()) {
+            $this->warn('S3 is not configured; skipping upload.');
+
+            return Command::SUCCESS;
+        }
+
         $retentionService = app(BackupRetentionService::class);
 
         $key = $storageService->upload($localPath);

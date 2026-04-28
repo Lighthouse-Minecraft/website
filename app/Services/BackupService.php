@@ -20,8 +20,9 @@ class BackupService
 
     public function create(): string
     {
-        $driver = config('database.default');
-        $config = config("database.connections.{$driver}");
+        $connectionName = config('database.default');
+        $config = config("database.connections.{$connectionName}");
+        $driver = $config['driver'] ?? $connectionName;
 
         $backupsDir = storage_path('app/backups');
         if (! is_dir($backupsDir)) {
@@ -96,14 +97,14 @@ class BackupService
 
     private function dumpMysql(array $config): string
     {
-        $result = Process::run([
-            'mysqldump',
-            '-h', $config['host'] ?? 'localhost',
-            '-P', (string) ($config['port'] ?? 3306),
-            '-u', $config['username'],
-            '-p'.$config['password'],
-            $config['database'],
-        ]);
+        $result = Process::env(['MYSQL_PWD' => $config['password'] ?? ''])
+            ->run([
+                'mysqldump',
+                '-h', $config['host'] ?? 'localhost',
+                '-P', (string) ($config['port'] ?? 3306),
+                '-u', $config['username'],
+                $config['database'],
+            ]);
 
         if (! $result->successful()) {
             throw new \RuntimeException('mysqldump failed: '.$result->errorOutput());

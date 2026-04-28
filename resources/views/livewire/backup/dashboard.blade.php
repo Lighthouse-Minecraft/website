@@ -32,6 +32,16 @@ new class extends Component
         $this->offlineDuringRestore = SiteConfig::getValue('backup.offline_during_restore', 'true') === 'true';
     }
 
+    private function validateBackupFilename(string $filename): string
+    {
+        abort_unless(
+            preg_match('/\A[a-zA-Z0-9._-]+\.sql\.gz\z/', $filename) === 1,
+            404
+        );
+
+        return $filename;
+    }
+
     #[\Livewire\Attributes\Computed]
     public function localBackups(): array
     {
@@ -127,9 +137,9 @@ new class extends Component
             'uploadFile' => ['required', 'file', 'mimes:gz', 'max:524288'], // 512 MB
         ]);
 
-        $originalName = $this->uploadFile->getClientOriginalName();
+        $originalName = basename($this->uploadFile->getClientOriginalName());
 
-        if (! str_ends_with($originalName, '.sql.gz')) {
+        if (! str_ends_with($originalName, '.sql.gz') || preg_match('/\A[a-zA-Z0-9._-]+\.sql\.gz\z/', $originalName) !== 1) {
             $this->addError('uploadFile', 'File must be a .sql.gz backup file.');
 
             return;
@@ -149,6 +159,7 @@ new class extends Component
     public function download(string $filename): StreamedResponse
     {
         $this->authorize('backup-manager');
+        $filename = $this->validateBackupFilename($filename);
 
         $path = storage_path("app/backups/{$filename}");
         abort_if(! file_exists($path), 404);
@@ -161,6 +172,7 @@ new class extends Component
     public function downloadFromS3(string $filename): StreamedResponse
     {
         $this->authorize('backup-manager');
+        $filename = $this->validateBackupFilename($filename);
 
         $key = "backups/{$filename}";
 
@@ -176,7 +188,7 @@ new class extends Component
 
     public function confirmRestore(string $filename): void
     {
-        $this->restoreTarget = $filename;
+        $this->restoreTarget = $this->validateBackupFilename($filename);
         Flux::modal('confirm-restore')->show();
     }
 
@@ -188,6 +200,7 @@ new class extends Component
             return;
         }
 
+        $this->validateBackupFilename($this->restoreTarget);
         $path = storage_path("app/backups/{$this->restoreTarget}");
         abort_if(! file_exists($path), 404);
 
@@ -199,7 +212,7 @@ new class extends Component
 
     public function confirmDelete(string $filename): void
     {
-        $this->deleteTarget = $filename;
+        $this->deleteTarget = $this->validateBackupFilename($filename);
         Flux::modal('confirm-delete')->show();
     }
 
@@ -211,6 +224,7 @@ new class extends Component
             return;
         }
 
+        $this->validateBackupFilename($this->deleteTarget);
         $path = storage_path("app/backups/{$this->deleteTarget}");
         if (file_exists($path)) {
             unlink($path);
@@ -224,7 +238,7 @@ new class extends Component
 
     public function confirmDeleteS3(string $filename): void
     {
-        $this->deleteS3Target = $filename;
+        $this->deleteS3Target = $this->validateBackupFilename($filename);
         Flux::modal('confirm-delete-s3')->show();
     }
 
@@ -236,6 +250,7 @@ new class extends Component
             return;
         }
 
+        $this->validateBackupFilename($this->deleteS3Target);
         app(BackupStorageService::class)->delete("backups/{$this->deleteS3Target}");
 
         $this->deleteS3Target = null;
