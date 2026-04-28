@@ -28,7 +28,7 @@ function makeBackupFile(string $filename, string $sql = '-- SQLite dump'): strin
 }
 
 afterEach(function () {
-    foreach (glob(storage_path('app/backups/*.sql.gz')) as $file) {
+    foreach ((glob(storage_path('app/backups/*.sql.gz')) ?: []) as $file) {
         @unlink($file);
     }
     if (app()->isDownForMaintenance()) {
@@ -39,12 +39,13 @@ afterEach(function () {
 it('restores a backup and results in expected database state', function () {
     $tmpDb = sys_get_temp_dir().'/restore_test_'.uniqid().'.sqlite';
     $gzFile = storage_path('app/backups/restore_state_test_2026-01-01_00-00-00_sqlite.sql.gz');
+    $originalDefault = config('database.default');
 
     try {
         // Create the file first so Laravel's SQLite connector can find it.
         touch($tmpDb);
 
-        // Register a named connection for the temp file so we don't touch the :memory: test DB.
+        // Register a named connection for the temp file so we don't touch the real test DB.
         config(['database.connections.restore_test' => [
             'driver' => 'sqlite',
             'database' => $tmpDb,
@@ -79,7 +80,7 @@ it('restores a backup and results in expected database state', function () {
         expect($count)->toBe(0);
 
     } finally {
-        config(['database.default' => 'sqlite']);
+        config(['database.default' => $originalDefault]);
         DB::purge('restore_test');
         @unlink($tmpDb);
         @unlink($gzFile);
@@ -91,10 +92,10 @@ it('aborts cross-type restore with clear error when pgloader is not installed', 
         'which pgloader' => Process::result('', '', 1),
     ]);
 
-    // pgsql-typed backup on a sqlite target — cross-type
-    makeBackupFile('backup_2026-01-01_00-00-00_pgsql.sql.gz', '-- PostgreSQL dump');
+    // mysql-typed backup is always cross-type regardless of whether the test DB is sqlite or pgsql
+    makeBackupFile('backup_2026-01-01_00-00-00_mysql.sql.gz', '-- MySQL dump');
 
-    $this->artisan('app:backup-restore', ['filename' => 'backup_2026-01-01_00-00-00_pgsql.sql.gz'])
+    $this->artisan('app:backup-restore', ['filename' => 'backup_2026-01-01_00-00-00_mysql.sql.gz'])
         ->assertFailed()
         ->expectsOutputToContain('pgloader');
 });

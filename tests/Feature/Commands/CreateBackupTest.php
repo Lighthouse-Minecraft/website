@@ -7,11 +7,21 @@ use App\Notifications\BackupCreatedNotification;
 use App\Notifications\BackupFailedNotification;
 use App\Services\BackupService;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Process;
 
 uses()->group('backup', 'commands');
 
+// pg_dump on ubuntu-latest (pg client 16) fails against the CI PostgreSQL 17 service.
+// Fake all process calls to return a synthetic SQL dump so the tests focus on command
+// behaviour (file creation, notifications, maintenance mode) rather than the dump binary.
+beforeEach(function () {
+    if (config('database.default') === 'pgsql') {
+        Process::fake(fn () => Process::result('-- PostgreSQL SQL dump'));
+    }
+});
+
 afterEach(function () {
-    foreach (glob(storage_path('app/backups/*.sql.gz')) as $file) {
+    foreach ((glob(storage_path('app/backups/*.sql.gz')) ?: []) as $file) {
         @unlink($file);
     }
 });
