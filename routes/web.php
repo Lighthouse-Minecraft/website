@@ -257,6 +257,14 @@ Route::prefix('finance')
         Volt::route('/reports', 'finance.reports')->name('reports.index');
     });
 
+// Backup Management Dashboard
+Route::prefix('backups')
+    ->name('backups.')
+    ->middleware(['auth', 'can:backup-manager'])
+    ->group(function () {
+        Volt::route('/', 'backup.dashboard')->name('index');
+    });
+
 // Staff Credential Vault
 Route::prefix('vault')
     ->name('vault.')
