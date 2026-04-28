@@ -285,7 +285,7 @@ new class extends Component
     }
 }; ?>
 
-<x-layouts.app>
+<div>
     <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <flux:heading size="xl">Backup Management</flux:heading>
         <flux:button href="{{ route('ready-room.index') }}" wire:navigate icon="arrow-left">
@@ -501,4 +501,4 @@ new class extends Component
             <flux:button variant="danger" wire:click="deleteS3Backup">Delete</flux:button>
         </div>
     </flux:modal>
-</x-layouts.app>
+</div>
