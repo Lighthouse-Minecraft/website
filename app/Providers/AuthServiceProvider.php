@@ -289,5 +289,9 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('rules.approve', function ($user) {
             return $user->hasRole('Rules - Approve');
         });
+
+        Gate::define('backup-manager', function ($user) {
+            return $user->hasRole('Backup Manager');
+        });
     }
 }
