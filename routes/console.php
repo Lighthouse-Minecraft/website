@@ -79,3 +79,8 @@ Schedule::job(new \App\Jobs\CheckRulesAgreementJob)
 Schedule::command('app:backup-create')
     ->dailyAt('03:00')
     ->runInBackground();
+
+// Clean up local backup files past the retention window daily at 4:00 AM
+Schedule::command('app:backup-cleanup')
+    ->dailyAt('04:00')
+    ->runInBackground();
