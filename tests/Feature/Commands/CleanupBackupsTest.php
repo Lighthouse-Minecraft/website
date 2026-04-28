@@ -76,7 +76,9 @@ it('the app:backup-cleanup command exits successfully', function () {
 });
 
 it('app:backup-cleanup is scheduled daily at 04:00', function () {
-    $this->artisan('schedule:list')
-        ->expectsOutputToContain('app:backup-cleanup')
-        ->expectsOutputToContain('0   4 * * *');
+    $events = collect(app(\Illuminate\Console\Scheduling\Schedule::class)->events())
+        ->filter(fn ($e) => str_contains($e->command ?? '', 'backup-cleanup'));
+
+    expect($events->isNotEmpty())->toBeTrue()
+        ->and($events->first()->expression)->toBe('0 4 * * *');
 });

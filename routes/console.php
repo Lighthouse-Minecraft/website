@@ -84,3 +84,8 @@ Schedule::command('app:backup-create')
 Schedule::command('app:backup-cleanup')
     ->dailyAt('04:00')
     ->runInBackground();
+
+// Push most recent local backup to S3 every 3 days at 3:30 AM
+Schedule::command('app:backup-push-s3')
+    ->cron('30 3 */3 * *')
+    ->runInBackground();
