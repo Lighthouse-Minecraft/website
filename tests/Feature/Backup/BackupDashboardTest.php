@@ -212,3 +212,65 @@ it('mount loads SiteConfig values into toggle properties', function () {
         ->assertSet('offlineDuringBackup', true)
         ->assertSet('offlineDuringRestore', false);
 });
+
+// ── S3 Panel ──────────────────────────────────────────────────────────────────
+
+it('dashboard shows S3 not configured when credentials are missing', function () {
+    config(['filesystems.disks.s3.key' => null]);
+
+    $user = User::factory()->withRole('Backup Manager')->create();
+
+    $this->actingAs($user)
+        ->get(route('backups.index'))
+        ->assertSee('S3 Not Configured');
+});
+
+it('dashboard shows S3 connected when S3 is reachable', function () {
+    Storage::fake('s3');
+    config(['filesystems.disks.s3.key' => 'fake-key', 'filesystems.disks.s3.bucket' => 'fake-bucket']);
+
+    $user = User::factory()->withRole('Backup Manager')->create();
+
+    $this->actingAs($user)
+        ->get(route('backups.index'))
+        ->assertSee('S3 Connected');
+});
+
+it('dashboard lists S3 backup files in the S3 panel', function () {
+    Storage::fake('s3');
+    config(['filesystems.disks.s3.key' => 'fake-key', 'filesystems.disks.s3.bucket' => 'fake-bucket']);
+    Storage::disk('s3')->put('backups/backup_2026-04-01_03-00-00_sqlite.sql.gz', 'gz content');
+
+    $user = User::factory()->withRole('Backup Manager')->create();
+
+    $this->actingAs($user)
+        ->get(route('backups.index'))
+        ->assertSee('backup_2026-04-01_03-00-00_sqlite.sql.gz');
+});
+
+it('deleteS3Backup removes file from S3', function () {
+    Storage::fake('s3');
+    config(['filesystems.disks.s3.key' => 'fake-key', 'filesystems.disks.s3.bucket' => 'fake-bucket']);
+    Storage::disk('s3')->put('backups/backup_2026-04-01_03-00-00_sqlite.sql.gz', 'gz content');
+
+    $user = User::factory()->withRole('Backup Manager')->create();
+
+    Volt::actingAs($user)
+        ->test('backup.dashboard')
+        ->set('deleteS3Target', 'backup_2026-04-01_03-00-00_sqlite.sql.gz')
+        ->call('deleteS3Backup');
+
+    Storage::disk('s3')->assertMissing('backups/backup_2026-04-01_03-00-00_sqlite.sql.gz');
+});
+
+// ── Storage Stats ─────────────────────────────────────────────────────────────
+
+it('dashboard storage stats panel shows known asset directories', function () {
+    $user = User::factory()->withRole('Backup Manager')->create();
+
+    $this->actingAs($user)
+        ->get(route('backups.index'))
+        ->assertSee('Staff Photos')
+        ->assertSee('Message Images')
+        ->assertSee('Community Stories');
+});

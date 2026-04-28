@@ -140,3 +140,53 @@ it('app:backup-push-s3 is scheduled every 3 days at 03:30', function () {
     expect($events->isNotEmpty())->toBeTrue()
         ->and($events->first()->expression)->toBe('30 3 */3 * *');
 });
+
+// ── isConfigured / isConnected ────────────────────────────────────────────────
+
+it('isConfigured returns true when S3 credentials are set', function () {
+    config(['filesystems.disks.s3.key' => 'fake-key', 'filesystems.disks.s3.bucket' => 'fake-bucket']);
+
+    expect(app(BackupStorageService::class)->isConfigured())->toBeTrue();
+});
+
+it('isConfigured returns false when S3 key is missing', function () {
+    config(['filesystems.disks.s3.key' => null, 'filesystems.disks.s3.bucket' => 'fake-bucket']);
+
+    expect(app(BackupStorageService::class)->isConfigured())->toBeFalse();
+});
+
+it('isConnected returns true when S3 is reachable', function () {
+    config(['filesystems.disks.s3.key' => 'fake-key', 'filesystems.disks.s3.bucket' => 'fake-bucket']);
+
+    // Storage::fake('s3') is set up in beforeEach; a successful list() call means connected
+    expect(app(BackupStorageService::class)->isConnected())->toBeTrue();
+});
+
+it('isConnected returns false when S3 is not configured', function () {
+    config(['filesystems.disks.s3.key' => null, 'filesystems.disks.s3.bucket' => null]);
+
+    expect(app(BackupStorageService::class)->isConnected())->toBeFalse();
+});
+
+// ── listWithMetadata ──────────────────────────────────────────────────────────
+
+it('listWithMetadata returns filename, size, and date for each S3 backup', function () {
+    Storage::disk('s3')->put('backups/backup_2026-03-01_03-00-00_sqlite.sql.gz', 'gz content');
+
+    $list = app(BackupStorageService::class)->listWithMetadata();
+
+    expect($list)->toHaveCount(1)
+        ->and($list[0]['filename'])->toBe('backup_2026-03-01_03-00-00_sqlite.sql.gz')
+        ->and($list[0]['key'])->toBe('backups/backup_2026-03-01_03-00-00_sqlite.sql.gz')
+        ->and($list[0])->toHaveKeys(['filename', 'key', 'size', 'date']);
+});
+
+it('listWithMetadata returns newest-first ordering', function () {
+    Storage::disk('s3')->put('backups/backup_2026-01-01_03-00-00_sqlite.sql.gz', 'a');
+    Storage::disk('s3')->put('backups/backup_2026-03-01_03-00-00_sqlite.sql.gz', 'b');
+
+    $list = app(BackupStorageService::class)->listWithMetadata();
+
+    expect($list[0]['filename'])->toContain('2026-03-01')
+        ->and($list[1]['filename'])->toContain('2026-01-01');
+});

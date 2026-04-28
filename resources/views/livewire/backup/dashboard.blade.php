@@ -3,7 +3,9 @@
 use App\Jobs\CreateBackupJob;
 use App\Jobs\RestoreBackupJob;
 use App\Models\SiteConfig;
+use App\Services\BackupStorageService;
 use Flux\Flux;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Volt\Component;
 use Livewire\WithFileUploads;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -12,8 +14,9 @@ new class extends Component
 {
     use WithFileUploads;
 
-    public ?string $deleteTarget  = null;
-    public ?string $restoreTarget = null;
+    public ?string $deleteTarget    = null;
+    public ?string $restoreTarget   = null;
+    public ?string $deleteS3Target  = null;
 
     // Settings
     public bool $offlineDuringBackup  = false;
@@ -48,6 +51,65 @@ new class extends Component
                 'db_type'  => $m[1] ?? 'unknown',
             ];
         }, $files);
+    }
+
+    #[\Livewire\Attributes\Computed]
+    public function s3Configured(): bool
+    {
+        return app(BackupStorageService::class)->isConfigured();
+    }
+
+    #[\Livewire\Attributes\Computed]
+    public function s3Connected(): bool
+    {
+        return app(BackupStorageService::class)->isConnected();
+    }
+
+    #[\Livewire\Attributes\Computed]
+    public function s3Backups(): array
+    {
+        if (! $this->s3Connected) {
+            return [];
+        }
+
+        return app(BackupStorageService::class)->listWithMetadata();
+    }
+
+    #[\Livewire\Attributes\Computed]
+    public function storageStats(): array
+    {
+        $publicDisk = config('filesystems.public_disk', 'public');
+
+        $directories = [
+            'Staff Photos'        => 'staff-photos',
+            'Board Member Photos' => 'board-member-photos',
+            'Community Stories'   => 'community-stories',
+            'Message Images'      => 'message-images',
+            'Report Evidence'     => 'report-evidence',
+            'Blog Images'         => 'blog/images',
+            'Blog Category Hero'  => 'blog/category-hero',
+        ];
+
+        $stats = [];
+
+        foreach ($directories as $label => $dir) {
+            $files     = Storage::disk($publicDisk)->allFiles($dir);
+            $count     = count($files);
+            $totalSize = 0;
+
+            foreach ($files as $file) {
+                $totalSize += Storage::disk($publicDisk)->size($file);
+            }
+
+            $stats[] = [
+                'label'      => $label,
+                'directory'  => $dir,
+                'count'      => $count,
+                'total_size' => $this->formatBytes($totalSize),
+            ];
+        }
+
+        return $stats;
     }
 
     public function createBackup(): void
@@ -93,6 +155,22 @@ new class extends Component
 
         return response()->streamDownload(function () use ($path) {
             readfile($path);
+        }, $filename, ['Content-Type' => 'application/gzip']);
+    }
+
+    public function downloadFromS3(string $filename): StreamedResponse
+    {
+        $this->authorize('backup-manager');
+
+        $key = "backups/{$filename}";
+
+        return response()->streamDownload(function () use ($key) {
+            $stream = Storage::disk('s3')->readStream($key);
+            if ($stream === null) {
+                abort(404);
+            }
+            fpassthru($stream);
+            fclose($stream);
         }, $filename, ['Content-Type' => 'application/gzip']);
     }
 
@@ -142,6 +220,28 @@ new class extends Component
         Flux::modal('confirm-delete')->close();
         Flux::toast('Backup deleted.', 'Done', variant: 'success');
         unset($this->localBackups);
+    }
+
+    public function confirmDeleteS3(string $filename): void
+    {
+        $this->deleteS3Target = $filename;
+        Flux::modal('confirm-delete-s3')->show();
+    }
+
+    public function deleteS3Backup(): void
+    {
+        $this->authorize('backup-manager');
+
+        if ($this->deleteS3Target === null) {
+            return;
+        }
+
+        app(BackupStorageService::class)->delete("backups/{$this->deleteS3Target}");
+
+        $this->deleteS3Target = null;
+        Flux::modal('confirm-delete-s3')->close();
+        Flux::toast('S3 backup deleted.', 'Done', variant: 'success');
+        unset($this->s3Backups);
     }
 
     public function updatedOfflineDuringBackup(bool $value): void
@@ -227,6 +327,58 @@ new class extends Component
         @endif
     </flux:card>
 
+    {{-- S3 Backups Panel --}}
+    <flux:card class="mb-6">
+        <div class="flex items-center justify-between mb-4">
+            <flux:heading size="lg">S3 Backups</flux:heading>
+            @if ($this->s3Configured)
+                @if ($this->s3Connected)
+                    <flux:badge color="green" icon="check-circle">S3 Connected</flux:badge>
+                @else
+                    <flux:badge color="red" icon="exclamation-triangle">S3 Unreachable</flux:badge>
+                @endif
+            @else
+                <flux:badge color="zinc" icon="exclamation-circle">S3 Not Configured</flux:badge>
+            @endif
+        </div>
+
+        @if (! $this->s3Configured)
+            <p class="text-sm text-zinc-500 dark:text-zinc-400">S3 is not configured. Set <code>AWS_ACCESS_KEY_ID</code> and <code>AWS_S3_BUCKET</code> to enable S3 backups.</p>
+        @elseif (! $this->s3Connected)
+            <p class="text-sm text-red-500">Unable to connect to S3. Check credentials and bucket configuration.</p>
+        @elseif (count($this->s3Backups) === 0)
+            <p class="text-sm text-zinc-500 dark:text-zinc-400">No S3 backups found.</p>
+        @else
+            <flux:table>
+                <flux:table.columns>
+                    <flux:table.column>Filename</flux:table.column>
+                    <flux:table.column>Size</flux:table.column>
+                    <flux:table.column>Stored</flux:table.column>
+                    <flux:table.column></flux:table.column>
+                </flux:table.columns>
+                <flux:table.rows>
+                    @foreach ($this->s3Backups as $backup)
+                        <flux:table.row wire:key="s3-{{ $backup['filename'] }}">
+                            <flux:table.cell class="font-mono text-sm">{{ $backup['filename'] }}</flux:table.cell>
+                            <flux:table.cell>{{ $backup['size'] }}</flux:table.cell>
+                            <flux:table.cell>{{ $backup['date'] }}</flux:table.cell>
+                            <flux:table.cell>
+                                <div class="flex gap-2">
+                                    <flux:button size="sm" icon="arrow-down-tray" wire:click="downloadFromS3('{{ $backup['filename'] }}')">
+                                        Download
+                                    </flux:button>
+                                    <flux:button size="sm" variant="danger" icon="trash" wire:click="confirmDeleteS3('{{ $backup['filename'] }}')">
+                                        Delete
+                                    </flux:button>
+                                </div>
+                            </flux:table.cell>
+                        </flux:table.row>
+                    @endforeach
+                </flux:table.rows>
+            </flux:table>
+        @endif
+    </flux:card>
+
     {{-- Upload Panel --}}
     <flux:card class="mb-6">
         <flux:heading size="lg" class="mb-4">Upload Backup</flux:heading>
@@ -246,6 +398,30 @@ new class extends Component
                 Upload
             </flux:button>
         </form>
+    </flux:card>
+
+    {{-- Storage Stats Panel --}}
+    <flux:card class="mb-6">
+        <flux:heading size="lg" class="mb-4">File Asset Storage</flux:heading>
+        <p class="text-sm text-zinc-500 dark:text-zinc-400 mb-4">File counts and sizes for each public asset directory.</p>
+        <flux:table>
+            <flux:table.columns>
+                <flux:table.column>Directory</flux:table.column>
+                <flux:table.column>Path</flux:table.column>
+                <flux:table.column>Files</flux:table.column>
+                <flux:table.column>Total Size</flux:table.column>
+            </flux:table.columns>
+            <flux:table.rows>
+                @foreach ($this->storageStats as $stat)
+                    <flux:table.row wire:key="stat-{{ $stat['directory'] }}">
+                        <flux:table.cell>{{ $stat['label'] }}</flux:table.cell>
+                        <flux:table.cell class="font-mono text-sm text-zinc-500">{{ $stat['directory'] }}</flux:table.cell>
+                        <flux:table.cell>{{ number_format($stat['count']) }}</flux:table.cell>
+                        <flux:table.cell>{{ $stat['total_size'] }}</flux:table.cell>
+                    </flux:table.row>
+                @endforeach
+            </flux:table.rows>
+        </flux:table>
     </flux:card>
 
     {{-- Settings Panel --}}
@@ -294,6 +470,20 @@ new class extends Component
         <div class="mt-4 flex justify-end gap-2">
             <flux:button x-on:click="$flux.modal('confirm-delete').close()">Cancel</flux:button>
             <flux:button variant="danger" wire:click="deleteBackup">Delete</flux:button>
+        </div>
+    </flux:modal>
+
+    {{-- S3 Delete Confirmation Modal --}}
+    <flux:modal name="confirm-delete-s3" class="w-full max-w-md">
+        <flux:heading size="lg">Delete S3 Backup</flux:heading>
+        <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+            Are you sure you want to permanently delete
+            <span class="font-mono font-semibold">{{ $deleteS3Target }}</span>
+            from S3? This cannot be undone.
+        </p>
+        <div class="mt-4 flex justify-end gap-2">
+            <flux:button x-on:click="$flux.modal('confirm-delete-s3').close()">Cancel</flux:button>
+            <flux:button variant="danger" wire:click="deleteS3Backup">Delete</flux:button>
         </div>
     </flux:modal>
 </x-layouts.app>

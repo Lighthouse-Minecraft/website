@@ -63,6 +63,48 @@ class BackupStorageService
     }
 
     /**
+     * Return true if S3 is configured with credentials and reachable.
+     */
+    public function isConfigured(): bool
+    {
+        $cfg = config('filesystems.disks.s3', []);
+
+        return ! empty($cfg['key']) && ! empty($cfg['bucket']);
+    }
+
+    public function isConnected(): bool
+    {
+        if (! $this->isConfigured()) {
+            return false;
+        }
+
+        try {
+            Storage::disk('s3')->files(self::PREFIX);
+
+            return true;
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    /**
+     * List S3 backups with metadata (filename, size, date, key).
+     *
+     * @return array<int, array{key: string, filename: string, size: string, date: string}>
+     */
+    public function listWithMetadata(): array
+    {
+        return array_map(function (string $key) {
+            return [
+                'key' => $key,
+                'filename' => basename($key),
+                'size' => $this->formatBytes(Storage::disk('s3')->size($key)),
+                'date' => Carbon::createFromTimestamp(Storage::disk('s3')->lastModified($key))->format('Y-m-d H:i'),
+            ];
+        }, $this->list());
+    }
+
+    /**
      * Parse the timestamp embedded in a backup filename.
      * Filename format: backups/backup_YYYY-MM-DD_HH-MM-SS_<type>.sql.gz
      */
@@ -75,5 +117,18 @@ class BackupStorageService
         }
 
         return Carbon::createFromFormat('Y-m-d_H-i-s', $m[1]);
+    }
+
+    private function formatBytes(int $bytes): string
+    {
+        if ($bytes >= 1_048_576) {
+            return number_format($bytes / 1_048_576, 1).' MB';
+        }
+
+        if ($bytes >= 1_024) {
+            return number_format($bytes / 1_024, 1).' KB';
+        }
+
+        return $bytes.' B';
     }
 }
