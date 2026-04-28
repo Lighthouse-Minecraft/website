@@ -119,7 +119,7 @@ new class extends Component
                 ->value('total');
 
             $data[] = [
-                'month' => $month->format('M Y'),
+                'month' => $start,
                 'income' => round($income / 100, 2),
                 'expense' => round($expense / 100, 2),
             ];
@@ -310,11 +310,11 @@ new class extends Component
         <flux:heading size="md" class="mb-4">6-Month Trend</flux:heading>
         <flux:chart :value="$this->sixMonthTrend" class="aspect-[3/1]">
             <flux:chart.svg gutter="8 8 28 8">
-                <flux:chart.axis axis="x" field="month">
+                <flux:chart.axis axis="x" field="month" :format="['month' => 'short', 'year' => 'numeric']">
                     <flux:chart.axis.tick class="text-zinc-400 text-xs" />
                     <flux:chart.axis.line class="text-zinc-600" />
                 </flux:chart.axis>
-                <flux:chart.axis axis="y">
+                <flux:chart.axis axis="y" tick-start="0">
                     <flux:chart.axis.grid class="text-zinc-700" />
                     <flux:chart.axis.tick class="text-zinc-400 text-xs" />
                 </flux:chart.axis>
@@ -325,7 +325,7 @@ new class extends Component
                 <flux:chart.cursor />
             </flux:chart.svg>
             <flux:chart.tooltip>
-                <flux:chart.tooltip.heading field="month" />
+                <flux:chart.tooltip.heading field="month" :format="['month' => 'short', 'year' => 'numeric']" />
                 <flux:chart.tooltip.value field="income" label="Income" />
                 <flux:chart.tooltip.value field="expense" label="Expenses" />
             </flux:chart.tooltip>

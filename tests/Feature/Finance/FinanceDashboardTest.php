@@ -242,3 +242,120 @@ it('pending drafts count matches draft journal entries', function () {
 
     expect($component->get('pendingDrafts'))->toBe($initialCount + 1);
 });
+
+// == 6-month trend ==
+
+it('six month trend includes income and expense from previous months', function () {
+    $user = User::factory()->withRole('Finance - Record')->create();
+
+    $threeMonthsAgo = now()->startOfMonth()->subMonths(3);
+
+    $period = FinancialPeriod::factory()->create([
+        'status' => 'open',
+        'fiscal_year' => $threeMonthsAgo->year,
+        'month_number' => $threeMonthsAgo->month,
+        'start_date' => $threeMonthsAgo->copy()->startOfMonth()->toDateString(),
+        'end_date' => $threeMonthsAgo->copy()->endOfMonth()->toDateString(),
+    ]);
+
+    $bank = FinancialAccount::factory()->create([
+        'type' => 'asset',
+        'normal_balance' => 'debit',
+        'is_bank_account' => true,
+        'is_active' => true,
+    ]);
+    $revenue = FinancialAccount::factory()->create(['type' => 'revenue', 'normal_balance' => 'credit']);
+    $expense = FinancialAccount::factory()->create(['type' => 'expense', 'normal_balance' => 'debit']);
+
+    CreateJournalEntry::run(
+        user: $user,
+        type: 'income',
+        periodId: $period->id,
+        date: $threeMonthsAgo->copy()->day(15)->toDateString(),
+        description: 'Past income',
+        amountCents: 42000,
+        primaryAccountId: $revenue->id,
+        bankAccountId: $bank->id,
+        status: 'posted',
+    );
+
+    CreateJournalEntry::run(
+        user: $user,
+        type: 'expense',
+        periodId: $period->id,
+        date: $threeMonthsAgo->copy()->day(20)->toDateString(),
+        description: 'Past expense',
+        amountCents: 17000,
+        primaryAccountId: $expense->id,
+        bankAccountId: $bank->id,
+        status: 'posted',
+    );
+
+    $component = Volt::actingAs($user)->test('finance.dashboard');
+    $trend = $component->get('sixMonthTrend');
+
+    expect($trend)->toHaveCount(6);
+
+    $monthKey = $threeMonthsAgo->copy()->startOfMonth()->toDateString();
+    $monthRow = collect($trend)->firstWhere('month', $monthKey);
+
+    expect($monthRow)->not->toBeNull("Trend should include row for {$monthKey}");
+    expect($monthRow['income'])->toBe(420.0);
+    expect($monthRow['expense'])->toBe(170.0);
+});
+
+it('six month trend month labels are unique across all six months', function () {
+    $user = User::factory()->withRole('Finance - View')->create();
+
+    $component = Volt::actingAs($user)->test('finance.dashboard');
+    $trend = $component->get('sixMonthTrend');
+
+    expect($trend)->toHaveCount(6);
+
+    $months = collect($trend)->pluck('month')->all();
+    expect(array_unique($months))->toHaveCount(6, 'All 6 month labels should be unique. Got: ' . implode(', ', $months));
+});
+
+it('six month trend includes data from each of the past six months when entries exist', function () {
+    $user = User::factory()->withRole('Finance - Record')->create();
+
+    $bank = FinancialAccount::factory()->create([
+        'type' => 'asset',
+        'normal_balance' => 'debit',
+        'is_bank_account' => true,
+        'is_active' => true,
+    ]);
+    $revenue = FinancialAccount::factory()->create(['type' => 'revenue', 'normal_balance' => 'credit']);
+
+    for ($i = 5; $i >= 0; $i--) {
+        $month = now()->startOfMonth()->subMonths($i);
+        $period = FinancialPeriod::factory()->create([
+            'status' => 'open',
+            'fiscal_year' => $month->year,
+            'month_number' => $month->month,
+            'start_date' => $month->copy()->startOfMonth()->toDateString(),
+            'end_date' => $month->copy()->endOfMonth()->toDateString(),
+        ]);
+
+        CreateJournalEntry::run(
+            user: $user,
+            type: 'income',
+            periodId: $period->id,
+            date: $month->copy()->day(15)->toDateString(),
+            description: "Month {$i} income",
+            amountCents: 10000 + $i * 1000,
+            primaryAccountId: $revenue->id,
+            bankAccountId: $bank->id,
+            status: 'posted',
+        );
+    }
+
+    $component = Volt::actingAs($user)->test('finance.dashboard');
+    $trend = $component->get('sixMonthTrend');
+
+    expect($trend)->toHaveCount(6);
+
+    foreach ($trend as $row) {
+        expect($row['income'])->toBeGreaterThan(0, "Month {$row['month']} should have income > 0");
+    }
+});
