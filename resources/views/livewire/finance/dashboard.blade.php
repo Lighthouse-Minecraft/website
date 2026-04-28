@@ -104,6 +104,7 @@ new class extends Component
                 ->join('financial_journal_entries as je', 'je.id', '=', 'jel.journal_entry_id')
                 ->join('financial_accounts as fa', 'fa.id', '=', 'jel.account_id')
                 ->where('je.status', 'posted')
+                ->whereNot('je.entry_type', 'closing')
                 ->where('fa.type', 'revenue')
                 ->whereBetween('je.date', [$start, $end])
                 ->selectRaw('COALESCE(SUM(jel.credit) - SUM(jel.debit), 0) as total')
@@ -113,6 +114,7 @@ new class extends Component
                 ->join('financial_journal_entries as je', 'je.id', '=', 'jel.journal_entry_id')
                 ->join('financial_accounts as fa', 'fa.id', '=', 'jel.account_id')
                 ->where('je.status', 'posted')
+                ->whereNot('je.entry_type', 'closing')
                 ->where('fa.type', 'expense')
                 ->whereBetween('je.date', [$start, $end])
                 ->selectRaw('COALESCE(SUM(jel.debit) - SUM(jel.credit), 0) as total')
@@ -310,7 +312,7 @@ new class extends Component
         <flux:heading size="md" class="mb-4">6-Month Trend</flux:heading>
         <flux:chart :value="$this->sixMonthTrend" class="aspect-[3/1]">
             <flux:chart.svg gutter="8 8 28 8">
-                <flux:chart.axis axis="x" field="month" :format="['month' => 'short', 'year' => 'numeric']">
+                <flux:chart.axis axis="x" field="month" interval="month" :format="['month' => 'short', 'year' => 'numeric']">
                     <flux:chart.axis.tick class="text-zinc-400 text-xs" />
                     <flux:chart.axis.line class="text-zinc-600" />
                 </flux:chart.axis>
