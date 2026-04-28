@@ -1,38 +1,51 @@
 <?php
 
 use App\Jobs\CreateBackupJob;
+use App\Jobs\RestoreBackupJob;
+use App\Models\SiteConfig;
 use Flux\Flux;
 use Livewire\Volt\Component;
+use Livewire\WithFileUploads;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 new class extends Component
 {
-    public ?string $deleteTarget = null;
+    use WithFileUploads;
+
+    public ?string $deleteTarget  = null;
+    public ?string $restoreTarget = null;
+
+    // Settings
+    public bool $offlineDuringBackup  = false;
+    public bool $offlineDuringRestore = true;
+
+    // Upload
+    public $uploadFile = null;
 
     public function mount(): void
     {
         $this->authorize('backup-manager');
+        $this->offlineDuringBackup  = SiteConfig::getValue('backup.offline_during_backup', 'false') === 'true';
+        $this->offlineDuringRestore = SiteConfig::getValue('backup.offline_during_restore', 'true') === 'true';
     }
 
     #[\Livewire\Attributes\Computed]
     public function localBackups(): array
     {
-        $dir = storage_path('app/backups');
+        $dir   = storage_path('app/backups');
         $files = glob("{$dir}/*.sql.gz") ?: [];
 
         usort($files, fn ($a, $b) => filemtime($b) - filemtime($a));
 
         return array_map(function ($path) {
             $filename = basename($path);
-
             preg_match('/_(pgsql|mysql|sqlite)\.sql\.gz$/', $filename, $m);
-            $dbType = $m[1] ?? 'unknown';
 
             return [
                 'filename' => $filename,
                 'size'     => $this->formatBytes(filesize($path)),
                 'date'     => \Carbon\Carbon::createFromTimestamp(filemtime($path))->format('Y-m-d H:i'),
-                'db_type'  => $dbType,
+                'db_type'  => $m[1] ?? 'unknown',
             ];
         }, $files);
     }
@@ -44,17 +57,66 @@ new class extends Component
         Flux::toast('Backup job queued.', 'Success', variant: 'success');
     }
 
+    public function uploadBackup(): void
+    {
+        $this->authorize('backup-manager');
+
+        $this->validate([
+            'uploadFile' => ['required', 'file', 'mimes:gz', 'max:524288'], // 512 MB
+        ]);
+
+        $originalName = $this->uploadFile->getClientOriginalName();
+
+        if (! str_ends_with($originalName, '.sql.gz')) {
+            $this->addError('uploadFile', 'File must be a .sql.gz backup file.');
+
+            return;
+        }
+
+        $dir = storage_path('app/backups');
+        if (! is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+
+        $this->uploadFile->storeAs('backups', $originalName, 'local');
+        $this->uploadFile = null;
+        unset($this->localBackups);
+        Flux::toast("Uploaded {$originalName}.", 'Done', variant: 'success');
+    }
+
     public function download(string $filename): StreamedResponse
     {
         $this->authorize('backup-manager');
 
         $path = storage_path("app/backups/{$filename}");
-
         abort_if(! file_exists($path), 404);
 
         return response()->streamDownload(function () use ($path) {
             readfile($path);
         }, $filename, ['Content-Type' => 'application/gzip']);
+    }
+
+    public function confirmRestore(string $filename): void
+    {
+        $this->restoreTarget = $filename;
+        Flux::modal('confirm-restore')->show();
+    }
+
+    public function restoreBackup(): void
+    {
+        $this->authorize('backup-manager');
+
+        if ($this->restoreTarget === null) {
+            return;
+        }
+
+        $path = storage_path("app/backups/{$this->restoreTarget}");
+        abort_if(! file_exists($path), 404);
+
+        RestoreBackupJob::dispatch($path);
+        $this->restoreTarget = null;
+        Flux::modal('confirm-restore')->close();
+        Flux::toast('Restore job queued.', 'Success', variant: 'success');
     }
 
     public function confirmDelete(string $filename): void
@@ -72,7 +134,6 @@ new class extends Component
         }
 
         $path = storage_path("app/backups/{$this->deleteTarget}");
-
         if (file_exists($path)) {
             unlink($path);
         }
@@ -81,6 +142,18 @@ new class extends Component
         Flux::modal('confirm-delete')->close();
         Flux::toast('Backup deleted.', 'Done', variant: 'success');
         unset($this->localBackups);
+    }
+
+    public function updatedOfflineDuringBackup(bool $value): void
+    {
+        $this->authorize('backup-manager');
+        SiteConfig::setValue('backup.offline_during_backup', $value ? 'true' : 'false');
+    }
+
+    public function updatedOfflineDuringRestore(bool $value): void
+    {
+        $this->authorize('backup-manager');
+        SiteConfig::setValue('backup.offline_during_restore', $value ? 'true' : 'false');
     }
 
     private function formatBytes(int $bytes): string
@@ -139,6 +212,9 @@ new class extends Component
                                     <flux:button size="sm" icon="arrow-down-tray" wire:click="download('{{ $backup['filename'] }}')">
                                         Download
                                     </flux:button>
+                                    <flux:button size="sm" variant="primary" icon="arrow-path" wire:click="confirmRestore('{{ $backup['filename'] }}')">
+                                        Restore
+                                    </flux:button>
                                     <flux:button size="sm" variant="danger" icon="trash" wire:click="confirmDelete('{{ $backup['filename'] }}')">
                                         Delete
                                     </flux:button>
@@ -150,6 +226,62 @@ new class extends Component
             </flux:table>
         @endif
     </flux:card>
+
+    {{-- Upload Panel --}}
+    <flux:card class="mb-6">
+        <flux:heading size="lg" class="mb-4">Upload Backup</flux:heading>
+        <p class="text-sm text-zinc-500 dark:text-zinc-400 mb-4">
+            Upload a <code>.sql.gz</code> backup file from another server.
+            For files larger than the PHP upload limit, use SCP to place the file directly
+            in <code>storage/app/backups/</code>.
+        </p>
+        <form wire:submit="uploadBackup" class="flex items-end gap-3">
+            <div class="flex-1">
+                <flux:input type="file" wire:model="uploadFile" accept=".gz" />
+                @error('uploadFile')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+            <flux:button type="submit" variant="primary" icon="arrow-up-tray">
+                Upload
+            </flux:button>
+        </form>
+    </flux:card>
+
+    {{-- Settings Panel --}}
+    <flux:card>
+        <flux:heading size="lg" class="mb-4">Settings</flux:heading>
+        <div class="space-y-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="font-medium">Take site offline during backup</p>
+                    <p class="text-sm text-zinc-500 dark:text-zinc-400">Puts the site in maintenance mode while a backup is running.</p>
+                </div>
+                <flux:switch wire:model.live="offlineDuringBackup" />
+            </div>
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="font-medium">Take site offline during restore</p>
+                    <p class="text-sm text-zinc-500 dark:text-zinc-400">Puts the site in maintenance mode while a restore is running.</p>
+                </div>
+                <flux:switch wire:model.live="offlineDuringRestore" />
+            </div>
+        </div>
+    </flux:card>
+
+    {{-- Restore Confirmation Modal --}}
+    <flux:modal name="confirm-restore" class="w-full max-w-md">
+        <flux:heading size="lg">Restore Database</flux:heading>
+        <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+            Are you sure you want to restore from
+            <span class="font-mono font-semibold">{{ $restoreTarget }}</span>?
+            This will replace the current database contents.
+        </p>
+        <div class="mt-4 flex justify-end gap-2">
+            <flux:button x-on:click="$flux.modal('confirm-restore').close()">Cancel</flux:button>
+            <flux:button variant="danger" wire:click="restoreBackup">Restore</flux:button>
+        </div>
+    </flux:modal>
 
     {{-- Delete Confirmation Modal --}}
     <flux:modal name="confirm-delete" class="w-full max-w-md">

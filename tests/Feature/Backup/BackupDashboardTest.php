@@ -3,8 +3,12 @@
 declare(strict_types=1);
 
 use App\Jobs\CreateBackupJob;
+use App\Jobs\RestoreBackupJob;
+use App\Models\SiteConfig;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Volt\Volt;
 
 uses()->group('backup', 'dashboard');
@@ -112,4 +116,99 @@ it('non-backup-manager is blocked at the route level', function () {
     $this->actingAs($user)
         ->get(route('backups.index'))
         ->assertForbidden();
+});
+
+// ── Restore ───────────────────────────────────────────────────────────────────
+
+it('restore action dispatches RestoreBackupJob', function () {
+    Queue::fake();
+    $user = User::factory()->withRole('Backup Manager')->create();
+    makeLocalBackup('test_dash_restore_2026-04-01_03-00-00_sqlite.sql.gz');
+
+    Volt::actingAs($user)
+        ->test('backup.dashboard')
+        ->set('restoreTarget', 'test_dash_restore_2026-04-01_03-00-00_sqlite.sql.gz')
+        ->call('restoreBackup');
+
+    Queue::assertPushed(RestoreBackupJob::class);
+});
+
+it('confirmRestore sets restoreTarget', function () {
+    $user = User::factory()->withRole('Backup Manager')->create();
+    makeLocalBackup('test_dash_confirm_2026-04-01_03-00-00_sqlite.sql.gz');
+
+    Volt::actingAs($user)
+        ->test('backup.dashboard')
+        ->call('confirmRestore', 'test_dash_confirm_2026-04-01_03-00-00_sqlite.sql.gz')
+        ->assertSet('restoreTarget', 'test_dash_confirm_2026-04-01_03-00-00_sqlite.sql.gz');
+});
+
+// ── Upload ────────────────────────────────────────────────────────────────────
+
+it('uploading a valid .sql.gz file places it in storage', function () {
+    Storage::fake('local');
+
+    $user = User::factory()->withRole('Backup Manager')->create();
+
+    $gzContent = gzencode('-- SQL dump');
+    $file = UploadedFile::fake()->createWithContent('test_dash_upload_2026-04-01_03-00-00_sqlite.sql.gz', $gzContent);
+
+    Volt::actingAs($user)
+        ->test('backup.dashboard')
+        ->set('uploadFile', $file)
+        ->call('uploadBackup')
+        ->assertHasNoErrors();
+
+    Storage::disk('local')->assertExists('backups/test_dash_upload_2026-04-01_03-00-00_sqlite.sql.gz');
+});
+
+it('uploading a non-.sql.gz file is rejected', function () {
+    $user = User::factory()->withRole('Backup Manager')->create();
+
+    $gzContent = gzencode('bad file');
+    $file = UploadedFile::fake()->createWithContent('test_dash_upload_bad.tar.gz', $gzContent);
+
+    Volt::actingAs($user)
+        ->test('backup.dashboard')
+        ->set('uploadFile', $file)
+        ->call('uploadBackup')
+        ->assertHasErrors(['uploadFile']);
+});
+
+// ── Settings ──────────────────────────────────────────────────────────────────
+
+it('toggling offlineDuringBackup persists to SiteConfig', function () {
+    $user = User::factory()->withRole('Backup Manager')->create();
+
+    SiteConfig::setValue('backup.offline_during_backup', 'false');
+
+    Volt::actingAs($user)
+        ->test('backup.dashboard')
+        ->set('offlineDuringBackup', true);
+
+    expect(SiteConfig::getValue('backup.offline_during_backup', 'false'))->toBe('true');
+});
+
+it('toggling offlineDuringRestore persists to SiteConfig', function () {
+    $user = User::factory()->withRole('Backup Manager')->create();
+
+    SiteConfig::setValue('backup.offline_during_restore', 'true');
+
+    Volt::actingAs($user)
+        ->test('backup.dashboard')
+        ->set('offlineDuringRestore', false);
+
+    expect(SiteConfig::getValue('backup.offline_during_restore', 'true'))->toBe('false');
+});
+
+it('mount loads SiteConfig values into toggle properties', function () {
+    $user = User::factory()->withRole('Backup Manager')->create();
+
+    SiteConfig::setValue('backup.offline_during_backup', 'true');
+    SiteConfig::setValue('backup.offline_during_restore', 'false');
+
+    Volt::actingAs($user)
+        ->test('backup.dashboard')
+        ->assertSet('offlineDuringBackup', true)
+        ->assertSet('offlineDuringRestore', false);
 });
