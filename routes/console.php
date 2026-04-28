@@ -74,3 +74,8 @@ Schedule::job(new \App\Jobs\CheckRulesAgreementJob)
     ->dailyAt('07:00')
     ->withoutOverlapping(10)
     ->onOneServer();
+
+// Create daily database backup at 3:00 AM
+Schedule::command('app:backup-create')
+    ->dailyAt('03:00')
+    ->runInBackground();
