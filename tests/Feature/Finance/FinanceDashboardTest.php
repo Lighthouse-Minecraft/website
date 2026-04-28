@@ -313,7 +313,7 @@ it('six month trend month labels are unique across all six months', function () 
     expect($trend)->toHaveCount(6);
 
     $months = collect($trend)->pluck('month')->all();
-    expect(array_unique($months))->toHaveCount(6, 'All 6 month labels should be unique. Got: ' . implode(', ', $months));
+    expect(array_unique($months))->toHaveCount(6, 'All 6 month labels should be unique. Got: '.implode(', ', $months));
 });
 
 it('six month trend includes data from each of the past six months when entries exist', function () {
