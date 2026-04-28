@@ -359,3 +359,97 @@ it('six month trend includes data from each of the past six months when entries 
         expect($row['income'])->toBeGreaterThan(0, "Month {$row['month']} should have income > 0");
     }
 });
+
+it('six month trend excludes closing entries so closed periods show real income and expense', function () {
+    $user = User::factory()->withRole('Finance - Record')->create();
+
+    $twoMonthsAgo = now()->startOfMonth()->subMonths(2);
+
+    $period = FinancialPeriod::factory()->create([
+        'status' => 'open',
+        'fiscal_year' => $twoMonthsAgo->year,
+        'month_number' => $twoMonthsAgo->month,
+        'start_date' => $twoMonthsAgo->copy()->startOfMonth()->toDateString(),
+        'end_date' => $twoMonthsAgo->copy()->endOfMonth()->toDateString(),
+    ]);
+
+    $bank = FinancialAccount::factory()->create([
+        'type' => 'asset',
+        'normal_balance' => 'debit',
+        'is_bank_account' => true,
+        'is_active' => true,
+    ]);
+    $revenue = FinancialAccount::factory()->create(['type' => 'revenue', 'normal_balance' => 'credit']);
+    $expense = FinancialAccount::factory()->create(['type' => 'expense', 'normal_balance' => 'debit']);
+    $netAssets = FinancialAccount::factory()->create(['type' => 'net_assets', 'normal_balance' => 'credit']);
+
+    // Normal posted income entry (created while period is open)
+    CreateJournalEntry::run(
+        user: $user,
+        type: 'income',
+        periodId: $period->id,
+        date: $twoMonthsAgo->copy()->day(10)->toDateString(),
+        description: 'Donation',
+        amountCents: 60000,
+        primaryAccountId: $revenue->id,
+        bankAccountId: $bank->id,
+        status: 'posted',
+    );
+
+    // Normal posted expense entry (created while period is open)
+    CreateJournalEntry::run(
+        user: $user,
+        type: 'expense',
+        periodId: $period->id,
+        date: $twoMonthsAgo->copy()->day(15)->toDateString(),
+        description: 'Supplies',
+        amountCents: 20000,
+        primaryAccountId: $expense->id,
+        bankAccountId: $bank->id,
+        status: 'posted',
+    );
+
+    // Simulate period close: mark closed and add closing entries directly
+    $period->update(['status' => 'closed']);
+
+    // Simulate closing entries: debit revenue to zero it out, credit net assets
+    $closingEntry = FinancialJournalEntry::create([
+        'period_id' => $period->id,
+        'date' => $twoMonthsAgo->copy()->endOfMonth()->toDateString(),
+        'description' => 'Closing entry — Revenue accounts',
+        'entry_type' => 'closing',
+        'status' => 'posted',
+        'posted_at' => now(),
+        'posted_by_id' => $user->id,
+        'created_by_id' => $user->id,
+    ]);
+    $closingEntry->lines()->createMany([
+        ['account_id' => $revenue->id, 'debit' => 60000, 'credit' => 0, 'memo' => 'Closing entry'],
+        ['account_id' => $netAssets->id, 'debit' => 0, 'credit' => 60000, 'memo' => 'Closing entry'],
+    ]);
+
+    $closingExpEntry = FinancialJournalEntry::create([
+        'period_id' => $period->id,
+        'date' => $twoMonthsAgo->copy()->endOfMonth()->toDateString(),
+        'description' => 'Closing entry — Expense accounts',
+        'entry_type' => 'closing',
+        'status' => 'posted',
+        'posted_at' => now(),
+        'posted_by_id' => $user->id,
+        'created_by_id' => $user->id,
+    ]);
+    $closingExpEntry->lines()->createMany([
+        ['account_id' => $netAssets->id, 'debit' => 20000, 'credit' => 0, 'memo' => 'Closing entry'],
+        ['account_id' => $expense->id, 'debit' => 0, 'credit' => 20000, 'memo' => 'Closing entry'],
+    ]);
+
+    $component = Volt::actingAs($user)->test('finance.dashboard');
+    $trend = $component->get('sixMonthTrend');
+
+    $monthKey = $twoMonthsAgo->copy()->startOfMonth()->toDateString();
+    $monthRow = collect($trend)->firstWhere('month', $monthKey);
+
+    expect($monthRow)->not->toBeNull();
+    expect($monthRow['income'])->toBe(600.0, 'Closing entries must not cancel out real income');
+    expect($monthRow['expense'])->toBe(200.0, 'Closing entries must not cancel out real expenses');
+});
