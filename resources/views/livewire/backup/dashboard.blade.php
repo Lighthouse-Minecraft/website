@@ -207,7 +207,16 @@ new class extends Component
             mkdir($dir, 0755, true);
         }
 
-        $this->uploadFile->storeAs('backups', $originalName, 'local');
+        $src  = $this->uploadFile->getRealPath();
+        $dest = "{$dir}/{$originalName}";
+
+        if (! copy($src, $dest)) {
+            $this->addError('uploadFile', 'Failed to save the uploaded file. Check storage permissions.');
+
+            return;
+        }
+
+        @chmod($dest, 0644);
         $this->uploadFile = null;
         unset($this->localBackups);
         Flux::toast("Uploaded {$originalName}.", 'Done', variant: 'success');

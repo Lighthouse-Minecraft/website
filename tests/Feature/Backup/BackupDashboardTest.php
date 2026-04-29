@@ -158,8 +158,6 @@ it('confirmRestore sets restoreTarget', function () {
 // ── Upload ────────────────────────────────────────────────────────────────────
 
 it('uploading a valid .sql.gz file places it in storage', function () {
-    Storage::fake('local');
-
     $user = User::factory()->withRole('Backup Manager')->create();
 
     $gzContent = gzencode('-- SQL dump');
@@ -171,7 +169,8 @@ it('uploading a valid .sql.gz file places it in storage', function () {
         ->call('uploadBackup')
         ->assertHasNoErrors();
 
-    Storage::disk('local')->assertExists('backups/test_dash_upload_2026-04-01_03-00-00_sqlite.sql.gz');
+    $dest = storage_path('app/backups/test_dash_upload_2026-04-01_03-00-00_sqlite.sql.gz');
+    expect(file_exists($dest))->toBeTrue();
 });
 
 it('uploading a non-.sql.gz file is rejected', function () {
