@@ -21,8 +21,9 @@ class BackupRetentionService
 
         foreach (glob("{$dir}/*.sql.gz") ?: [] as $file) {
             if (Carbon::createFromTimestamp(filemtime($file))->lt($cutoff)) {
-                @unlink($file);
-                $deleted[] = $file;
+                if (@unlink($file)) {
+                    $deleted[] = $file;
+                }
             }
         }
 
