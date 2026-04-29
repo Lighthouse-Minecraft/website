@@ -372,14 +372,29 @@ new class extends Component
         @if (count($this->localBackups) === 0)
             <p class="text-sm text-zinc-500 dark:text-zinc-400">No local backups found.</p>
             @if ($jobStatus['status'] === 'completed' && $jobStatus['filename'])
-                <div class="mt-3 rounded border border-yellow-300 bg-yellow-50 dark:bg-yellow-900/20 dark:border-yellow-700 p-3 text-sm space-y-1">
-                    <p class="font-medium text-yellow-800 dark:text-yellow-300">Backup was reported as completed but the file is not visible here.</p>
-                    <p class="text-yellow-700 dark:text-yellow-400">File created by worker: <code class="font-mono">{{ $jobStatus['full_path'] ?? 'unknown' }}</code></p>
-                    <p class="text-yellow-700 dark:text-yellow-400">Scanning for files in: <code class="font-mono">{{ $jobStatus['scan_dir'] }}</code></p>
-                    <p class="text-yellow-700 dark:text-yellow-400">Scan dir exists (web): <strong>{{ $jobStatus['scan_dir_exists'] ? 'Yes' : 'No — directory not visible to web process' }}</strong></p>
-                    <p class="text-yellow-700 dark:text-yellow-400">Files visible via scandir: <strong>{{ $jobStatus['scan_dir_contents'] }}</strong></p>
-                    <p class="text-yellow-700 dark:text-yellow-400">open_basedir: <code class="font-mono">{{ $jobStatus['open_basedir'] ?: '(not set)' }}</code></p>
-                </div>
+                @if (! $jobStatus['scan_dir_exists'])
+                    <div class="mt-3 rounded border border-yellow-300 bg-yellow-50 dark:bg-yellow-900/20 dark:border-yellow-700 p-3 text-sm space-y-2">
+                        <p class="font-medium text-yellow-800 dark:text-yellow-300">Local backup storage is not shared between the queue worker and web server.</p>
+                        <p class="text-yellow-700 dark:text-yellow-400">
+                            The worker successfully created <code class="font-mono">{{ $jobStatus['filename'] }}</code>, but the web process cannot see the
+                            <code class="font-mono">{{ $jobStatus['scan_dir'] }}</code> directory at all. This happens when the worker and web containers
+                            have separate filesystems (e.g. Docker containers without a shared storage volume).
+                        </p>
+                        <p class="text-yellow-700 dark:text-yellow-400">
+                            <strong>Fix:</strong> Mount the same volume for <code class="font-mono">storage/app</code> in both your web and worker containers.
+                            Until then, use <strong>S3 Backups</strong> — they are shared across all processes and already scheduled automatically.
+                        </p>
+                    </div>
+                @else
+                    <div class="mt-3 rounded border border-yellow-300 bg-yellow-50 dark:bg-yellow-900/20 dark:border-yellow-700 p-3 text-sm space-y-1">
+                        <p class="font-medium text-yellow-800 dark:text-yellow-300">Backup completed but file is not visible here.</p>
+                        <p class="text-yellow-700 dark:text-yellow-400">Worker path: <code class="font-mono">{{ $jobStatus['full_path'] ?? 'unknown' }}</code></p>
+                        <p class="text-yellow-700 dark:text-yellow-400">Files in scan dir: {{ $jobStatus['scan_dir_contents'] }}</p>
+                        @if ($jobStatus['open_basedir'])
+                            <p class="text-yellow-700 dark:text-yellow-400">open_basedir restriction: <code class="font-mono">{{ $jobStatus['open_basedir'] }}</code></p>
+                        @endif
+                    </div>
+                @endif
             @endif
         @else
             <flux:table>
