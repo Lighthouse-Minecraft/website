@@ -76,10 +76,12 @@ it('S3 retention keeps 2 most recent, 1 per week for 4 weeks, 1 per month for 3 
     $w3 = 'backups/backup_'.$now->copy()->subDays(17)->format('Y-m-d').'_03-00-00_sqlite.sql.gz';
     $w4 = 'backups/backup_'.$now->copy()->subDays(24)->format('Y-m-d').'_03-00-00_sqlite.sql.gz';
 
-    // Tier-3 targets: 1 per calendar month (1, 2, 3 months ago)
-    $m1 = 'backups/backup_'.$now->copy()->subMonths(1)->format('Y-m-d').'_03-00-00_sqlite.sql.gz';
-    $m2 = 'backups/backup_'.$now->copy()->subMonths(2)->format('Y-m-d').'_03-00-00_sqlite.sql.gz';
-    $m3 = 'backups/backup_'.$now->copy()->subMonths(3)->format('Y-m-d').'_03-00-00_sqlite.sql.gz';
+    // Tier-3 targets: 1 per calendar month (1, 2, 3 months ago).
+    // Anchor to the 1st of the current month to avoid date-of-month overflow
+    // (e.g. April 29 - 2 months naively = March 1, not February).
+    $m1 = 'backups/backup_'.$now->copy()->startOfMonth()->subMonths(1)->format('Y-m-d').'_03-00-00_sqlite.sql.gz';
+    $m2 = 'backups/backup_'.$now->copy()->startOfMonth()->subMonths(2)->format('Y-m-d').'_03-00-00_sqlite.sql.gz';
+    $m3 = 'backups/backup_'.$now->copy()->startOfMonth()->subMonths(3)->format('Y-m-d').'_03-00-00_sqlite.sql.gz';
 
     // Old file that should be deleted (5 months ago)
     $old = 'backups/backup_'.$now->copy()->subMonths(5)->format('Y-m-d').'_03-00-00_sqlite.sql.gz';

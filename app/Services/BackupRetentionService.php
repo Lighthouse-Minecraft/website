@@ -67,10 +67,13 @@ class BackupRetentionService
             }
         }
 
-        // Tier 3: 1 per calendar month for the past 3 months
+        // Tier 3: 1 per calendar month for the past 3 months.
+        // Anchor to the 1st of the current month before subtracting so that
+        // months with fewer days than today's date-of-month don't overflow
+        // into the following month (e.g. April 29 - 2 months = Feb 28, not Mar 1).
         for ($month = 1; $month <= 3; $month++) {
-            $ref = now()->subMonths($month);
-            $start = $ref->copy()->startOfMonth();
+            $ref = now()->startOfMonth()->subMonths($month);
+            $start = $ref->copy();
             $end = $ref->copy()->endOfMonth();
             $match = collect($conforming)->first(
                 fn ($k) => $storage->parseTimestamp($k)->between($start, $end)
