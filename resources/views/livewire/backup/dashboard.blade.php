@@ -14,12 +14,15 @@ new class extends Component
 {
     use WithFileUploads;
 
-    public ?string $deleteTarget    = null;
-    public ?string $restoreTarget   = null;
-    public ?string $deleteS3Target  = null;
+    public ?string $deleteTarget = null;
+
+    public ?string $restoreTarget = null;
+
+    public ?string $deleteS3Target = null;
 
     // Settings
-    public bool $offlineDuringBackup  = false;
+    public bool $offlineDuringBackup = false;
+
     public bool $offlineDuringRestore = true;
 
     // Upload
@@ -28,7 +31,7 @@ new class extends Component
     public function mount(): void
     {
         $this->authorize('backup-manager');
-        $this->offlineDuringBackup  = SiteConfig::getValue('backup.offline_during_backup', 'false') === 'true';
+        $this->offlineDuringBackup = SiteConfig::getValue('backup.offline_during_backup', 'false') === 'true';
         $this->offlineDuringRestore = SiteConfig::getValue('backup.offline_during_restore', 'true') === 'true';
     }
 
@@ -45,7 +48,7 @@ new class extends Component
     #[\Livewire\Attributes\Computed]
     public function localBackups(): array
     {
-        $dir   = storage_path('app/backups');
+        $dir = storage_path('app/backups');
         $files = glob("{$dir}/*.sql.gz") ?: [];
 
         usort($files, fn ($a, $b) => filemtime($b) - filemtime($a));
@@ -56,9 +59,9 @@ new class extends Component
 
             return [
                 'filename' => $filename,
-                'size'     => $this->formatBytes(filesize($path)),
-                'date'     => \Carbon\Carbon::createFromTimestamp(filemtime($path))->format('Y-m-d H:i'),
-                'db_type'  => $m[1] ?? 'unknown',
+                'size' => $this->formatBytes(filesize($path)),
+                'date' => \Carbon\Carbon::createFromTimestamp(filemtime($path))->format('Y-m-d H:i'),
+                'db_type' => $m[1] ?? 'unknown',
             ];
         }, $files);
     }
@@ -89,34 +92,34 @@ new class extends Component
     public function storageStats(): array
     {
         $directories = [
-            'Staff Photos'        => 'staff-photos',
+            'Staff Photos' => 'staff-photos',
             'Board Member Photos' => 'board-member-photos',
-            'Community Stories'   => 'community-stories',
-            'Message Images'      => 'message-images',
-            'Report Evidence'     => 'report-evidence',
-            'Blog Images'         => 'blog/images',
-            'Blog Category Hero'  => 'blog/category-hero',
+            'Community Stories' => 'community-stories',
+            'Message Images' => 'message-images',
+            'Report Evidence' => 'report-evidence',
+            'Blog Images' => 'blog/images',
+            'Blog Category Hero' => 'blog/category-hero',
         ];
 
         $s3Available = $this->s3Connected;
-        $stats       = [];
+        $stats = [];
 
         foreach ($directories as $label => $dir) {
-            $localFiles    = Storage::disk('public')->allFiles($dir);
-            $localCount    = count($localFiles);
-            $localSize     = 0;
+            $localFiles = Storage::disk('public')->allFiles($dir);
+            $localCount = count($localFiles);
+            $localSize = 0;
 
             foreach ($localFiles as $file) {
                 $localSize += Storage::disk('public')->size($file);
             }
 
             $s3Count = null;
-            $s3Size  = null;
+            $s3Size = null;
 
             if ($s3Available) {
                 $s3Files = Storage::disk('s3')->allFiles($dir);
                 $s3Count = count($s3Files);
-                $raw     = 0;
+                $raw = 0;
                 foreach ($s3Files as $file) {
                     $raw += Storage::disk('s3')->size($file);
                 }
@@ -124,12 +127,12 @@ new class extends Component
             }
 
             $stats[] = [
-                'label'       => $label,
-                'directory'   => $dir,
+                'label' => $label,
+                'directory' => $dir,
                 'local_count' => $localCount,
-                'local_size'  => $this->formatBytes($localSize),
-                's3_count'    => $s3Count,
-                's3_size'     => $s3Size,
+                'local_size' => $this->formatBytes($localSize),
+                's3_count' => $s3Count,
+                's3_size' => $s3Size,
             ];
         }
 
@@ -139,26 +142,26 @@ new class extends Component
     #[\Livewire\Attributes\Computed]
     public function backupJobStatus(): array
     {
-        $status    = SiteConfig::getValue('backup.last_job_status');
+        $status = SiteConfig::getValue('backup.last_job_status');
         $updatedAt = SiteConfig::getValue('backup.last_job_updated_at');
-        $filename  = SiteConfig::getValue('backup.last_job_filename');
-        $fullPath  = SiteConfig::getValue('backup.last_job_full_path');
+        $filename = SiteConfig::getValue('backup.last_job_filename');
+        $fullPath = SiteConfig::getValue('backup.last_job_full_path');
 
-        $scanDir      = storage_path('app/backups');
+        $scanDir = storage_path('app/backups');
         $scanDirExists = is_dir($scanDir);
         $scanContents = $scanDirExists ? (scandir($scanDir) ?: []) : [];
         $scanContents = array_values(array_filter($scanContents, fn ($f) => ! in_array($f, ['.', '..'])));
 
         return [
-            'status'           => $status,
-            'updated_at'       => $updatedAt ? \Carbon\Carbon::parse($updatedAt)->diffForHumans() : null,
-            'filename'         => $filename,
-            'full_path'        => $fullPath,
-            'path_exists'      => $fullPath ? file_exists($fullPath) : null,
-            'scan_dir'         => $scanDir,
-            'scan_dir_exists'  => $scanDirExists,
+            'status' => $status,
+            'updated_at' => $updatedAt ? \Carbon\Carbon::parse($updatedAt)->diffForHumans() : null,
+            'filename' => $filename,
+            'full_path' => $fullPath,
+            'path_exists' => $fullPath ? file_exists($fullPath) : null,
+            'scan_dir' => $scanDir,
+            'scan_dir_exists' => $scanDirExists,
             'scan_dir_contents' => $scanDirExists ? (count($scanContents) > 0 ? implode(', ', $scanContents) : '(empty)') : 'N/A',
-            'open_basedir'     => ini_get('open_basedir'),
+            'open_basedir' => ini_get('open_basedir'),
         ];
     }
 
@@ -207,7 +210,7 @@ new class extends Component
             mkdir($dir, 0755, true);
         }
 
-        $src  = $this->uploadFile->getRealPath();
+        $src = $this->uploadFile->getRealPath();
         $dest = "{$dir}/{$originalName}";
 
         if (! copy($src, $dest)) {
@@ -299,8 +302,10 @@ new class extends Component
 
         $this->validateBackupFilename($this->deleteTarget);
         $path = storage_path("app/backups/{$this->deleteTarget}");
-        if (file_exists($path)) {
-            unlink($path);
+        if (file_exists($path) && ! unlink($path)) {
+            Flux::toast('Backup could not be deleted. Check storage permissions.', 'Error', variant: 'danger');
+
+            return;
         }
 
         $this->deleteTarget = null;
