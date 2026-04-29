@@ -1,6 +1,5 @@
 <?php
 
-use App\Jobs\CreateBackupJob;
 use App\Jobs\RestoreBackupJob;
 use App\Models\SiteConfig;
 use App\Services\BackupStorageService;
@@ -166,10 +165,25 @@ new class extends Component
     public function createBackup(): void
     {
         $this->authorize('backup-manager');
-        SiteConfig::setValue('backup.last_job_status', 'queued');
+
+        SiteConfig::setValue('backup.last_job_status', 'running');
         SiteConfig::setValue('backup.last_job_updated_at', now()->toIso8601String());
-        CreateBackupJob::dispatch();
-        Flux::toast('Backup job queued.', 'Success', variant: 'success');
+        SiteConfig::setValue('backup.last_job_filename', null);
+        SiteConfig::setValue('backup.last_job_full_path', null);
+
+        try {
+            $path = app(\App\Services\BackupService::class)->create();
+            SiteConfig::setValue('backup.last_job_status', 'completed');
+            SiteConfig::setValue('backup.last_job_updated_at', now()->toIso8601String());
+            SiteConfig::setValue('backup.last_job_filename', basename($path));
+            SiteConfig::setValue('backup.last_job_full_path', $path);
+            unset($this->localBackups);
+            Flux::toast('Backup created successfully.', 'Success', variant: 'success');
+        } catch (\Throwable $e) {
+            SiteConfig::setValue('backup.last_job_status', 'failed');
+            SiteConfig::setValue('backup.last_job_updated_at', now()->toIso8601String());
+            Flux::toast('Backup failed: '.$e->getMessage(), 'Error', variant: 'danger');
+        }
     }
 
     public function uploadBackup(): void

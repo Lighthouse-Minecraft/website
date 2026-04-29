@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Jobs\CreateBackupJob;
 use App\Jobs\RestoreBackupJob;
 use App\Models\SiteConfig;
 use App\Models\User;
@@ -12,6 +11,12 @@ use Illuminate\Support\Facades\Storage;
 use Livewire\Volt\Volt;
 
 uses()->group('backup', 'dashboard');
+
+afterEach(function () {
+    foreach ((glob(storage_path('app/backups/*.sql.gz')) ?: []) as $file) {
+        @unlink($file);
+    }
+});
 
 function makeLocalBackup(string $filename): string
 {
@@ -85,15 +90,16 @@ it('dashboard lists local backup files with metadata', function () {
 
 // ── Create Backup ─────────────────────────────────────────────────────────────
 
-it('clicking Create Backup Now dispatches a CreateBackupJob', function () {
-    Queue::fake();
+it('clicking Create Backup Now runs the backup synchronously and shows the file', function () {
     $user = User::factory()->withRole('Backup Manager')->create();
 
     Volt::actingAs($user)
         ->test('backup.dashboard')
-        ->call('createBackup');
+        ->call('createBackup')
+        ->assertHasNoErrors();
 
-    Queue::assertPushed(CreateBackupJob::class);
+    expect(SiteConfig::getValue('backup.last_job_status'))->toBe('completed');
+    expect(SiteConfig::getValue('backup.last_job_filename'))->not->toBeNull();
 });
 
 // ── Delete ────────────────────────────────────────────────────────────────────
