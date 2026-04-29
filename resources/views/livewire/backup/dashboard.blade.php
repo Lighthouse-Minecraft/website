@@ -145,13 +145,21 @@ new class extends Component
         $filename  = SiteConfig::getValue('backup.last_job_filename');
         $fullPath  = SiteConfig::getValue('backup.last_job_full_path');
 
+        $scanDir      = storage_path('app/backups');
+        $scanDirExists = is_dir($scanDir);
+        $scanContents = $scanDirExists ? (scandir($scanDir) ?: []) : [];
+        $scanContents = array_values(array_filter($scanContents, fn ($f) => ! in_array($f, ['.', '..'])));
+
         return [
-            'status'     => $status,
-            'updated_at' => $updatedAt ? \Carbon\Carbon::parse($updatedAt)->diffForHumans() : null,
-            'filename'   => $filename,
-            'full_path'  => $fullPath,
-            'path_exists' => $fullPath ? file_exists($fullPath) : null,
-            'scan_dir'   => storage_path('app/backups'),
+            'status'           => $status,
+            'updated_at'       => $updatedAt ? \Carbon\Carbon::parse($updatedAt)->diffForHumans() : null,
+            'filename'         => $filename,
+            'full_path'        => $fullPath,
+            'path_exists'      => $fullPath ? file_exists($fullPath) : null,
+            'scan_dir'         => $scanDir,
+            'scan_dir_exists'  => $scanDirExists,
+            'scan_dir_contents' => $scanDirExists ? (count($scanContents) > 0 ? implode(', ', $scanContents) : '(empty)') : 'N/A',
+            'open_basedir'     => ini_get('open_basedir'),
         ];
     }
 
@@ -368,7 +376,9 @@ new class extends Component
                     <p class="font-medium text-yellow-800 dark:text-yellow-300">Backup was reported as completed but the file is not visible here.</p>
                     <p class="text-yellow-700 dark:text-yellow-400">File created by worker: <code class="font-mono">{{ $jobStatus['full_path'] ?? 'unknown' }}</code></p>
                     <p class="text-yellow-700 dark:text-yellow-400">Scanning for files in: <code class="font-mono">{{ $jobStatus['scan_dir'] }}</code></p>
-                    <p class="text-yellow-700 dark:text-yellow-400">File exists at worker path: <strong>{{ $jobStatus['path_exists'] === true ? 'Yes' : ($jobStatus['path_exists'] === false ? 'No — path mismatch between queue worker and web process' : 'Unknown') }}</strong></p>
+                    <p class="text-yellow-700 dark:text-yellow-400">Scan dir exists (web): <strong>{{ $jobStatus['scan_dir_exists'] ? 'Yes' : 'No — directory not visible to web process' }}</strong></p>
+                    <p class="text-yellow-700 dark:text-yellow-400">Files visible via scandir: <strong>{{ $jobStatus['scan_dir_contents'] }}</strong></p>
+                    <p class="text-yellow-700 dark:text-yellow-400">open_basedir: <code class="font-mono">{{ $jobStatus['open_basedir'] ?: '(not set)' }}</code></p>
                 </div>
             @endif
         @else
