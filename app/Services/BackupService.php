@@ -28,6 +28,9 @@ class BackupService
         if (! is_dir($backupsDir)) {
             mkdir($backupsDir, 0755, true);
         }
+        // Ensure the directory is traversable regardless of which OS user
+        // (queue worker vs. web server) created it.
+        @chmod($backupsDir, 0755);
 
         $dbType = match ($driver) {
             'pgsql' => 'pgsql',
@@ -53,6 +56,7 @@ class BackupService
             $gz = gzopen($path, 'wb9');
             gzwrite($gz, $sql);
             gzclose($gz);
+            @chmod($path, 0644);
         } catch (\Throwable $e) {
             if ($shouldGoOffline) {
                 Artisan::call('up');
