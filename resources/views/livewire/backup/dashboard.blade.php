@@ -5,6 +5,7 @@ use App\Jobs\RestoreBackupJob;
 use App\Models\SiteConfig;
 use App\Services\BackupStorageService;
 use Flux\Flux;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Volt\Component;
 use Livewire\WithFileUploads;
@@ -203,6 +204,13 @@ new class extends Component
         $this->validateBackupFilename($this->restoreTarget);
         $path = storage_path("app/backups/{$this->restoreTarget}");
         abort_if(! file_exists($path), 404);
+
+        $lock = Cache::lock('restore:'.$this->restoreTarget, 30);
+        if (! $lock->get()) {
+            Flux::toast('A restore is already queued for this file.', 'Notice', variant: 'warning');
+
+            return;
+        }
 
         RestoreBackupJob::dispatch($path);
         $this->restoreTarget = null;
