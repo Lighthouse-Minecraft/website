@@ -373,7 +373,7 @@ new class extends Component
                 @elseif ($jobStatus['status'] === 'running')
                     <flux:badge color="blue" icon="arrow-path">Running{{ $jobStatus['updated_at'] ? ' · '.$jobStatus['updated_at'] : '' }}</flux:badge>
                 @elseif ($jobStatus['status'] === 'completed')
-                    <flux:badge color="green" icon="check-circle">Completed{{ $jobStatus['updated_at'] ? ' · '.$jobStatus['updated_at'] : '' }}{{ $jobStatus['filename'] ? ' — '.$jobStatus['filename'] : '' }}</flux:badge>
+                    <flux:badge color="green" icon="check-circle">Completed{{ $jobStatus['updated_at'] ? ' · '.$jobStatus['updated_at'] : '' }}</flux:badge>
                 @elseif ($jobStatus['status'] === 'failed')
                     <flux:badge color="red" icon="exclamation-triangle">Failed{{ $jobStatus['updated_at'] ? ' · '.$jobStatus['updated_at'] : '' }}</flux:badge>
                 @endif

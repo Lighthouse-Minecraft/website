@@ -87,6 +87,52 @@ it('restores a backup and results in expected database state', function () {
     }
 });
 
+it('restores correctly when text values contain semicolons', function () {
+    $tmpDb = sys_get_temp_dir().'/restore_semi_'.uniqid().'.sqlite';
+    $gzFile = storage_path('app/backups/restore_semi_test_2026-01-01_00-00-00_sqlite.sql.gz');
+    $originalDefault = config('database.default');
+
+    try {
+        touch($tmpDb);
+
+        config(['database.connections.restore_semi' => [
+            'driver' => 'sqlite',
+            'database' => $tmpDb,
+            'foreign_key_constraints' => false,
+        ]]);
+
+        // RestoreService reads offline_during_restore from site_configs before swapping the default.
+        $pdo = DB::connection('restore_semi')->getPdo();
+        $pdo->exec('CREATE TABLE "site_configs" ("id" INTEGER PRIMARY KEY AUTOINCREMENT, "key" TEXT, "value" TEXT, "description" TEXT, "created_at" TEXT, "updated_at" TEXT)');
+        $pdo->exec("INSERT INTO \"site_configs\" (\"key\", \"value\") VALUES ('backup.offline_during_restore', 'false')");
+
+        // Dump contains a value with a semicolon — the naive explode(';') approach splits this.
+        $dumpSql = "CREATE TABLE \"notes\" (\"id\" INTEGER PRIMARY KEY, \"body\" TEXT NOT NULL);\n"
+            ."INSERT INTO \"notes\" (\"id\", \"body\") VALUES (1, 'Hello; World');\n"
+            ."INSERT INTO \"notes\" (\"id\", \"body\") VALUES (2, 'No; semicolons; here; either');\n";
+
+        $gz = gzopen($gzFile, 'wb');
+        gzwrite($gz, $dumpSql);
+        gzclose($gz);
+
+        config(['database.default' => 'restore_semi']);
+
+        (new RestoreService)->restore($gzFile);
+
+        $rows = DB::connection('restore_semi')->getPdo()
+            ->query('SELECT body FROM "notes" ORDER BY id')
+            ->fetchAll(\PDO::FETCH_COLUMN);
+
+        expect($rows)->toBe(['Hello; World', 'No; semicolons; here; either']);
+
+    } finally {
+        config(['database.default' => $originalDefault]);
+        DB::purge('restore_semi');
+        @unlink($tmpDb);
+        @unlink($gzFile);
+    }
+});
+
 it('aborts cross-type restore with clear error when pgloader is not installed', function () {
     Process::fake([
         'which pgloader' => Process::result('', '', 1),

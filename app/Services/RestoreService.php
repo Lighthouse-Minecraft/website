@@ -144,11 +144,10 @@ class RestoreService
             $pdo->exec("DROP TABLE IF EXISTS \"{$table}\"");
         }
 
-        // Strip SQL comments, then execute each statement individually.
         // PDO::exec() for SQLite only runs the first statement in a multi-statement
-        // string, so we must split and execute one at a time.
-        $cleanSql = preg_replace('/--[^\n]*/', '', $sql);
-        foreach (array_filter(array_map('trim', explode(';', $cleanSql))) as $stmt) {
+        // string, so we must split and execute one at a time. Use a character-level
+        // parser so semicolons inside string literals are not treated as delimiters.
+        foreach ($this->splitSqlStatements($sql) as $stmt) {
             $pdo->exec($stmt);
         }
 
@@ -182,6 +181,79 @@ class RestoreService
         } finally {
             @unlink($tempPath);
         }
+    }
+
+    /**
+     * Split a SQL string into individual statements, respecting single- and
+     * double-quoted literals so semicolons inside values are not treated as
+     * statement terminators. Also skips -- line comments.
+     *
+     * @return string[]
+     */
+    private function splitSqlStatements(string $sql): array
+    {
+        $statements = [];
+        $current = '';
+        $len = strlen($sql);
+        $i = 0;
+
+        while ($i < $len) {
+            $char = $sql[$i];
+
+            // Line comment: skip to end of line.
+            if ($char === '-' && isset($sql[$i + 1]) && $sql[$i + 1] === '-') {
+                while ($i < $len && $sql[$i] !== "\n") {
+                    $i++;
+                }
+
+                continue;
+            }
+
+            // Quoted string: consume until closing quote, handling doubled-quote escapes.
+            if ($char === "'" || $char === '"') {
+                $quote = $char;
+                $current .= $char;
+                $i++;
+                while ($i < $len) {
+                    $c = $sql[$i];
+                    $current .= $c;
+                    $i++;
+                    if ($c === $quote) {
+                        // Doubled quote is an escape inside the literal.
+                        if ($i < $len && $sql[$i] === $quote) {
+                            $current .= $sql[$i];
+                            $i++;
+                        } else {
+                            break;
+                        }
+                    }
+                }
+
+                continue;
+            }
+
+            // Statement terminator.
+            if ($char === ';') {
+                $stmt = trim($current);
+                if ($stmt !== '') {
+                    $statements[] = $stmt;
+                }
+                $current = '';
+                $i++;
+
+                continue;
+            }
+
+            $current .= $char;
+            $i++;
+        }
+
+        $stmt = trim($current);
+        if ($stmt !== '') {
+            $statements[] = $stmt;
+        }
+
+        return $statements;
     }
 
     private function buildTargetDsn(string $type, array $config): string
