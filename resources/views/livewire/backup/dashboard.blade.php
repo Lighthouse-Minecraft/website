@@ -89,8 +89,6 @@ new class extends Component
     #[\Livewire\Attributes\Computed]
     public function storageStats(): array
     {
-        $publicDisk = config('filesystems.public_disk', 'public');
-
         $directories = [
             'Staff Photos'        => 'staff-photos',
             'Board Member Photos' => 'board-member-photos',
@@ -101,22 +99,38 @@ new class extends Component
             'Blog Category Hero'  => 'blog/category-hero',
         ];
 
-        $stats = [];
+        $s3Available = $this->s3Connected;
+        $stats       = [];
 
         foreach ($directories as $label => $dir) {
-            $files     = Storage::disk($publicDisk)->allFiles($dir);
-            $count     = count($files);
-            $totalSize = 0;
+            $localFiles    = Storage::disk('public')->allFiles($dir);
+            $localCount    = count($localFiles);
+            $localSize     = 0;
 
-            foreach ($files as $file) {
-                $totalSize += Storage::disk($publicDisk)->size($file);
+            foreach ($localFiles as $file) {
+                $localSize += Storage::disk('public')->size($file);
+            }
+
+            $s3Count = null;
+            $s3Size  = null;
+
+            if ($s3Available) {
+                $s3Files = Storage::disk('s3')->allFiles($dir);
+                $s3Count = count($s3Files);
+                $raw     = 0;
+                foreach ($s3Files as $file) {
+                    $raw += Storage::disk('s3')->size($file);
+                }
+                $s3Size = $this->formatBytes($raw);
             }
 
             $stats[] = [
-                'label'      => $label,
-                'directory'  => $dir,
-                'count'      => $count,
-                'total_size' => $this->formatBytes($totalSize),
+                'label'       => $label,
+                'directory'   => $dir,
+                'local_count' => $localCount,
+                'local_size'  => $this->formatBytes($localSize),
+                's3_count'    => $s3Count,
+                's3_size'     => $s3Size,
             ];
         }
 
@@ -426,25 +440,50 @@ new class extends Component
     {{-- Storage Stats Panel --}}
     <flux:card class="mb-6">
         <flux:heading size="lg" class="mb-4">File Asset Storage</flux:heading>
-        <p class="text-sm text-zinc-500 dark:text-zinc-400 mb-4">File counts and sizes for each public asset directory.</p>
+        <p class="text-sm text-zinc-500 dark:text-zinc-400 mb-4">
+            File counts and sizes per directory — local server vs. S3. Use this to confirm all assets have been migrated.
+        </p>
         <flux:table>
             <flux:table.columns>
                 <flux:table.column>Directory</flux:table.column>
                 <flux:table.column>Path</flux:table.column>
-                <flux:table.column>Files</flux:table.column>
-                <flux:table.column>Total Size</flux:table.column>
+                <flux:table.column>Local Files</flux:table.column>
+                <flux:table.column>Local Size</flux:table.column>
+                @if ($this->s3Connected)
+                    <flux:table.column>S3 Files</flux:table.column>
+                    <flux:table.column>S3 Size</flux:table.column>
+                @endif
             </flux:table.columns>
             <flux:table.rows>
                 @foreach ($this->storageStats as $stat)
                     <flux:table.row wire:key="stat-{{ $stat['directory'] }}">
                         <flux:table.cell>{{ $stat['label'] }}</flux:table.cell>
                         <flux:table.cell class="font-mono text-sm text-zinc-500">{{ $stat['directory'] }}</flux:table.cell>
-                        <flux:table.cell>{{ number_format($stat['count']) }}</flux:table.cell>
-                        <flux:table.cell>{{ $stat['total_size'] }}</flux:table.cell>
+                        <flux:table.cell>
+                            @if ($stat['local_count'] === 0)
+                                <flux:badge color="green" size="sm">0</flux:badge>
+                            @else
+                                <flux:badge color="yellow" size="sm">{{ number_format($stat['local_count']) }}</flux:badge>
+                            @endif
+                        </flux:table.cell>
+                        <flux:table.cell>{{ $stat['local_size'] }}</flux:table.cell>
+                        @if ($this->s3Connected)
+                            <flux:table.cell>
+                                @if ($stat['s3_count'] > 0)
+                                    <flux:badge color="green" size="sm">{{ number_format($stat['s3_count']) }}</flux:badge>
+                                @else
+                                    <flux:badge color="zinc" size="sm">0</flux:badge>
+                                @endif
+                            </flux:table.cell>
+                            <flux:table.cell>{{ $stat['s3_size'] }}</flux:table.cell>
+                        @endif
                     </flux:table.row>
                 @endforeach
             </flux:table.rows>
         </flux:table>
+        @if (! $this->s3Connected)
+            <p class="mt-3 text-sm text-zinc-400 dark:text-zinc-500">S3 not connected — configure AWS credentials to see S3 file counts.</p>
+        @endif
     </flux:card>
 
     {{-- Settings Panel --}}
