@@ -143,11 +143,15 @@ new class extends Component
         $status    = SiteConfig::getValue('backup.last_job_status');
         $updatedAt = SiteConfig::getValue('backup.last_job_updated_at');
         $filename  = SiteConfig::getValue('backup.last_job_filename');
+        $fullPath  = SiteConfig::getValue('backup.last_job_full_path');
 
         return [
             'status'     => $status,
             'updated_at' => $updatedAt ? \Carbon\Carbon::parse($updatedAt)->diffForHumans() : null,
             'filename'   => $filename,
+            'full_path'  => $fullPath,
+            'path_exists' => $fullPath ? file_exists($fullPath) : null,
+            'scan_dir'   => storage_path('app/backups'),
         ];
     }
 
@@ -359,6 +363,14 @@ new class extends Component
 
         @if (count($this->localBackups) === 0)
             <p class="text-sm text-zinc-500 dark:text-zinc-400">No local backups found.</p>
+            @if ($jobStatus['status'] === 'completed' && $jobStatus['filename'])
+                <div class="mt-3 rounded border border-yellow-300 bg-yellow-50 dark:bg-yellow-900/20 dark:border-yellow-700 p-3 text-sm space-y-1">
+                    <p class="font-medium text-yellow-800 dark:text-yellow-300">Backup was reported as completed but the file is not visible here.</p>
+                    <p class="text-yellow-700 dark:text-yellow-400">File created by worker: <code class="font-mono">{{ $jobStatus['full_path'] ?? 'unknown' }}</code></p>
+                    <p class="text-yellow-700 dark:text-yellow-400">Scanning for files in: <code class="font-mono">{{ $jobStatus['scan_dir'] }}</code></p>
+                    <p class="text-yellow-700 dark:text-yellow-400">File exists at worker path: <strong>{{ $jobStatus['path_exists'] === true ? 'Yes' : ($jobStatus['path_exists'] === false ? 'No — path mismatch between queue worker and web process' : 'Unknown') }}</strong></p>
+                </div>
+            @endif
         @else
             <flux:table>
                 <flux:table.columns>
