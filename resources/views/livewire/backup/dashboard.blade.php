@@ -137,9 +137,23 @@ new class extends Component
         return $stats;
     }
 
+    #[\Livewire\Attributes\Computed]
+    public function backupJobStatus(): array
+    {
+        $status    = SiteConfig::getValue('backup.last_job_status');
+        $updatedAt = SiteConfig::getValue('backup.last_job_updated_at');
+
+        return [
+            'status'     => $status,
+            'updated_at' => $updatedAt ? \Carbon\Carbon::parse($updatedAt)->diffForHumans() : null,
+        ];
+    }
+
     public function createBackup(): void
     {
         $this->authorize('backup-manager');
+        SiteConfig::setValue('backup.last_job_status', 'queued');
+        SiteConfig::setValue('backup.last_job_updated_at', now()->toIso8601String());
         CreateBackupJob::dispatch();
         Flux::toast('Backup job queued.', 'Success', variant: 'success');
     }
@@ -315,10 +329,27 @@ new class extends Component
         </flux:button>
     </div>
 
+    {{-- Poll while a job is in-flight --}}
+    @if (in_array($this->backupJobStatus['status'], ['queued', 'running']))
+        <div wire:poll.3s></div>
+    @endif
+
     {{-- Local Backups Panel --}}
     <flux:card class="mb-6">
         <div class="flex items-center justify-between mb-4">
-            <flux:heading size="lg">Local Backups</flux:heading>
+            <div class="flex items-center gap-3">
+                <flux:heading size="lg">Local Backups</flux:heading>
+                @php $jobStatus = $this->backupJobStatus; @endphp
+                @if ($jobStatus['status'] === 'queued')
+                    <flux:badge color="yellow" icon="clock">Queued{{ $jobStatus['updated_at'] ? ' · '.$jobStatus['updated_at'] : '' }}</flux:badge>
+                @elseif ($jobStatus['status'] === 'running')
+                    <flux:badge color="blue" icon="arrow-path">Running{{ $jobStatus['updated_at'] ? ' · '.$jobStatus['updated_at'] : '' }}</flux:badge>
+                @elseif ($jobStatus['status'] === 'completed')
+                    <flux:badge color="green" icon="check-circle">Completed{{ $jobStatus['updated_at'] ? ' · '.$jobStatus['updated_at'] : '' }}</flux:badge>
+                @elseif ($jobStatus['status'] === 'failed')
+                    <flux:badge color="red" icon="exclamation-triangle">Failed{{ $jobStatus['updated_at'] ? ' · '.$jobStatus['updated_at'] : '' }}</flux:badge>
+                @endif
+            </div>
             <flux:button variant="primary" icon="plus" wire:click="createBackup">
                 Create Backup Now
             </flux:button>
