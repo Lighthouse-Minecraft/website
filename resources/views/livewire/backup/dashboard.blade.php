@@ -142,10 +142,12 @@ new class extends Component
     {
         $status    = SiteConfig::getValue('backup.last_job_status');
         $updatedAt = SiteConfig::getValue('backup.last_job_updated_at');
+        $filename  = SiteConfig::getValue('backup.last_job_filename');
 
         return [
             'status'     => $status,
             'updated_at' => $updatedAt ? \Carbon\Carbon::parse($updatedAt)->diffForHumans() : null,
+            'filename'   => $filename,
         ];
     }
 
@@ -329,8 +331,9 @@ new class extends Component
         </flux:button>
     </div>
 
-    {{-- Poll while a job is in-flight --}}
-    @if (in_array($this->backupJobStatus['status'], ['queued', 'running']))
+    {{-- Poll while a job is in-flight, and one extra cycle after completion to refresh the file list --}}
+    @php $jobStatus = $this->backupJobStatus; @endphp
+    @if (in_array($jobStatus['status'], ['queued', 'running']) || ($jobStatus['status'] === 'completed' && ! collect($this->localBackups)->contains('filename', $jobStatus['filename'])))
         <div wire:poll.3s></div>
     @endif
 
@@ -339,13 +342,12 @@ new class extends Component
         <div class="flex items-center justify-between mb-4">
             <div class="flex items-center gap-3">
                 <flux:heading size="lg">Local Backups</flux:heading>
-                @php $jobStatus = $this->backupJobStatus; @endphp
                 @if ($jobStatus['status'] === 'queued')
                     <flux:badge color="yellow" icon="clock">Queued{{ $jobStatus['updated_at'] ? ' · '.$jobStatus['updated_at'] : '' }}</flux:badge>
                 @elseif ($jobStatus['status'] === 'running')
                     <flux:badge color="blue" icon="arrow-path">Running{{ $jobStatus['updated_at'] ? ' · '.$jobStatus['updated_at'] : '' }}</flux:badge>
                 @elseif ($jobStatus['status'] === 'completed')
-                    <flux:badge color="green" icon="check-circle">Completed{{ $jobStatus['updated_at'] ? ' · '.$jobStatus['updated_at'] : '' }}</flux:badge>
+                    <flux:badge color="green" icon="check-circle">Completed{{ $jobStatus['updated_at'] ? ' · '.$jobStatus['updated_at'] : '' }}{{ $jobStatus['filename'] ? ' — '.$jobStatus['filename'] : '' }}</flux:badge>
                 @elseif ($jobStatus['status'] === 'failed')
                     <flux:badge color="red" icon="exclamation-triangle">Failed{{ $jobStatus['updated_at'] ? ' · '.$jobStatus['updated_at'] : '' }}</flux:badge>
                 @endif

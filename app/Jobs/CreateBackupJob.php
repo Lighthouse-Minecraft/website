@@ -17,15 +17,17 @@ class CreateBackupJob implements ShouldQueue
         SiteConfig::setValue('backup.last_job_status', 'running');
         SiteConfig::setValue('backup.last_job_updated_at', now()->toIso8601String());
 
-        $service->create();
+        $path = $service->create();
 
         SiteConfig::setValue('backup.last_job_status', 'completed');
         SiteConfig::setValue('backup.last_job_updated_at', now()->toIso8601String());
+        SiteConfig::setValue('backup.last_job_filename', basename($path));
     }
 
     public function failed(Throwable $e): void
     {
         SiteConfig::setValue('backup.last_job_status', 'failed');
         SiteConfig::setValue('backup.last_job_updated_at', now()->toIso8601String());
+        SiteConfig::setValue('backup.last_job_filename', null);
     }
 }
