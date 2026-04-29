@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Jobs\RestoreBackupJob;
 use App\Models\SiteConfig;
 use App\Models\User;
+use App\Services\BackupService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
@@ -92,6 +93,11 @@ it('dashboard lists local backup files with metadata', function () {
 
 it('clicking Create Backup Now runs the backup synchronously and shows the file', function () {
     $user = User::factory()->withRole('Backup Manager')->create();
+
+    $fakePath = storage_path('app/backups/backup_2026-04-01_03-00-00_sqlite.sql.gz');
+    $mock = Mockery::mock(BackupService::class);
+    $mock->shouldReceive('create')->once()->andReturn($fakePath);
+    app()->instance(BackupService::class, $mock);
 
     Volt::actingAs($user)
         ->test('backup.dashboard')
