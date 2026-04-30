@@ -27,9 +27,16 @@ function makeBackupFile(string $filename, string $sql = '-- SQLite dump'): strin
     return $path;
 }
 
+beforeEach(function () {
+    $this->preExistingBackupFiles = glob(storage_path('app/backups/*.sql.gz')) ?: [];
+});
+
 afterEach(function () {
+    $pre = $this->preExistingBackupFiles ?? [];
     foreach ((glob(storage_path('app/backups/*.sql.gz')) ?: []) as $file) {
-        @unlink($file);
+        if (! in_array($file, $pre, true)) {
+            @unlink($file);
+        }
     }
     if (app()->isDownForMaintenance()) {
         \Illuminate\Support\Facades\Artisan::call('up');
