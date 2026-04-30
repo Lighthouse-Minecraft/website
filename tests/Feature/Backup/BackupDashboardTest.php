@@ -13,12 +13,6 @@ use Livewire\Volt\Volt;
 
 uses()->group('backup', 'dashboard');
 
-afterEach(function () {
-    foreach ((glob(storage_path('app/backups/*.sql.gz')) ?: []) as $file) {
-        @unlink($file);
-    }
-});
-
 function makeLocalBackup(string $filename): string
 {
     $dir = storage_path('app/backups');

@@ -20,31 +20,38 @@ beforeEach(function () {
     }
 });
 
+beforeEach(function () {
+    $this->preExistingBackupFiles = glob(storage_path('app/backups/*.sql.gz')) ?: [];
+});
+
 afterEach(function () {
+    $pre = $this->preExistingBackupFiles ?? [];
     foreach ((glob(storage_path('app/backups/*.sql.gz')) ?: []) as $file) {
-        @unlink($file);
+        if (! in_array($file, $pre, true)) {
+            @unlink($file);
+        }
     }
 });
 
 it('creates a .sql.gz backup file', function () {
     $this->artisan('app:backup-create')->assertSuccessful();
 
-    $files = glob(storage_path('app/backups/*.sql.gz'));
-    expect($files)->toHaveCount(1);
+    $newFiles = array_diff(glob(storage_path('app/backups/*.sql.gz')) ?: [], $this->preExistingBackupFiles);
+    expect($newFiles)->toHaveCount(1);
 });
 
 it('backup file has non-zero size', function () {
     $this->artisan('app:backup-create')->assertSuccessful();
 
-    $files = glob(storage_path('app/backups/*.sql.gz'));
-    expect(filesize($files[0]))->toBeGreaterThan(0);
+    $newFiles = array_values(array_diff(glob(storage_path('app/backups/*.sql.gz')) ?: [], $this->preExistingBackupFiles));
+    expect(filesize($newFiles[0]))->toBeGreaterThan(0);
 });
 
 it('backup filename includes timestamp and database type', function () {
     $this->artisan('app:backup-create')->assertSuccessful();
 
-    $files = glob(storage_path('app/backups/*.sql.gz'));
-    $filename = basename($files[0]);
+    $newFiles = array_values(array_diff(glob(storage_path('app/backups/*.sql.gz')) ?: [], $this->preExistingBackupFiles));
+    $filename = basename($newFiles[0]);
 
     expect($filename)->toMatch('/^backup_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}_\w+\.sql\.gz$/');
 });
