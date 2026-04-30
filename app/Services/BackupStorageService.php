@@ -17,7 +17,12 @@ class BackupStorageService
         $filename = basename($localPath);
         $key = self::PREFIX.$filename;
 
-        Storage::disk('s3')->put($key, file_get_contents($localPath));
+        $stream = fopen($localPath, 'r');
+        try {
+            Storage::disk('s3')->put($key, $stream);
+        } finally {
+            fclose($stream);
+        }
 
         return $key;
     }
@@ -49,7 +54,14 @@ class BackupStorageService
     {
         $tmpPath = sys_get_temp_dir().'/s3_backup_'.uniqid().'.sql.gz';
 
-        file_put_contents($tmpPath, Storage::disk('s3')->get($key));
+        $stream = Storage::disk('s3')->readStream($key);
+        $dest = fopen($tmpPath, 'w');
+        try {
+            stream_copy_to_stream($stream, $dest);
+        } finally {
+            fclose($stream);
+            fclose($dest);
+        }
 
         return $tmpPath;
     }

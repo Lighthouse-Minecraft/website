@@ -69,18 +69,6 @@ class RestoreService
         throw new \RuntimeException("Cannot detect source database type from filename: {$filename}");
     }
 
-    private function readGzip(string $path): string
-    {
-        $gz = gzopen($path, 'rb');
-        $sql = '';
-        while (! gzeof($gz)) {
-            $sql .= gzread($gz, 65536);
-        }
-        gzclose($gz);
-
-        return $sql;
-    }
-
     private function restoreSameType(string $path, string $type, array $config): void
     {
         match ($type) {
@@ -93,40 +81,78 @@ class RestoreService
 
     private function restorePostgres(string $path, array $config): void
     {
-        $sql = $this->readGzip($path);
+        $cmd = 'PGPASSWORD='.escapeshellarg($config['password'] ?? '')
+            .' psql'
+            .' -h '.escapeshellarg($config['host'] ?? 'localhost')
+            .' -p '.escapeshellarg((string) ($config['port'] ?? 5432))
+            .' -U '.escapeshellarg($config['username'])
+            .' '.escapeshellarg($config['database']);
 
-        $result = Process::env(['PGPASSWORD' => $config['password'] ?? ''])
-            ->input($sql)
-            ->run([
-                'psql',
-                '-h', $config['host'] ?? 'localhost',
-                '-p', (string) ($config['port'] ?? 5432),
-                '-U', $config['username'],
-                $config['database'],
-            ]);
+        $handle = popen($cmd, 'w');
+        if ($handle === false) {
+            throw new \RuntimeException('Failed to open psql process');
+        }
 
-        if (! $result->successful()) {
-            throw new \RuntimeException('psql restore failed: '.$result->errorOutput());
+        $gz = gzopen($path, 'rb');
+        try {
+            while (! gzeof($gz)) {
+                $chunk = gzread($gz, 65536);
+                if ($chunk !== false && $chunk !== '') {
+                    fwrite($handle, $chunk);
+                }
+            }
+        } finally {
+            gzclose($gz);
+            $exitCode = pclose($handle);
+        }
+
+        if ($exitCode !== 0) {
+            throw new \RuntimeException("psql restore failed with exit code {$exitCode}");
         }
     }
 
     private function restoreMysql(string $path, array $config): void
     {
-        $sql = $this->readGzip($path);
+        $cmd = 'MYSQL_PWD='.escapeshellarg($config['password'] ?? '')
+            .' mysql'
+            .' -h '.escapeshellarg($config['host'] ?? 'localhost')
+            .' -P '.escapeshellarg((string) ($config['port'] ?? 3306))
+            .' -u '.escapeshellarg($config['username'])
+            .' '.escapeshellarg($config['database']);
 
-        $result = Process::env(['MYSQL_PWD' => $config['password'] ?? ''])
-            ->input($sql)
-            ->run([
-                'mysql',
-                '-h', $config['host'] ?? 'localhost',
-                '-P', (string) ($config['port'] ?? 3306),
-                '-u', $config['username'],
-                $config['database'],
-            ]);
-
-        if (! $result->successful()) {
-            throw new \RuntimeException('mysql restore failed: '.$result->errorOutput());
+        $handle = popen($cmd, 'w');
+        if ($handle === false) {
+            throw new \RuntimeException('Failed to open mysql process');
         }
+
+        $gz = gzopen($path, 'rb');
+        try {
+            while (! gzeof($gz)) {
+                $chunk = gzread($gz, 65536);
+                if ($chunk !== false && $chunk !== '') {
+                    fwrite($handle, $chunk);
+                }
+            }
+        } finally {
+            gzclose($gz);
+            $exitCode = pclose($handle);
+        }
+
+        if ($exitCode !== 0) {
+            throw new \RuntimeException("mysql restore failed with exit code {$exitCode}");
+        }
+    }
+
+    private function readGzip(string $path): string
+    {
+        $gz = gzopen($path, 'rb');
+        $sql = '';
+        while (! gzeof($gz)) {
+            $sql .= gzread($gz, 65536);
+        }
+        gzclose($gz);
+
+        return $sql;
     }
 
     private function restoreSqlite(string $path): void

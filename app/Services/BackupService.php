@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\SiteConfig;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Process;
 
 class BackupService
 {
@@ -51,11 +50,7 @@ class BackupService
         }
 
         try {
-            $sql = $this->dump($driver, $config);
-
-            $gz = gzopen($path, 'wb9');
-            gzwrite($gz, $sql);
-            gzclose($gz);
+            $this->dump($driver, $config, $path);
             @chmod($path, 0644);
         } catch (\Throwable $e) {
             if ($shouldGoOffline) {
@@ -71,53 +66,81 @@ class BackupService
         return $path;
     }
 
-    private function dump(string $driver, array $config): string
+    private function dump(string $driver, array $config, string $path): void
     {
-        return match ($driver) {
-            'pgsql' => $this->dumpPostgres($config),
-            'mysql', 'mariadb' => $this->dumpMysql($config),
-            'sqlite' => $this->dumpSqlite(),
+        match ($driver) {
+            'pgsql' => $this->dumpPostgres($config, $path),
+            'mysql', 'mariadb' => $this->dumpMysql($config, $path),
+            'sqlite' => $this->dumpSqlite($path),
             default => throw new \RuntimeException("Unsupported driver: {$driver}"),
         };
     }
 
-    private function dumpPostgres(array $config): string
+    private function dumpPostgres(array $config, string $path): void
     {
-        $result = Process::env(['PGPASSWORD' => $config['password'] ?? ''])
-            ->run([
-                'pg_dump',
-                '-h', $config['host'] ?? 'localhost',
-                '-p', (string) ($config['port'] ?? 5432),
-                '-U', $config['username'],
-                $config['database'],
-            ]);
+        $cmd = 'PGPASSWORD='.escapeshellarg($config['password'] ?? '')
+            .' pg_dump'
+            .' -h '.escapeshellarg($config['host'] ?? 'localhost')
+            .' -p '.escapeshellarg((string) ($config['port'] ?? 5432))
+            .' -U '.escapeshellarg($config['username'])
+            .' '.escapeshellarg($config['database']);
 
-        if (! $result->successful()) {
-            throw new \RuntimeException('pg_dump failed: '.$result->errorOutput());
+        $handle = popen($cmd, 'r');
+        if ($handle === false) {
+            throw new \RuntimeException('Failed to open pg_dump process');
         }
 
-        return $result->output();
-    }
-
-    private function dumpMysql(array $config): string
-    {
-        $result = Process::env(['MYSQL_PWD' => $config['password'] ?? ''])
-            ->run([
-                'mysqldump',
-                '-h', $config['host'] ?? 'localhost',
-                '-P', (string) ($config['port'] ?? 3306),
-                '-u', $config['username'],
-                $config['database'],
-            ]);
-
-        if (! $result->successful()) {
-            throw new \RuntimeException('mysqldump failed: '.$result->errorOutput());
+        $gz = gzopen($path, 'wb9');
+        try {
+            while (! feof($handle)) {
+                $chunk = fread($handle, 65536);
+                if ($chunk !== false && $chunk !== '') {
+                    gzwrite($gz, $chunk);
+                }
+            }
+        } finally {
+            gzclose($gz);
+            $exitCode = pclose($handle);
         }
 
-        return $result->output();
+        if ($exitCode !== 0) {
+            throw new \RuntimeException("pg_dump failed with exit code {$exitCode}");
+        }
     }
 
-    private function dumpSqlite(): string
+    private function dumpMysql(array $config, string $path): void
+    {
+        $cmd = 'MYSQL_PWD='.escapeshellarg($config['password'] ?? '')
+            .' mysqldump'
+            .' -h '.escapeshellarg($config['host'] ?? 'localhost')
+            .' -P '.escapeshellarg((string) ($config['port'] ?? 3306))
+            .' -u '.escapeshellarg($config['username'])
+            .' '.escapeshellarg($config['database']);
+
+        $handle = popen($cmd, 'r');
+        if ($handle === false) {
+            throw new \RuntimeException('Failed to open mysqldump process');
+        }
+
+        $gz = gzopen($path, 'wb9');
+        try {
+            while (! feof($handle)) {
+                $chunk = fread($handle, 65536);
+                if ($chunk !== false && $chunk !== '') {
+                    gzwrite($gz, $chunk);
+                }
+            }
+        } finally {
+            gzclose($gz);
+            $exitCode = pclose($handle);
+        }
+
+        if ($exitCode !== 0) {
+            throw new \RuntimeException("mysqldump failed with exit code {$exitCode}");
+        }
+    }
+
+    private function dumpSqlite(string $path): void
     {
         $pdo = DB::connection()->getPdo();
 
@@ -125,27 +148,32 @@ class BackupService
             "SELECT name, sql FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
         )->fetchAll(\PDO::FETCH_ASSOC);
 
-        $sql = "-- SQLite dump\n\n";
+        $gz = gzopen($path, 'wb9');
+        try {
+            gzwrite($gz, "-- SQLite dump\n\n");
 
-        foreach ($tables as $table) {
-            if ($table['sql']) {
-                $sql .= $table['sql'].";\n\n";
+            foreach ($tables as $table) {
+                if ($table['sql']) {
+                    gzwrite($gz, $table['sql'].";\n\n");
+                }
+
+                $colNames = null;
+                $stmt = $pdo->query("SELECT * FROM \"{$table['name']}\"");
+                while ($row = $stmt->fetch(\PDO::FETCH_ASSOC)) {
+                    if ($colNames === null) {
+                        $colNames = implode(', ', array_map(fn ($c) => '"'.$c.'"', array_keys($row)));
+                    }
+                    $values = implode(', ', array_map(
+                        fn ($v) => $v === null ? 'NULL' : $pdo->quote((string) $v),
+                        array_values($row)
+                    ));
+                    gzwrite($gz, "INSERT INTO \"{$table['name']}\" ({$colNames}) VALUES ({$values});\n");
+                }
+
+                gzwrite($gz, "\n");
             }
-
-            $rows = $pdo->query("SELECT * FROM \"{$table['name']}\"")->fetchAll(\PDO::FETCH_ASSOC);
-
-            foreach ($rows as $row) {
-                $columns = implode(', ', array_map(fn ($c) => '"'.$c.'"', array_keys($row)));
-                $values = implode(', ', array_map(
-                    fn ($v) => $v === null ? 'NULL' : $pdo->quote((string) $v),
-                    array_values($row)
-                ));
-                $sql .= "INSERT INTO \"{$table['name']}\" ({$columns}) VALUES ({$values});\n";
-            }
-
-            $sql .= "\n";
+        } finally {
+            gzclose($gz);
         }
-
-        return $sql;
     }
 }
