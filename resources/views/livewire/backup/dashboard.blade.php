@@ -147,6 +147,11 @@ new class extends Component
         $filename = SiteConfig::getValue('backup.last_job_filename');
         $fullPath = SiteConfig::getValue('backup.last_job_full_path');
 
+        // Auto-expire the completed badge after 60 seconds.
+        if ($status === 'completed' && $updatedAt && now()->diffInSeconds(\Carbon\Carbon::parse($updatedAt)) > 60) {
+            $status = null;
+        }
+
         $scanDir = storage_path('app/backups');
         $scanDirExists = is_dir($scanDir);
         $scanContents = $scanDirExists ? (scandir($scanDir) ?: []) : [];
@@ -163,6 +168,16 @@ new class extends Component
             'scan_dir_contents' => $scanDirExists ? (count($scanContents) > 0 ? implode(', ', $scanContents) : '(empty)') : 'N/A',
             'open_basedir' => ini_get('open_basedir'),
         ];
+    }
+
+    public function dismissJobStatus(): void
+    {
+        $this->authorize('backup-manager');
+        SiteConfig::setValue('backup.last_job_status', null);
+        SiteConfig::setValue('backup.last_job_updated_at', null);
+        SiteConfig::setValue('backup.last_job_filename', null);
+        SiteConfig::setValue('backup.last_job_full_path', null);
+        unset($this->backupJobStatus);
     }
 
     public function createBackup(): void
@@ -371,10 +386,12 @@ new class extends Component
         </flux:button>
     </div>
 
-    {{-- Poll while a job is in-flight, and one extra cycle after completion to refresh the file list --}}
+    {{-- Poll while a job is in-flight, one extra cycle to refresh the file list, or every 30s while the completed badge is still showing --}}
     @php $jobStatus = $this->backupJobStatus; @endphp
     @if (in_array($jobStatus['status'], ['queued', 'running']) || ($jobStatus['status'] === 'completed' && ! collect($this->localBackups)->contains('filename', $jobStatus['filename'])))
         <div wire:poll.3s></div>
+    @elseif ($jobStatus['status'] === 'completed')
+        <div wire:poll.30s></div>
     @endif
 
     {{-- Local Backups Panel --}}
@@ -387,9 +404,19 @@ new class extends Component
                 @elseif ($jobStatus['status'] === 'running')
                     <flux:badge color="blue" icon="arrow-path">Running{{ $jobStatus['updated_at'] ? ' · '.$jobStatus['updated_at'] : '' }}</flux:badge>
                 @elseif ($jobStatus['status'] === 'completed')
-                    <flux:badge color="green" icon="check-circle">Completed{{ $jobStatus['updated_at'] ? ' · '.$jobStatus['updated_at'] : '' }}</flux:badge>
+                    <div class="flex items-center gap-1">
+                        <flux:badge color="green" icon="check-circle">Completed{{ $jobStatus['updated_at'] ? ' · '.$jobStatus['updated_at'] : '' }}</flux:badge>
+                        <button wire:click="dismissJobStatus" type="button" class="p-0.5 rounded text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800" aria-label="Dismiss">
+                            <svg class="size-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                    </div>
                 @elseif ($jobStatus['status'] === 'failed')
-                    <flux:badge color="red" icon="exclamation-triangle">Failed{{ $jobStatus['updated_at'] ? ' · '.$jobStatus['updated_at'] : '' }}</flux:badge>
+                    <div class="flex items-center gap-1">
+                        <flux:badge color="red" icon="exclamation-triangle">Failed{{ $jobStatus['updated_at'] ? ' · '.$jobStatus['updated_at'] : '' }}</flux:badge>
+                        <button wire:click="dismissJobStatus" type="button" class="p-0.5 rounded text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-800" aria-label="Dismiss">
+                            <svg class="size-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                    </div>
                 @endif
             </div>
             <flux:button variant="primary" icon="plus" wire:click="createBackup">
