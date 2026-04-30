@@ -49,7 +49,7 @@ new class extends Component
             ->join('financial_accounts as fa', 'fa.id', '=', 'jel.account_id')
             ->where('je.status', 'posted')
             ->where('fa.type', 'revenue')
-            ->whereBetween('je.date', [$start, $end])
+            ->whereRaw('DATE(je.date) BETWEEN ? AND ?', [$start, $end])
             ->selectRaw('COALESCE(SUM(jel.credit) - SUM(jel.debit), 0) as total')
             ->value('total');
 
@@ -58,7 +58,7 @@ new class extends Component
             ->join('financial_accounts as fa', 'fa.id', '=', 'jel.account_id')
             ->where('je.status', 'posted')
             ->where('fa.type', 'expense')
-            ->whereBetween('je.date', [$start, $end])
+            ->whereRaw('DATE(je.date) BETWEEN ? AND ?', [$start, $end])
             ->selectRaw('COALESCE(SUM(jel.debit) - SUM(jel.credit), 0) as total')
             ->value('total');
 
@@ -106,7 +106,7 @@ new class extends Component
                 ->where('je.status', 'posted')
                 ->whereNot('je.entry_type', 'closing')
                 ->where('fa.type', 'revenue')
-                ->whereBetween('je.date', [$start, $end])
+                ->whereRaw('DATE(je.date) BETWEEN ? AND ?', [$start, $end])
                 ->selectRaw('COALESCE(SUM(jel.credit) - SUM(jel.debit), 0) as total')
                 ->value('total');
 
@@ -116,7 +116,7 @@ new class extends Component
                 ->where('je.status', 'posted')
                 ->whereNot('je.entry_type', 'closing')
                 ->where('fa.type', 'expense')
-                ->whereBetween('je.date', [$start, $end])
+                ->whereRaw('DATE(je.date) BETWEEN ? AND ?', [$start, $end])
                 ->selectRaw('COALESCE(SUM(jel.debit) - SUM(jel.credit), 0) as total')
                 ->value('total');
 
