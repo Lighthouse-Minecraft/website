@@ -63,6 +63,12 @@ it('deletes an S3 backup by key', function () {
 // ── S3 retention tiers ────────────────────────────────────────────────────────
 
 it('S3 retention keeps 2 most recent, 1 per week for 4 weeks, 1 per month for 3 months', function () {
+    // Freeze to the last day of the current month (at noon) so that all 4-week
+    // window files land in the current calendar month and month-1 is unambiguously
+    // the previous month — prevents false extra deletions when the test runs early
+    // in a new month (e.g. May 1 puts "month-1" = April which also holds week files).
+    $this->travelTo(now()->endOfMonth()->setTime(12, 0, 0));
+
     $service = app(BackupStorageService::class);
     $now = now();
 

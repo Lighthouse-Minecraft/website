@@ -149,14 +149,14 @@ new class extends Component
     {
         $date = \Carbon\Carbon::parse($this->date);
 
-        $period = FinancialPeriod::where('start_date', '<=', $date->toDateString())
-            ->where('end_date', '>=', $date->toDateString())
+        $period = FinancialPeriod::whereRaw('DATE(start_date) <= ?', [$date->toDateString()])
+            ->whereRaw('DATE(end_date) >= ?', [$date->toDateString()])
             ->first();
 
         if (! $period) {
             \App\Actions\GenerateFinancialPeriods::generateForCurrentFY();
-            $period = FinancialPeriod::where('start_date', '<=', $date->toDateString())
-                ->where('end_date', '>=', $date->toDateString())
+            $period = FinancialPeriod::whereRaw('DATE(start_date) <= ?', [$date->toDateString()])
+                ->whereRaw('DATE(end_date) >= ?', [$date->toDateString()])
                 ->first();
         }
 
