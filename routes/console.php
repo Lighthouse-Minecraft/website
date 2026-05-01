@@ -74,3 +74,18 @@ Schedule::job(new \App\Jobs\CheckRulesAgreementJob)
     ->dailyAt('07:00')
     ->withoutOverlapping(10)
     ->onOneServer();
+
+// Create daily database backup at 3:00 AM
+Schedule::command('app:backup-create')
+    ->dailyAt('03:00')
+    ->runInBackground();
+
+// Clean up local backup files past the retention window daily at 4:00 AM
+Schedule::command('app:backup-cleanup')
+    ->dailyAt('04:00')
+    ->runInBackground();
+
+// Push most recent local backup to S3 every 3 days at 3:30 AM
+Schedule::command('app:backup-push-s3')
+    ->cron('30 3 */3 * *')
+    ->runInBackground();

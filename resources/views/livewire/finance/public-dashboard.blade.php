@@ -59,8 +59,8 @@ new class extends Component
     public function getCurrentPeriodProperty(): ?FinancialPeriod
     {
         return FinancialPeriod::where('status', '!=', 'closed')
-            ->where('start_date', '<=', now()->toDateString())
-            ->where('end_date', '>=', now()->toDateString())
+            ->whereRaw('DATE(start_date) <= ?', [now()->toDateString()])
+            ->whereRaw('DATE(end_date) >= ?', [now()->toDateString()])
             ->first();
     }
 
