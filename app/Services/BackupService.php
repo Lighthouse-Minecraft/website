@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\SiteConfig;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Process;
 
 class BackupService
 {
@@ -85,26 +86,16 @@ class BackupService
             .' -U '.escapeshellarg($config['username'])
             .' '.escapeshellarg($config['database']);
 
-        $handle = popen($cmd, 'r');
-        if ($handle === false) {
-            throw new \RuntimeException('Failed to open pg_dump process');
-        }
-
         $gz = gzopen($path, 'wb9');
-        try {
-            while (! feof($handle)) {
-                $chunk = fread($handle, 65536);
-                if ($chunk !== false && $chunk !== '') {
-                    gzwrite($gz, $chunk);
-                }
+        $result = Process::run($cmd, function (string $type, string $output) use ($gz): void {
+            if ($type === 'out') {
+                gzwrite($gz, $output);
             }
-        } finally {
-            gzclose($gz);
-            $exitCode = pclose($handle);
-        }
+        });
+        gzclose($gz);
 
-        if ($exitCode !== 0) {
-            throw new \RuntimeException("pg_dump failed with exit code {$exitCode}");
+        if (! $result->successful()) {
+            throw new \RuntimeException("pg_dump failed with exit code {$result->exitCode()}");
         }
     }
 
@@ -117,26 +108,16 @@ class BackupService
             .' -u '.escapeshellarg($config['username'])
             .' '.escapeshellarg($config['database']);
 
-        $handle = popen($cmd, 'r');
-        if ($handle === false) {
-            throw new \RuntimeException('Failed to open mysqldump process');
-        }
-
         $gz = gzopen($path, 'wb9');
-        try {
-            while (! feof($handle)) {
-                $chunk = fread($handle, 65536);
-                if ($chunk !== false && $chunk !== '') {
-                    gzwrite($gz, $chunk);
-                }
+        $result = Process::run($cmd, function (string $type, string $output) use ($gz): void {
+            if ($type === 'out') {
+                gzwrite($gz, $output);
             }
-        } finally {
-            gzclose($gz);
-            $exitCode = pclose($handle);
-        }
+        });
+        gzclose($gz);
 
-        if ($exitCode !== 0) {
-            throw new \RuntimeException("mysqldump failed with exit code {$exitCode}");
+        if (! $result->successful()) {
+            throw new \RuntimeException("mysqldump failed with exit code {$result->exitCode()}");
         }
     }
 
