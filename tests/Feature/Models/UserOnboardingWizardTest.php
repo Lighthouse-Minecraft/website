@@ -81,9 +81,25 @@ test('currentOnboardingStep returns discord for a Stowaway with parent_allows_di
 
 // ─── currentOnboardingStep() — Stowaway waiting step ─────────────────────────
 
-test('currentOnboardingStep returns waiting for a Stowaway who has linked Discord', function () {
+test('currentOnboardingStep returns discord-join for a Stowaway who has linked Discord but not joined the server', function () {
     $user = User::factory()->create(['membership_level' => MembershipLevel::Stowaway]);
     DiscordAccount::factory()->active()->for($user)->create();
+
+    expect($user->currentOnboardingStep())->toBe('discord-join');
+});
+
+test('currentOnboardingStep returns waiting for a Stowaway who has linked Discord and completed the join step', function () {
+    $user = User::factory()->create(['membership_level' => MembershipLevel::Stowaway]);
+    DiscordAccount::factory()->active()->for($user)->create();
+
+    ActivityLog::create([
+        'causer_id' => $user->id,
+        'subject_type' => User::class,
+        'subject_id' => $user->id,
+        'action' => 'onboarding_discord_join_done',
+        'description' => 'Confirmed joining Discord server.',
+        'meta' => [],
+    ]);
 
     expect($user->currentOnboardingStep())->toBe('waiting');
 });

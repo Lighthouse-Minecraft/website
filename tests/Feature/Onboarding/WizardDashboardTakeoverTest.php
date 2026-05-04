@@ -216,6 +216,14 @@ test('Dismiss button is present on the waiting step', function () {
         'rules_accepted_at' => now(),
     ]);
     DiscordAccount::factory()->active()->for($user)->create();
+    ActivityLog::create([
+        'causer_id' => $user->id,
+        'subject_type' => User::class,
+        'subject_id' => $user->id,
+        'action' => 'onboarding_discord_join_done',
+        'description' => 'Confirmed joining Discord server.',
+        'meta' => [],
+    ]);
     loginAs($user);
 
     Volt::test('onboarding.wizard')

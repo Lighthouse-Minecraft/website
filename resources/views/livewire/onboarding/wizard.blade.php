@@ -26,6 +26,13 @@ new class extends Component
         $this->step = $user->fresh()->currentOnboardingStep();
     }
 
+    public function discordJoinDone(): void
+    {
+        $user = Auth::user();
+        RecordActivity::run($user, 'onboarding_discord_join_done', 'Confirmed joining Discord server.');
+        $this->step = $user->fresh()->currentOnboardingStep();
+    }
+
     public function continueDisabledDiscord(): void
     {
         $user = Auth::user();
@@ -116,6 +123,35 @@ new class extends Component
                         </flux:button>
                     </div>
                 @endif
+            </flux:card>
+
+        @elseif ($step === 'discord-join')
+            <flux:card class="border border-indigo-500/40 bg-indigo-950/20">
+                <div class="flex items-start justify-between">
+                    <flux:heading size="lg" class="text-indigo-300">Join Our Discord Server</flux:heading>
+                    <flux:button wire:click="dismiss" variant="ghost" size="sm" class="text-zinc-400 hover:text-zinc-200 -mt-1 -mr-1">
+                        Dismiss
+                    </flux:button>
+                </div>
+
+                <flux:separator variant="subtle" class="my-4" />
+
+                <flux:text class="mb-2">
+                    Your Discord account is connected! The last step is to join the Lighthouse Discord server
+                    so you can chat with the community, get server role assignments, and receive notifications.
+                </flux:text>
+                <flux:text variant="subtle" class="text-sm mb-4">
+                    Click the button below to open Discord and join the server, then come back and click "I've Joined".
+                </flux:text>
+
+                <div class="flex items-center justify-between">
+                    <flux:button href="https://discord.gg/4RNtFNApYt" target="_blank" rel="noopener noreferrer" variant="primary" icon="arrow-top-right-on-square">
+                        Join Discord Server
+                    </flux:button>
+                    <flux:button wire:click="discordJoinDone" variant="ghost">
+                        I've Joined
+                    </flux:button>
+                </div>
             </flux:card>
 
         @elseif ($step === 'waiting')
