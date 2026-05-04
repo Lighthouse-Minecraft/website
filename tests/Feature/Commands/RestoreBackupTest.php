@@ -185,6 +185,31 @@ it('notifies backup managers on successful restore', function () {
     Notification::assertSentTo($manager, RestoreCompletedNotification::class);
 });
 
+it('blocks restore in production environment', function () {
+    $this->app->detectEnvironment(fn () => 'production');
+
+    try {
+        $path = makeBackupFile('backup_2026-01-01_00-00-00_sqlite.sql.gz');
+
+        expect(fn () => (new \App\Services\RestoreService)->restore($path))
+            ->toThrow(\RuntimeException::class, 'production environment');
+    } finally {
+        $this->app->detectEnvironment(fn () => 'testing');
+    }
+});
+
+it('passes production guard when APP_ENV is backup-restore', function () {
+    $this->app->detectEnvironment(fn () => 'backup-restore');
+
+    try {
+        // Nonexistent path: guard lets it through, then "file not found" confirms the guard passed.
+        expect(fn () => (new \App\Services\RestoreService)->restore('/nonexistent/path_sqlite.sql.gz'))
+            ->toThrow(\RuntimeException::class, 'Backup file not found');
+    } finally {
+        $this->app->detectEnvironment(fn () => 'testing');
+    }
+});
+
 it('notifies backup managers on restore failure', function () {
     $manager = User::factory()->withRole('Backup Manager')->create();
 

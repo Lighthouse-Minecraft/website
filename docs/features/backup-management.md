@@ -246,6 +246,14 @@ Not applicable for this feature — the feature does not use Action classes (the
 **Scheduled:** No (manual only)
 **What it does:** Accepts a bare filename argument (e.g., `backup_2026-04-28_03-00-00_sqlite.sql.gz`), builds the full path from `storage/app/backups/`, calls `RestoreService::restore($path)`. Notifies all Backup Manager users of success or failure.
 
+> **⚠️ Production Safety Lock:** Restore is blocked when `APP_ENV=production`. The command (and the Livewire dashboard) will immediately abort with an error. To perform an emergency restore on production, you must:
+> 1. Edit `.env` and change `APP_ENV=backup-restore`
+> 2. Restart PHP-FPM and the queue worker so the new env value takes effect
+> 3. Run the restore command (or use the dashboard)
+> 4. Set `APP_ENV=production` again and restart
+>
+> **Do not leave `APP_ENV=backup-restore` running in production** — set it back to `production` as soon as the restore is complete.
+
 ### `app:backup-cleanup`
 **File:** `app/Console/Commands/CleanupBackups.php`
 **Scheduled:** Yes — daily at `04:00` (`runInBackground`)
@@ -284,7 +292,7 @@ Not applicable for this feature — the feature does not use Action classes (the
 **Purpose:** Restores a gzip-compressed SQL backup file into the active database.
 
 **Key methods:**
-- `restore(string $path): void` — Detects source DB type from filename, matches against target DB driver, optionally enters maintenance mode, calls the appropriate restore path.
+- `restore(string $path): void` — First checks that `APP_ENV` is not `production` (throws `RuntimeException` if it is). Then detects source DB type from filename, matches against target DB driver, optionally enters maintenance mode, calls the appropriate restore path.
 
 **Source type detection:** Reads `_pgsql.sql.gz`, `_mysql.sql.gz`, or `_sqlite.sql.gz` suffix from the filename.
 
@@ -450,6 +458,7 @@ Scheduler fires dailyAt('04:00')
 
 | Variable | Used By | Purpose |
 |----------|---------|---------|
+| `APP_ENV` | `RestoreService`, Backup Dashboard | **Restore safety lock.** Restore is blocked when `production`. Set to `backup-restore` to enable an emergency restore. Must restart PHP-FPM and queue workers after changing. |
 | `AWS_ACCESS_KEY_ID` | `config/filesystems.php` (s3 disk) | S3 authentication key |
 | `AWS_SECRET_ACCESS_KEY` | `config/filesystems.php` (s3 disk) | S3 authentication secret |
 | `AWS_DEFAULT_REGION` | `config/filesystems.php` (s3 disk) | S3 region (e.g., `us-east-1`) |

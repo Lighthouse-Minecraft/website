@@ -11,6 +11,13 @@ class RestoreService
 {
     public function restore(string $path): void
     {
+        if (app()->environment('production')) {
+            throw new \RuntimeException(
+                'Restore is blocked in the production environment. '.
+                'To perform an emergency restore, set APP_ENV=backup-restore in .env and restart PHP-FPM and the queue worker.'
+            );
+        }
+
         if (! file_exists($path)) {
             throw new \RuntimeException("Backup file not found: {$path}");
         }

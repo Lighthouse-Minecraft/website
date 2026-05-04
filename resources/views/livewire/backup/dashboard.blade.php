@@ -280,6 +280,12 @@ new class extends Component
     {
         $this->authorize('backup-manager');
 
+        if (app()->environment('production')) {
+            Flux::toast('Restore is disabled in production. Set APP_ENV=backup-restore in .env to enable an emergency restore.', 'Blocked', variant: 'danger');
+
+            return;
+        }
+
         if ($this->restoreTarget === null) {
             return;
         }

@@ -126,6 +126,25 @@ it('non-backup-manager is blocked at the route level', function () {
 
 // ── Restore ───────────────────────────────────────────────────────────────────
 
+it('restore action is blocked in production environment', function () {
+    Queue::fake();
+    $user = User::factory()->withRole('Backup Manager')->create();
+    makeLocalBackup('test_dash_restore_prod_2026-04-01_03-00-00_sqlite.sql.gz');
+
+    $this->app->detectEnvironment(fn () => 'production');
+
+    try {
+        Volt::actingAs($user)
+            ->test('backup.dashboard')
+            ->set('restoreTarget', 'test_dash_restore_prod_2026-04-01_03-00-00_sqlite.sql.gz')
+            ->call('restoreBackup');
+
+        Queue::assertNothingPushed();
+    } finally {
+        $this->app->detectEnvironment(fn () => 'testing');
+    }
+});
+
 it('restore action dispatches RestoreBackupJob', function () {
     Queue::fake();
     $user = User::factory()->withRole('Backup Manager')->create();
