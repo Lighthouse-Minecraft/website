@@ -1,6 +1,6 @@
 ---
 title: 'Hero and OG Images'
-visibility: staff
+visibility: citizen
 order: 5
 summary: 'How to set a hero image and social sharing image for your blog posts.'
 ---
