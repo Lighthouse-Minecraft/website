@@ -57,6 +57,8 @@ it('backup filename includes timestamp and database type', function () {
 });
 
 it('notifies backup managers on success', function () {
+    Notification::fake();
+
     $manager = User::factory()->withRole('Backup Manager')->create();
 
     $this->artisan('app:backup-create')->assertSuccessful();
@@ -65,6 +67,8 @@ it('notifies backup managers on success', function () {
 });
 
 it('notifies backup managers on failure', function () {
+    Notification::fake();
+
     $manager = User::factory()->withRole('Backup Manager')->create();
 
     $service = $this->mock(BackupService::class);

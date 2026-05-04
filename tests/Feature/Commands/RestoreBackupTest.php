@@ -170,6 +170,8 @@ it('enters and exits maintenance mode during restore when offline_during_restore
 });
 
 it('notifies backup managers on successful restore', function () {
+    Notification::fake();
+
     $manager = User::factory()->withRole('Backup Manager')->create();
 
     // Mock RestoreService so tables are never dropped — notification queries stay intact
@@ -211,6 +213,8 @@ it('passes production guard when APP_ENV is backup-restore', function () {
 });
 
 it('notifies backup managers on restore failure', function () {
+    Notification::fake();
+
     $manager = User::factory()->withRole('Backup Manager')->create();
 
     $this->mock(RestoreService::class)
