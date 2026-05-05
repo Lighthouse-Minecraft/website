@@ -1,6 +1,6 @@
 ---
 title: 'Handling Cancelled Minecraft Accounts'
-visibility: users
+visibility: public
 order: 5
 summary: 'What to do when your child''s Minecraft account shows a Cancelled or Cancelling Verification status.'
 ---

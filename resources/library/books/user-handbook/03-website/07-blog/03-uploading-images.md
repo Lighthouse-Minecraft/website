@@ -1,6 +1,6 @@
 ---
 title: 'Uploading Images'
-visibility: citizen
+visibility: public
 order: 3
 summary: 'How to upload and insert images into your blog posts using the image manager.'
 ---
