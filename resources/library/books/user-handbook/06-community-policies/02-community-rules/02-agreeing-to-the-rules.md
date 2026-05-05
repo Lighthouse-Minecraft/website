@@ -1,6 +1,6 @@
 ---
 title: "Agreeing to the Rules"
-visibility: users
+visibility: public
 order: 2
 summary: "How to read and agree to the Community Rules as a new or returning member."
 ---

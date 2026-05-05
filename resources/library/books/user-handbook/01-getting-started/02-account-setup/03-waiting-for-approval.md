@@ -1,6 +1,6 @@
 ---
 title: "Waiting for Approval"
-visibility: users
+visibility: public
 order: 3
 summary: "What happens between the Discord step and getting access to the Minecraft server."
 ---

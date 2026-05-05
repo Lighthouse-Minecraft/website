@@ -1,6 +1,6 @@
 ---
 title: "Linking Minecraft"
-visibility: users
+visibility: public
 order: 4
 summary: "What to do on the Minecraft setup step to get whitelisted on the server."
 ---

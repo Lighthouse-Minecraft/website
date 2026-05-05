@@ -1,6 +1,6 @@
 ---
 title: "Connecting Discord"
-visibility: users
+visibility: public
 order: 2
 summary: "What to do on the Discord setup step and how to complete it."
 ---

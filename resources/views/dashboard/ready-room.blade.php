@@ -25,6 +25,11 @@
                     Vault
                 </flux:button>
             @endcan
+            @can('backup-manager')
+                <flux:button href="{{ route('backups.index') }}" wire:navigate icon="circle-stack">
+                    Backups
+                </flux:button>
+            @endcan
         </div>
     </div>
 

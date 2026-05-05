@@ -1,6 +1,6 @@
 ---
 title: 'Browsing the Image Library'
-visibility: staff
+visibility: public
 order: 4
 summary: 'How to browse, search, and reuse images from the shared image library.'
 ---
