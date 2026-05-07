@@ -445,7 +445,7 @@ new class extends Component
     @php $jobStatus = $this->backupJobStatus; $restoreStatus = $this->restoreJobStatus; @endphp
     @if (in_array($jobStatus['status'], ['queued', 'running']) || in_array($restoreStatus['status'], ['queued', 'running']) || ($jobStatus['status'] === 'completed' && ! collect($this->localBackups)->contains('filename', $jobStatus['filename'])))
         <div wire:poll.3s></div>
-    @elseif ($jobStatus['status'] === 'completed' || in_array($restoreStatus['status'], ['completed', 'failed']))
+    @elseif ($jobStatus['status'] === 'completed' || $restoreStatus['status'] === 'completed')
         <div wire:poll.30s></div>
     @endif
 
