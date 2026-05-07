@@ -88,12 +88,22 @@ class RestoreService
 
     private function restorePostgres(string $path, array $config): void
     {
-        $cmd = 'PGPASSWORD='.escapeshellarg($config['password'] ?? '')
-            .' psql'
-            .' -h '.escapeshellarg($config['host'] ?? 'localhost')
+        $envPrefix = 'PGPASSWORD='.escapeshellarg($config['password'] ?? '');
+        $connArgs = ' -h '.escapeshellarg($config['host'] ?? 'localhost')
             .' -p '.escapeshellarg((string) ($config['port'] ?? 5432))
             .' -U '.escapeshellarg($config['username'])
             .' '.escapeshellarg($config['database']);
+
+        // Wipe the public schema so the restore starts against an empty database.
+        $wipeResult = Process::run(
+            $envPrefix.' psql'.$connArgs.' -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"'
+        );
+
+        if (! $wipeResult->successful()) {
+            throw new \RuntimeException('Failed to wipe PostgreSQL schema before restore: '.$wipeResult->errorOutput());
+        }
+
+        $cmd = $envPrefix.' psql'.$connArgs;
 
         $handle = popen($cmd, 'w');
         if ($handle === false) {
@@ -120,12 +130,24 @@ class RestoreService
 
     private function restoreMysql(string $path, array $config): void
     {
-        $cmd = 'MYSQL_PWD='.escapeshellarg($config['password'] ?? '')
-            .' mysql'
-            .' -h '.escapeshellarg($config['host'] ?? 'localhost')
+        $envPrefix = 'MYSQL_PWD='.escapeshellarg($config['password'] ?? '');
+        $connArgs = ' -h '.escapeshellarg($config['host'] ?? 'localhost')
             .' -P '.escapeshellarg((string) ($config['port'] ?? 3306))
             .' -u '.escapeshellarg($config['username'])
             .' '.escapeshellarg($config['database']);
+
+        // Wipe all tables so the restore starts against an empty database.
+        $db = escapeshellarg($config['database']);
+        $wipeResult = Process::run(
+            $envPrefix.' mysql'.$connArgs
+            .' -e "SET FOREIGN_KEY_CHECKS=0; DROP DATABASE '.$db.'; CREATE DATABASE '.$db.'; SET FOREIGN_KEY_CHECKS=1;"'
+        );
+
+        if (! $wipeResult->successful()) {
+            throw new \RuntimeException('Failed to wipe MySQL database before restore: '.$wipeResult->errorOutput());
+        }
+
+        $cmd = $envPrefix.' mysql'.$connArgs;
 
         $handle = popen($cmd, 'w');
         if ($handle === false) {
