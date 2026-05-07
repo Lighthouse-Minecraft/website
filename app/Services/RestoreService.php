@@ -113,7 +113,14 @@ BEGIN
 END $$;
 SQL;
         $tempFile = tempnam(sys_get_temp_dir(), 'wipe_pg_');
-        file_put_contents($tempFile, $wipeSql);
+        if ($tempFile === false) {
+            throw new \RuntimeException('Failed to create temporary file for PostgreSQL wipe SQL');
+        }
+
+        if (file_put_contents($tempFile, $wipeSql) === false) {
+            @unlink($tempFile);
+            throw new \RuntimeException('Failed to write PostgreSQL wipe SQL to temporary file');
+        }
 
         try {
             $wipeResult = Process::run(

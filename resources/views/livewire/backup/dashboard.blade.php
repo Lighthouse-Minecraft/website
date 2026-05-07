@@ -338,12 +338,18 @@ new class extends Component
             return;
         }
 
+        try {
+            RestoreBackupJob::dispatch($path);
+        } catch (\Throwable $e) {
+            $lock->release();
+            throw $e;
+        }
+
         app(RestoreStatusService::class)->set('queued', [
             'filename' => $this->restoreTarget,
             'queued_at' => now()->toIso8601String(),
         ]);
 
-        RestoreBackupJob::dispatch($path);
         unset($this->restoreJobStatus);
         $this->restoreTarget = null;
         Flux::modal('confirm-restore')->close();

@@ -15,7 +15,10 @@ class RestoreStatusService
     {
         $existing = $this->read();
         $data = array_merge($existing, ['status' => $status], $extra);
-        file_put_contents($this->path, json_encode($data));
+        $encoded = json_encode($data, JSON_THROW_ON_ERROR);
+        if (file_put_contents($this->path, $encoded) === false) {
+            throw new \RuntimeException('Failed to write restore status file: '.$this->path);
+        }
     }
 
     public function read(): array
