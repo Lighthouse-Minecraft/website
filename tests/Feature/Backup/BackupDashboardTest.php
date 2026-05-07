@@ -6,6 +6,7 @@ use App\Jobs\RestoreBackupJob;
 use App\Models\SiteConfig;
 use App\Models\User;
 use App\Services\BackupService;
+use App\Services\RestoreStatusService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
@@ -31,6 +32,7 @@ afterEach(function () {
     foreach (glob(storage_path('app/backups/test_dash_*.sql.gz')) as $file) {
         @unlink($file);
     }
+    app(RestoreStatusService::class)->clear();
 });
 
 // ── Authorization ─────────────────────────────────────────────────────────────
@@ -145,7 +147,7 @@ it('restore action is blocked in production environment', function () {
     }
 });
 
-it('restore action dispatches RestoreBackupJob', function () {
+it('restore action dispatches RestoreBackupJob and writes queued status', function () {
     Queue::fake();
     $user = User::factory()->withRole('Backup Manager')->create();
     makeLocalBackup('test_dash_restore_2026-04-01_03-00-00_sqlite.sql.gz');
@@ -156,6 +158,24 @@ it('restore action dispatches RestoreBackupJob', function () {
         ->call('restoreBackup');
 
     Queue::assertPushed(RestoreBackupJob::class);
+
+    $status = app(RestoreStatusService::class)->read();
+    expect($status['status'])->toBe('queued');
+    expect($status['filename'])->toBe('test_dash_restore_2026-04-01_03-00-00_sqlite.sql.gz');
+});
+
+it('dismissRestoreStatus clears the restore status file', function () {
+    $user = User::factory()->withRole('Backup Manager')->create();
+    app(RestoreStatusService::class)->set('completed', [
+        'filename' => 'test_dash_restore_2026-04-01_03-00-00_sqlite.sql.gz',
+        'completed_at' => now()->toIso8601String(),
+    ]);
+
+    Volt::actingAs($user)
+        ->test('backup.dashboard')
+        ->call('dismissRestoreStatus');
+
+    expect(app(RestoreStatusService::class)->read())->toBe([]);
 });
 
 it('confirmRestore sets restoreTarget', function () {

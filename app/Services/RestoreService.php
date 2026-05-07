@@ -94,10 +94,41 @@ class RestoreService
             .' -U '.escapeshellarg($config['username'])
             .' '.escapeshellarg($config['database']);
 
-        // Wipe the public schema so the restore starts against an empty database.
-        $wipeResult = Process::run(
-            $envPrefix.' psql'.$connArgs.' -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"'
-        );
+        // Drop all objects in the public schema without requiring schema ownership.
+        // DROP SCHEMA CASCADE requires the user to own the schema (PostgreSQL 15+),
+        // but dropping individual tables/sequences/views works with table ownership.
+        $wipeSql = <<<'SQL'
+DO $$
+DECLARE r RECORD;
+BEGIN
+    FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public') LOOP
+        EXECUTE 'DROP TABLE IF EXISTS public.' || quote_ident(r.tablename) || ' CASCADE';
+    END LOOP;
+    FOR r IN (SELECT sequence_name FROM information_schema.sequences WHERE sequence_schema = 'public') LOOP
+        EXECUTE 'DROP SEQUENCE IF EXISTS public.' || quote_ident(r.sequence_name) || ' CASCADE';
+    END LOOP;
+    FOR r IN (SELECT table_name FROM information_schema.views WHERE table_schema = 'public') LOOP
+        EXECUTE 'DROP VIEW IF EXISTS public.' || quote_ident(r.table_name) || ' CASCADE';
+    END LOOP;
+END $$;
+SQL;
+        $tempFile = tempnam(sys_get_temp_dir(), 'wipe_pg_');
+        if ($tempFile === false) {
+            throw new \RuntimeException('Failed to create temporary file for PostgreSQL wipe SQL');
+        }
+
+        if (file_put_contents($tempFile, $wipeSql) === false) {
+            @unlink($tempFile);
+            throw new \RuntimeException('Failed to write PostgreSQL wipe SQL to temporary file');
+        }
+
+        try {
+            $wipeResult = Process::run(
+                $envPrefix.' psql'.$connArgs.' -f '.escapeshellarg($tempFile)
+            );
+        } finally {
+            @unlink($tempFile);
+        }
 
         if (! $wipeResult->successful()) {
             throw new \RuntimeException('Failed to wipe PostgreSQL schema before restore: '.$wipeResult->errorOutput());
