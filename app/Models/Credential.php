@@ -157,7 +157,9 @@ class Credential extends Model
     public function latestAccessLog(): HasOne
     {
         return $this->hasOne(CredentialAccessLog::class)
-            ->whereIn('action', ['viewed_password', 'viewed_totp'])
-            ->latestOfMany('created_at');
+            ->ofMany(
+                ['created_at' => 'max'],
+                fn ($q) => $q->whereIn('action', ['viewed_password', 'viewed_totp'])
+            );
     }
 }

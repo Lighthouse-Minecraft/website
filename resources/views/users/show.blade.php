@@ -13,7 +13,7 @@
         </div>
     @endcan
 
-    @if($user->staffPosition)
+    @if($user->staffPosition || $user->hasEverBeenOnStaff())
         @can('view-staff-activity', $user)
             <div class="my-6">
                 <livewire:users.staff-activity-card :user="$user" />

@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\AssignCredentialPositions;
+use App\Actions\ClearCredentialRotationFlag;
 use App\Actions\DeleteCredential;
 use App\Actions\GenerateTotpCode;
 use App\Actions\ReauthenticateVaultSession;
@@ -306,6 +307,18 @@ new class extends Component
         Flux::toast('Position added.', 'Done', variant: 'success');
     }
 
+    public function clearRotationFlag(): void
+    {
+        $this->authorize('update', $this->credential);
+
+        if (! $this->isVaultManager) {
+            return;
+        }
+
+        $this->credential = ClearCredentialRotationFlag::run($this->credential, auth()->user());
+        Flux::toast('Rotation flag cleared.', 'Done', variant: 'success');
+    }
+
     public function removePosition(int $positionId): void
     {
         $this->authorize('managePositions', $this->credential);
@@ -333,12 +346,15 @@ new class extends Component
     <div class="space-y-6">
         <div class="flex items-center justify-between">
             <div>
-                <flux:heading size="xl">
-                    {{ $credential->name }}
+                <div class="flex items-center gap-3">
+                    <flux:heading size="xl">{{ $credential->name }}</flux:heading>
                     @if ($credential->needs_password_change)
-                        <flux:badge color="orange" class="ml-2">Needs Rotation</flux:badge>
+                        <flux:badge color="orange">Needs Rotation</flux:badge>
+                        @if ($this->isVaultManager)
+                            <flux:button size="xs" variant="ghost" wire:click="clearRotationFlag">Clear Flag</flux:button>
+                        @endif
                     @endif
-                </flux:heading>
+                </div>
                 @if ($credential->website_url)
                     <flux:link href="{{ $credential->website_url }}" target="_blank" rel="noopener noreferrer" class="text-sm">
                         {{ $credential->website_url }}

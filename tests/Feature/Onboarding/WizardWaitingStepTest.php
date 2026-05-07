@@ -10,12 +10,33 @@ use Livewire\Volt\Volt;
 
 // ─── Waiting step visibility ──────────────────────────────────────────────────
 
-test('Stowaway who linked Discord sees the waiting step', function () {
+test('Stowaway who linked Discord sees the discord-join step before completing it', function () {
     $user = User::factory()->create([
         'membership_level' => MembershipLevel::Stowaway,
         'rules_accepted_at' => now(),
     ]);
     DiscordAccount::factory()->active()->for($user)->create();
+    loginAs($user);
+
+    Volt::test('onboarding.wizard')
+        ->assertSet('step', 'discord-join')
+        ->assertSee('Join Our Discord Server');
+});
+
+test('Stowaway who linked Discord and completed the join step sees the waiting step', function () {
+    $user = User::factory()->create([
+        'membership_level' => MembershipLevel::Stowaway,
+        'rules_accepted_at' => now(),
+    ]);
+    DiscordAccount::factory()->active()->for($user)->create();
+    ActivityLog::create([
+        'causer_id' => $user->id,
+        'subject_type' => User::class,
+        'subject_id' => $user->id,
+        'action' => 'onboarding_discord_join_done',
+        'description' => 'Confirmed joining Discord server.',
+        'meta' => [],
+    ]);
     loginAs($user);
 
     Volt::test('onboarding.wizard')
@@ -72,6 +93,14 @@ test('waiting card explains the approval process', function () {
         'rules_accepted_at' => now(),
     ]);
     DiscordAccount::factory()->active()->for($user)->create();
+    ActivityLog::create([
+        'causer_id' => $user->id,
+        'subject_type' => User::class,
+        'subject_id' => $user->id,
+        'action' => 'onboarding_discord_join_done',
+        'description' => 'Confirmed joining Discord server.',
+        'meta' => [],
+    ]);
     loginAs($user);
 
     Volt::test('onboarding.wizard')
@@ -85,6 +114,14 @@ test('waiting card has no action button besides Dismiss', function () {
         'rules_accepted_at' => now(),
     ]);
     DiscordAccount::factory()->active()->for($user)->create();
+    ActivityLog::create([
+        'causer_id' => $user->id,
+        'subject_type' => User::class,
+        'subject_id' => $user->id,
+        'action' => 'onboarding_discord_join_done',
+        'description' => 'Confirmed joining Discord server.',
+        'meta' => [],
+    ]);
     loginAs($user);
 
     Volt::test('onboarding.wizard')
@@ -128,6 +165,14 @@ test('Dismiss from the waiting step sets dismissed_at', function () {
         'rules_accepted_at' => now(),
     ]);
     DiscordAccount::factory()->active()->for($user)->create();
+    ActivityLog::create([
+        'causer_id' => $user->id,
+        'subject_type' => User::class,
+        'subject_id' => $user->id,
+        'action' => 'onboarding_discord_join_done',
+        'description' => 'Confirmed joining Discord server.',
+        'meta' => [],
+    ]);
     loginAs($user);
 
     Volt::test('onboarding.wizard')

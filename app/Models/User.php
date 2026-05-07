@@ -598,20 +598,36 @@ class User extends Authenticatable // implements MustVerifyEmail
     /**
      * The current onboarding step for this user.
      *
-     * Returns one of: 'discord', 'waiting', 'minecraft', 'complete'.
+     * Returns one of: 'discord', 'discord-join', 'waiting', 'minecraft', 'complete'.
      * Steps are derived from current user state and activity log entries — no separate step column.
      */
     public function currentOnboardingStep(): string
     {
         // Discord and waiting steps apply only to Stowaways (not yet Traveler)
         if ($this->isLevel(MembershipLevel::Stowaway)) {
-            $discordProcessed = $this->discordAccounts()->active()->exists()
-                || ActivityLog::where('subject_type', User::class)
-                    ->where('subject_id', $this->id)
-                    ->whereIn('action', ['onboarding_discord_skipped', 'onboarding_discord_disabled'])
-                    ->exists();
+            $discordSkippedOrDisabled = ActivityLog::where('subject_type', User::class)
+                ->where('subject_id', $this->id)
+                ->whereIn('action', ['onboarding_discord_skipped', 'onboarding_discord_disabled'])
+                ->exists();
 
-            return $discordProcessed ? 'waiting' : 'discord';
+            // If Discord was explicitly skipped/disabled, jump straight to waiting
+            if ($discordSkippedOrDisabled) {
+                return 'waiting';
+            }
+
+            $discordConnected = $this->discordAccounts()->active()->exists();
+
+            if (! $discordConnected) {
+                return 'discord';
+            }
+
+            // Discord is connected — show the join-server step unless already done
+            $discordJoinDone = ActivityLog::where('subject_type', User::class)
+                ->where('subject_id', $this->id)
+                ->where('action', 'onboarding_discord_join_done')
+                ->exists();
+
+            return $discordJoinDone ? 'waiting' : 'discord-join';
         }
 
         // Traveler+: Minecraft step. Shows explanation when parent has disabled Minecraft,
@@ -623,6 +639,14 @@ class User extends Authenticatable // implements MustVerifyEmail
                 ->exists();
 
         return $minecraftProcessed ? 'complete' : 'minecraft';
+    }
+
+    public function hasEverBeenOnStaff(): bool
+    {
+        return ActivityLog::where('subject_type', User::class)
+            ->where('subject_id', $this->id)
+            ->where('action', 'staff_position_removed')
+            ->exists();
     }
 
     public function canSendPushover(): bool
