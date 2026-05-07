@@ -260,13 +260,17 @@ new class extends Component
 
         $key = "backups/{$filename}";
 
+        abort_unless(Storage::disk('s3')->exists($key), 404);
+
         return response()->streamDownload(function () use ($key) {
             $stream = Storage::disk('s3')->readStream($key);
-            if ($stream === null) {
-                abort(404);
+            if ($stream !== null) {
+                try {
+                    fpassthru($stream);
+                } finally {
+                    fclose($stream);
+                }
             }
-            fpassthru($stream);
-            fclose($stream);
         }, $filename, ['Content-Type' => 'application/gzip']);
     }
 

@@ -81,6 +81,7 @@ class BackupService
     {
         $cmd = 'PGPASSWORD='.escapeshellarg($config['password'] ?? '')
             .' pg_dump'
+            .' --clean --if-exists'
             .' -h '.escapeshellarg($config['host'] ?? 'localhost')
             .' -p '.escapeshellarg((string) ($config['port'] ?? 5432))
             .' -U '.escapeshellarg($config['username'])
@@ -103,6 +104,7 @@ class BackupService
     {
         $cmd = 'MYSQL_PWD='.escapeshellarg($config['password'] ?? '')
             .' mysqldump'
+            .' --add-drop-table'
             .' -h '.escapeshellarg($config['host'] ?? 'localhost')
             .' -P '.escapeshellarg((string) ($config['port'] ?? 3306))
             .' -u '.escapeshellarg($config['username'])
