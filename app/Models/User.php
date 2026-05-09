@@ -542,6 +542,15 @@ class User extends Authenticatable // implements MustVerifyEmail
             );
     }
 
+    public function latestPassedBackgroundCheck(): HasOne
+    {
+        return $this->hasOne(BackgroundCheck::class)
+            ->ofMany(
+                ['id' => 'max'],
+                fn ($q) => $q->where('status', BackgroundCheckStatus::Passed->value)
+            );
+    }
+
     /**
      * Calculate discipline risk score over 7/30/90-day windows.
      * Cached for 24 hours; cache is busted when a report is published for this user.

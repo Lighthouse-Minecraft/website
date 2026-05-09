@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\BackgroundCheckStatus;
 use App\Enums\StaffRank;
 use App\Models\Meeting;
 use App\Models\MeetingReport;
@@ -25,8 +26,37 @@ new class extends Component {
     {
         return User::where('staff_department', $this->department)
             ->where('staff_rank', '>=', StaffRank::JrCrew->value)
+            ->with(['latestTerminalBackgroundCheck', 'latestPassedBackgroundCheck'])
             ->orderBy('name')
             ->get();
+    }
+
+    public function renewalBadge(User $member): ?array
+    {
+        $latestTerminal = $member->latestTerminalBackgroundCheck;
+
+        if ($latestTerminal && $latestTerminal->status === BackgroundCheckStatus::Waived) {
+            return ['color' => 'violet', 'label' => 'Waived'];
+        }
+
+        $latestPassed = $member->latestPassedBackgroundCheck;
+
+        if (! $latestPassed) {
+            return ['color' => 'red', 'label' => 'Overdue'];
+        }
+
+        $expiresAt = $latestPassed->completed_date->copy()->addYears(2);
+        $dueSoonAt = $expiresAt->copy()->subDays(90);
+
+        if ($expiresAt->lte(now())) {
+            return ['color' => 'red', 'label' => 'Overdue'];
+        }
+
+        if ($dueSoonAt->lte(now())) {
+            return ['color' => 'amber', 'label' => 'Due Soon'];
+        }
+
+        return null;
     }
 
     #[\Livewire\Attributes\Computed]
@@ -77,6 +107,10 @@ new class extends Component {
                     <div class="min-w-0 flex-1">
                         <p class="text-xs font-medium truncate">{{ $member->name }}</p>
                     </div>
+                    @php $badge = $this->renewalBadge($member); @endphp
+                    @if($badge)
+                        <flux:badge size="sm" color="{{ $badge['color'] }}">{{ $badge['label'] }}</flux:badge>
+                    @endif
                 </button>
             @endforeach
         </div>
