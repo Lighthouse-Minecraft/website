@@ -3,6 +3,7 @@
 use App\Jobs\RestoreBackupJob;
 use App\Models\SiteConfig;
 use App\Services\BackupStorageService;
+use App\Services\RestoreStatusService;
 use Flux\Flux;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
@@ -180,6 +181,38 @@ new class extends Component
         unset($this->backupJobStatus);
     }
 
+    #[\Livewire\Attributes\Computed]
+    public function restoreJobStatus(): array
+    {
+        $data = app(RestoreStatusService::class)->read();
+        $status = $data['status'] ?? null;
+
+        if ($status === 'completed' && isset($data['completed_at'])) {
+            if (now()->diffInSeconds(\Carbon\Carbon::parse($data['completed_at'])) > 60) {
+                $status = null;
+            }
+        }
+
+        return [
+            'status' => $status,
+            'filename' => $data['filename'] ?? null,
+            'timestamp' => match (true) {
+                $status === 'queued' && isset($data['queued_at']) => \Carbon\Carbon::parse($data['queued_at'])->diffForHumans(),
+                $status === 'running' && isset($data['started_at']) => \Carbon\Carbon::parse($data['started_at'])->diffForHumans(),
+                in_array($status, ['completed', 'failed']) && isset($data['completed_at']) => \Carbon\Carbon::parse($data['completed_at'])->diffForHumans(),
+                default => null,
+            },
+            'error' => $data['error'] ?? null,
+        ];
+    }
+
+    public function dismissRestoreStatus(): void
+    {
+        $this->authorize('backup-manager');
+        app(RestoreStatusService::class)->clear();
+        unset($this->restoreJobStatus);
+    }
+
     public function createBackup(): void
     {
         $this->authorize('backup-manager');
@@ -260,13 +293,17 @@ new class extends Component
 
         $key = "backups/{$filename}";
 
+        abort_unless(Storage::disk('s3')->exists($key), 404);
+
         return response()->streamDownload(function () use ($key) {
             $stream = Storage::disk('s3')->readStream($key);
-            if ($stream === null) {
-                abort(404);
+            if ($stream !== null) {
+                try {
+                    fpassthru($stream);
+                } finally {
+                    fclose($stream);
+                }
             }
-            fpassthru($stream);
-            fclose($stream);
         }, $filename, ['Content-Type' => 'application/gzip']);
     }
 
@@ -301,7 +338,19 @@ new class extends Component
             return;
         }
 
-        RestoreBackupJob::dispatch($path);
+        try {
+            RestoreBackupJob::dispatch($path);
+        } catch (\Throwable $e) {
+            $lock->release();
+            throw $e;
+        }
+
+        app(RestoreStatusService::class)->set('queued', [
+            'filename' => $this->restoreTarget,
+            'queued_at' => now()->toIso8601String(),
+        ]);
+
+        unset($this->restoreJobStatus);
         $this->restoreTarget = null;
         Flux::modal('confirm-restore')->close();
         Flux::toast('Restore job queued.', 'Success', variant: 'success');
@@ -393,10 +442,10 @@ new class extends Component
     </div>
 
     {{-- Poll while a job is in-flight, one extra cycle to refresh the file list, or every 30s while the completed badge is still showing --}}
-    @php $jobStatus = $this->backupJobStatus; @endphp
-    @if (in_array($jobStatus['status'], ['queued', 'running']) || ($jobStatus['status'] === 'completed' && ! collect($this->localBackups)->contains('filename', $jobStatus['filename'])))
+    @php $jobStatus = $this->backupJobStatus; $restoreStatus = $this->restoreJobStatus; @endphp
+    @if (in_array($jobStatus['status'], ['queued', 'running']) || in_array($restoreStatus['status'], ['queued', 'running']) || ($jobStatus['status'] === 'completed' && ! collect($this->localBackups)->contains('filename', $jobStatus['filename'])))
         <div wire:poll.3s></div>
-    @elseif ($jobStatus['status'] === 'completed')
+    @elseif ($jobStatus['status'] === 'completed' || $restoreStatus['status'] === 'completed')
         <div wire:poll.30s></div>
     @endif
 
@@ -406,20 +455,40 @@ new class extends Component
             <div class="flex items-center gap-3">
                 <flux:heading size="lg">Local Backups</flux:heading>
                 @if ($jobStatus['status'] === 'queued')
-                    <flux:badge color="yellow" icon="clock">Queued{{ $jobStatus['updated_at'] ? ' · '.$jobStatus['updated_at'] : '' }}</flux:badge>
+                    <flux:badge color="yellow" icon="clock">Backup: Queued{{ $jobStatus['updated_at'] ? ' · '.$jobStatus['updated_at'] : '' }}</flux:badge>
                 @elseif ($jobStatus['status'] === 'running')
-                    <flux:badge color="blue" icon="arrow-path">Running{{ $jobStatus['updated_at'] ? ' · '.$jobStatus['updated_at'] : '' }}</flux:badge>
+                    <flux:badge color="blue" icon="arrow-path">Backup: Running{{ $jobStatus['updated_at'] ? ' · '.$jobStatus['updated_at'] : '' }}</flux:badge>
                 @elseif ($jobStatus['status'] === 'completed')
                     <div class="flex items-center gap-1">
-                        <flux:badge color="green" icon="check-circle">Completed{{ $jobStatus['updated_at'] ? ' · '.$jobStatus['updated_at'] : '' }}</flux:badge>
+                        <flux:badge color="green" icon="check-circle">Backup: Completed{{ $jobStatus['updated_at'] ? ' · '.$jobStatus['updated_at'] : '' }}</flux:badge>
                         <button wire:click="dismissJobStatus" type="button" class="p-0.5 rounded text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800" aria-label="Dismiss">
                             <svg class="size-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                         </button>
                     </div>
                 @elseif ($jobStatus['status'] === 'failed')
                     <div class="flex items-center gap-1">
-                        <flux:badge color="red" icon="exclamation-triangle">Failed{{ $jobStatus['updated_at'] ? ' · '.$jobStatus['updated_at'] : '' }}</flux:badge>
+                        <flux:badge color="red" icon="exclamation-triangle">Backup: Failed{{ $jobStatus['updated_at'] ? ' · '.$jobStatus['updated_at'] : '' }}</flux:badge>
                         <button wire:click="dismissJobStatus" type="button" class="p-0.5 rounded text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-800" aria-label="Dismiss">
+                            <svg class="size-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                    </div>
+                @endif
+
+                @if ($restoreStatus['status'] === 'queued')
+                    <flux:badge color="yellow" icon="clock">Restore: Queued{{ $restoreStatus['timestamp'] ? ' · '.$restoreStatus['timestamp'] : '' }}</flux:badge>
+                @elseif ($restoreStatus['status'] === 'running')
+                    <flux:badge color="blue" icon="arrow-path">Restore: Running{{ $restoreStatus['timestamp'] ? ' · '.$restoreStatus['timestamp'] : '' }}</flux:badge>
+                @elseif ($restoreStatus['status'] === 'completed')
+                    <div class="flex items-center gap-1">
+                        <flux:badge color="green" icon="check-circle">Restore: Completed{{ $restoreStatus['timestamp'] ? ' · '.$restoreStatus['timestamp'] : '' }}</flux:badge>
+                        <button wire:click="dismissRestoreStatus" type="button" class="p-0.5 rounded text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800" aria-label="Dismiss">
+                            <svg class="size-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                    </div>
+                @elseif ($restoreStatus['status'] === 'failed')
+                    <div class="flex items-center gap-1">
+                        <flux:badge color="red" icon="exclamation-triangle">Restore: Failed{{ $restoreStatus['timestamp'] ? ' · '.$restoreStatus['timestamp'] : '' }}</flux:badge>
+                        <button wire:click="dismissRestoreStatus" type="button" class="p-0.5 rounded text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-800" aria-label="Dismiss">
                             <svg class="size-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                         </button>
                     </div>
