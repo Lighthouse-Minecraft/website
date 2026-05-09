@@ -26,6 +26,12 @@
                 @endcan
             @endif
 
+            @can('view-vault')
+                <div class="my-6">
+                    <livewire:users.vault-keys-card :user="$user" />
+                </div>
+            @endcan
+
             @can('viewActivityLog', $user)
                 <div class="w-full my-6 flex justify-end">
                     <flux:modal.trigger name="activity-log-modal">
