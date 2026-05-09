@@ -1,8 +1,11 @@
 <?php
 
+use App\Enums\BackgroundCheckStatus;
 use App\Enums\StaffDepartment;
 use App\Enums\StaffRank;
+use App\Models\BackgroundCheck;
 use App\Models\BoardMember;
+use App\Models\SiteConfig;
 use App\Models\StaffPosition;
 use Flux\Flux;
 use Illuminate\Support\Str;
@@ -26,9 +29,35 @@ new class extends Component {
         Flux::modal('board-member-detail-modal')->show();
     }
 
+    public function bgCheckTooltip(?BackgroundCheck $check): string
+    {
+        if (! $check) {
+            return SiteConfig::getValue('bg_check_no_record_message', 'Waiting for more donations to come in before we can do more background checks');
+        }
+
+        return match ($check->status) {
+            BackgroundCheckStatus::Passed => 'Background check passed on ' . $check->completed_date->format('M j, Y'),
+            BackgroundCheckStatus::Waived => 'A background check is not required for this position',
+            default => SiteConfig::getValue('bg_check_no_record_message', 'Waiting for more donations to come in before we can do more background checks'),
+        };
+    }
+
+    public function bgCheckColor(?BackgroundCheck $check): string
+    {
+        if (! $check) {
+            return 'amber';
+        }
+
+        return match ($check->status) {
+            BackgroundCheckStatus::Passed => 'green',
+            BackgroundCheckStatus::Waived => 'zinc',
+            default => 'amber',
+        };
+    }
+
     public function getDepartmentsProperty(): array
     {
-        $positions = StaffPosition::with(['user.minecraftAccounts', 'user.discordAccounts'])
+        $positions = StaffPosition::with(['user.minecraftAccounts', 'user.discordAccounts', 'user.latestTerminalBackgroundCheck'])
             ->ordered()
             ->get();
 
@@ -100,6 +129,7 @@ new class extends Component {
                                     class="p-3 rounded-lg border transition-colors cursor-pointer border-zinc-200 dark:border-zinc-700 hover:border-blue-300 dark:hover:border-blue-600"
                                 >
                                     @if($pos->isFilled())
+                                        @php $bgCheck = $pos->user->latestTerminalBackgroundCheck; @endphp
                                         <div class="flex flex-col items-center gap-2 text-center">
                                             @if($pos->user->staffPhotoUrl())
                                                 <img src="{{ $pos->user->staffPhotoUrl() }}" alt="{{ $pos->user->name }}" class="object-cover w-20 h-20 rounded-lg" />
@@ -109,6 +139,9 @@ new class extends Component {
                                             <div class="min-w-0">
                                                 <div class="text-sm font-semibold truncate">{{ $pos->user->name }}</div>
                                                 <div class="text-xs truncate text-zinc-500 dark:text-zinc-400">{{ $pos->title }}</div>
+                                                <div class="mt-1">
+                                                    <flux:badge size="sm" color="{{ $this->bgCheckColor($bgCheck) }}" icon="shield-check" title="{{ $this->bgCheckTooltip($bgCheck) }}">BG Check</flux:badge>
+                                                </div>
                                             </div>
                                         </div>
                                     @else
@@ -136,6 +169,7 @@ new class extends Component {
                                     class="p-3 rounded-lg border transition-colors cursor-pointer border-zinc-200 dark:border-zinc-700 hover:border-blue-300 dark:hover:border-blue-600"
                                 >
                                     @if($pos->isFilled())
+                                        @php $bgCheck = $pos->user->latestTerminalBackgroundCheck; @endphp
                                         <div class="flex flex-col items-center gap-2 text-center">
                                             @php $isJrCrew = $pos->user->isJrCrew(); @endphp
                                             @if(! $isJrCrew && $pos->user->staffPhotoUrl())
@@ -146,6 +180,9 @@ new class extends Component {
                                             <div class="w-full min-w-0">
                                                 <div class="text-sm font-medium truncate">{{ $pos->user->name }}</div>
                                                 <div class="text-xs truncate text-zinc-500 dark:text-zinc-400">{{ $pos->title }}</div>
+                                                <div class="mt-1">
+                                                    <flux:badge size="sm" color="{{ $this->bgCheckColor($bgCheck) }}" icon="shield-check" title="{{ $this->bgCheckTooltip($bgCheck) }}">BG Check</flux:badge>
+                                                </div>
                                             </div>
                                         </div>
                                     @else
