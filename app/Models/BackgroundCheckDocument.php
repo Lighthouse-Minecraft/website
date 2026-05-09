@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\StorageService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,6 +18,11 @@ class BackgroundCheckDocument extends Model
         'original_filename',
         'uploaded_by_user_id',
     ];
+
+    public function url(): string
+    {
+        return StorageService::publicUrl($this->path);
+    }
 
     public function backgroundCheck(): BelongsTo
     {
