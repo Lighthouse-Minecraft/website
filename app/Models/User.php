@@ -523,6 +523,11 @@ class User extends Authenticatable // implements MustVerifyEmail
         return $this->hasMany(QuestionSuggestion::class);
     }
 
+    public function backgroundChecks(): HasMany
+    {
+        return $this->hasMany(BackgroundCheck::class);
+    }
+
     /**
      * Calculate discipline risk score over 7/30/90-day windows.
      * Cached for 24 hours; cache is busted when a report is published for this user.
