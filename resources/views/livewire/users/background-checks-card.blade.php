@@ -33,13 +33,11 @@ new class extends Component {
     public string $newCompletedDate = '';
     public string $newInitialNotes = '';
 
-    // Note adding
-    public ?int $noteCheckId = null;
-    public string $noteText = '';
-
-    // Document upload
-    public ?int $uploadCheckId = null;
-    public array $pendingDocuments = [];
+    // Update modal (status + note + document combined)
+    public ?int $updateCheckId = null;
+    public string $pendingStatusValue = '';
+    public string $updateNote = '';
+    public $pendingDocument = null;
 
     public function mount(User $user): void
     {
@@ -134,76 +132,65 @@ new class extends Component {
         Flux::toast('Background check record added.', 'Added', variant: 'success');
     }
 
-    public function openNoteForm(int $checkId): void
+    public function openUpdateModal(int $checkId): void
     {
         $this->authorize('background-checks-manage');
-        $this->noteCheckId = $checkId;
-        $this->noteText = '';
-        $this->uploadCheckId = null;
-        $this->pendingDocuments = [];
+        $this->updateCheckId = $checkId;
+        $this->pendingStatusValue = '';
+        $this->updateNote = '';
+        $this->pendingDocument = null;
+        Flux::modal('update-bg-check-modal-' . $this->userId)->show();
     }
 
-    public function cancelNote(): void
+    public function removeUpdateDocument(): void
     {
-        $this->noteCheckId = null;
-        $this->noteText = '';
+        $this->pendingDocument = null;
     }
 
-    public function submitNote(): void
-    {
-        $this->authorize('background-checks-manage');
-        $this->validate(['noteText' => 'required|string|min:1|max:5000']);
-        $check = BackgroundCheck::findOrFail($this->noteCheckId);
-        AddBackgroundCheckNote::run($check, $this->noteText, Auth::user());
-        $this->noteCheckId = null;
-        $this->noteText = '';
-        Flux::toast('Note saved.', 'Note Added', variant: 'success');
-    }
-
-    public function updateStatus(int $checkId, string $status): void
-    {
-        $this->authorize('background-checks-manage');
-        $parsed = BackgroundCheckStatus::tryFrom($status);
-        if (! $parsed) {
-            Flux::toast('Invalid status value.', 'Error', variant: 'danger');
-
-            return;
-        }
-        $check = BackgroundCheck::findOrFail($checkId);
-        UpdateBackgroundCheckStatus::run($check, $parsed, Auth::user());
-        Flux::toast('Status updated.', 'Updated', variant: 'success');
-    }
-
-    public function openUploadForm(int $checkId): void
-    {
-        $this->authorize('background-checks-manage');
-        $this->uploadCheckId = $checkId;
-        $this->pendingDocuments = [];
-        $this->noteCheckId = null;
-        $this->noteText = '';
-    }
-
-    public function cancelUpload(): void
-    {
-        $this->uploadCheckId = null;
-        $this->pendingDocuments = [];
-    }
-
-    public function submitDocuments(): void
+    public function submitUpdate(): void
     {
         $this->authorize('background-checks-manage');
 
-        if (empty($this->pendingDocuments)) {
-            Flux::toast('No documents selected.', 'Upload', variant: 'warning');
+        $check = BackgroundCheck::findOrFail($this->updateCheckId);
+        $auth = Auth::user();
+        $acted = false;
 
-            return;
+        // Status update (only if unlocked and a new status is selected)
+        if (! $check->isLocked() && $this->pendingStatusValue !== '') {
+            $parsed = BackgroundCheckStatus::tryFrom($this->pendingStatusValue);
+            if ($parsed && $parsed !== $check->status) {
+                UpdateBackgroundCheckStatus::run($check, $parsed, $auth);
+                $check->refresh();
+                $acted = true;
+            }
         }
 
-        $check = BackgroundCheck::findOrFail($this->uploadCheckId);
-        AttachBackgroundCheckDocuments::run($check, $this->pendingDocuments, Auth::user());
-        $this->uploadCheckId = null;
-        $this->pendingDocuments = [];
-        Flux::toast('Documents uploaded.', 'Uploaded', variant: 'success');
+        // Note addition
+        if (trim($this->updateNote) !== '') {
+            $this->validate(['updateNote' => 'required|string|min:1|max:5000']);
+            AddBackgroundCheckNote::run($check, $this->updateNote, $auth);
+            $acted = true;
+        }
+
+        // Document upload
+        if ($this->pendingDocument !== null) {
+            $this->validate([
+                'pendingDocument' => 'nullable|mimes:pdf',
+            ]);
+            AttachBackgroundCheckDocuments::run($check, [$this->pendingDocument], $auth);
+            $acted = true;
+        }
+
+        $this->updateCheckId = null;
+        $this->pendingStatusValue = '';
+        $this->updateNote = '';
+        $this->pendingDocument = null;
+
+        Flux::modal('update-bg-check-modal-' . $this->userId)->close();
+
+        if ($acted) {
+            Flux::toast('Background check updated.', 'Updated', variant: 'success');
+        }
     }
 
     public function deleteDocument(int $docId): void
@@ -241,6 +228,34 @@ new class extends Component {
         @else
             <div class="space-y-4">
                 @foreach($this->user->backgroundChecks as $check)
+                    @php
+                        $tz = auth()->user()->timezone ?? 'UTC';
+                        $parsedNotes = [];
+                        if ($check->notes) {
+                            foreach (explode("\n", $check->notes) as $line) {
+                                $line = trim($line);
+                                if ($line === '') {
+                                    continue;
+                                }
+                                if (preg_match('/^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2})\] (.+?): (.+)$/s', $line, $m)) {
+                                    $authorName = $m[2];
+                                    $initials = collect(explode(' ', $authorName))
+                                        ->map(fn ($w) => strtoupper($w[0] ?? ''))
+                                        ->take(2)
+                                        ->join('');
+                                    $parsedNotes[] = [
+                                        'type' => 'timestamped',
+                                        'timestamp' => \Carbon\Carbon::createFromFormat('Y-m-d H:i', $m[1], 'UTC')->setTimezone($tz)->format('M j, Y g:i A'),
+                                        'author' => $authorName,
+                                        'initials' => $initials,
+                                        'text' => $m[3],
+                                    ];
+                                } else {
+                                    $parsedNotes[] = ['type' => 'plain', 'text' => $line];
+                                }
+                            }
+                        }
+                    @endphp
                     <div wire:key="bg-check-{{ $check->id }}" class="p-3 rounded-lg border border-zinc-200 dark:border-zinc-700">
                         {{-- Check header --}}
                         <div class="flex items-center gap-2 flex-wrap">
@@ -253,10 +268,29 @@ new class extends Component {
                             @endif
                         </div>
 
-                        {{-- Notes display --}}
-                        @if($check->notes)
-                            <div class="mt-2 pl-3 border-l-2 border-zinc-200 dark:border-zinc-600">
-                                <flux:text class="text-xs whitespace-pre-line text-zinc-600 dark:text-zinc-400">{{ $check->notes }}</flux:text>
+                        {{-- Notes display as chat bubbles --}}
+                        @if(count($parsedNotes) > 0)
+                            <div class="mt-3 space-y-2">
+                                @foreach($parsedNotes as $note)
+                                    @if($note['type'] === 'timestamped')
+                                        <div class="chat-message chat-message-start">
+                                            <flux:avatar size="xs" :initials="$note['initials']" class="shrink-0 mt-1" />
+                                            <div class="min-w-0">
+                                                <div class="flex items-baseline gap-2 mb-1">
+                                                    <span class="font-semibold text-xs text-zinc-700 dark:text-zinc-300">{{ $note['author'] }}</span>
+                                                    <span class="text-xs text-zinc-400 dark:text-zinc-500">{{ $note['timestamp'] }}</span>
+                                                </div>
+                                                <div class="chat-bubble chat-bubble-start bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
+                                                    <div class="text-sm text-zinc-700 dark:text-zinc-300">{{ $note['text'] }}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @else
+                                        <div class="pl-3 border-l-2 border-zinc-200 dark:border-zinc-600">
+                                            <flux:text class="text-xs whitespace-pre-line text-zinc-600 dark:text-zinc-400">{{ $note['text'] }}</flux:text>
+                                        </div>
+                                    @endif
+                                @endforeach
                             </div>
                         @endif
 
@@ -284,60 +318,8 @@ new class extends Component {
 
                         {{-- Manage actions --}}
                         @if($canManage)
-                            <div class="mt-3 pt-3 border-t border-zinc-100 dark:border-zinc-700 space-y-2">
-                                {{-- Status update (non-terminal only) --}}
-                                @if(! $check->isLocked())
-                                    <div class="flex items-center gap-2 flex-wrap">
-                                        <flux:text class="text-xs text-zinc-500 shrink-0">Set status:</flux:text>
-                                        @foreach(\App\Enums\BackgroundCheckStatus::cases() as $status)
-                                            @if($status !== $check->status)
-                                                <flux:button
-                                                    size="xs"
-                                                    variant="ghost"
-                                                    wire:click="updateStatus({{ $check->id }}, '{{ $status->value }}')"
-                                                    wire:confirm="Set status to {{ $status->label() }}?"
-                                                >{{ $status->label() }}</flux:button>
-                                            @endif
-                                        @endforeach
-                                    </div>
-                                @endif
-
-                                {{-- Note form --}}
-                                @if($noteCheckId === $check->id)
-                                    <div class="space-y-2">
-                                        <flux:textarea wire:model="noteText" rows="2" placeholder="Enter note..." />
-                                        <div class="flex gap-2">
-                                            <flux:button size="sm" variant="primary" wire:click="submitNote()">Save Note</flux:button>
-                                            <flux:button size="sm" variant="ghost" wire:click="cancelNote()">Cancel</flux:button>
-                                        </div>
-                                    </div>
-                                @else
-                                    <div class="flex items-center gap-2">
-                                        <flux:button size="xs" variant="ghost" icon="chat-bubble-left" wire:click="openNoteForm({{ $check->id }})">Add Note</flux:button>
-
-                                        {{-- Upload button (only when upload form not open for this check) --}}
-                                        @if($uploadCheckId !== $check->id)
-                                            <flux:button size="xs" variant="ghost" icon="arrow-up-tray" wire:click="openUploadForm({{ $check->id }})">Upload PDF</flux:button>
-                                        @endif
-                                    </div>
-                                @endif
-
-                                {{-- Upload form --}}
-                                @if($uploadCheckId === $check->id)
-                                    <div class="space-y-2">
-                                        <input
-                                            type="file"
-                                            wire:model="pendingDocuments"
-                                            multiple
-                                            accept=".pdf,application/pdf"
-                                            class="block w-full text-sm text-zinc-500 dark:text-zinc-400 file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-zinc-100 dark:file:bg-zinc-700 file:text-zinc-700 dark:file:text-zinc-300"
-                                        />
-                                        <div class="flex gap-2">
-                                            <flux:button size="sm" variant="primary" wire:click="submitDocuments()" wire:loading.attr="disabled" wire:target="pendingDocuments">Upload</flux:button>
-                                            <flux:button size="sm" variant="ghost" wire:click="cancelUpload()">Cancel</flux:button>
-                                        </div>
-                                    </div>
-                                @endif
+                            <div class="mt-3 pt-3 border-t border-zinc-100 dark:border-zinc-700">
+                                <flux:button size="xs" variant="ghost" icon="pencil-square" wire:click="openUpdateModal({{ $check->id }})">Update Background Check</flux:button>
                             </div>
                         @endif
                     </div>
@@ -377,6 +359,75 @@ new class extends Component {
                     <flux:button variant="primary" wire:click="submitNewCheck()" wire:loading.attr="disabled" wire:target="submitNewCheck">Add Check</flux:button>
                 </div>
             </div>
+        </flux:modal>
+
+        {{-- Update Check Modal --}}
+        <flux:modal name="update-bg-check-modal-{{ $userId }}" class="w-full md:max-w-lg">
+            @php $updatingCheck = $updateCheckId ? $this->user->backgroundChecks->firstWhere('id', $updateCheckId) : null; @endphp
+            @if($updatingCheck)
+                <div class="space-y-4">
+                    <div>
+                        <flux:heading size="lg">Update Background Check</flux:heading>
+                        <flux:text variant="subtle" class="text-sm mt-1">{{ $updatingCheck->service }} · {{ $updatingCheck->completed_date->format('M j, Y') }}</flux:text>
+                    </div>
+
+                    {{-- Status update (only for unlocked checks) --}}
+                    @if(! $updatingCheck->isLocked())
+                        <flux:field>
+                            <flux:label>Change Status</flux:label>
+                            <flux:select wire:model="pendingStatusValue" placeholder="No change">
+                                <flux:select.option value="">No change</flux:select.option>
+                                @foreach(\App\Enums\BackgroundCheckStatus::cases() as $status)
+                                    @if($status !== $updatingCheck->status)
+                                        <flux:select.option value="{{ $status->value }}">{{ $status->label() }}</flux:select.option>
+                                    @endif
+                                @endforeach
+                            </flux:select>
+                        </flux:field>
+                    @else
+                        <flux:callout icon="lock-closed" color="zinc">
+                            <flux:callout.heading>Status Locked</flux:callout.heading>
+                            <flux:callout.text>This record has a terminal status and cannot be changed.</flux:callout.text>
+                        </flux:callout>
+                    @endif
+
+                    {{-- Note --}}
+                    <flux:field>
+                        <flux:label>Add a Note</flux:label>
+                        <flux:textarea wire:model="updateNote" rows="3" placeholder="Optional — leave a note on this check record" />
+                        <flux:error name="updateNote" />
+                    </flux:field>
+
+                    {{-- Document upload --}}
+                    <flux:field>
+                        <flux:label>Attach PDF Document</flux:label>
+                        <flux:file-upload wire:model="pendingDocument" label="PDF document (optional)">
+                            <flux:file-upload.dropzone
+                                heading="Drop a PDF here or click to browse"
+                                text="PDF files only"
+                            />
+                        </flux:file-upload>
+                        @if($pendingDocument)
+                            <flux:file-item
+                                :heading="$pendingDocument->getClientOriginalName()"
+                                :size="$pendingDocument->getSize()"
+                            >
+                                <x-slot name="actions">
+                                    <flux:file-item.remove wire:click="removeUpdateDocument" />
+                                </x-slot>
+                            </flux:file-item>
+                        @endif
+                        <flux:error name="pendingDocument" />
+                    </flux:field>
+
+                    <div class="flex justify-end gap-2">
+                        <flux:modal.close>
+                            <flux:button variant="ghost">Cancel</flux:button>
+                        </flux:modal.close>
+                        <flux:button variant="primary" wire:click="submitUpdate()" wire:loading.attr="disabled" wire:target="submitUpdate">Save Changes</flux:button>
+                    </div>
+                </div>
+            @endif
         </flux:modal>
     @endif
 </div>
