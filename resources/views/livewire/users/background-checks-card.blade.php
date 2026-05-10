@@ -151,7 +151,7 @@ new class extends Component {
     {
         $this->authorize('background-checks-manage');
 
-        $check = BackgroundCheck::findOrFail($this->updateCheckId);
+        $check = BackgroundCheck::where('user_id', $this->userId)->findOrFail($this->updateCheckId);
         $auth = Auth::user();
         $acted = false;
 
@@ -196,7 +196,9 @@ new class extends Component {
     public function deleteDocument(int $docId): void
     {
         $this->authorize('background-checks-manage');
-        $doc = BackgroundCheckDocument::findOrFail($docId);
+        $doc = BackgroundCheckDocument::whereKey($docId)
+            ->whereHas('backgroundCheck', fn ($q) => $q->where('user_id', $this->userId))
+            ->firstOrFail();
         DeleteBackgroundCheckDocument::run($doc, Auth::user());
         Flux::toast('Document deleted.', 'Deleted', variant: 'success');
     }
@@ -243,13 +245,20 @@ new class extends Component {
                                         ->map(fn ($w) => strtoupper($w[0] ?? ''))
                                         ->take(2)
                                         ->join('');
-                                    $parsedNotes[] = [
-                                        'type' => 'timestamped',
-                                        'timestamp' => \Carbon\Carbon::createFromFormat('Y-m-d H:i', $m[1], 'UTC')->setTimezone($tz)->format('M j, Y g:i A'),
-                                        'author' => $authorName,
-                                        'initials' => $initials,
-                                        'text' => $m[3],
-                                    ];
+                                    try {
+                                        $timestamp = \Carbon\Carbon::createFromFormat('Y-m-d H:i', $m[1], 'UTC')
+                                            ->setTimezone($tz)
+                                            ->format('M j, Y g:i A');
+                                        $parsedNotes[] = [
+                                            'type' => 'timestamped',
+                                            'timestamp' => $timestamp,
+                                            'author' => $authorName,
+                                            'initials' => $initials,
+                                            'text' => $m[3],
+                                        ];
+                                    } catch (\Throwable $e) {
+                                        $parsedNotes[] = ['type' => 'plain', 'text' => $line];
+                                    }
                                 } else {
                                     $parsedNotes[] = ['type' => 'plain', 'text' => $line];
                                 }
@@ -271,9 +280,9 @@ new class extends Component {
                         {{-- Notes display as chat bubbles --}}
                         @if(count($parsedNotes) > 0)
                             <div class="mt-3 space-y-2">
-                                @foreach($parsedNotes as $note)
+                                @foreach($parsedNotes as $noteIndex => $note)
                                     @if($note['type'] === 'timestamped')
-                                        <div class="chat-message chat-message-start">
+                                        <div wire:key="bg-check-note-{{ $check->id }}-{{ $noteIndex }}" class="chat-message chat-message-start">
                                             <flux:avatar size="xs" :initials="$note['initials']" class="shrink-0 mt-1" />
                                             <div class="min-w-0">
                                                 <div class="flex items-baseline gap-2 mb-1">
@@ -286,7 +295,7 @@ new class extends Component {
                                             </div>
                                         </div>
                                     @else
-                                        <div class="pl-3 border-l-2 border-zinc-200 dark:border-zinc-600">
+                                        <div wire:key="bg-check-note-{{ $check->id }}-{{ $noteIndex }}" class="pl-3 border-l-2 border-zinc-200 dark:border-zinc-600">
                                             <flux:text class="text-xs whitespace-pre-line text-zinc-600 dark:text-zinc-400">{{ $note['text'] }}</flux:text>
                                         </div>
                                     @endif
