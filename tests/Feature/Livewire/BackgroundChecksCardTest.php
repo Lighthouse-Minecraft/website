@@ -168,35 +168,37 @@ it('validates required fields on submitNewCheck', function () {
         ->assertHasErrors(['newService', 'newCompletedDate']);
 });
 
-it('updates status on a non-terminal check via updateStatus', function () {
+it('updates status on a non-terminal check via submitUpdate', function () {
     $manager = User::factory()->withRole('Background Checks - Manage')->create();
     $target = User::factory()->create();
     $check = BackgroundCheck::factory()->create(['user_id' => $target->id]);
     loginAs($manager);
 
     Volt::test('users.background-checks-card', ['user' => $target])
-        ->call('updateStatus', $check->id, 'passed')
+        ->set('updateCheckId', $check->id)
+        ->set('pendingStatusValue', 'passed')
+        ->call('submitUpdate')
         ->assertHasNoErrors();
 
     expect($check->fresh()->status)->toBe(BackgroundCheckStatus::Passed);
 });
 
-it('adds a note to any check via submitNote', function () {
+it('adds a note to any check via submitUpdate', function () {
     $manager = User::factory()->withRole('Background Checks - Manage')->create();
     $target = User::factory()->create();
     $check = BackgroundCheck::factory()->passed()->create(['user_id' => $target->id]);
     loginAs($manager);
 
     Volt::test('users.background-checks-card', ['user' => $target])
-        ->set('noteCheckId', $check->id)
-        ->set('noteText', 'Reviewed and confirmed valid.')
-        ->call('submitNote')
+        ->set('updateCheckId', $check->id)
+        ->set('updateNote', 'Reviewed and confirmed valid.')
+        ->call('submitUpdate')
         ->assertHasNoErrors();
 
     expect($check->fresh()->notes)->toContain('Reviewed and confirmed valid.');
 });
 
-it('uploads a PDF document to a check via submitDocuments', function () {
+it('uploads a PDF document to a check via submitUpdate', function () {
     $manager = User::factory()->withRole('Background Checks - Manage')->create();
     $target = User::factory()->create();
     $check = BackgroundCheck::factory()->create(['user_id' => $target->id]);
@@ -205,9 +207,9 @@ it('uploads a PDF document to a check via submitDocuments', function () {
     $file = UploadedFile::fake()->create('check.pdf', 100, 'application/pdf');
 
     Volt::test('users.background-checks-card', ['user' => $target])
-        ->set('uploadCheckId', $check->id)
-        ->set('pendingDocuments', [$file])
-        ->call('submitDocuments')
+        ->set('updateCheckId', $check->id)
+        ->set('pendingDocument', $file)
+        ->call('submitUpdate')
         ->assertHasNoErrors();
 
     expect(BackgroundCheckDocument::where('background_check_id', $check->id)->count())->toBe(1);
