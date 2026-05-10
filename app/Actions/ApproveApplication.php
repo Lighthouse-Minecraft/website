@@ -3,7 +3,6 @@
 namespace App\Actions;
 
 use App\Enums\ApplicationStatus;
-use App\Enums\BackgroundCheckStatus;
 use App\Enums\MessageKind;
 use App\Enums\ThreadStatus;
 use App\Models\Message;
@@ -22,7 +21,6 @@ class ApproveApplication
     public function handle(
         StaffApplication $application,
         User $reviewer,
-        BackgroundCheckStatus $bgCheck,
         ?string $conditions = null,
         ?string $notes = null,
     ): void {
@@ -30,7 +28,6 @@ class ApproveApplication
 
         $updates = [
             'status' => ApplicationStatus::Approved,
-            'background_check_status' => $bgCheck,
             'conditions' => $conditions,
             'reviewed_by' => $reviewer->id,
         ];
