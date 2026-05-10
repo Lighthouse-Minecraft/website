@@ -13,6 +13,14 @@
         </div>
     @endcan
 
+    @if(auth()->check() && (auth()->user()->can('background-checks-view') || auth()->id() === $user->id))
+        <div class="my-8">
+            <flux:separator />
+            <flux:heading size="lg" class="mt-4 mb-6">Background Checks</flux:heading>
+            <livewire:users.background-checks-card :user="$user" />
+        </div>
+    @endif
+
     @can('view-ready-room')
         <div class="my-8">
             <flux:separator />
