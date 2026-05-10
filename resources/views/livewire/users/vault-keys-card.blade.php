@@ -41,7 +41,7 @@ new class extends Component {
         @else
             <ul class="space-y-1">
                 @foreach($this->credentials as $name)
-                    <li class="flex items-center gap-2">
+                    <li wire:key="vault-key-{{ $loop->index }}" class="flex items-center gap-2">
                         <flux:icon name="key" class="w-4 h-4 text-zinc-400 shrink-0" />
                         <flux:text class="text-sm">{{ $name }}</flux:text>
                     </li>

@@ -17,7 +17,7 @@ These flags appear in two places:
 
 | Badge | Color | Meaning |
 |---|---|---|
-| **Waived** | Gray | The most recent terminal check was Waived -- no check required for this person |
+| **Waived** | Gray (Staff Page) / Violet (Meeting Cards) | The most recent terminal check was Waived -- no check required for this person |
 | **Overdue** | Red | No Passed check on file, or the most recent Passed check expired more than 2 years ago |
 | **Due Soon** | Amber | The most recent Passed check expires within 90 days |
 | *(no badge)* | -- | A current, valid Passed check is on file |

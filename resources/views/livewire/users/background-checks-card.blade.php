@@ -13,6 +13,7 @@ use App\Services\StorageService;
 use Carbon\Carbon;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Volt\Component;
 use Livewire\WithFileUploads;
@@ -55,7 +56,8 @@ new class extends Component {
         $this->canViewRenewal = (bool) $canView;
     }
 
-    public function getUserProperty(): User
+    #[Computed]
+    public function user(): User
     {
         return User::with([
             'backgroundChecks' => fn ($q) => $q->with(['documents.uploadedByUser', 'runByUser'])->latest('id'),
@@ -64,7 +66,8 @@ new class extends Component {
         ])->findOrFail($this->userId);
     }
 
-    public function getRenewalBadgeProperty(): ?array
+    #[Computed]
+    public function renewalBadge(): ?array
     {
         if (! $this->canViewRenewal) {
             return null;
@@ -160,8 +163,14 @@ new class extends Component {
     public function updateStatus(int $checkId, string $status): void
     {
         $this->authorize('background-checks-manage');
+        $parsed = BackgroundCheckStatus::tryFrom($status);
+        if (! $parsed) {
+            Flux::toast('Invalid status value.', 'Error', variant: 'danger');
+
+            return;
+        }
         $check = BackgroundCheck::findOrFail($checkId);
-        UpdateBackgroundCheckStatus::run($check, BackgroundCheckStatus::from($status), Auth::user());
+        UpdateBackgroundCheckStatus::run($check, $parsed, Auth::user());
         Flux::toast('Status updated.', 'Updated', variant: 'success');
     }
 

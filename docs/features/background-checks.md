@@ -399,7 +399,7 @@ All activity is logged against the `BackgroundCheck` model as the subject.
 
 ### Adding a New Background Check Record
 
-```
+```text
 Manager clicks "Add Check" on background-checks-card
   -> wire:click="openAddCheckModal()" [authorizes background-checks-manage]
     -> Flux::modal('add-bg-check-modal-{userId}').show()
@@ -416,7 +416,7 @@ Manager clicks "Add Check" on background-checks-card
 
 ### Updating Background Check Status
 
-```
+```text
 Manager clicks status button (e.g., "Passed") on a non-terminal check row
   -> wire:click="updateStatus({checkId}, 'passed')" [wire:confirm confirmation]
     -> $this->authorize('background-checks-manage')
@@ -430,7 +430,7 @@ Manager clicks status button (e.g., "Passed") on a non-terminal check row
 
 ### Uploading a PDF Document
 
-```
+```text
 Manager clicks "Upload PDF" on a check row
   -> wire:click="openUploadForm({checkId})" [authorizes background-checks-manage]
     -> uploadCheckId = checkId; pendingDocuments = []
@@ -447,7 +447,7 @@ Manager clicks "Upload PDF" on a check row
 
 ### Viewing Renewal Status (Profile Card)
 
-```
+```text
 User visits /profile/{user}
   -> users/show.blade.php conditionally renders background-checks-card
      [condition: auth()->user()->can('background-checks-view') || auth()->id() === $user->id]
@@ -462,7 +462,7 @@ User visits /profile/{user}
 
 ### Staff Application Approval Gate
 
-```
+```text
 Reviewer views /admin/applications/{application} (BackgroundCheck status)
   -> review-detail.blade.php renders
   -> @can('background-checks-view') embeds background-checks-card for applicant
