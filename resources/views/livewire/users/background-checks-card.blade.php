@@ -44,14 +44,15 @@ new class extends Component {
         $auth = Auth::user();
         $isSelf = $auth && $auth->id === $user->id;
         $canView = $auth && $auth->can('background-checks-view');
+        $canManage = $auth && $auth->can('background-checks-manage');
 
-        if (! $isSelf && ! $canView) {
+        if (! $isSelf && ! $canView && ! $canManage) {
             abort(403);
         }
 
         $this->userId = $user->id;
-        $this->canManage = (bool) ($auth && $auth->can('background-checks-manage'));
-        $this->canViewRenewal = (bool) $canView;
+        $this->canManage = (bool) $canManage;
+        $this->canViewRenewal = (bool) ($canView || $canManage);
     }
 
     #[Computed]
@@ -309,7 +310,7 @@ new class extends Component {
                                 @foreach($check->documents as $doc)
                                     <div wire:key="doc-{{ $doc->id }}" class="flex items-center gap-2">
                                         <flux:icon name="document" class="w-4 h-4 text-zinc-400 shrink-0" />
-                                        <flux:link href="{{ $this->documentUrl($doc->path) }}" target="_blank" class="text-sm truncate">{{ $doc->original_filename }}</flux:link>
+                                        <flux:link href="{{ $this->documentUrl($doc->path) }}" target="_blank" rel="noopener noreferrer" class="text-sm truncate">{{ $doc->original_filename }}</flux:link>
                                         @if($canManage && ! $check->isLocked())
                                             <flux:button
                                                 size="xs"
