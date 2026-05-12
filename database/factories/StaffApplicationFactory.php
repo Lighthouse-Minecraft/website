@@ -19,7 +19,6 @@ class StaffApplicationFactory extends Factory
             'staff_position_id' => StaffPosition::factory(),
             'status' => ApplicationStatus::Submitted,
             'reviewer_notes' => null,
-            'background_check_status' => null,
             'conditions' => null,
             'reviewed_by' => null,
         ];

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\BackgroundCheckStatus;
 use App\Enums\BrigType;
 use App\Enums\EmailDigestFrequency;
 use App\Enums\MembershipLevel;
@@ -521,6 +522,33 @@ class User extends Authenticatable // implements MustVerifyEmail
     public function questionSuggestions(): HasMany
     {
         return $this->hasMany(QuestionSuggestion::class);
+    }
+
+    public function backgroundChecks(): HasMany
+    {
+        return $this->hasMany(BackgroundCheck::class);
+    }
+
+    public function latestTerminalBackgroundCheck(): HasOne
+    {
+        return $this->hasOne(BackgroundCheck::class)
+            ->ofMany(
+                ['id' => 'max'],
+                fn ($q) => $q->whereIn('status', [
+                    BackgroundCheckStatus::Passed->value,
+                    BackgroundCheckStatus::Failed->value,
+                    BackgroundCheckStatus::Waived->value,
+                ])
+            );
+    }
+
+    public function latestPassedBackgroundCheck(): HasOne
+    {
+        return $this->hasOne(BackgroundCheck::class)
+            ->ofMany(
+                ['id' => 'max'],
+                fn ($q) => $q->where('status', BackgroundCheckStatus::Passed->value)
+            );
     }
 
     /**

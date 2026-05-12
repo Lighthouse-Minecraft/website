@@ -1,8 +1,11 @@
 <?php
 
+use App\Enums\BackgroundCheckStatus;
 use App\Enums\StaffDepartment;
 use App\Enums\StaffRank;
+use App\Models\BackgroundCheck;
 use App\Models\BoardMember;
+use App\Models\SiteConfig;
 use App\Models\StaffPosition;
 use Flux\Flux;
 use Illuminate\Support\Str;
@@ -26,9 +29,35 @@ new class extends Component {
         Flux::modal('board-member-detail-modal')->show();
     }
 
+    public function bgCheckTooltip(?BackgroundCheck $check): string
+    {
+        if (! $check) {
+            return SiteConfig::getValue('bg_check_no_record_message', 'Waiting for more donations to come in before we can do more background checks');
+        }
+
+        return match ($check->status) {
+            BackgroundCheckStatus::Passed => 'Background check passed on ' . $check->completed_date->format('M j, Y'),
+            BackgroundCheckStatus::Waived => 'A background check is not required for this position',
+            default => SiteConfig::getValue('bg_check_no_record_message', 'Waiting for more donations to come in before we can do more background checks'),
+        };
+    }
+
+    public function bgCheckColor(?BackgroundCheck $check): string
+    {
+        if (! $check) {
+            return 'amber';
+        }
+
+        return match ($check->status) {
+            BackgroundCheckStatus::Passed => 'green',
+            BackgroundCheckStatus::Waived => 'zinc',
+            default => 'amber',
+        };
+    }
+
     public function getDepartmentsProperty(): array
     {
-        $positions = StaffPosition::with(['user.minecraftAccounts', 'user.discordAccounts'])
+        $positions = StaffPosition::with(['user.minecraftAccounts', 'user.discordAccounts', 'user.latestTerminalBackgroundCheck'])
             ->ordered()
             ->get();
 
@@ -55,7 +84,7 @@ new class extends Component {
             return null;
         }
 
-        return StaffPosition::with(['user.minecraftAccounts', 'user.discordAccounts'])->find($this->selectedPositionId);
+        return StaffPosition::with(['user.minecraftAccounts', 'user.discordAccounts', 'user.latestTerminalBackgroundCheck'])->find($this->selectedPositionId);
     }
 
     public function getBoardMembersProperty(): \Illuminate\Database\Eloquent\Collection
@@ -97,9 +126,11 @@ new class extends Component {
                                     wire:keydown.space.prevent="selectPosition({{ $pos->id }})"
                                     role="button"
                                     tabindex="0"
-                                    class="p-3 rounded-lg border transition-colors cursor-pointer border-zinc-200 dark:border-zinc-700 hover:border-blue-300 dark:hover:border-blue-600"
+                                    class="relative p-3 rounded-lg border transition-colors cursor-pointer border-zinc-200 dark:border-zinc-700 hover:border-blue-300 dark:hover:border-blue-600"
                                 >
                                     @if($pos->isFilled())
+                                        @php $bgCheck = $pos->user->latestTerminalBackgroundCheck; @endphp
+                                        <flux:badge size="sm" color="{{ $this->bgCheckColor($bgCheck) }}" icon="shield-check" title="{{ $this->bgCheckTooltip($bgCheck) }}" class="absolute top-1 right-1" />
                                         <div class="flex flex-col items-center gap-2 text-center">
                                             @if($pos->user->staffPhotoUrl())
                                                 <img src="{{ $pos->user->staffPhotoUrl() }}" alt="{{ $pos->user->name }}" class="object-cover w-20 h-20 rounded-lg" />
@@ -133,9 +164,11 @@ new class extends Component {
                                     wire:keydown.space.prevent="selectPosition({{ $pos->id }})"
                                     role="button"
                                     tabindex="0"
-                                    class="p-3 rounded-lg border transition-colors cursor-pointer border-zinc-200 dark:border-zinc-700 hover:border-blue-300 dark:hover:border-blue-600"
+                                    class="relative p-3 rounded-lg border transition-colors cursor-pointer border-zinc-200 dark:border-zinc-700 hover:border-blue-300 dark:hover:border-blue-600"
                                 >
                                     @if($pos->isFilled())
+                                        @php $bgCheck = $pos->user->latestTerminalBackgroundCheck; @endphp
+                                        <flux:badge size="sm" color="{{ $this->bgCheckColor($bgCheck) }}" icon="shield-check" title="{{ $this->bgCheckTooltip($bgCheck) }}" class="absolute top-1 right-1" />
                                         <div class="flex flex-col items-center gap-2 text-center">
                                             @php $isJrCrew = $pos->user->isJrCrew(); @endphp
                                             @if(! $isJrCrew && $pos->user->staffPhotoUrl())
@@ -223,13 +256,17 @@ new class extends Component {
 
                 <div>
                     <flux:heading size="md">{{ $selected->title }}</flux:heading>
-                    <div class="flex gap-2 mt-1">
+                    <div class="flex flex-wrap gap-2 mt-1">
                         @if($selected->isFilled())
                             <flux:badge size="sm" color="{{ $selected->user->staff_rank->color() }}">{{ $selected->user->staff_rank->label() }}</flux:badge>
                         @else
                             <flux:badge size="sm" color="{{ $selected->rank->color() }}">{{ $selected->rank->label() }}</flux:badge>
                         @endif
                         <flux:badge size="sm" color="zinc">{{ $selected->department->label() }}</flux:badge>
+                        @if($selected->isFilled())
+                            @php $bgCheck = $selected->user->latestTerminalBackgroundCheck; @endphp
+                            <flux:badge size="sm" color="{{ $this->bgCheckColor($bgCheck) }}" icon="shield-check" :title="$this->bgCheckTooltip($bgCheck)">Background Check Status</flux:badge>
+                        @endif
                     </div>
                 </div>
 
