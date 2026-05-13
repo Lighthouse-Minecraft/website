@@ -38,6 +38,8 @@ jobs:
           PR_BRANCH: ${{ github.head_ref }}
           PR_ACTION: ${{ github.event.action }}
           EXISTING_COMMENT: ${{ steps.find.outputs.comment-body }}
+          FLUX_USERNAME: ${{ secrets.FLUX_USERNAME }}
+          FLUX_LICENSE_KEY: ${{ secrets.FLUX_LICENSE_KEY }}
         run: |
           cat > /tmp/provision.py << 'PYEOF'
           import os, json, time, re, secrets, urllib.request, urllib.error
@@ -52,6 +54,8 @@ jobs:
           BRANCH   = os.environ["PR_BRANCH"]
           ACTION   = os.environ["PR_ACTION"]
           COMMENT  = os.environ.get("EXISTING_COMMENT", "")
+          FLUX_USER = os.environ["FLUX_USERNAME"]
+          FLUX_KEY  = os.environ["FLUX_LICENSE_KEY"]
 
           DOMAIN   = f"pr-{PR}.{IP}.nip.io"
           DB_NAME  = f"pr_{PR}"
@@ -107,6 +111,7 @@ jobs:
               return (
                   f"cd /home/forge/{DOMAIN}\n"
                   f"git pull origin {BRANCH}\n"
+                  f"composer config --global http-basic.composer.fluxui.dev {FLUX_USER} {FLUX_KEY}\n"
                   "composer install --no-dev --no-interaction --prefer-dist\n"
                   "npm ci && npm run build\n"
                   "php artisan migrate --force\n"
