@@ -293,5 +293,14 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('backup-manager', function ($user) {
             return $user->hasRole('Backup Manager');
         });
+
+        Gate::define('background-checks-view', function ($user) {
+            return $user->hasRole('Background Checks - View')
+                || $user->hasRole('Background Checks - Manage');
+        });
+
+        Gate::define('background-checks-manage', function ($user) {
+            return $user->hasRole('Background Checks - Manage');
+        });
     }
 }

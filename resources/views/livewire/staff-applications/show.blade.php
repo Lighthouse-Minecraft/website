@@ -61,21 +61,13 @@ new class extends Component {
         </div>
 
         {{-- Approval details --}}
-        @if($staffApplication->status === \App\Enums\ApplicationStatus::Approved)
+        @if($staffApplication->status === \App\Enums\ApplicationStatus::Approved && $staffApplication->conditions)
             <flux:card class="mb-6">
                 <flux:heading size="md" class="mb-2">Approval Details</flux:heading>
-                @if($staffApplication->background_check_status)
-                    <div class="flex items-center gap-2 mb-1">
-                        <flux:text class="font-medium">Background Check:</flux:text>
-                        <flux:badge size="sm" color="{{ $staffApplication->background_check_status->color() }}">{{ $staffApplication->background_check_status->label() }}</flux:badge>
-                    </div>
-                @endif
-                @if($staffApplication->conditions)
-                    <div>
-                        <flux:text class="font-medium">Conditions:</flux:text>
-                        <flux:text>{{ $staffApplication->conditions }}</flux:text>
-                    </div>
-                @endif
+                <div>
+                    <flux:text class="font-medium">Conditions:</flux:text>
+                    <flux:text>{{ $staffApplication->conditions }}</flux:text>
+                </div>
             </flux:card>
         @endif
 

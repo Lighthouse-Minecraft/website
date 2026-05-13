@@ -3,7 +3,6 @@
 namespace App\Actions;
 
 use App\Enums\ApplicationStatus;
-use App\Enums\BackgroundCheckStatus;
 use App\Enums\MessageKind;
 use App\Enums\StaffRank;
 use App\Models\Message;
@@ -23,9 +22,8 @@ class UpdateApplicationStatus
         ApplicationStatus $newStatus,
         User $reviewer,
         ?string $notes = null,
-        ?BackgroundCheckStatus $bgCheck = null,
     ): void {
-        DB::transaction(function () use ($application, $newStatus, $reviewer, $notes, $bgCheck) {
+        DB::transaction(function () use ($application, $newStatus, $reviewer, $notes) {
             $updates = [
                 'status' => $newStatus,
                 'reviewed_by' => $reviewer->id,
@@ -36,10 +34,6 @@ class UpdateApplicationStatus
             $updates['reviewer_notes'] = $application->reviewer_notes
                 ? $application->reviewer_notes."\n".$newNote
                 : $newNote;
-
-            if ($newStatus === ApplicationStatus::BackgroundCheck) {
-                $updates['background_check_status'] = $bgCheck ?? BackgroundCheckStatus::Pending;
-            }
 
             $application->update($updates);
 

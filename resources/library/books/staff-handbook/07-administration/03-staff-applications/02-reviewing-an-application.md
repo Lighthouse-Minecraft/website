@@ -64,16 +64,19 @@ The action buttons change depending on the current application status. Here's wh
 
 ### When Status is "Interview"
 
-- **Move to Background Check** -- Opens a modal to set the initial background check status and add notes.
-- **Approve without Background Check** -- Skips the background check stage entirely (background check is marked as Waived). Opens a modal for optional conditions and notes.
+- **Move to Background Check** -- Opens a modal to add optional notes and advance the application. Coordinate the actual check using the Background Checks card (see below).
+- **Approve without Background Check** -- Skips the background check stage entirely. Opens a modal for optional conditions and notes. The applicant is assigned to the position immediately.
 - **Interview Discussion** -- Quick link to the interview discussion thread.
 - **Deny** -- Same as above.
 
 ### When Status is "Background Check"
 
-- **Update Background Check** -- Change the background check status (Pending, Passed, Failed, Waived) without changing the application status. Useful when waiting for results.
-- **Approve Application** -- Opens a modal to confirm the final background check status, add conditions (e.g., "30-day trial period"), and notes.
+The **Background Checks** card appears on this page (if you have the Background Checks - View or Manage role). Use it to add check records, update their status, and upload documents -- all without leaving the review page. See [[books/staff-handbook/user-management/background-checks/managing-background-checks|Managing Background Check Records]] for how the card works.
+
+- **Approve Application** -- Only available once the applicant has at least one terminal background check record (Passed, Failed, or Waived). Opens a modal for optional conditions and notes. The applicant is assigned to the position on approval.
 - **Deny** -- Same as above.
+
+If the applicant doesn't have a completed check record yet, you'll see a message instead of the Approve button. Add the check record via the Background Checks card first.
 
 ## Discussion Threads
 

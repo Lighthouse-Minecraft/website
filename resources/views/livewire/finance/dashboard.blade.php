@@ -120,10 +120,20 @@ new class extends Component
                 ->selectRaw('COALESCE(SUM(jel.debit) - SUM(jel.credit), 0) as total')
                 ->value('total');
 
+            $balance = (int) DB::table('financial_journal_entry_lines as jel')
+                ->join('financial_journal_entries as je', 'je.id', '=', 'jel.journal_entry_id')
+                ->join('financial_accounts as fa', 'fa.id', '=', 'jel.account_id')
+                ->where('je.status', 'posted')
+                ->where('fa.is_bank_account', true)
+                ->whereRaw('DATE(je.date) <= ?', [$end])
+                ->selectRaw('COALESCE(SUM(jel.debit) - SUM(jel.credit), 0) as total')
+                ->value('total');
+
             $data[] = [
                 'month' => $start,
                 'income' => round($income / 100, 2),
                 'expense' => round($expense / 100, 2),
+                'balance' => round($balance / 100, 2),
             ];
         }
 
@@ -324,12 +334,15 @@ new class extends Component
                 <flux:chart.point field="income" class="text-green-400" />
                 <flux:chart.line field="expense" class="text-red-500" />
                 <flux:chart.point field="expense" class="text-red-400" />
+                <flux:chart.line field="balance" class="text-blue-500" />
+                <flux:chart.point field="balance" class="text-blue-400" />
                 <flux:chart.cursor />
             </flux:chart.svg>
             <flux:chart.tooltip>
                 <flux:chart.tooltip.heading field="month" :format="['month' => 'short', 'year' => 'numeric']" />
                 <flux:chart.tooltip.value field="income" label="Income" />
                 <flux:chart.tooltip.value field="expense" label="Expenses" />
+                <flux:chart.tooltip.value field="balance" label="Balance" />
             </flux:chart.tooltip>
         </flux:chart>
     </flux:card>

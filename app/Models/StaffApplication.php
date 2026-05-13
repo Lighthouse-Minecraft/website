@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Enums\ApplicationStatus;
-use App\Enums\BackgroundCheckStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,7 +17,6 @@ class StaffApplication extends Model
         'staff_position_id',
         'status',
         'reviewer_notes',
-        'background_check_status',
         'conditions',
         'reviewed_by',
         'staff_review_thread_id',
@@ -35,7 +33,6 @@ class StaffApplication extends Model
     {
         return [
             'status' => ApplicationStatus::class,
-            'background_check_status' => BackgroundCheckStatus::class,
             'applicant_member_since' => 'date',
             'applicant_membership_level_since' => 'date',
         ];

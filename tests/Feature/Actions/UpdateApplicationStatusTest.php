@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use App\Actions\UpdateApplicationStatus;
 use App\Enums\ApplicationStatus;
-use App\Enums\BackgroundCheckStatus;
 use App\Models\StaffApplication;
 use App\Models\StaffPosition;
 use App\Models\User;
@@ -50,17 +49,6 @@ it('records activity log', function () {
         'subject_id' => $application->id,
         'action' => 'application_status_changed',
     ]);
-});
-
-it('sets background check status when moving to background check', function () {
-    $user = User::factory()->create();
-    $position = StaffPosition::factory()->officer()->create(['accepting_applications' => true]);
-    $application = StaffApplication::factory()->for($user)->for($position, 'staffPosition')->create(['status' => ApplicationStatus::Submitted]);
-    $reviewer = loginAsAdmin();
-
-    UpdateApplicationStatus::run($application, ApplicationStatus::BackgroundCheck, $reviewer);
-
-    expect($application->fresh()->background_check_status)->toBe(BackgroundCheckStatus::Pending);
 });
 
 it('creates interview discussion when status moves to interview', function () {
