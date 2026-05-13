@@ -1,0 +1,88 @@
+name: PR Environment — Teardown
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [staging]
+
+jobs:
+  teardown:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: Find environment comment
+        id: find
+        uses: peter-evans/find-comment@v3
+        with:
+          issue-number: ${{ github.event.number }}
+          comment-author: github-actions[bot]
+          body-includes: "<!-- forge-pr-env"
+
+      - name: Tear down Forge environment
+        if: steps.find.outputs.comment-id != ''
+        id: forge
+        env:
+          FORGE_TOKEN: ${{ secrets.FORGE_API_TOKEN }}
+          SERVER_ID: ${{ secrets.FORGE_SERVER_ID }}
+          SERVER_IP: ${{ secrets.FORGE_SERVER_IP }}
+          PR_NUMBER: ${{ github.event.number }}
+          EXISTING_COMMENT: ${{ steps.find.outputs.comment-body }}
+        run: |
+          cat > /tmp/teardown.py << 'PYEOF'
+          import os, json, re, urllib.request, urllib.error
+
+          BASE    = "https://forge.laravel.com/api/v1"
+          TOKEN   = os.environ["FORGE_TOKEN"]
+          SRV     = os.environ["SERVER_ID"]
+          IP      = os.environ["SERVER_IP"]
+          PR      = os.environ["PR_NUMBER"]
+          COMMENT = os.environ.get("EXISTING_COMMENT", "")
+
+          DOMAIN = f"pr-{PR}.{IP}.nip.io"
+
+          def api_delete(path):
+              req = urllib.request.Request(
+                  f"{BASE}{path}",
+                  headers={
+                      "Authorization": f"Bearer {TOKEN}",
+                      "Accept": "application/json",
+                  },
+                  method="DELETE",
+              )
+              try:
+                  with urllib.request.urlopen(req) as r:
+                      return r.status
+              except urllib.error.HTTPError as e:
+                  if e.code == 404:
+                      return 404  # already gone, fine
+                  raise RuntimeError(f"Forge DELETE {path}: {e.code} {e.read().decode()}")
+
+          def set_output(key, value):
+              delim = "GHEOF"
+              with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+                  f.write(f"{key}<<{delim}\n{value}\n{delim}\n")
+
+          site_m = re.search(r"site_id=(\d+)", COMMENT)
+          db_m   = re.search(r"db_id=(\d+)",   COMMENT)
+
+          if site_m:
+              api_delete(f"/servers/{SRV}/sites/{site_m.group(1)}")
+          if db_m:
+              api_delete(f"/servers/{SRV}/databases/{db_m.group(1)}")
+
+          set_output("comment",
+              f"<!-- forge-pr-env-torn-down -->\n"
+              f"~~\U0001f680 PR Test Environment~~ — torn down when PR was closed."
+          )
+          PYEOF
+          python3 /tmp/teardown.py
+
+      - name: Update PR comment
+        if: steps.find.outputs.comment-id != ''
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ steps.find.outputs.comment-id }}
+          body: ${{ steps.forge.outputs.comment }}
+          edit-mode: replace

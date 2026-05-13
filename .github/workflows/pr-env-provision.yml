@@ -1,0 +1,200 @@
+name: PR Environment — Provision
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches: [staging]
+
+concurrency:
+  group: pr-env-${{ github.event.number }}
+  cancel-in-progress: true
+
+jobs:
+  provision:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Find existing environment comment
+        id: find
+        uses: peter-evans/find-comment@v3
+        with:
+          issue-number: ${{ github.event.number }}
+          comment-author: github-actions[bot]
+          body-includes: "<!-- forge-pr-env"
+
+      - name: Provision or redeploy
+        id: forge
+        env:
+          FORGE_TOKEN: ${{ secrets.FORGE_API_TOKEN }}
+          SERVER_ID: ${{ secrets.FORGE_SERVER_ID }}
+          SERVER_IP: ${{ secrets.FORGE_SERVER_IP }}
+          FORGE_REPO: ${{ secrets.FORGE_GITHUB_REPO }}
+          BASE_ENV: ${{ secrets.PR_ENV_BASE }}
+          PR_NUMBER: ${{ github.event.number }}
+          PR_BRANCH: ${{ github.head_ref }}
+          PR_ACTION: ${{ github.event.action }}
+          EXISTING_COMMENT: ${{ steps.find.outputs.comment-body }}
+          FLUX_USERNAME: ${{ secrets.FLUX_USERNAME }}
+          FLUX_LICENSE_KEY: ${{ secrets.FLUX_LICENSE_KEY }}
+        run: |
+          cat > /tmp/provision.py << 'PYEOF'
+          import os, json, time, re, secrets, urllib.request, urllib.error
+
+          BASE     = "https://forge.laravel.com/api/v1"
+          TOKEN    = os.environ["FORGE_TOKEN"]
+          SRV      = os.environ["SERVER_ID"]
+          IP       = os.environ["SERVER_IP"]
+          REPO     = os.environ["FORGE_REPO"]
+          BASE_ENV = os.environ["BASE_ENV"]
+          PR       = os.environ["PR_NUMBER"]
+          BRANCH   = os.environ["PR_BRANCH"]
+          ACTION   = os.environ["PR_ACTION"]
+          COMMENT  = os.environ.get("EXISTING_COMMENT", "")
+          FLUX_USER = os.environ["FLUX_USERNAME"]
+          FLUX_KEY  = os.environ["FLUX_LICENSE_KEY"]
+
+          DOMAIN   = f"pr-{PR}.{IP}.nip.io"
+          DB_NAME  = f"pr_{PR}"
+          DB_USER  = f"pr_{PR}"
+
+          def api(method, path, data=None):
+              req = urllib.request.Request(
+                  f"{BASE}{path}",
+                  data=json.dumps(data).encode() if data else None,
+                  headers={
+                      "Authorization": f"Bearer {TOKEN}",
+                      "Content-Type": "application/json",
+                      "Accept": "application/json",
+                  },
+                  method=method,
+              )
+              try:
+                  with urllib.request.urlopen(req) as r:
+                      return json.loads(r.read())
+              except urllib.error.HTTPError as e:
+                  raise RuntimeError(f"Forge {method} {path}: {e.code} {e.read().decode()}")
+
+          def set_output(key, value):
+              delim = "GHEOF"
+              with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+                  f.write(f"{key}<<{delim}\n{value}\n{delim}\n")
+
+          def wait_for_site(site_id, timeout=300):
+              deadline = time.time() + timeout
+              while time.time() < deadline:
+                  site = api("GET", f"/servers/{SRV}/sites/{site_id}")["site"]
+                  if site["status"] == "installed":
+                      return
+                  time.sleep(10)
+              raise RuntimeError("Timed out waiting for site provisioning")
+
+          def build_env(db_pass):
+              lines = [l for l in BASE_ENV.splitlines()
+                       if not l.startswith(("APP_URL=", "APP_ENV=", "DB_"))]
+              lines += [
+                  f"APP_URL=http://{DOMAIN}",
+                  "APP_ENV=staging",
+                  "DB_CONNECTION=mysql",
+                  "DB_HOST=127.0.0.1",
+                  "DB_PORT=3306",
+                  f"DB_DATABASE={DB_NAME}",
+                  f"DB_USERNAME={DB_USER}",
+                  f"DB_PASSWORD={db_pass}",
+              ]
+              return "\n".join(lines)
+
+          def deploy_script():
+              return (
+                  f"cd /home/forge/{DOMAIN}\n"
+                  f"git pull origin {BRANCH}\n"
+                  f"composer config --global http-basic.composer.fluxui.dev {FLUX_USER} {FLUX_KEY}\n"
+                  "composer install --no-dev --no-interaction --prefer-dist\n"
+                  "npm ci && npm run build\n"
+                  "php artisan migrate --force\n"
+                  "php artisan config:cache\n"
+                  "php artisan route:cache\n"
+                  "php artisan view:cache\n"
+                  "( flock -w 10 9 || exit 1; sudo -S service php8.4-fpm reload ) 9>/tmp/fpmlock\n"
+              )
+
+          # Parse existing resource IDs from the PR comment (if any)
+          site_m = re.search(r"site_id=(\d+)", COMMENT)
+          db_m   = re.search(r"db_id=(\d+)",   COMMENT)
+          site_id = int(site_m.group(1)) if site_m else None
+          db_id   = int(db_m.group(1))   if db_m   else None
+
+          if site_id and ACTION == "synchronize":
+              # Environment already exists — just redeploy the new commits
+              api("POST", f"/servers/{SRV}/sites/{site_id}/deployment/deploy")
+              comment = (
+                  f"<!-- forge-pr-env site_id={site_id} db_id={db_id} -->\n"
+                  f"## \U0001f680 PR Test Environment\n\n"
+                  f"| | |\n"
+                  f"|---|---|\n"
+                  f"| **Site** | http://{DOMAIN} |\n"
+                  f"| **Forge Dashboard** | https://forge.laravel.com/servers/{SRV}/sites/{site_id} |\n"
+                  f"| **Branch** | `{BRANCH}` |\n\n"
+                  f"Redeploying — refresh in ~60 seconds.\n\n"
+                  f"_Tears down automatically when this PR is closed._"
+              )
+          else:
+              # Full provision: site + database + git + env + deploy script + first deploy
+              db_pass = secrets.token_urlsafe(16)
+
+              site = api("POST", f"/servers/{SRV}/sites", {
+                  "domain": DOMAIN,
+                  "project_type": "php",
+                  "directory": "/public",
+              })["site"]
+              site_id = site["id"]
+              wait_for_site(site_id)
+
+              db = api("POST", f"/servers/{SRV}/databases", {
+                  "name": DB_NAME,
+                  "user": DB_USER,
+                  "password": db_pass,
+              })["database"]
+              db_id = db["id"]
+
+              api("POST", f"/servers/{SRV}/sites/{site_id}/git", {
+                  "provider": "github",
+                  "repository": REPO,
+                  "branch": BRANCH,
+                  "composer": True,
+              })
+
+              api("PUT", f"/servers/{SRV}/sites/{site_id}/env",
+                  {"content": build_env(db_pass)})
+
+              api("PUT", f"/servers/{SRV}/sites/{site_id}/deployment/script",
+                  {"content": deploy_script(), "auto_source": False})
+
+              api("POST", f"/servers/{SRV}/sites/{site_id}/deployment/deploy")
+
+              comment = (
+                  f"<!-- forge-pr-env site_id={site_id} db_id={db_id} -->\n"
+                  f"## \U0001f680 PR Test Environment\n\n"
+                  f"| | |\n"
+                  f"|---|---|\n"
+                  f"| **Site** | http://{DOMAIN} |\n"
+                  f"| **Forge Dashboard** | https://forge.laravel.com/servers/{SRV}/sites/{site_id} |\n"
+                  f"| **Branch** | `{BRANCH}` |\n\n"
+                  f"Provisioning now — first deploy takes ~2 minutes.\n\n"
+                  f"_Tears down automatically when this PR is closed._"
+              )
+
+          set_output("comment", comment)
+          PYEOF
+          python3 /tmp/provision.py
+
+      - name: Create or update PR comment
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ steps.find.outputs.comment-id }}
+          issue-number: ${{ github.event.number }}
+          body: ${{ steps.forge.outputs.comment }}
+          edit-mode: replace
