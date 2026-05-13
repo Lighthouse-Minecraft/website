@@ -119,6 +119,7 @@ class User extends Authenticatable // implements MustVerifyEmail
             'admin_granted_at' => 'datetime',
             'onboarding_wizard_dismissed_at' => 'datetime',
             'onboarding_wizard_completed_at' => 'datetime',
+            'rules_reminder_sent_at' => 'datetime',
         ];
     }
 
