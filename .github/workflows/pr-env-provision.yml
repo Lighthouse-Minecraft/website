@@ -113,7 +113,7 @@ jobs:
                   "php artisan config:cache\n"
                   "php artisan route:cache\n"
                   "php artisan view:cache\n"
-                  "( flock -w 10 9 || exit 1; sudo -S service php8.2-fpm reload ) 9>/tmp/fpmlock\n"
+                  "( flock -w 10 9 || exit 1; sudo -S service php8.4-fpm reload ) 9>/tmp/fpmlock\n"
               )
 
           # Parse existing resource IDs from the PR comment (if any)
