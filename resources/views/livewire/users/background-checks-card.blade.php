@@ -27,6 +27,8 @@ new class extends Component {
     public bool $canManage = false;
     #[Locked]
     public bool $canViewRenewal = false;
+    #[Locked]
+    public bool $canViewNotes = false;
 
     // Add-check modal
     public string $newService = '';
@@ -53,6 +55,7 @@ new class extends Component {
         $this->userId = $user->id;
         $this->canManage = (bool) $canManage;
         $this->canViewRenewal = (bool) ($canView || $canManage);
+        $this->canViewNotes = (bool) ($canView || $canManage);
     }
 
     #[Computed]
@@ -278,8 +281,8 @@ new class extends Component {
                             @endif
                         </div>
 
-                        {{-- Notes display as chat bubbles --}}
-                        @if(count($parsedNotes) > 0)
+                        {{-- Notes display as chat bubbles (hidden from self-viewers without view/manage role) --}}
+                        @if($canViewNotes && count($parsedNotes) > 0)
                             <div class="mt-3 space-y-2">
                                 @foreach($parsedNotes as $noteIndex => $note)
                                     @if($note['type'] === 'timestamped')
