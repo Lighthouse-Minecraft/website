@@ -20,6 +20,7 @@
         "livewire/volt": "^1.6.7",
         "lorisleiva/laravel-actions": "^2.9",
         "prism-php/prism": "^0.99.21",
+        "resend/resend-laravel": "^1.4",
         "socialiteproviders/discord": "^4.2",
         "spomky-labs/otphp": "^11.4",
         "symfony/yaml": "^7.4",
